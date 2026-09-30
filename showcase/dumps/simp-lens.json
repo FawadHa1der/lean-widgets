@@ -1,0 +1,1929 @@
+{"package": "simp-lens",
+ "entries":
+ [{"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 3 rewrites"},
+       {"tag": "span",
+        "t": "el",
+        "children": [{"t": "text", "s": " ✓ goal closed"}],
+        "attrs":
+        [["style", {"color": "var(--vscode-testing-iconPassed, #73c991)"}]]}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children": [{"t": "text", "s": "simp only [Nat.add_zero]"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "1."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " + "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "0"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "n"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "2."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " + "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "0"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "n"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "3."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "eq_self"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " = "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "n"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "True"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(2)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "Nat.add_zero"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n + 0 + 0 = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "eq_self"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "target_arith_multi_frame"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 3 rewrites"},
+       {"tag": "span",
+        "t": "el",
+        "children": [{"t": "text", "s": " ✓ goal closed"}],
+        "attrs":
+        [["style", {"color": "var(--vscode-testing-iconPassed, #73c991)"}]]}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children": [{"t": "text", "s": "simp only [Nat.add_zero]"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"t": "text",
+          "s":
+          "Filmstrip omitted — rendering the rewritten subterms exceeded the command's heartbeat budget."}],
+        "attrs": [["style", {"opacity": "0.7"}]]},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(2)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "Nat.add_zero"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n + 0 + 0 = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "eq_self"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "target_arith_fallback"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 3 rewrites"},
+       {"tag": "span",
+        "t": "el",
+        "children": [{"t": "text", "s": " ✓ goal closed"}],
+        "attrs":
+        [["style", {"color": "var(--vscode-testing-iconPassed, #73c991)"}]]}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children": [{"t": "text", "s": "simp only [Nat.add_zero, h]"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "1."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "h"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "n"}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "5"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "2."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "5"}]},
+                   {"text": " + "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "0"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "5"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "3."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "eq_self"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "5"}]},
+                   {"text": " = "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "5"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "True"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(3)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "h"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = 5"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "○ redundant "}],
+                "attrs": [["style", {"opacity": "0.6"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "Nat.add_zero"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"t": "text", "s": "goal still closed"}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "○ redundant "}],
+                "attrs": [["style", {"opacity": "0.6"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "eq_self"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"t": "text", "s": "goal still closed"}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "target_closed_hyp_lemma"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 0 rewrites (definitional reductions only)"},
+       {"tag": "span",
+        "t": "el",
+        "children": [{"t": "text", "s": " ✓ goal closed"}],
+        "attrs":
+        [["style", {"color": "var(--vscode-testing-iconPassed, #73c991)"}]]}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children": [{"t": "text", "s": "simp only"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"t": "text",
+          "s":
+          "No lemma-driven rewrites — the change was purely definitional (beta/zeta/eta/proj reductions, which have no lemma origin to record)."}],
+        "attrs": [["style", {"opacity": "0.7"}]]},
+       {"tag": "span", "t": "el", "children": [], "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "target_empty_film"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 3 rewrites"},
+       {"tag": "span",
+        "t": "el",
+        "children": [{"t": "text", "s": " ✓ goal closed"}],
+        "attrs":
+        [["style", {"color": "var(--vscode-testing-iconPassed, #73c991)"}]]}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children": [{"t": "text", "s": "simp only [Nat.add_zero]"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "1."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " + "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "0"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "n"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "2."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " + "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "0"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "n"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "3."}],
+              "attrs":
+              [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "eq_self"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "post"}],
+              "attrs":
+              [["style",
+                {"opacity": "0.6",
+                 "marginRight": "6px",
+                 "fontSize": "0.8em"}]]}],
+            "attrs": []},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"append":
+                  [{"tag":
+                    [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                     {"text": "n"}]},
+                   {"text": " = "},
+                   {"tag":
+                    [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                     {"text": "n"}]}]}]}},
+              "name": "default",
+              "children": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "→"}],
+              "attrs": [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+             {"t": "comp",
+              "props":
+              {"fmt":
+               {"tag":
+                [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                 {"text": "True"}]}},
+              "name": "default",
+              "children": []}],
+            "attrs": [["style", {"paddingLeft": "18px"}]]}],
+          "attrs":
+          [["style",
+            {"padding": "4px 6px",
+             "marginBottom": "4px",
+             "borderLeft":
+             "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(2)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "Nat.add_zero"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n + 0 + 0 = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "eq_self"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = n"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Diagnostics"}],
+            "attrs": []},
+           {"t": "text", "s": "(2 lemmas tried)"}],
+          "attrs": []},
+         {"tag": "ul",
+          "t": "el",
+          "children":
+          [{"tag": "li",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "Nat.add_zero"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"t": "text", "s": "tried 2, used 2"}],
+            "attrs": []},
+           {"tag": "li",
+            "t": "el",
+            "children":
+            [{"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": "eq_self"}],
+              "attrs":
+              [["style",
+                {"padding": "1px 7px",
+                 "marginRight": "6px",
+                 "fontSize": "0.85em",
+                 "fontFamily": "monospace",
+                 "color": "var(--vscode-badge-foreground, #ffffff)",
+                 "borderRadius": "8px",
+                 "background": "var(--vscode-badge-background, #4d4d4d)"}]]},
+             {"t": "text", "s": "tried 1, used 1"}],
+            "attrs": []}],
+          "attrs": [["style", {"margin": "2px 0"}]]}],
+        "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "target_arith_diagnostics"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 2 rewrites"},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children":
+          [{"t": "text", "s": "simp only [Nat.add_zero, and_true] at h ⊢"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "b",
+              "t": "el",
+              "children": [{"t": "text", "s": "at h"}],
+              "attrs": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": " — 1 rewrite"}],
+              "attrs": [["style", {"opacity": "0.6", "fontSize": "0.85em"}]]}],
+            "attrs": [["style", {"marginBottom": "2px"}]]},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "div",
+              "t": "el",
+              "children":
+              [{"tag": "div",
+                "t": "el",
+                "children":
+                [{"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "1."}],
+                    "attrs":
+                    [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "Nat.add_zero"}],
+                    "attrs":
+                    [["style",
+                      {"padding": "1px 7px",
+                       "marginRight": "6px",
+                       "fontSize": "0.85em",
+                       "fontFamily": "monospace",
+                       "color": "var(--vscode-badge-foreground, #ffffff)",
+                       "borderRadius": "8px",
+                       "background":
+                       "var(--vscode-badge-background, #4d4d4d)"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "post"}],
+                    "attrs":
+                    [["style",
+                      {"opacity": "0.6",
+                       "marginRight": "6px",
+                       "fontSize": "0.8em"}]]}],
+                  "attrs": []},
+                 {"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"append":
+                        [{"tag":
+                          [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                           {"text": "n"}]},
+                         {"text": " + "},
+                         {"tag":
+                          [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                           {"text": "0"}]}]}]}},
+                    "name": "default",
+                    "children": []},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "→"}],
+                    "attrs":
+                    [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+                   {"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"text": "n"}]}},
+                    "name": "default",
+                    "children": []}],
+                  "attrs": [["style", {"paddingLeft": "18px"}]]}],
+                "attrs":
+                [["style",
+                  {"padding": "4px 6px",
+                   "marginBottom": "4px",
+                   "borderLeft":
+                   "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+              "attrs": []}],
+            "attrs": [["style", {"paddingLeft": "8px"}]]}],
+          "attrs": [["style", {"marginBottom": "6px"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "b",
+              "t": "el",
+              "children": [{"t": "text", "s": "at ⊢"}],
+              "attrs": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": " — 1 rewrite"}],
+              "attrs": [["style", {"opacity": "0.6", "fontSize": "0.85em"}]]}],
+            "attrs": [["style", {"marginBottom": "2px"}]]},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "div",
+              "t": "el",
+              "children":
+              [{"tag": "div",
+                "t": "el",
+                "children":
+                [{"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "1."}],
+                    "attrs":
+                    [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "and_true"}],
+                    "attrs":
+                    [["style",
+                      {"padding": "1px 7px",
+                       "marginRight": "6px",
+                       "fontSize": "0.85em",
+                       "fontFamily": "monospace",
+                       "color": "var(--vscode-badge-foreground, #ffffff)",
+                       "borderRadius": "8px",
+                       "background":
+                       "var(--vscode-badge-background, #4d4d4d)"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "post"}],
+                    "attrs":
+                    [["style",
+                      {"opacity": "0.6",
+                       "marginRight": "6px",
+                       "fontSize": "0.8em"}]]}],
+                  "attrs": []},
+                 {"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"append":
+                        [{"tag":
+                          [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                           {"append":
+                            [{"tag":
+                              [{"subexprPos": "/0/1/0/1",
+                                "info": {"__rpcref": "2"}},
+                               {"text": "n"}]},
+                             {"text": " = "},
+                             {"tag":
+                              [{"subexprPos": "/0/1/1",
+                                "info": {"__rpcref": "3"}},
+                               {"text": "5"}]}]}]},
+                         {"text": " ∧ "},
+                         {"tag":
+                          [{"subexprPos": "/1", "info": {"__rpcref": "4"}},
+                           {"text": "True"}]}]}]}},
+                    "name": "default",
+                    "children": []},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "→"}],
+                    "attrs":
+                    [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+                   {"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"append":
+                        [{"tag":
+                          [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                           {"text": "n"}]},
+                         {"text": " = "},
+                         {"tag":
+                          [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                           {"text": "5"}]}]}]}},
+                    "name": "default",
+                    "children": []}],
+                  "attrs": [["style", {"paddingLeft": "18px"}]]}],
+                "attrs":
+                [["style",
+                  {"padding": "4px 6px",
+                   "marginBottom": "4px",
+                   "borderLeft":
+                   "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+              "attrs": []}],
+            "attrs": [["style", {"paddingLeft": "8px"}]]}],
+          "attrs": [["style", {"marginBottom": "6px"}]]}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(2)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "○ redundant "}],
+                "attrs": [["style", {"opacity": "0.6"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "Nat.add_zero"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = 5"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "● essential "}],
+                "attrs":
+                [["style",
+                  {"color": "var(--vscode-errorForeground, #f48771)"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "and_true"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "n = 5 ∧ True"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "at_h_target_sections"},
+  {"tree":
+   {"tag": "details",
+    "t": "el",
+    "children":
+    [{"tag": "summary",
+      "t": "el",
+      "children":
+      [{"tag": "b",
+        "t": "el",
+        "children": [{"t": "text", "s": "Simp Lens"}],
+        "attrs": []},
+       {"t": "text", "s": " — 2 rewrites"},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": []},
+     {"tag": "div",
+      "t": "el",
+      "children":
+      [{"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "b",
+          "t": "el",
+          "children": [{"t": "text", "s": "minimal call: "}],
+          "attrs": []},
+         {"tag": "code",
+          "t": "el",
+          "children":
+          [{"t": "text", "s": "simp only [and_true, or_false] at *"}],
+          "attrs": []}],
+        "attrs": [["style", {"marginBottom": "6px"}]]},
+       {"tag": "div",
+        "t": "el",
+        "children":
+        [{"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "b",
+              "t": "el",
+              "children": [{"t": "text", "s": "at h₁"}],
+              "attrs": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": " — 1 rewrite"}],
+              "attrs": [["style", {"opacity": "0.6", "fontSize": "0.85em"}]]}],
+            "attrs": [["style", {"marginBottom": "2px"}]]},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "div",
+              "t": "el",
+              "children":
+              [{"tag": "div",
+                "t": "el",
+                "children":
+                [{"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "1."}],
+                    "attrs":
+                    [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "and_true"}],
+                    "attrs":
+                    [["style",
+                      {"padding": "1px 7px",
+                       "marginRight": "6px",
+                       "fontSize": "0.85em",
+                       "fontFamily": "monospace",
+                       "color": "var(--vscode-badge-foreground, #ffffff)",
+                       "borderRadius": "8px",
+                       "background":
+                       "var(--vscode-badge-background, #4d4d4d)"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "post"}],
+                    "attrs":
+                    [["style",
+                      {"opacity": "0.6",
+                       "marginRight": "6px",
+                       "fontSize": "0.8em"}]]}],
+                  "attrs": []},
+                 {"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"append":
+                        [{"tag":
+                          [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                           {"text": "p"}]},
+                         {"text": " ∧ "},
+                         {"tag":
+                          [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                           {"text": "True"}]}]}]}},
+                    "name": "default",
+                    "children": []},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "→"}],
+                    "attrs":
+                    [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+                   {"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"text": "p"}]}},
+                    "name": "default",
+                    "children": []}],
+                  "attrs": [["style", {"paddingLeft": "18px"}]]}],
+                "attrs":
+                [["style",
+                  {"padding": "4px 6px",
+                   "marginBottom": "4px",
+                   "borderLeft":
+                   "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+              "attrs": []}],
+            "attrs": [["style", {"paddingLeft": "8px"}]]}],
+          "attrs": [["style", {"marginBottom": "6px"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "b",
+              "t": "el",
+              "children": [{"t": "text", "s": "at h₂"}],
+              "attrs": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": " — 1 rewrite"}],
+              "attrs": [["style", {"opacity": "0.6", "fontSize": "0.85em"}]]}],
+            "attrs": [["style", {"marginBottom": "2px"}]]},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "div",
+              "t": "el",
+              "children":
+              [{"tag": "div",
+                "t": "el",
+                "children":
+                [{"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "1."}],
+                    "attrs":
+                    [["style", {"marginRight": "6px", "fontWeight": "bold"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "or_false"}],
+                    "attrs":
+                    [["style",
+                      {"padding": "1px 7px",
+                       "marginRight": "6px",
+                       "fontSize": "0.85em",
+                       "fontFamily": "monospace",
+                       "color": "var(--vscode-badge-foreground, #ffffff)",
+                       "borderRadius": "8px",
+                       "background":
+                       "var(--vscode-badge-background, #4d4d4d)"}]]},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "post"}],
+                    "attrs":
+                    [["style",
+                      {"opacity": "0.6",
+                       "marginRight": "6px",
+                       "fontSize": "0.8em"}]]}],
+                  "attrs": []},
+                 {"tag": "div",
+                  "t": "el",
+                  "children":
+                  [{"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"append":
+                        [{"tag":
+                          [{"subexprPos": "/0/1", "info": {"__rpcref": "1"}},
+                           {"text": "q"}]},
+                         {"text": " ∨ "},
+                         {"tag":
+                          [{"subexprPos": "/1", "info": {"__rpcref": "2"}},
+                           {"text": "False"}]}]}]}},
+                    "name": "default",
+                    "children": []},
+                   {"tag": "span",
+                    "t": "el",
+                    "children": [{"t": "text", "s": "→"}],
+                    "attrs":
+                    [["style", {"opacity": "0.7", "margin": "0 8px"}]]},
+                   {"t": "comp",
+                    "props":
+                    {"fmt":
+                     {"tag":
+                      [{"subexprPos": "/", "info": {"__rpcref": "0"}},
+                       {"text": "q"}]}},
+                    "name": "default",
+                    "children": []}],
+                  "attrs": [["style", {"paddingLeft": "18px"}]]}],
+                "attrs":
+                [["style",
+                  {"padding": "4px 6px",
+                   "marginBottom": "4px",
+                   "borderLeft":
+                   "2px solid var(--vscode-textLink-foreground, #3794ff)"}]]}],
+              "attrs": []}],
+            "attrs": [["style", {"paddingLeft": "8px"}]]}],
+          "attrs": [["style", {"marginBottom": "6px"}]]},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "b",
+              "t": "el",
+              "children": [{"t": "text", "s": "at ⊢"}],
+              "attrs": []},
+             {"tag": "span",
+              "t": "el",
+              "children": [{"t": "text", "s": " — 0 rewrites"}],
+              "attrs": [["style", {"opacity": "0.6", "fontSize": "0.85em"}]]}],
+            "attrs": [["style", {"marginBottom": "2px"}]]},
+           {"tag": "div",
+            "t": "el",
+            "children":
+            [{"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "No rewrite steps were recorded."}],
+              "attrs": [["style", {"opacity": "0.7"}]]}],
+            "attrs": [["style", {"paddingLeft": "8px"}]]}],
+          "attrs": [["style", {"marginBottom": "6px"}]]}],
+        "attrs": []},
+       {"tag": "details",
+        "t": "el",
+        "children":
+        [{"tag": "summary",
+          "t": "el",
+          "children":
+          [{"tag": "b",
+            "t": "el",
+            "children": [{"t": "text", "s": "Exclusion previews"}],
+            "attrs": []},
+           {"t": "text", "s": "(2)"}],
+          "attrs": []},
+         {"tag": "div",
+          "t": "el",
+          "children":
+          [{"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "○ redundant "}],
+                "attrs": [["style", {"opacity": "0.6"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "and_true"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "p ∧ q"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]},
+           {"tag": "details",
+            "t": "el",
+            "children":
+            [{"tag": "summary",
+              "t": "el",
+              "children":
+              [{"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "○ redundant "}],
+                "attrs": [["style", {"opacity": "0.6"}]]},
+               {"t": "text", "s": "without "},
+               {"tag": "span",
+                "t": "el",
+                "children": [{"t": "text", "s": "or_false"}],
+                "attrs":
+                [["style",
+                  {"padding": "1px 7px",
+                   "marginRight": "6px",
+                   "fontSize": "0.85em",
+                   "fontFamily": "monospace",
+                   "color": "var(--vscode-badge-foreground, #ffffff)",
+                   "borderRadius": "8px",
+                   "background": "var(--vscode-badge-background, #4d4d4d)"}]]}],
+              "attrs": []},
+             {"tag": "div",
+              "t": "el",
+              "children":
+              [{"t": "text", "s": "lands at: "},
+               {"tag": "code",
+                "t": "el",
+                "children": [{"t": "text", "s": "p ∧ q"}],
+                "attrs": [["style", {"whiteSpace": "pre-wrap"}]]}],
+              "attrs": [["style", {"paddingLeft": "20px"}]]}],
+            "attrs": [["style", {"marginLeft": "8px"}]]}],
+          "attrs": []}],
+        "attrs": []},
+       {"tag": "span", "t": "el", "children": [], "attrs": []}],
+      "attrs": [["style", {"padding": "4px"}]]}],
+    "attrs": [["open", true]]},
+   "name": "at_wildcard"}]}

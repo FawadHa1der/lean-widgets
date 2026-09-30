@@ -1,0 +1,15 @@
+name = "tree-scope"
+version = "0.2.0"
+defaultTargets = ["TreeScope"]
+testDriver = "TreeScopeTests"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.2"
+
+[[lean_lib]]
+name = "TreeScope"
+
+[[lean_lib]]
+name = "TreeScopeTests"

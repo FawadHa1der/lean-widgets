@@ -1,0 +1,13 @@
+import IntervalInspectorTests.Helpers
+import IntervalInspectorTests.ModelTests
+import IntervalInspectorTests.RecognizeTests
+import IntervalInspectorTests.OrderGraphTests
+import IntervalInspectorTests.LayoutTests
+import IntervalInspectorTests.RenderTests
+import IntervalInspectorTests.SuggestTests
+import IntervalInspectorTests.CommandTests
+import IntervalInspectorTests.ReactContractTests
+import IntervalInspectorTests.ImportClosureTests
+import IntervalInspectorTests.ClickE2E
+
+#guard IntervalInspector.version = "0.1.0"

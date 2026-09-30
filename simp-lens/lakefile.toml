@@ -1,0 +1,15 @@
+name = "simp-lens"
+version = "0.1.0"
+defaultTargets = ["SimpLens"]
+testDriver = "SimpLensTests"
+
+[[require]]
+name = "proofwidgets"
+git = "https://github.com/leanprover-community/ProofWidgets4"
+rev = "6e311e2a844da9b2cc3971187df2fe0066947b93"
+
+[[lean_lib]]
+name = "SimpLens"
+
+[[lean_lib]]
+name = "SimpLensTests"

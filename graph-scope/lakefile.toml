@@ -1,0 +1,15 @@
+name = "graph-scope"
+version = "0.1.0"
+defaultTargets = ["GraphScope"]
+testDriver = "GraphScopeTests"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.2"
+
+[[lean_lib]]
+name = "GraphScope"
+
+[[lean_lib]]
+name = "GraphScopeTests"

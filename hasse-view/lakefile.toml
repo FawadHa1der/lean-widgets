@@ -1,0 +1,15 @@
+name = "hasse-view"
+version = "0.1.0"
+defaultTargets = ["HasseView"]
+testDriver = "HasseViewTests"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.2"
+
+[[lean_lib]]
+name = "HasseView"
+
+[[lean_lib]]
+name = "HasseViewTests"

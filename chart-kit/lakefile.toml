@@ -1,0 +1,15 @@
+name = "chart-kit"
+version = "0.1.0"
+defaultTargets = ["ChartKit"]
+testDriver = "ChartKitTests"
+
+[[require]]
+name = "proofwidgets"
+git = "https://github.com/leanprover-community/ProofWidgets4"
+rev = "6e311e2a844da9b2cc3971187df2fe0066947b93"
+
+[[lean_lib]]
+name = "ChartKit"
+
+[[lean_lib]]
+name = "ChartKitTests"

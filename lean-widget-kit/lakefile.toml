@@ -1,0 +1,38 @@
+name = "lean-widget-kit"
+version = "0.1.0"
+defaultTargets = ["LeanWidgetKit"]
+
+[[require]]
+name = "interval-inspector"
+path = "../interval-inspector"
+
+[[require]]
+name = "expr-xray"
+path = "../expr-xray"
+
+[[require]]
+name = "simp-lens"
+path = "../simp-lens"
+
+[[require]]
+name = "graph-scope"
+path = "../graph-scope"
+
+[[require]]
+name = "tree-scope"
+path = "../tree-scope"
+
+[[require]]
+name = "hasse-view"
+path = "../hasse-view"
+
+[[require]]
+name = "dist-lens"
+path = "../dist-lens"
+
+[[require]]
+name = "chart-kit"
+path = "../chart-kit"
+
+[[lean_lib]]
+name = "LeanWidgetKit"
