@@ -824,6 +824,17 @@ directories in `$W/r3/ci/`). Every job ran in a fresh clone of a commit (`ci/run
   deadlock inside Node/V8 at exit (inference from the stacks; not reproduced on demand). The process was stopped
   after 20 min (`FAIL(143)`). Every job now has `timeout-minutes`, and `ci/run-local.mjs` enforces them, so such a hang
   fails a job in bounded time on GitHub and here.
+* **Run 2 on commit `3fc04e2`** (the job timeouts, the probe step that deletes the committed dump first, and the docs):
+  `lean-ci-2.log` `RUN-LOCAL OK`: the 9 `packages` jobs, `showcase` (`DUMPS OK: 8 regenerated dumps == committed`,
+  60/60 panels clean) and `qed64-static` (all 12 steps: `PORTABLE OK`, `LOCKFIFO OK`, `LOCKRACE OK`, `QED64-SRC OK`,
+  `SHELL-FROM-SOURCE OK` 58 files, `FETCH-ARTIFACTS OK` 6 from git, the widget export (222 files), Worker tests 22/22,
+  `CHECK-GALLERY OK 128 ok, 0 failed` with `SIM-GALLERY OK 114 ok`); `pages` skipped (no `DEPLOY_GITHUB_PAGES`).
+  `rehearse-deploy-2.log` `REHEARSE-DEPLOY OK` with the same 7 scenarios and the same results as run 1 (`SMOKE OK` on
+  168 URLs).
+* **The manual path after these changes** (`local-path-regression.log`, fresh rehearsal and deploy-out dirs):
+  `rehearse.sh upload-dry guard` rc 0 (`UPLOAD DRY RUN OK`, 93 objects in 11 lists; `GUARD OK`, all 10 misuses
+  refused, sentinel bucket unchanged); `upload-artifacts.sh` with `--from-lock` in `MANIFEST_ARGS` refused (rc 3), and
+  `--commands` on a `--from-lock` manifest refused (rc 3).
 * What this does **not** show: GitHub's ubuntu runner itself (tool versions, cold caches, disk), Cloudflare's edge, a
   real token's permissions, and the workers.dev URL format of a real deployment. The first real run covers them
   (first deploy checklist, steps 6 and 8).

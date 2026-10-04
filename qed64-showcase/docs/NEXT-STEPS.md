@@ -87,7 +87,10 @@ project never writes there):**
 
 ## 4. Deploy (owner)
 
-Publishing needs the owner's Cloudflare account (docs/DEPLOY-CLOUDFLARE.md §2–§3). The kit was rehearsed against local
+Publishing needs the owner's Cloudflare account. Step by step: the **first deploy checklist** in
+docs/DEPLOY-CLOUDFLARE.md (repository secrets, token scope, local artifact upload, first deploy from GitHub Actions or
+from this machine, `SHOWCASE_ORIGIN`, verification); the GitHub Actions deploy (`.github/workflows/qed64-deploy.yml`)
+was rehearsed in fresh clones by `ci/rehearse-deploy.sh` (R3 lane, 2026-10-04). The kit was rehearsed against local
 fakes (history: on pin C by the post-audit fix lane on gallery `b7aa521a…`, 2026-10-03; on pin E by the pin-e lane on
 gallery `bbdbc932…`, 2026-10-04, `rehearse.sh all`, `browser` and `stop` rc 0). Re-run
 `scripts/deploy-rehearsal/rehearse.sh all` and `rehearse.sh browser` on the gallery you deploy. Never deploy pin B.
