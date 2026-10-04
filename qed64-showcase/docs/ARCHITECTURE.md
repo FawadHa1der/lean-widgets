@@ -52,7 +52,8 @@ at `/showcase/` with its same-origin bridge, the Cloudflare Worker, and the test
   checkout on the machine is read or written. `node scripts/qed64-src.mjs ensure|check|dir [<id>|--all]`.
 * **What is read from the sources.** QED64's page build (`frontend/`, `npm run build:site`); the five tracked manifests
   and indexes under `public/`; `pipeline/toolchain/KERNEL-PIN` (verify #9); `infra/worker.js` (`isImmutable`, which
-  `serve.mjs`, `deploy-manifest.mjs` and our Worker import, and which wrangler bundles); `pipeline/snapshot/*` (bake,
+  `serve.mjs`, `deploy-manifest.mjs` and our Worker import; `wrangler deploy --dry-run` bundles just that function
+  into the Worker, `$W/logs/r2/wrangler-dry-run.log`); `pipeline/snapshot/*` (bake,
   probes, runner); `pipeline/artifacts/olean-imports.mjs`; `pipeline/toolchain/artifact-paths.mjs`;
   `public/workers/lsp-frames.js`; `public/workers/lean.worker.js` (the gallery gate compares the Memory64 probe bytes
   with it); `tests/adversarial/preflight.mjs`. `verify` #8 fails if a vendored copy (`pins/*/QED64-PIN`,
@@ -148,7 +149,10 @@ tests. The platform-specific parts are in `scripts/lib/platform.{sh,mjs}`:
 
 The Linux side was proved in Docker `node:26-bookworm` (aarch64) on 2026-10-04 (`$W/logs/r2/linux-rehearsal-1.log`):
 fresh `clone --recursive`, bootstrap from a local origin, `verify` and `gallery` all passed, and so did
-`fetch-artifacts --check`, the worker tests, `lockfifo`/`lockrace`, `check-portable` and the deploy manifest.
+`fetch-artifacts --check`, the worker tests, `lockfifo`/`lockrace`, `check-portable` and the deploy manifest. The CI job
+(`.github/workflows/showcase-source.yml`) needs no artifact origin: it rebuilds the page from the submodule, installs the
+tracked manifests with `fetch-artifacts --git-only`, and runs the worker tests and the gallery gate. Its steps passed
+in the same image (`linux-ci-mirror-2.log`).
 
 **macOS-only (stated plainly):** the heavy path's measurement wrappers. `bake.sh`, `headless/run-stage4.sh`,
 `run-e2.sh`, `run-controls.sh` and `derive-raw.sh` run under `/usr/bin/time -l` and read `stat -f`. `build-native.sh`

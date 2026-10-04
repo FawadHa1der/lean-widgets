@@ -840,8 +840,18 @@ all verified against the locks. Logs: `$W/logs/r2/`.
   and no `QED64_REPO` or kernel build. Bootstrap was OK and `verify` all OK (1 N/A). The `gallery` gate was GREEN on
   `49d06172…`. Serving on :5298 gave the same served gallery hash, pin header and COEP. Staged pin C was bootstrapped
   into a worktree and passed `pin-qed64 verify --pin 5ac5d00`. The pin switch E → C → E kept verify OK. `lake build &&
-  lake test` of `packages/simp-lens` passed in the clone with the stock toolchain (`clone-lake-simp-lens.log`). The full
-  UX run in the clone: see "UX" below.
+  lake test` of `packages/simp-lens` passed in the clone with the stock toolchain (`clone-lake-simp-lens.log`).
+* **UX.** The full suite ran in the fresh clone (commit `5290c80`, lock v2 `74f96787…`, gallery `49d06172…`) through
+  the host browser lock: `r2-clone-full1`, 19:05–19:52Z, browser from 19:28:55Z. It was a **VERDICT**: 33 passed, 1
+  skipped (C19), 0 unexpected, the served gallery equal to the local one from start to end, pin `33b0967`
+  (`clone-ux-full1.log`, `clone-ux-full1.record.json`). The image-equivalent commit then changed every lock again, so
+  the main checkout's verdict on the final lock is `r2-main-full1` (below).
+* **CI.** `.github/workflows/showcase-source.yml` runs on Linux without any artifact origin: sources check, the page
+  built from source, `fetch-artifacts --git-only` (the tracked manifests), the widget export, the worker tests, the
+  gallery gate. The first mirror run in `node:26-bookworm` found the gallery data STALE without the runtime manifest,
+  which led to `--git-only`. The second ran all 9 steps rc 0, plus a serve smoke (`linux-ci-mirror-{1,2}.log`).
+  `actionlint` passes. `wrangler deploy --dry-run --outdir` bundles `infra/worker.js` with QED64's `isImmutable`
+  tree-shaken in from `deps/qed64/infra/worker.js` (6.72 KiB; `wrangler-dry-run.log`).
 * **Linux.** `scripts/lib/platform.{sh,mjs}` provide the memory probe (`vm_stat` / MemAvailable), copy-on-write clones
   (`cp -c` / `cp --reflink=auto`) and caffeinate (macOS only). The browser-lock wrapper, `showcase.sh`,
   `preflight-overlays.sh`, `pin-qed64.mjs`, `deploy-manifest.mjs`, `make-overlay.mjs`, `stage-trees.mjs`,
