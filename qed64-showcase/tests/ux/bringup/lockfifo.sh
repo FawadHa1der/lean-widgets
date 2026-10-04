@@ -36,7 +36,8 @@ done
 # wait for everyone (the waiters are not our children: poll the journal)
 for _ in $(seq 1 $(( (HOLD0_S + N * (HOLD_S + 3)) * 2 ))); do [ "$(grep -c '^end ' "$J")" -ge $(( N + 1 )) ] && break; sleep 0.5; done
 wait
-sleep 0.5
+# the last holder removes the lock right after its command exits: give it up to 10 s before judging "lock left"
+for _ in $(seq 1 20); do [ -e "$LOCKF" ] || break; sleep 0.5; done
 node -e '
   const fs = require("fs");
   const [jf, n, lockf, qdir, arr] = process.argv.slice(1);

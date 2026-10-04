@@ -788,3 +788,13 @@ Logs: `$W/logs/r1/`.
   all five byte-identical to the existing copies).
 * **Browser lock** is host-wide (`~/.cache/host-browser-lock/browser.lock`, FIFO ticket queue); the old location keeps a
   compatibility stub `scripts/with-browser-lock.sh` that execs the new wrapper.
+* **Re-run in the new location (2026-10-04, lane r1, logs `$W/logs/r1/`).** `showcase.sh verify` OK (1 Docker DRIFT,
+  as before), `gallery` gate GREEN on `98ad69f6…`, `pin current` OK, `check-portable` OK on a clean clone. UX:
+  `r1-relocated-full1` (17:00–17:24Z) was red, 32 passed / 1 skipped / **1 failed: C10's driver-timing assertion
+  "5 reloads within 15 s"** (reloads issued at 12, 4912, 6618, 9041, 15989 ms; `page.reload` waited ~7 s for the 4th
+  commit; everything else in C10 held: ready, panel equal, no crash, 26 workers alive, settled 9.86 GB < 10.5 GB). On
+  pin E that budget was already tight: earlier E runs put the 5th reload at 12886–13412 ms (pinE-headed1, pinE-full1),
+  against ≈12020 ms on C; a slower reload commit on E's lifetime-lock shell is the likely cause (inference, not
+  traced). The assertion was not changed. `r1-relocated-full2` (17:50–18:13Z) was a **VERDICT**: 33 passed, 1 skipped
+  (C19), C10 5th reload at 12015 ms. `deploy-manifest.mjs` regenerated `out/deploy` (previous manifest and rclone lists
+  copied to `$W/logs/r1/out-deploy-pre-r1/`); `--check` OK with G2 naming `r1-relocated-full2`.
