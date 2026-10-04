@@ -12,9 +12,10 @@ Replace `simp` with `simp_lens`, look at which lemmas actually fired (in
 order, with before/after for each rewrite), and click the suggestion to insert
 the minimal call.
 
-Built for `leanprover/lean4:v4.32.2` with
+Built for `leanprover/lean4:v4.34.0` with
 [ProofWidgets4](https://github.com/leanprover-community/ProofWidgets4)
-(pure-Lean `Html` DSL — no npm/JS build).
+(rev `106ff4fa`, pure-Lean `Html` DSL — no npm/JS build). Ported from the
+v4.32.2 original; see `PORT-NOTES.md` for the (small) diff.
 
 ## What you actually see
 
@@ -95,7 +96,9 @@ same rewrites and resulting hypotheses/goal at every location, hypotheses
 that simplify to `False` close the goal, progress at *any* location counts,
 it fails with the byte-identical `` `simp` made no progress `` error when
 no location changes, and supplied-but-unused lemmas get the same
-`linter.unusedSimpArgs` warning (with the strike-through hint) plain `simp`
+`linter.unusedSimpArgs` warning (with the same `[apply] simp` hint — the
+linter's one-click fix rewrites the call as the equivalent plain `simp`; on
+v4.32.2 the same hint rendered as a strike-through diff) plain `simp`
 emits.
 
 ### Cost containment
@@ -133,6 +136,12 @@ landings, contained preview statuses under explicit heartbeat sub-budgets,
 timeout-parity twins at deliberately tight `maxHeartbeats`, definitional-only
 detection, render frame-cap truncation, diagnostics counters, and
 chain-consistency invariants).
+
+Assertion census (lines starting with a `#guard` / `#guard_msgs` / `#lens_*` /
+`#e2e_*` command across `SimpLens*/` and the two root modules): **404** —
+identical to the v4.32.2 original. The `#e2e_*` commands in
+`SimpLensTests/ClickE2E.lean` each run several internal checks (the
+recompile-and-diff harness), so the effective check count is higher.
 
 ## Architecture
 

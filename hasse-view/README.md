@@ -27,7 +27,7 @@ import HasseView
 ```
 
 Requirements on `V`: `[Fintype V]`, `[DecidableEq V]`, `[LE V]`, and a
-computable `[DecidableLE V]` (in v4.32.2 `DecidableLE` is a reducible
+computable `[DecidableLE V]` (in v4.34.0 `DecidableLE` is a reducible
 abbreviation of `DecidableRel (· ≤ ·)`, so either spelling of the instance
 works).  Missing or `noncomputable` instances (including the
 `Classical.propDecidable` fallback under `open scoped Classical`) are
@@ -169,6 +169,19 @@ component nodes, edit texts and fallbacks — without a live server.
 lake build   # library + demos (every #hasse in Demo.lean elaborates)
 lake test    # 463 compile-time assertions (incl. the ClickE2E click simulation)
 ```
+
+Pinned toolchain: `leanprover/lean4:v4.34.0` with Mathlib `v4.34.0`
+(`5ed29652`) and the ProofWidgets rev from Mathlib's manifest (`106ff4fa`);
+see `PORT-NOTES.md` for the port from v4.32.2.
+
+Assertion census (how the 463 is counted): lines starting with `#guard`,
+`#guard_msgs`, `#assert_*` or `#compile_insertions` in `HasseViewTests/` and
+`HasseViewTests.lean`, excluding `ClickE2E.lean` — 282 + 29 + 33 + 5 = 349 —
+plus `ClickE2E.lean`'s 114: its 12 `#guard` lines, the 98 `check`/`checkEqStr`
+calls its two `#eval` suites execute, and 4 `let some … | throw` payload
+assertions. The 11 `example : … := by decide` lines in `LinkTests.lean` (the
+statically written-out insertion texts) and the 3 `#links_report` commands
+(each already counted through its `#guard_msgs` pin) are not double-counted.
 
 Known cosmetic warts of inserted examples (pinned by `ClickE2E`, all
 compile): a parenthesized `#hasse (T)` argument reproduces its parens in the

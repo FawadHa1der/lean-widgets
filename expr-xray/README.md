@@ -148,8 +148,15 @@ lake build   # builds the library incl. Demo.lean (demos elaborate on every buil
 lake test    # builds the test suite; any failing assertion fails the build
 ```
 
-Toolchain: `leanprover/lean4:v4.32.2` (pinned in `lean-toolchain`),
-ProofWidgets pinned in the lockfile. No npm/node required.
+Toolchain: `leanprover/lean4:v4.34.0` (pinned in `lean-toolchain`),
+ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` pinned in
+`lakefile.toml` and the lockfile. No npm/node required. (Ported from the
+`v4.32.2` / ProofWidgets `6e311e2a` original with no Lean source changes and
+no snapshot-pin changes — see `PORT-NOTES.md`.)
+
+Test census: 456 static assertion sites in `ExprXRayTests/` (95 `#guard`,
+17 `#guard_msgs`, 344 `assert*` calls; three of the sites run inside loops, so
+more assertions execute than that). Counting method in `PORT-NOTES.md`.
 
 ## Architecture
 

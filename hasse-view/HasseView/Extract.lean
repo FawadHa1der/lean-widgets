@@ -16,7 +16,7 @@ decidable order, `extractPosetData`:
    fallback `Classical.propDecidable` that `open scoped Classical` puts in
    scope) with an equally clear error, instead of letting `evalExpr` fail
    later with raw compiler advice.  On decidability of the order: in
-   v4.32.2 `DecidableLE V` is a *reducible abbreviation* for
+   v4.34.0 `DecidableLE V` is a *reducible abbreviation* for
    `DecidableRel (· ≤ · : V → V → Prop)`, so one synthesis query covers both
    spellings (instance search unfolds the abbreviation; per-pair instances
    like core's `Decidable (x ≤ y)` for `Bool` are found by introducing the

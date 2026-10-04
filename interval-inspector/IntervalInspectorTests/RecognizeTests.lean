@@ -1,5 +1,5 @@
 import IntervalInspectorTests.Helpers
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 import Mathlib.Order.Interval.Finset.Defs
 import Mathlib.Order.Interval.Finset.Nat
 
@@ -207,6 +207,11 @@ run_cmd Command.liftTermElabM do
 #assert_shape (fun (a b : ℝ) => {x | a ≤ x ∧ x < b}) => "term(Ico*(a,b))"
 #assert_shape ({x : ℝ | x ≤ 2 ∧ 1 ≤ x}) => "term(Icc*(1,2))"
 #assert_shape ({x : ℝ | x < 2 ∧ 1 ≤ x}) => "term(Ico*(1,2))"
+-- The deprecated `setOf` alias (Mathlib 2026-07-09; a distinct constant from
+-- `Set.ofPred`) must still be recognized, so terms spelled against older sources
+-- keep working.  Scoped: only this line uses the deprecated name on purpose.
+set_option linter.deprecated false in
+#assert_shape (setOf fun x : ℝ => 1 ≤ x ∧ x < 2) => "term(Ico*(1,2))"
 -- Endpoint literal values are extracted as for `Set.Ixx`.
 #assert_atoms ({x : ℝ | 1 ≤ x ∧ x < 2}) => "1=1, 2=2"
 -- Set-builder intervals participate in every statement shape and tree.

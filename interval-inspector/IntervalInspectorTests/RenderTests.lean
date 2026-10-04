@@ -1,5 +1,5 @@
 import IntervalInspectorTests.Helpers
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 
 /-! # Render tests
 

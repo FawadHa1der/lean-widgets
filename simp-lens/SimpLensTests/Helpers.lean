@@ -13,7 +13,7 @@ namespace SimpLensTests
 open Lean Meta Elab Command Term SimpLens
 
 /-- Throw unless `cond`. -/
-def assert (cond : Bool) (msg : MessageData) : MetaM Unit := do
+def assertThat (cond : Bool) (msg : MessageData) : MetaM Unit := do
   unless cond do throwError "assertion failed: {msg}"
 
 /-- Throw unless `actual = expected`, printing both. -/
@@ -177,7 +177,7 @@ elab "#lens_lands " t:term ex:(lensWith)? hy:(lensHyps)? " => " g:str : command 
 /-- `#lens_closes t` — assert the traced run closes the goal. -/
 elab "#lens_closes " t:term ex:(lensWith)? hy:(lensHyps)? : command => do
   withRun t ex hy fun r => do
-    assert r.res.goal?.isNone m!"expected closed goal, landed at: {← landing r.res.goal?}"
+    assertThat r.res.goal?.isNone m!"expected closed goal, landed at: {← landing r.res.goal?}"
 
 /-- `#lens_min t => "simp only [...]"` — assert the generated minimal call
 pretty-prints exactly as given. -/
@@ -190,9 +190,9 @@ filmstrip (pure + type-level). -/
 elab "#lens_chain " t:term ex:(lensWith)? hy:(lensHyps)? : command => do
   withRun t ex hy fun r => do
     let vs := r.film.chainViolations
-    assert vs.isEmpty m!"chain violations: {vs}"
+    assertThat vs.isEmpty m!"chain violations: {vs}"
     let tvs ← r.film.typeViolations
-    assert tvs.isEmpty m!"type violations: {tvs}"
+    assertThat tvs.isEmpty m!"type violations: {tvs}"
 
 /--
 `#lens_equiv t` — the core value guarantee, asserted three ways:
@@ -247,7 +247,7 @@ def checkExclusion (r : RunResult) (l : Ident)
     | none => pure none
     | some m => pure (some (← goalString m))
   let oc ← runExclusion r.goalBefore r.ctx r.simprocs none origin fullLanding
-  assert (!oc.errored) m!"exclusion re-run errored"
+  assertThat (!oc.errored) m!"exclusion re-run errored"
   k oc lname
 
 /-- `#lens_exclude t without L => "goal"` — assert the landing goal when `L`
@@ -262,7 +262,7 @@ is erased. -/
 elab "#lens_exclude_closes " t:term ex:(lensWith)? hy:(lensHyps)? " without " l:ident : command => do
   withRun t ex hy fun r =>
     checkExclusion r l fun oc lname => do
-      assert oc.landingGoal?.isNone
+      assertThat oc.landingGoal?.isNone
         m!"expected closed without {lname}, landed at: {oc.landingGoal?.getD ""}"
 
 /-- `#lens_essential t without L => true/false` — assert whether erasing `L`
@@ -309,13 +309,13 @@ elab "#lens_exclude_status " t:term ex:(lensWith)? hy:(lensHyps)? " without " l:
       else if s.raw.getKind == `token.timedOut then .timedOut
       else if s.raw.getKind == `token.ok then .ok
       else panic! s!"#lens_exclude_status: unexpected status syntax kind {s.raw.getKind}"
-    assert (oc.status == expected)
+    assertThat (oc.status == expected)
       m!"status of exclusion without {← expectedName l}: {repr oc.status} ≠ {repr expected}"
     -- a non-ok preview must be flagged errored and essential (unknown landing)
     unless expected == .ok do
-      assert oc.errored m!"non-ok preview not flagged errored"
-      assert oc.essential m!"non-ok preview not flagged essential"
-      assert oc.landingGoal?.isNone m!"non-ok preview reported a landing goal"
+      assertThat oc.errored m!"non-ok preview not flagged errored"
+      assertThat oc.essential m!"non-ok preview not flagged essential"
+      assertThat oc.landingGoal?.isNone m!"non-ok preview reported a landing goal"
 
 /-- `#lens_phases t => ["post", "pre", ...]` — assert the exact phase labels
 of the filmstrip frames, in order. -/
@@ -349,15 +349,15 @@ elab "#lens_diag " t:term ex:(lensWith)? hy:(lensHyps)? " => " l:ident
     for (o, c) in r.res.diag.triedThmCounter.toList do
       if (← originDisplay o) == lname then triedCount := c
     assertEq s!"diagnostics used-count of {lname}" usedCount u.getNat
-    assert (triedCount >= tr.getNat)
+    assertThat (triedCount >= tr.getNat)
       m!"diagnostics tried-count of {lname}: {triedCount} < {tr.getNat}"
 
 /-- `#lens_diag_empty t` — assert that no diagnostics counters are recorded
 (the `diagnostics` option is off). -/
 elab "#lens_diag_empty " t:term ex:(lensWith)? hy:(lensHyps)? : command => do
   withRun t ex hy fun r => do
-    assert r.res.diag.usedThmCounter.toList.isEmpty m!"expected empty used counters"
-    assert r.res.diag.triedThmCounter.toList.isEmpty m!"expected empty tried counters"
+    assertThat r.res.diag.usedThmCounter.toList.isEmpty m!"expected empty used counters"
+    assertThat r.res.diag.triedThmCounter.toList.isEmpty m!"expected empty tried counters"
 
 /-- `#lens_classify t => ["label1", ...]` — assert the `OriginClass.label` of
 every used origin, in order. -/
@@ -565,7 +565,7 @@ elab "#lens_at_hyp " t:term ex:(lensWith)? hy:(lensHyps)? la:(lensAt)? " => "
 /-- `#lens_at_closes t at ...` — assert the run closes the goal. -/
 elab "#lens_at_closes " t:term ex:(lensWith)? hy:(lensHyps)? la:(lensAt)? : command => do
   withRunAt t ex hy la fun r => do
-    assert r.res.goal?.isNone m!"expected closed goal, landed at: {← landingState r.res.goal?}"
+    assertThat r.res.goal?.isNone m!"expected closed goal, landed at: {← landingState r.res.goal?}"
 
 /-- `#lens_at_defonly t at ... => ["h", "⊢", ...]` — assert exactly which
 locations changed by *definitional reductions only* (location changed, but no
@@ -597,9 +597,9 @@ elab "#lens_at_chain " t:term ex:(lensWith)? hy:(lensHyps)? la:(lensAt)? : comma
   withRunAt t ex hy la fun r => do
     for lf in r.res.films do
       let vs := lf.film.chainViolations
-      assert vs.isEmpty m!"chain violations at {lf.loc.label}: {vs}"
+      assertThat vs.isEmpty m!"chain violations at {lf.loc.label}: {vs}"
       let tvs ← lf.film.typeViolations
-      assert tvs.isEmpty m!"type violations at {lf.loc.label}: {tvs}"
+      assertThat tvs.isEmpty m!"type violations at {lf.loc.label}: {tvs}"
 
 /--
 `#lens_at_equiv t at ...` — THE location equivalence guarantee, asserted three
@@ -633,12 +633,12 @@ elab "#lens_at_equiv " t:term ex:(lensWith)? hy:(lensHyps)? la:(lensAt)? : comma
       | none =>
         -- plain simp made no progress: the traced run must agree, and must
         -- have landed on an unchanged goal
-        assert (!r.res.progress) m!"traced run claims progress but plain simp made none"
+        assertThat (!r.res.progress) m!"traced run claims progress but plain simp made none"
         let unchanged ← landingState (some r.goalBefore)
         assertEq "traced vs unchanged goal state" tracedState unchanged
         pure unchanged
       | some (plainGoal?, plainStats) =>
-        assert r.res.progress m!"plain simp made progress but traced run claims none"
+        assertThat r.res.progress m!"plain simp made progress but traced run claims none"
         let plainState ← landingState plainGoal?
         assertEq "traced vs plain simp goal state" tracedState plainState
         let tracedUsed ← r.res.usedTheorems.toArray.mapM originDisplay
@@ -679,7 +679,7 @@ def checkExclusionAt (r : RunAtResult) (l : Ident)
   let fullLanding ← landingAt r.res.goal? watch?
   let oc ← runExclusionAt r.goalBefore r.ctx r.simprocs none origin fullLanding
     r.simplifyTarget r.fvarIdsToSimp watch?
-  assert (!oc.errored) m!"exclusion re-run errored"
+  assertThat (!oc.errored) m!"exclusion re-run errored"
   k oc lname
 
 /-- `#lens_at_exclude t at ... without L => "landing"` — assert the landing
@@ -759,10 +759,10 @@ elab "#lens_react_contract " t:term ex:(lensWith)? hy:(lensHyps)? : command => d
     let report ← excludeEach r.goalBefore r.ctx r.simprocs none r.res
     let html ← renderPanel r.film suggestion report r.res.diag r.res.goal?.isNone
     let vs := reactContractViolations html
-    assert vs.isEmpty m!"React contract violations in filmstrip panel: {vs}"
+    assertThat vs.isEmpty m!"React contract violations in filmstrip panel: {vs}"
     let fb ← renderPanelFallback r.film.length suggestion report r.res.diag r.res.goal?.isNone
     let fvs := reactContractViolations fb
-    assert fvs.isEmpty m!"React contract violations in fallback panel: {fvs}"
+    assertThat fvs.isEmpty m!"React contract violations in fallback panel: {fvs}"
 
 /--
 `#lens_at_react_contract t at ...` — build the REAL top-level multi-location
@@ -777,14 +777,14 @@ elab "#lens_at_react_contract " t:term ex:(lensWith)? hy:(lensHyps)? la:(lensAt)
       r.simplifyTarget r.fvarIdsToSimp
     let html ← renderPanelAt r.res.films suggestion report r.res.diag r.res.goal?.isNone
     let vs := reactContractViolations html
-    assert vs.isEmpty m!"React contract violations in multi-location panel: {vs}"
+    assertThat vs.isEmpty m!"React contract violations in multi-location panel: {vs}"
     -- Completeness regression: a do-notation `return` in renderPanelAt used to
     -- exit the whole function for location runs, silently dropping the
     -- <details> wrapper, minimal-call row, exclusion previews and diagnostics
     -- (caught by browser-side React verification of the dumped output).
-    assert (match html with | .element "details" _ _ => true | _ => false)
+    assertThat (match html with | .element "details" _ _ => true | _ => false)
       m!"multi-location panel is not the full <details> panel"
-    assert (htmlContainsText "minimal call: " html)
+    assertThat (htmlContainsText "minimal call: " html)
       m!"multi-location panel lost the minimal-call row"
 
 end SimpLensTests

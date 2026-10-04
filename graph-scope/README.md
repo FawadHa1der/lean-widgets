@@ -135,7 +135,7 @@ command time would have to guess the uri from the file name and pin a stale
 (`renderPanelInteractive`), so tests exercise the exact rendered tree —
 including real `MakeEditLink` component props — without a live server.
 
-Tests (`GraphScopeTests/`, `lake test`): 422 compile-time assertion commands
+Tests (`GraphScopeTests/`, `lake test`): 426 compile-time assertion commands
 (counted as line-leading `#guard`, `#guard_msgs`, `#assert_graph_invariants`
 and `#assert_gate` commands) — `#guard` pins on the pure layer (normalization,
 algorithms with programmatically validated bipartition evidence, BFS
@@ -213,9 +213,9 @@ not hold.
 
 ## Build / test
 
-Toolchain `leanprover/lean4:v4.32.2`, Mathlib pinned via the lockfile.
+Toolchain `leanprover/lean4:v4.34.0` (Mathlib `v4.34.0`), pinned via the lockfile; see `PORT-NOTES.md` for the v4.32.2 → v4.34.0 port record.
 
 ```
 lake build   # library + demos
-lake test    # 422 compile-time assertion commands
+lake test    # 426 compile-time assertion commands
 ```

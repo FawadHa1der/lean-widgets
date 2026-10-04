@@ -82,13 +82,15 @@ warning: This simp argument is unused:
   Nat.mul_one
 
 Hint: Omit it from the simp argument list.
-  simp_̵l̵e̵n̵s̵ ̵[̵N̵a̵t̵.̵m̵u̵l̵_̵o̵n̵e̵]̵
+  [apply] simp
 
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
 -/
 #guard_msgs in
 /-- `linter.unusedSimpArgs` parity: a supplied lemma that never fires gets the
-same "This simp argument is unused" warning (with the strike-through hint)
+same "This simp argument is unused" warning (with the `[apply] simp` hint;
+v4.34's linter renders the hint without a diff, so the text is now
+byte-identical to plain `simp`'s)
 that plain `simp` produces. -/
 example (n : Nat) : 0 + n = n := by simp_lens [Nat.mul_one]
 

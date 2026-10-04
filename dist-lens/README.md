@@ -81,7 +81,13 @@ whitelisted shapes: `simp` with the PMF application lemma set
 (`bind_apply`, `map_apply`, `pure_apply`, `bernoulli_apply`,
 `uniformOfFintype_apply`, `uniformOfFinset_apply`, `binomial_apply`,
 `ofFintype_apply`, `tsum_fintype`, `tsum_bool`, `Fin.sum_univ_succ`,
-`Matrix.cons_val*`), then `ennreal_num` closes the ground ℝ≥0∞ residue:
+`Matrix.cons_val*`; since the v4.34.0 port this `simp` step runs under a
+scoped `backward.isDefEq.respectTransparency.types false`, because the
+option's new default — `true` since Lean v4.33.0 — stops
+`uniformOfFinset_apply` from unifying its `hs : s.Nonempty` argument with the
+natural `⟨1, by simp⟩` spelling, whose type `∃ x, x ∈ s` only reaches
+`Finset.Nonempty` by unfolding a `def`), then `ennreal_num` closes the ground
+ℝ≥0∞ residue:
 `done` | `norm_num` | the `ENNReal.toReal_eq_toReal_iff'` + `finiteness`
 bridge into ℝ | the `ENNReal.sub_eq_of_eq_add` branch for `bernoulli`'s
 truncated `1 − p`.  There is **no** ENNReal `norm_num` extension in Mathlib;
@@ -155,11 +161,15 @@ matrix) is reported as `extraction bug!`.
   edit above the command) is therefore rejected by the editor rather than
   applied at drifted offsets — re-elaboration refreshes the panel; the
   suggestion text is always shown and can be copied.
-* **Deprecated upstream API.**  `PMF.bernoulli` and `PMF.binomial` are
-  deprecated at this pin (2026-04-07) in favor of the Measure-valued
-  `ProbabilityTheory.bernoulliMeasure`/`binomial`, which need
+* **Deprecated upstream API.**  `PMF.bernoulli` and `PMF.binomial` (and
+  their `_apply` lemmas) are deprecated at this pin (since 2026-04-07,
+  still present and functional at Mathlib `v4.34.0`) in favor of the
+  Measure-valued `ProbabilityTheory.bernoulliMeasure`/`binomial`
+  (`bernoulliMeasure_apply`, `binomial_real_singleton`), which need
   `MeasurableSet` side goals and a different lemma set — not covered here.
-  Uses need `set_option linter.deprecated false`.
+  Uses need `set_option linter.deprecated false`.  If a later Mathlib removes
+  the `PMF` versions, the two whitelist entries and the two simp-set lemmas
+  go with them; everything else in DistLens is unaffected.
 * **Markov chains are widget-side mathematics.**  Mathlib (at this pin) has
   *no* finite-chain theory: no stationary distributions, no
   Perron–Frobenius, no row-stochastic matrices, and `Kernel` never meets
@@ -184,9 +194,30 @@ matrix) is reported as `extraction bug!`.
   per-outcome weights (and CDF) are the unit of display and verification
   (the `PMF.toOuterMeasure_apply_finset` route exists for future work).
 
+## Versions
+
+Pinned to `leanprover/lean4:v4.34.0` with Mathlib `v4.34.0` (ProofWidgets
+rev `106ff4fa` through Mathlib's manifest; never `lake update`).  Ported from
+the `v4.32.2` original with a single source change (the scoped
+`respectTransparency.types` option inside `pmf_num`, above); the test suite
+is byte-identical to the original and all green.  **Forward risk:** that fix
+relies on a `backward.*` compatibility option (still registered, default
+`true`, at v4.34.1 and v4.35.0-rc3); upstream eventually deletes `backward.*`
+options, and when this one goes `pmf_num` will fail with an unknown-option
+error and need a permanent fix (e.g. a `Finset.Nonempty`-typed proof
+spelling in the emitted suggestion, or a `Nonempty`-unfolding simp lemma).
+See `PORT-NOTES.md`, gotcha 8.  `PORT-NOTES.md` records
+the port, the pin evidence and the assertion census.
+
 ## Tests
 
-`lake test` (driver `DistLensTests`): ~237 pinned assertions — extraction
+`lake test` (driver `DistLensTests`): 345 compile-time assertions (census,
+counting only lines that *start* with the command: 44 `#guard_msgs` blocks
++ 205 `#guard`s + 44 compiled `example`s in `DistLensTests/`, plus the 52
+`check`/`checkEq`/`checkClean`/`checkFails` calls (23 / 8 / 15 / 6) the
+eight `ClickE2E` `#eval` suites run; the 17 `example`s and 12
+panel commands of `DistLens/Demo.lean` elaborate on every `lake build` on
+top of that) — extraction
 `#guard_msgs` pins for every constructor and refusal, pure-math `#guard`s
 (two-dice triangle, `E = 7/2`,`Var = 35/12` pips die, Gaussian elimination
 with hand-computed π, reducible/inconsistent detection), 38 compiled

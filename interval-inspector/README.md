@@ -183,7 +183,10 @@ deterministically testable with `#guard`: same input, same output, byte for byte
   25 negatives (Finset.Icc, Set.range, plain set variables, list membership,
   complements, set-builder disjunctions / wrong-variable comparisons /
   non-comparison bodies / triple conjunctions / `≥` spellings, …) that must
-  return `none`.
+  return `none`, and one positive for the deprecated `setOf` alias spelling
+  (`{x | …}` elaborates to `Set.ofPred` since Mathlib 2026-07-09; `setOf` is a
+  distinct deprecated constant that the recognizer still accepts — the single
+  test that uses it is wrapped in `set_option linter.deprecated false in`).
 - **OrderGraphTests** — direct facts, transitivity with strictness propagation,
   equality merging, literal comparison, unknown pairs, contradiction safety.
 - **LayoutTests** — literal proportionality (exact ℚ positions), rank placement,
@@ -214,7 +217,7 @@ deterministically testable with `#guard`: same input, same output, byte for byte
   statement true/false as claimed); plus pinned generated-condition directions
   for every entry, readiness reporting (ready / missing / transitively-derived /
   literal-derived / strict-vs-nonstrict) and fallback behavior.
-- **CommandTests** — 21 message-exact `#guard_msgs` tests of
+- **CommandTests** — 20 message-exact `#guard_msgs` tests of
   `#interval_inspect (text := true)` (plus four in `Demo.lean`), including
   section-`variable` scenarios (with a section hypothesis feeding readiness) and
   the `∅ ≠ s` mirror spelling, and substring tests of the assembled panel HTML
@@ -231,10 +234,15 @@ deterministically testable with `#guard`: same input, same output, byte for byte
   unsolved-goals report (that is the designed contract — the badges warned
   you); corrupted-payload negatives must fail.
 
-528 `#guard`s, 141 `#assert_*` command assertions, 25 `#guard_msgs`,
-97 lemma-verifying `example`s, 3 throwing checks in the shadowed-binder
-`run_cmd` repro, and the ClickE2E click-simulation checks — 810+ assertions
-in total.
+Assertion census (count of lines beginning with a compile-time assertion
+command across `IntervalInspector/` and `IntervalInspectorTests/`:
+`grep -rhoE '^\s*(#guard_msgs|#guard|#assert_[a-z_]+|example)\b' … | sort | uniq -c`):
+552 `#guard`s, 162 `#assert_*` command assertions (16 kinds), 24 `#guard_msgs`
+(20 in `CommandTests`, 4 in `Demo.lean`), 108 `example`s (97 lemma-verifying
+ones in the test modules, 10 in `Demo.lean`, 1 in `ClickE2E`) — 846 counted
+assertion commands (845 on the v4.32.2 reference; the one addition is the
+`setOf` alias test above), plus the 3 throwing checks in the shadowed-binder
+`run_cmd` repro and the internal checks of the 16 ClickE2E click simulations.
 
 ## Limitations (honest)
 
@@ -294,6 +302,14 @@ in total.
 
 ## Toolchain
 
-Pinned: `leanprover/lean4:v4.32.2`, Mathlib `v4.32.2`, ProofWidgets (as resolved in
+Pinned: `leanprover/lean4:v4.34.0`, Mathlib `v4.34.0` (rev `5ed29652`),
+ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` (as resolved in
 `lake-manifest.json`). Never run `lake update`; fetch Mathlib oleans with
 `lake exe cache get`.
+
+Ported from the v4.32.2 pairing (see `PORT-NOTES.md` for the complete diff):
+the real-number import is now `Mathlib.Basic.Real.Basic`
+(`Mathlib.Data.Real.Basic` is a `deprecated_module` shim since 2026-08-27),
+set-builder notation is recognized as `Set.ofPred` (with the deprecated `setOf`
+alias still accepted), and `ClickE2E`'s `enableInitializersExecution` shim is
+typed `BaseIO Unit` to match core. No `#guard_msgs` pin changed.

@@ -6,7 +6,7 @@ testDriver = "SimpLensTests"
 [[require]]
 name = "proofwidgets"
 git = "https://github.com/leanprover-community/ProofWidgets4"
-rev = "6e311e2a844da9b2cc3971187df2fe0066947b93"
+rev = "106ff4fafc74ef4ac99d81dbf3ab399118f497a5"
 
 [[lean_lib]]
 name = "SimpLens"

@@ -1,4 +1,11 @@
 import GraphScopeTests.Helpers
+-- v4.34.0: core, Mathlib and ProofWidgets are `module` files now, so a
+-- non-`module` file like this one only sees their *public* import closure, and
+-- the `backward.isDefEq.*` option constants (declared in
+-- `Lean.Meta.ExprDefEq`) are not reachable through the Mathlib path.  The
+-- transparency-default pin at the end of this file needs them, hence the
+-- explicit import (test-only; the library itself does not need it).
+import Lean.Meta.ExprDefEq
 
 /-! # Click-to-insert tests
 
@@ -147,7 +154,9 @@ def testDocMeta : Lean.Server.DocumentMeta where
   uri := "file:///GraphScopeTests.lean"
   mod := `GraphScopeTests
   version := 7
-  text := "".toFileMap
+  -- v4.34.0: `String.toFileMap` moved into the `Lean` namespace
+  -- (`Lean.String.toFileMap`, a wrapper over `Lean.FileMap.ofString`).
+  text := Lean.FileMap.ofString ""
   dependencyBuildMode := default
 
 /-- A zero-width insertion range like the command's (line 3, end of command). -/
@@ -421,5 +430,40 @@ example : (completeGraph (Fin 16)).Connected := by decide
 -- pinned above, and both claims must compile as offered.
 example : (cycleGraph 6).Connected := by decide
 example : ¬ (twoTriangles).Connected := by decide
+
+/-! ## Toolchain transparency defaults (v4.34.0 port)
+
+Between v4.32.2 and v4.34.0 the core option
+`backward.isDefEq.respectTransparency.types` flipped its default from `false`
+to `true` (`backward.isDefEq.respectTransparency` itself was already `true`),
+so `isDefEq` no longer bumps transparency to `.default` when matching a
+metavariable's type against the assigned term.  The inserted examples lean on
+`by decide` through `GraphScope.Demo`'s `decidable_of_iff` instances for
+`pathGraph` and `completeBipartiteGraph`, which is exactly the kind of
+instance-unfolding that stricter transparency can break — so the pins below
+require those examples to decide under the toolchain's **default** options (no
+`set_option … respectTransparency … false` escape hatch anywhere in this
+package), and pin the default itself so a silent flip in either direction is
+caught here rather than in a user's file. -/
+
+-- The stricter default really is what this toolchain ships.
+open Lean in
+/-- info: true -/
+#guard_msgs in
+#eval show CoreM Bool from
+  return Meta.backward.isDefEq.respectTransparency.types.get (← getOptions)
+
+-- `pathGraph` (`hasse (Fin n)` via `decidable_of_iff _ pathGraph_adj.symm`).
+#guard_msgs in
+example : (pathGraph 5).Adj 3 4 := by decide
+#guard_msgs in
+example : (pathGraph 5).degree 2 = 2 := by decide
+
+-- `completeBipartiteGraph` (`decidable_of_iff` over `Sum.isLeft`/`isRight`),
+-- whose vertex terms are the `Repr`-derived `Sum.inl`/`Sum.inr` labels.
+#guard_msgs in
+example : (completeBipartiteGraph (Fin 2) (Fin 3)).Adj (Sum.inl 0) (Sum.inr 2) := by decide
+#guard_msgs in
+example : (completeBipartiteGraph (Fin 2) (Fin 3)).degree (Sum.inl 0) = 3 := by decide
 
 end GraphScopeTests

@@ -35,9 +35,11 @@ open Lean Elab ProofWidgets IntervalInspector
 /-- `Lean.enableInitializersExecution` is `unsafe`, but it only flips the
 process-global initializers flag; core itself re-enables it mid-process in
 `runFrontend`'s incremental-load path.  Nested `importModules (loadExts := true)`
-(here: importing the user file's header) requires it. -/
+(here: importing the user file's header) requires it.  Since Lean v4.34 the core
+function lives in `BaseIO` (it cannot fail), and `implemented_by` requires the
+types to agree exactly. -/
 @[implemented_by Lean.enableInitializersExecution]
-opaque enableInitializersExecutionSafe : IO Unit
+opaque enableInitializersExecutionSafe : BaseIO Unit
 
 /-! ## UTF-16-correct edit application -/
 
@@ -358,14 +360,14 @@ and E1 places `ℝ ≤ ⊆ ∅ — 😀 ⟨⟩` (3- and 4-byte UTF-8, incl. a su
 emoji) *before* the tactic call, both on earlier lines and **on the same line**:
 a byte- or codepoint-offset bug shifts the edit into the middle of the comment. -/
 
-def userHeader : String := "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\n"
+def userHeader : String := "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\n"
 
 /-! ### E1 — `exact` suggestion, unicode-heavy file (kind: cross-kind inclusion) -/
 
 #assert_click_file clickS1 "Set.Ioo_subset_Icc_self"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickS1 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickS1 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ interval_inspect?\n"
   =>
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickS1 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ exact Set.Ioo_subset_Icc_self\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickS1 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ exact Set.Ioo_subset_Icc_self\n"
   "5:100"
 
 /-! ### E2 — the motivating union join, ALL-READY: hypotheses make both side
@@ -374,7 +376,7 @@ pinned exactly, hypotheses visible in context.  The badges showed `a ≤ b ✓ r
 `b ≤ c ✓ ready`; the user closes the two goals with `exact h₁`/`exact h₂`. -/
 
 #assert_click_goals clickS2 "Set.Ioc_union_Ioc_eq_Ioc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS2 {a b c : ℝ} (h₁ : a ≤ b) (h₂ : b ≤ c) :\n    Set.Ioc a b ∪ Set.Ioc b c = Set.Ioc a c := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS2 {a b c : ℝ} (h₁ : a ≤ b) (h₂ : b ≤ c) :\n    Set.Ioc a b ∪ Set.Ioc b c = Set.Ioc a c := by\n  interval_inspect?\n"
   =>
   "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
   "5:47 unsolved goals\ncase refine_1\na b c : ℝ\nh₁ : a ≤ b\nh₂ : b ≤ c\n⊢ a ≤ b\n\ncase refine_2\na b c : ℝ\nh₁ : a ≤ b\nh₂ : b ≤ c\n⊢ b ≤ c"
@@ -393,7 +395,7 @@ identical insertion, and the leftover goals are exactly the conditions the badge
 flagged `✗ missing`. -/
 
 #assert_click_goals clickS3 "Set.Ioc_union_Ioc_eq_Ioc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS3 {a b c : ℝ} : Set.Ioc a b ∪ Set.Ioc b c = Set.Ioc a c := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS3 {a b c : ℝ} : Set.Ioc a b ∪ Set.Ioc b c = Set.Ioc a c := by\n  interval_inspect?\n"
   =>
   "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
   "4:73 unsolved goals\ncase refine_1\na b c : ℝ\n⊢ a ≤ b\n\ncase refine_2\na b c : ℝ\n⊢ b ≤ c"
@@ -403,7 +405,7 @@ flagged `✗ missing`. -/
 text itself contains multibyte `⟨⟩`, exercising the UTF-16 cursor advance). -/
 
 #assert_click_goals clickS4 "Set.mem_Ioc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS4 {x a b : ℝ} (h₁ : a < x) (h₂ : x ≤ b) : x ∈ Set.Ioc a b := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS4 {x a b : ℝ} (h₁ : a < x) (h₂ : x ≤ b) : x ∈ Set.Ioc a b := by\n  interval_inspect?\n"
   =>
   "refine Set.mem_Ioc.mpr ⟨?_, ?_⟩"
   "4:75 unsolved goals\ncase refine_1\nx a b : ℝ\nh₁ : a < x\nh₂ : x ≤ b\n⊢ a < x\n\ncase refine_2\nx a b : ℝ\nh₁ : a < x\nh₂ : x ≤ b\n⊢ x ≤ b"
@@ -412,7 +414,7 @@ text itself contains multibyte `⟨⟩`, exercising the UTF-16 cursor advance). 
 /-! ### E5 — whole-line cover, `exact` with no side conditions: goal closed. -/
 
 #assert_click_closes clickS5 "Set.Iic_union_Ici"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS5 (c : ℝ) : Set.Iic c ∪ Set.Ici c = Set.univ := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS5 (c : ℝ) : Set.Iic c ∪ Set.Ici c = Set.univ := by\n  interval_inspect?\n"
   =>
   "exact Set.Iic_union_Ici"
   "4:25"
@@ -421,7 +423,7 @@ text itself contains multibyte `⟨⟩`, exercising the UTF-16 cursor advance). 
 closes the goal when the target is stated in `⊔`/`⊓` form. -/
 
 #assert_click_closes clickS6 "Set.Ioc_inter_Ioc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS6 {a b c d : ℝ} :\n    Set.Ioc a b ∩ Set.Ioc c d = Set.Ioc (a ⊔ c) (b ⊓ d) := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS6 {a b c d : ℝ} :\n    Set.Ioc a b ∩ Set.Ioc c d = Set.Ioc (a ⊔ c) (b ⊓ d) := by\n  interval_inspect?\n"
   =>
   "rw [Set.Ioc_inter_Ioc]"
   "5:24"
@@ -430,7 +432,7 @@ closes the goal when the target is stated in `⊔`/`⊓` form. -/
 (parenthesized composite; single leftover goal, no case label). -/
 
 #assert_click_goals clickS7 "Set.Nonempty.ne_empty"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS7 {a b : ℝ} (h : a ≤ b) : Set.Icc a b ≠ ∅ := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS7 {a b : ℝ} (h : a ≤ b) : Set.Icc a b ≠ ∅ := by\n  interval_inspect?\n"
   =>
   "refine (Set.nonempty_Icc.mpr ?_).ne_empty"
   "4:59 unsolved goals\na b : ℝ\nh : a ≤ b\n⊢ a ≤ b"
@@ -443,7 +445,7 @@ in the edited file when `constructor` happens to produce a single goal (warning
 only — the file compiles and the proof is closed). -/
 
 #assert_click_closes clickS8 "(fallback)"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS8 {x a b c : ℝ} (h₁ : a ≤ x) (h₂ : x ≤ b) :\n    x ∈ Set.Icc a b ∪ Set.Ioc b c := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS8 {x a b c : ℝ} (h₁ : a ≤ x) (h₂ : x ≤ b) :\n    x ∈ Set.Icc a b ∪ Set.Ioc b c := by\n  interval_inspect?\n"
   =>
   "constructor <;> simp_all"
   "5:26"
@@ -451,7 +453,7 @@ only — the file compiles and the proof is closed). -/
 /-! ### E9 — reversed emptiness `∅ = Icc a b`: the `.symm`-wrapped composite. -/
 
 #assert_click_goals clickS9 "Eq.symm"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS9 {a b : ℝ} (h : b < a) : (∅ : Set ℝ) = Set.Icc a b := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS9 {a b : ℝ} (h : b < a) : (∅ : Set ℝ) = Set.Icc a b := by\n  interval_inspect?\n"
   =>
   "refine (Set.Icc_eq_empty (not_le.mpr ?_)).symm"
   "4:69 unsolved goals\na b : ℝ\nh : b < a\n⊢ b < a"
@@ -462,14 +464,14 @@ direct and the `_iff` emptiness entries): clicking each one produces its own
 insertion, same leftover goal. -/
 
 #assert_click_goals clickS10 "Set.Ioc_eq_empty"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS10 {a b : ℝ} (h : b ≤ a) : Set.Ioc a b = ∅ := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS10 {a b : ℝ} (h : b ≤ a) : Set.Ioc a b = ∅ := by\n  interval_inspect?\n"
   =>
   "refine Set.Ioc_eq_empty (not_lt.mpr ?_)"
   "4:60 unsolved goals\na b : ℝ\nh : b ≤ a\n⊢ b ≤ a"
   "4:41"
 
 #assert_click_goals clickS10 "Set.Ioc_eq_empty_iff"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS10 {a b : ℝ} (h : b ≤ a) : Set.Ioc a b = ∅ := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS10 {a b : ℝ} (h : b ≤ a) : Set.Ioc a b = ∅ := by\n  interval_inspect?\n"
   =>
   "refine Set.Ioc_eq_empty_iff.mpr (not_lt.mpr ?_)"
   "4:60 unsolved goals\na b : ℝ\nh : b ≤ a\n⊢ b ≤ a"
@@ -480,7 +482,7 @@ two endpoint side conditions, both ready from hypotheses; the leftover goals are
 exactly the monotonicity conditions the badges displayed. -/
 
 #assert_click_goals clickS11 "Set.Icc_subset_Icc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS11 {a b c d : ℝ} (h₁ : c ≤ a) (h₂ : b ≤ d) :\n    Set.Icc a b ⊆ Set.Icc c d := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS11 {a b c d : ℝ} (h₁ : c ≤ a) (h₂ : b ≤ d) :\n    Set.Icc a b ⊆ Set.Icc c d := by\n  interval_inspect?\n"
   =>
   "refine Set.Icc_subset_Icc ?_ ?_"
   "5:33 unsolved goals\ncase refine_1\na b c d : ℝ\nh₁ : c ≤ a\nh₂ : b ≤ d\n⊢ c ≤ a\n\ncase refine_2\na b c d : ℝ\nh₁ : c ≤ a\nh₂ : b ≤ d\n⊢ b ≤ d"
@@ -490,7 +492,7 @@ exactly the monotonicity conditions the badges displayed. -/
 leftover goal, no case label. -/
 
 #assert_click_goals clickS12 "Set.mem_Ici"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS12 {x a : ℝ} (h : a ≤ x) : x ∈ Set.Ici a := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS12 {x a : ℝ} (h : a ≤ x) : x ∈ Set.Ici a := by\n  interval_inspect?\n"
   =>
   "refine Set.mem_Ici.mpr ?_"
   "4:58 unsolved goals\nx a : ℝ\nh : a ≤ x\n⊢ a ≤ x"
@@ -500,7 +502,7 @@ leftover goal, no case label. -/
 is the endpoint order condition. -/
 
 #assert_click_goals clickS13 "Set.nonempty_Icc"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickS13 {a b : ℝ} (h : a ≤ b) : (Set.Icc a b).Nonempty := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickS13 {a b : ℝ} (h : a ≤ b) : (Set.Icc a b).Nonempty := by\n  interval_inspect?\n"
   =>
   "refine Set.nonempty_Icc.mpr ?_"
   "4:67 unsolved goals\na b : ℝ\nh : a ≤ b\n⊢ a ≤ b"
@@ -510,11 +512,11 @@ is the endpoint order condition. -/
 
 -- Misspelled tactic text (exact → exagt) must not compile.
 #assert_click_broken "corrupt-newtext" "Set.Iic_union_Ici"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\ntheorem clickN1 (c : ℝ) : Set.Iic c ∪ Set.Ici c = Set.univ := by\n  interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\ntheorem clickN1 (c : ℝ) : Set.Iic c ∪ Set.Ici c = Set.univ := by\n  interval_inspect?\n"
 
 -- Replace range shifted one UTF-16 unit right — on the unicode-ballast file — must
 -- not compile (the stray `i` of `interval_inspect?` survives in front of the edit).
 #assert_click_broken "shift-range" "Set.Ioo_subset_Icc_self"
-  "import IntervalInspector\nimport Mathlib.Data.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickN2 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ interval_inspect?\n"
+  "import IntervalInspector\nimport Mathlib.Basic.Real.Basic\n\n/-! ℝ≤⊆∅ unicode ballast — 😀 emoji and ⟨brackets⟩ before the theorem. -/\n\ntheorem clickN2 {a b : ℝ} : Set.Ioo a b ⊆ Set.Icc a b := by /- 😀ℝ≤ -/ interval_inspect?\n"
 
 end IntervalInspectorTests.ClickE2E

@@ -1,11 +1,17 @@
-# Lean InfoView Widgets — Implementations
+# Lean InfoView Widgets — Implementations (Lean v4.34.0 port)
+
+> This tree is the **v4.34.0 / Mathlib v4.34.0 port** of [`../widgets/`](../widgets/README.md)
+> (the v4.32.2 original, kept untouched). It exists so the suite can be baked into
+> [QED64](../06-qed64-showcase-options.md), which pairs its snapshots to Lean 4.34.0 +
+> Mathlib `5ed2965`. Every package carries a `PORT-NOTES.md` listing exactly what changed
+> and why; see [Port summary](#port-summary-v4322--v4340) below.
 
 Eight production-quality InfoView widget packages: the top-3 recommendations from the
 [visualization research](../02-proposals-ranked.md), a proof-state-integrated
 graph visualizer, a universal tree/heap visualizer, and the three
 [next-frontier builds](../04-next-frontiers.md): Hasse diagrams, exact
 probability distributions, and verified charting primitives. Every package is a self-contained Lake project on
-**Lean `v4.32.2`**, builds green, and ships an adversarially-audited compile-time
+**Lean `v4.34.0`**, builds green, and ships an adversarially-audited compile-time
 test suite (`lake test`) — including mutation testing (deliberate logic mutations
 must break the suite).
 
@@ -52,8 +58,9 @@ name = "interval-inspector"   # or any of the eight packages
 path = "path/to/the/package"
 ```
 
-All eight pin `leanprover/lean4:v4.32.2` (the ProofWidgets rev matches Mathlib
-v4.32.2's manifest, so mixing with Mathlib v4.32.2 projects is safe).
+All eight pin `leanprover/lean4:v4.34.0`, Mathlib `v4.34.0` (rev `5ed2965`) and
+ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` (the rev in Mathlib v4.34.0's
+manifest, so mixing with Mathlib v4.34.0 projects is safe).
 
 ## How these were built and verified
 
@@ -99,3 +106,41 @@ push — the site only deploys from a fully green suite.
 Each package README documents its architecture and an honest LIMITATIONS section
 (e.g. the live panel round-trip needs a running Lean server and was verified
 headlessly at the HTML-assembly level, not by driving VS Code).
+
+
+## Port summary (v4.32.2 → v4.34.0)
+
+Ported package by package by parallel agents, each port adversarially audited (pin
+check, assertion census, two mandatory mutations, re-execution of every claimed
+transcript). Assertion counts are preserved or grown; no test was weakened. (Counts are the
+line-anchored census each package's README now states; the audit follow-up found two
+historic over-counts, tree-scope 478→476 and dist-lens 346→345, identical on both trees.)
+
+| Package | Lean source changes | Assertions (4.32.2 → 4.34.0) |
+|---------|--------------------|-----------------------------:|
+| `expr-xray` | none (one docstring) | 456 → 456 |
+| `chart-kit` | none (one module docstring) | 261 → 261 |
+| `tree-scope` | none (byte-identical sources) | 476 → 476 |
+| `hasse-view` | none | 463 → 463 |
+| `simp-lens` | test helper renamed `assert` → `assertThat` (gotcha 7); two `#guard_msgs` pins follow the new `unusedSimpArgs` hint format | 404 → 404 |
+| `interval-inspector` | `Mathlib.Data.Real.Basic` → `Mathlib.Basic.Real.Basic`; set-builder recognizer accepts `Set.ofPred` as well as the deprecated `setOf`; click-E2E uses `enableInitializersExecution : BaseIO Unit` | 845 → 846 |
+| `graph-scope` | tests only: `import Lean.Meta.ExprDefEq`, `Lean.FileMap.ofString`, a new section pinning the flipped `backward.isDefEq.respectTransparency.types` default | 421 → 426 |
+| `dist-lens` | `pmf_num`'s internal `simp` runs under `backward.isDefEq.respectTransparency.types false` (the 4.34 default breaks the fraction normalisation) | 345 → 345 |
+
+**4.34.0 gotchas worth knowing** (each one cost a port iteration):
+
+1. `setOf` is now a deprecated alias of `Set.ofPred` — a *distinct constant*, so
+   `Expr.isAppOfArity` matchers must accept both.
+2. `Mathlib.Data.Real.Basic` moved to `Mathlib.Basic.Real.Basic` (the old name is a
+   `deprecated_module` shim that warns).
+3. `Lean.Elab.enableInitializersExecution` is now `BaseIO Unit` (was `IO Unit`).
+4. `String.toFileMap` is gone: use `Lean.FileMap.ofString`.
+5. `backward.isDefEq.respectTransparency.types` defaults to **true**; tactics that
+   relied on `isDefEq` unfolding through type-level definitions (here: `pmf_num`'s
+   `simp` over `PMF` coercions) need the option set to `false` locally.
+6. The `unusedSimpArgs` linter hint is now `[apply] simp` text instead of a
+   strike-through diff, so any `#guard_msgs` pinning it must change.
+7. A do-block line starting with the identifier `assert` now parses as core's new
+   `doAssertion` element (experimental intrinsic verification), so a test helper
+   named `assert` fails with "Function expected" plus a `WPMonad` instance error.
+   Rename such helpers (`assert!` is unaffected).

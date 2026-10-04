@@ -1,7 +1,7 @@
 import IntervalInspectorTests.Helpers
 import Mathlib.Order.Interval.Set.Basic
 import Mathlib.Order.Interval.Set.LinearOrder
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 
 /-! # Suggestion-engine tests
 

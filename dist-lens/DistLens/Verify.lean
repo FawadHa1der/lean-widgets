@@ -88,14 +88,28 @@ macro_rules
     -- deprecated at this pin; without the scoped option every `by pmf_num`
     -- inserted into a user file would emit deprecation warnings even for
     -- non-deprecated distributions.
+    --
+    -- `backward.isDefEq.respectTransparency.types` defaults to `true` since
+    -- Lean v4.33.0 (`false` at v4.32.2, the pin this package was written
+    -- against; see `register_builtin_option` in `Lean/Meta/ExprDefEq.lean`):
+    -- when `simp` assigns the `hs : s.Nonempty` metavariable of
+    -- `uniformOfFinset_apply`, the type of the user's proof term is now
+    -- compared at implicit transparency, and the natural spelling
+    -- `⟨1, by simp⟩` elaborates to an `Exists.intro` whose type `∃ x, x ∈ s`
+    -- only reaches `Finset.Nonempty s` by unfolding a semireducible `def`.
+    -- Without the scoped option the lemma silently fails to fire and
+    -- `pmf_num` refuses a true claim.  The option is scoped to the `simp`
+    -- step only (the recipe is unchanged; the ℝ≥0∞ residue is closed exactly
+    -- as before).
     `(tactic|
       set_option linter.deprecated false in
-      ((try simp [PMF.bind_apply, PMF.map_apply, PMF.pure_apply,
-          PMF.bernoulli_apply, PMF.uniformOfFintype_apply,
-          PMF.uniformOfFinset_apply, PMF.binomial_apply, PMF.ofFintype_apply,
-          tsum_fintype, tsum_bool, Fin.sum_univ_succ,
-          Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
-          Fin.isValue]) <;>
+      ((try (set_option backward.isDefEq.respectTransparency.types false in
+          simp [PMF.bind_apply, PMF.map_apply, PMF.pure_apply,
+            PMF.bernoulli_apply, PMF.uniformOfFintype_apply,
+            PMF.uniformOfFinset_apply, PMF.binomial_apply, PMF.ofFintype_apply,
+            tsum_fintype, tsum_bool, Fin.sum_univ_succ,
+            Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+            Fin.isValue])) <;>
        ennreal_num))
 
 end DistLens

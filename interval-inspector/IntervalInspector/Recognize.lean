@@ -175,13 +175,19 @@ def setBuilderBound? (x : Expr) (cmp : Expr) : Option (Bool × Bool × Expr) := 
     return (true, closed, lhs)   -- `a ≤ x`: lower bound
   else none
 
+/-- Is `e` a set-builder application `{x | …}`?  Since Mathlib 2026-07-09 the
+notation elaborates to `Set.ofPred fun x => …`; `setOf` survives only as a deprecated
+alias (a distinct constant), so terms built from older sources are matched too. -/
+def isSetBuilderApp (e : Expr) : Bool :=
+  e.isAppOfArity ``Set.ofPred 2 || e.isAppOfArity `setOf 2
+
 /-- Recognize a set-builder interval spelling `{x | …}` (elaborated as
-`setOf fun x => …`): the eight one- and two-sided `≤`/`<` bound combinations, with
+`Set.ofPred fun x => …`): the eight one- and two-sided `≤`/`<` bound combinations, with
 two-sided conjuncts accepted in either order.  The resulting leaf is marked
 `fromSetBuilder`.  Anything else — disjunctions, bodies not comparing the binder,
 triple conjunctions, bounds mentioning the binder — returns `none`. -/
 def recognizeSetBuilder? (e : Expr) : RecognizeM (Option Leaf) := do
-  unless e.isAppOfArity ``setOf 2 do return none
+  unless isSetBuilderApp e do return none
   let pred := (e.getArg! 1).consumeMData
   unless pred.isLambda do return none
   lambdaTelescope pred fun xs body => do
@@ -246,7 +252,7 @@ def recognizeLeaf? (e : Expr) : RecognizeM (Option Leaf) := do
       let a ← mkEndpoint (e.getArg! 3)
       return some { kind := .singleton, lo? := some a, hi? := some a }
     else return none
-  else if e.isAppOfArity ``setOf 2 then
+  else if isSetBuilderApp e then
     recognizeSetBuilder? e
   else
     return none

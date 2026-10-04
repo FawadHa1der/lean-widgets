@@ -37,7 +37,7 @@ from the `#hasse` command, verbatim.
 
 ## The `⋖` decidability instance
 
-Mathlib (v4.32.2 pin) only makes `· ⋖ ·` decidable for `Bool`;
+Mathlib (v4.34.0 pin) only makes `· ⋖ ·` decidable for `Bool`;
 `CovBy` is a plain (non-reducible) def, so `by decide` cannot see through it
 without help.  `instDecidableRelCovByOfFintype` below makes `a ⋖ b`
 decidable for every finite preorder with decidable `≤` — this is what lets

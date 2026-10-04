@@ -1,6 +1,6 @@
 import IntervalInspector.Widget
 import IntervalInspectorTests.Helpers
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 
 /-! # `#interval_inspect` text-mode tests
 

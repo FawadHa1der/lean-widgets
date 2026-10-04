@@ -2,8 +2,9 @@ import ChartKit.Model
 
 /-! # ChartKit: exact `Float → ℚ` conversion
 
-Core v4.32.2 has no ready-made exact `Float → Rat` (there is no
-`Float.toRatParts`; `Float.frExp` returns the mantissa as another `Float`).
+Core Lean (checked on v4.32.2 and v4.34.0) has no ready-made exact
+`Float → Rat` (there is no `Float.toRatParts`; `Float.frExp` returns the
+mantissa as another `Float`).
 But `Float.toBits : Float → UInt64` is a **bit-for-bit** view of the IEEE 754
 double, and every finite double is by definition an exact rational
 `±(2^52 + mantissa) · 2^(exponent - 1075)` (or `±mantissa · 2^-1074` for

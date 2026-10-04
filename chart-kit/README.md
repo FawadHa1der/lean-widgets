@@ -22,8 +22,11 @@ IEEE 754 doubles **bit-for-bit** into their exact rational values (`0.1`
 becomes `3602879701896397/36028797018963968`, because that is what the double
 actually is) and honestly refuses NaN/±∞.
 
-Built and tested against toolchain `leanprover/lean4:v4.32.2` and
-ProofWidgets4 `6e311e2` (pinned in `lake-manifest.json`).
+Built and tested against toolchain `leanprover/lean4:v4.34.0` and
+ProofWidgets4 `106ff4f` (pinned in `lake-manifest.json`). This is the QED64
+pairing; the original v4.32.2 / ProofWidgets4 `6e311e2` build is preserved in
+the sibling `widgets/chart-kit` tree, and the port required no Lean code changes (one module docstring in `FloatBridge.lean` was updated for accuracy)
+(see `PORT-NOTES.md`).
 
 ## Usage
 
@@ -165,8 +168,15 @@ Renderer invariants worth knowing:
 
 ## Tests
 
-`lake test` (or `lake build ChartKitTests`) — 230 `#guard` pins plus 18
+`lake test` (or `lake build ChartKitTests`) — 236 `#guard` pins plus 18
 message-exact `#guard_msgs` pins in the test library, all compile-time: the
 suite passing *is* the build succeeding. The main library additionally
 elaborates all six demo panels on every build, with 6 more `#guard`s of demo
-data and 1 pinned demo text report (255 assertions in total).
+data and 1 pinned demo text report (261 assertions in total).
+
+Census method: count `#guard` directives at the start of a line in
+`ChartKitTests.lean` + `ChartKitTests/*.lean` (236) and in `ChartKit/Demo.lean`
+(6), plus `#guard_msgs in` directives in the same files (18 + 1). Docstring
+mentions of the directives are not counted. (Earlier revisions of this README
+said 230 / 255; that was an undercount of the same suite, not a change in
+the tests.)

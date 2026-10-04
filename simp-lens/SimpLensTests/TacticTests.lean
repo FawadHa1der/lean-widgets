@@ -63,21 +63,21 @@ warning: This simp argument is unused:
   Nat.mul_one
 
 Hint: Omit it from the simp argument list.
-  simp_̵l̵e̵n̵s̵ ̵[̵N̵a̵t̵.̵m̵u̵l̵_̵o̵n̵e̵]̵
+  [apply] simp
 
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
 -/
 #guard_msgs in
 example (n : Nat) : 0 + n = n := by simp_lens [Nat.mul_one]
 
--- the plain `simp` twin of the linter warning above (byte-identical modulo
--- the struck-through call text)
+-- the plain `simp` twin of the linter warning above (byte-identical on 4.34.0;
+-- on 4.32.2 the two differed only in the linter's struck-through call text)
 /--
 warning: This simp argument is unused:
   Nat.mul_one
 
 Hint: Omit it from the simp argument list.
-  simp ̵[̵N̵a̵t̵.̵m̵u̵l̵_̵o̵n̵e̵]̵
+  [apply] simp
 
 Note: This linter can be disabled with `set_option linter.unusedSimpArgs false`
 -/

@@ -1,5 +1,5 @@
 import IntervalInspector.Widget
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 import Mathlib.Order.Interval.Set.LinearOrder
 
 /-! # Interval Inspector: demos

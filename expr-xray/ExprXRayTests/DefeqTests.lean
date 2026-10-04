@@ -7,7 +7,7 @@ import ExprXRayTests.TestUtil
 default-only, not-defeq, check-failed), the defeq-first re-ranking, the
 pinned all-defeq summary wording, purity (no metavariable-state leaks),
 and the compare-mode badges. All defeq verdicts below were discovered by
-experiment on this toolchain (v4.32.2) and are pinned as ground truth. -/
+experiment on the v4.32.2 toolchain, re-verified unchanged on v4.34.0, and are pinned as ground truth. -/
 
 namespace ExprXRayTests.DefeqTests
 

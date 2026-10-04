@@ -6,7 +6,7 @@ testDriver = "HasseViewTests"
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
-rev = "v4.32.2"
+rev = "v4.34.0"
 
 [[lean_lib]]
 name = "HasseView"

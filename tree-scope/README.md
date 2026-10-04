@@ -25,8 +25,9 @@ info: tree: 3 nodes, depth 2
 invariants ok
 ```
 
-Built against `leanprover/lean4:v4.32.2` + Mathlib `v4.32.2` +
-ProofWidgets (pure-Lean `Html` DSL only, no npm build).
+Built against `leanprover/lean4:v4.34.0` + Mathlib `v4.34.0` +
+ProofWidgets (pure-Lean `Html` DSL only, no npm build).  Ported unchanged from
+the v4.32.2 build; see `PORT-NOTES.md` for the verification and 4.34 notes.
 
 ## Stage 2: semantic dispatch
 
@@ -224,11 +225,22 @@ contract, while the gallery must be byte-for-byte deterministic.
 * **Grid width bound is honest but soft:** a single tree wider than
   `maxRowWidth` gets its own row and the grid reports the true (larger)
   width.
+* **`Lean.RBMap` is a deprecated module in Lean v4.34.0** (`deprecated_module`,
+  since 2026-06-01; successor `Std.TreeMap`, whose instance is also shipped).
+  The `RBNode`/`RBMap` instances still work because this package reaches the
+  module through `import Lean`; a consumer importing `Lean.Data.RBMap`
+  *directly* gets a deprecation warning unless the import carries a trailing
+  `-- deprecated_module: ignore` comment.  Expect the instance to be retired
+  when upstream drops the module.
 
 ## Tests
 
-`lake test` builds `TreeScopeTests`: ~460 compile-time assertions
-(`#guard` / message-exact `#guard_msgs`).  Stage 1: model measures and ASCII
+`lake test` builds `TreeScopeTests`: 476 compile-time assertions
+(404 `#guard` + 72 message-exact `#guard_msgs`, counting only lines that
+*start* with the command — two module docstrings also mention `#guard_msgs`
+and are not assertions).  `TreeScope/Demo.lean` holds
+no pins; its `#tree_scope` / `#tree_evolve` / `#html` demos only have to
+elaborate under `lake build`.  Stage 1: model measures and ASCII
 pins, the four layout properties (+ row alignment and bounds containment)
 over 12 crafted trees, pinned exact coordinates, tone→color table pins, SVG
 substring assertions, grid packing pins, reflection shape pins (incl. Float
