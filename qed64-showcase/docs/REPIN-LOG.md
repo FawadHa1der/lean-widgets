@@ -845,7 +845,19 @@ all verified against the locks. Logs: `$W/logs/r2/`.
   the host browser lock: `r2-clone-full1`, 19:05–19:52Z, browser from 19:28:55Z. It was a **VERDICT**: 33 passed, 1
   skipped (C19), 0 unexpected, the served gallery equal to the local one from start to end, pin `33b0967`
   (`clone-ux-full1.log`, `clone-ux-full1.record.json`). The image-equivalent commit then changed every lock again, so
-  the main checkout's verdict on the final lock is `r2-main-full1` (below).
+  the main checkout ran the suite on the final lock `190f09de…` and gallery `3b4dc8bb…`:
+  * `r2-main-full1` (browser 20:09–20:31Z) was red: 32 passed, 1 skipped, **1 failed (C10)**. The renderer crashed
+    during the reload storm (`tests/C10.s14.console.jsonl`: `{"kind":"crash","t":10403}`, renderers 0). That was about
+    1 s after QED64 logged `[qed64] starting Lean` following the second reload, at 3003 ms. Playwright then failed the
+    next `page.reload` ("Target page, context or browser has been closed"). The timing fits L9 V2, a crash about 2 s
+    after reloads 2–4; that is an inference, since the crash reason is not captured. It is the first renderer crash in
+    C10 on pin E, after 0 in 6 earlier E runs (including the clone's). QED64 reports #55 as the V2 fix (README "L9"), so
+    this is evidence for the upstream report, not a defect of this lane: the served bytes were the same verified files.
+    Tool gap found: the run's `tests/C10.json` records `"crashed": false`, because the spec threw before recording the
+    crash, so `scripts/ux-tally.mjs` counts this run as "failed", not "crashed" (`ux-tally-after-main-full1.txt`).
+  * `r2-main-full2` (browser 20:34–20:57Z) was a **VERDICT**: 33 passed, 1 skipped (C19), C10's 5th reload at
+    12017 ms (`main-ux-full2.log`, `main-ux-full2.record.json`). `deploy-manifest.mjs --check` is OK, and its G2 names
+    `r2-main-full2` (`main-deploy-manifest-check-final.log`).
 * **CI.** `.github/workflows/showcase-source.yml` runs on Linux without any artifact origin: sources check, the page
   built from source, `fetch-artifacts --git-only` (the tracked manifests), the widget export, the worker tests, the
   gallery gate. The first mirror run in `node:26-bookworm` found the gallery data STALE without the runtime manifest,
