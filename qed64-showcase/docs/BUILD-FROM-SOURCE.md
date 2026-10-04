@@ -127,4 +127,14 @@ the resolution is one of these:
   (`verify` then prints OK and `native` accepts it);
 * or it does not: `native` keeps refusing until the oleans have been rebuilt in it and every later stage redone.
 
-<!-- drift-resolution -->
+**Drift resolution (2026-10-04, R2 lane): the current image is equivalent.** In a fresh copy-on-write copy of
+`$W/mathlib4` (`$W/r2-drift`), every output file of the 512 modules the original native build produced was moved
+aside: 38 phase-1 delta modules, 64 widget modules, and the 410 modules of the DistLens/LeanWidgetKit closure, 7,616
+files in all. `scripts/build-native.sh delta`, `widgets` and `distlens` (T=4) then ran in image `8228ea564e7b` with the
+same mounts, `--network none` and environment. Lake rebuilt exactly those 512 modules (its new-oleans lists equal the
+original ones) in 83 s + 112 s + 912 s, with a peak of 4.1 GiB. **All 7,616 files are byte-identical to the
+originals**: `.olean`, `.ilean`, `.c`, `.ir`, `.ir.sig`, `.olean.server`, `.olean.private`, their `.hash` files,
+`.trace` and `.setup.json` (`$W/logs/r2/drift-compare.log`; build log `drift-rebuild.log`; image recipe and layer check
+`drift-image-recipe.log`). So every lock records `8228ea564e7b` under `toolchain.docker.equivalent`, with the recipe and
+this evidence. `verify` #7 prints OK, and `showcase.sh native` accepts the image
+(`$W/logs/r2/native-guard-dryrun.log`). The served oleans, bakes and overlays did not change.

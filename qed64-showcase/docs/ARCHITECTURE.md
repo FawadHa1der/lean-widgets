@@ -129,7 +129,8 @@ A checkout that serves fetched artifacts has no build stores of its runtime (`$W
 **NOT MATERIALIZED**. Neither counts as a failure, because what is served is still checked file by file against the
 lock. **N/A** marks a rebuild-only input that is missing on this host, such as the kernel build or a downloaded
 browser. **DRIFT** marks a rebuild-only input that differs from the lock: the Docker image behind a tag that QED64
-rewrites, or the Node version the bakes ran on. All of these are printed, counted and named in the verify summary.
+rewrites (unless its id is a recorded equivalent: the current `8228ea564e7b` rebuilt all 7,616 native output files
+byte for byte, BUILD-FROM-SOURCE.md), or the Node version the bakes ran on. All of these are printed, counted and named in the verify summary.
 None of them is ever silent.
 
 ## Platforms

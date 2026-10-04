@@ -798,3 +798,67 @@ Logs: `$W/logs/r1/`.
   traced). The assertion was not changed. `r1-relocated-full2` (17:50–18:13Z) was a **VERDICT**: 33 passed, 1 skipped
   (C19), C10 5th reload at 12015 ms. `deploy-manifest.mjs` regenerated `out/deploy` (previous manifest and rclone lists
   copied to `$W/logs/r1/out-deploy-pre-r1/`); `--check` OK with G2 naming `r1-relocated-full2`.
+
+## 2026-10-04: QED64 as a submodule, the page built from source, binaries fetched by hash (R2 lane) — no pin change
+
+The served pin stays E `33b0967`. Nothing that is served changed: the same 145 release files and the same overlays,
+all verified against the locks. Logs: `$W/logs/r2/`.
+
+* **Source dependency.** QED64 is the git submodule `qed64-showcase/deps/qed64` (https://github.com/FawadHa1der/QED64.git),
+  checked out at E's commit; its gitlink is the served pin's source pin. The staged pins A, B, C and D are git worktrees
+  of the submodule's own repository in `$W/qed64-pins/<id>` (`scripts/qed64-src.mjs ensure --all`). All five pin
+  commits are on QED64's `origin/main`. Every vendored copy is gone: `pins/*/QED64-PIN`, the `vendor/qed64` link and
+  `scripts/fetch-vendor.mjs` were removed from git, and `pins/*/vendor-qed64/` was moved to
+  `$W/r2-moved-aside/vendor-qed64/`. Before that, all 128 vendored files were proved byte-identical to `git show
+  <commit>:<path>` in the submodule repository (`vendor-vs-submodule.log`). The following now read QED64's modules from
+  the pin's checkout: `bake.sh`, `stage-trees.mjs`, `pair-check.mjs`, `headless/{lib,exact-header,wasm-lsp}.mjs`,
+  `run-e2.sh`, `preflight-overlays.sh`, `check-gallery.mjs` and `tests/experiments/x1`. `serve.mjs`,
+  `deploy-manifest.mjs` and `infra/worker.js` import QED64's `isImmutable` instead of copying it, and wrangler bundles
+  the import. verify #8 is now "sources == commit, unmodified; gitlink == HEAD == lock; no vendored copy".
+* **Locks v2** (every lock rewritten again; the earlier copies are in `$W/logs/r2/locks-before/`). `vendor` and
+  `qed64.checkout` were dropped. The new `source`, `shell` and `artifacts` sections say how each part is obtained, and
+  `overlays` records the sha256 and size of the six overlay files of the pin's runtime (`pin-qed64.mjs
+  record-overlays`; verify #11). `toolchain.docker.equivalent` records image `8228ea564e7b` (below).
+* **Shell from source.** `scripts/build-shell.mjs` runs QED64's `npm ci --prefix frontend && npm run build:site` in the
+  pin's checkout. Fresh public clones of all five pin commits rebuilt their 58 dist files byte-identical to the served
+  releases (macOS, Node v26.3.0: `shell-det-*.log`), and so did Linux (`node:26-bookworm`, Node v26.7.0:
+  `linux-rehearsal-1.log`). The lock's sha256s are therefore the check, and nothing is installed unless all 58 files
+  match.
+* **Binaries fetched by hash.** `scripts/fetch-artifacts.mjs` takes the five tracked manifests from git and fetches
+  every other `public/` file and the overlays from an artifact origin, checking sha256 against the lock. It is
+  resumable, and a mismatch is kept as `.rejected-<time>` and never installed. QED64's live origin served all 81 files
+  of pin E with the lock's sizes (`live-qed64-remote-check.log`). A fresh clone fetched them from it, 1.38 GB, after a
+  deliberate interruption at 30 s (`clone-fetch-live-*.log`). The overlays came from a local origin (`serve.mjs` on
+  :5297).
+* **`showcase.sh bootstrap`** makes a clone a working showcase: sources, `npm ci`, widget export, shell, artifacts, the
+  serve links (`pin use`), verify. A checkout that serves fetched artifacts reports its runtime's build stores as
+  ABSENT. A staged pin it never bootstrapped is NOT MATERIALIZED, a missing kernel build or browser is N/A, and the Node
+  version is a DRIFT. All of these are printed and counted. `pin use` now also moves the submodule and stages the
+  switch (the lock link, `gallery/pin.json` and the gitlink).
+* **Fresh-clone proof.** `git clone --recursive` of this repository into
+  `$W/clone-test/lean-widgets` (and into `$W/clone-test/clone with spaces/lean widgets`), each with a fresh work dir
+  and no `QED64_REPO` or kernel build. Bootstrap was OK and `verify` all OK (1 N/A). The `gallery` gate was GREEN on
+  `49d06172…`. Serving on :5298 gave the same served gallery hash, pin header and COEP. Staged pin C was bootstrapped
+  into a worktree and passed `pin-qed64 verify --pin 5ac5d00`. The pin switch E → C → E kept verify OK. `lake build &&
+  lake test` of `packages/simp-lens` passed in the clone with the stock toolchain (`clone-lake-simp-lens.log`). The full
+  UX run in the clone: see "UX" below.
+* **Linux.** `scripts/lib/platform.{sh,mjs}` provide the memory probe (`vm_stat` / MemAvailable), copy-on-write clones
+  (`cp -c` / `cp --reflink=auto`) and caffeinate (macOS only). The browser-lock wrapper, `showcase.sh`,
+  `preflight-overlays.sh`, `pin-qed64.mjs`, `deploy-manifest.mjs`, `make-overlay.mjs`, `stage-trees.mjs`,
+  `build-native.sh` (nlink) and the Node memory helpers use them. In `node:26-bookworm`, the following all exited 0:
+  clone, bootstrap, verify, gallery, `fetch-artifacts --check`, the worker tests, lockfifo, lockrace, `check-portable`
+  and `deploy-manifest` generate/`--check`/`--stage-assets` (`linux-rehearsal-1.log`). The steps that remain macOS-only
+  are listed in docs/ARCHITECTURE.md "Platforms". `lockrace.sh` now copies the platform helper and skips the host
+  cooldown, which fixes audit a1.
+* **Docker image drift resolved.** The 512 native modules (7,616 output files) were rebuilt in the current
+  `qed64-toolchain:emsdk-6.0.5` = `8228ea564e7b` (the kernel fork's `docker-wasm64/Dockerfile` at `974ee228b0`) in a
+  fresh copy of the Mathlib tree. Every file is byte-identical to the originals built in `8b6698bbf474`
+  (`drift-compare.log`). The image is recorded as equivalent: verify #7 prints OK and `native` accepts it.
+* **Also committed:** the native click-all goldens (`lean/expect/click-all/`, which the UX suite reads; until now they
+  lived only in the gitignored `out/`), the native delta lists (`lean/native/`), docs/ARCHITECTURE.md (with the
+  integration-points table), docs/BUILD-FROM-SOURCE.md, docs/QED64-EMBEDDING-V1-REVIEW.md (paths made relative), and
+  `.github/workflows/showcase-source.yml`.
+* **Consequences.** The locks changed twice in this lane (v2, then the image equivalent), so `gallery/pin.json` and the
+  gallery hash changed: `98ad69f6…` → `49d06172…` (lock v2) → `3b4dc8bb…` (image equivalent). Earlier verdicts
+  no longer match. `out/deploy` was regenerated; the only differences are the lock sha256, the gallery hash,
+  `gallery.js`/`lib.js` (comments) and `pin.json`, and the 93 R2 objects are identical.

@@ -400,7 +400,9 @@ after it passes the gates (procedure as executed for `5ac5d00` on 2026-10-02; th
     `node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.workers.dev --all --range`. Back up
     `out/deploy/published/` (the release records rollback needs).
 
-**Docker tag drift** (no QED64 promote needed). The native build runs in
+**Docker tag drift** (no QED64 promote needed; resolved on 2026-10-04: the current image `8228ea564e7b` rebuilds all
+7,616 native output files byte for byte and is recorded as an equivalent, docs/BUILD-FROM-SOURCE.md "Docker image
+drift"; the history below explains the rule). The native build runs in
 `qed64-toolchain:emsdk-6.0.5`, a tag that QED64's own `pipeline/toolchain/build.sh` re-creates
 with `docker build -t`. Another session can therefore move it. This happened on 2026-10-01, twice:
 at 11:50:12 local `docker events` shows `create` + `tag` of `sha256:03d1d33bfb67…`, and by 12:41

@@ -1,7 +1,7 @@
 {
   "schema": "qed64-showcase.gallery-pin/v1",
   "derivedFrom": "QED64.lock.json",
-  "lockSha256": "74f967873bda117a147a5767cc447535297b3596f36e6fe9753ceb13ff4adb25",
+  "lockSha256": "190f09de2a4105fd534ce6934ca27f6fa8e6e4edea831f36bca080e96e3cbbbb",
   "pin": "33b0967",
   "buildId": "wasm64-3ab1c6a9da03bc29",
   "bundleBuildIds": [

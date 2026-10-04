@@ -648,7 +648,17 @@
     },
     "docker": {
       "image": "qed64-toolchain:emsdk-6.0.5",
-      "id": "8b6698bbf474"
+      "id": "8b6698bbf474",
+      "equivalent": [
+        {
+          "id": "8228ea564e7b",
+          "image": "sha256:8228ea564e7b5979330540a521879275d57f5a3bb270ef45eb2cabb648fe2842",
+          "created": "2026-08-25T19:26:43Z",
+          "recipe": "github.com/FawadHa1der/lean4 branch qed64-wasm64, docker-wasm64/Dockerfile at 974ee228b0 (unchanged at the branch head): emscripten/emsdk:6.0.5 + the apt-get RUN + the libpthread.js checkMailbox keepalive patch RUN; the image is exactly the base image's 4 layers + 2",
+          "evidence": "2026-10-04 (R2 lane): the 512 native modules of this build (38 phase-1 delta + 64 widget + 410 DistLens/LeanWidgetKit closure) rebuilt in this image in a fresh copy-on-write copy of the Mathlib tree: all 7616 output files (.olean, .ilean, .c, .ir, .ir.sig, .olean.server, .olean.private, their .hash files, .trace, .setup.json) byte-identical to the originals ($W/logs/r2/drift-compare.log, drift-image-recipe.log)",
+          "recordedAt": "2026-10-04T19:32:41.483Z"
+        }
+      ]
     },
     "mathlib": {
       "commit": "5ed2965256430c3649e86755f9576b54eca72435",
