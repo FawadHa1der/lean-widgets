@@ -884,3 +884,29 @@ all verified against the locks. Logs: `$W/logs/r2/`.
   gallery hash changed: `98ad69f6…` → `49d06172…` (lock v2) → `3b4dc8bb…` (image equivalent). Earlier verdicts
   no longer match. `out/deploy` was regenerated; the only differences are the lock sha256, the gallery hash,
   `gallery.js`/`lib.js` (comments) and `pin.json`, and the 93 R2 objects are identical.
+
+## 2026-10-04: CI and the Cloudflare deploy pipeline (R3 lane) — no pin change, no lock change
+
+The served pin stays E `33b0967`; no lock, release file or overlay changed. Logs: `$W/logs/r3/`; guide:
+docs/DEPLOY-CLOUDFLARE.md (first deploy checklist, section 9 and "CI rehearsal").
+
+* **Workflows** at the repository root: `lean-ci.yml` (one job per widget package, the static showcase from the
+  regenerated dumps, the qed64-showcase static gates, GitHub Pages behind `vars.DEPLOY_GITHUB_PAGES`) replaces
+  `pages.yml`, `portability.yml` and `showcase-source.yml`; `qed64-deploy.yml` deploys the app shell to the Worker
+  `qed64-showcase` on pushes to `main` and on dispatch, and skips with a log line until `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` exist. R2 uploads stay local (`upload-artifacts.sh`); the reasons are in section 9.
+* **`deploy-manifest.mjs`**: `--from-lock` (the shell-only manifest of a checkout without the artifacts; equal to the
+  full manifest apart from `options.source`), `--published <origin>` (are this shell's R2 objects live?) and
+  `--record-verdict` (the committed G2 record `infra/ux-verdict.json`, which G2 accepts when `out/ux` has no record of
+  these inputs). The record names run `r2-main-full2` on gallery `3b4dc8bb…`, lock `190f09de…`.
+* **`deploy-app.sh`**: `DEPLOY_FROM_LOCK=1` (CI), `PUBLISHED_ORIGIN`, `WRANGLER_BIN`, and the deployed URL in
+  `out/deploy/deployed-url.txt`. `upload-artifacts.sh` and `--commands` refuse a shell-only manifest. `rehearse.sh`
+  takes its work dir from `QED64_SHOWCASE_WORK` instead of the `work` symlink.
+* **Removed**: the inactive `deploy-showcase.yml.example` and `stage-shell-from-tarball.mjs` (the page is built from
+  source now).
+* **Local proof** (nothing pushed): `ci/run-local.mjs` runs a workflow's jobs in fresh clones; `ci/rehearse-deploy.sh`
+  runs the deploy job against `wrangler deploy --dry-run`, `wrangler dev --local` and a fake R2 through
+  `scripts/deploy-rehearsal/wrangler-shim.sh`. Results: DEPLOY-CLOUDFLARE.md "CI rehearsal". One node v26.3.0 exit
+  deadlock (V8 Maglev worker vs. platform shutdown) hung `check-portable` after `PORTABLE OK`; every job now has a
+  timeout.
+

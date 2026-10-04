@@ -3,7 +3,10 @@
 > **Status: rehearsed locally, not deployed.** Nothing here has logged in to Cloudflare, uploaded to R2 or deployed.
 > Every script and command below was run against local fakes (an rclone `local` remote, a local S3 endpoint and
 > `wrangler dev --local`) or as a dry run, inside a macOS sandbox that blocks all outbound traffic except to localhost.
-> See [Rehearsal](#rehearsal). Two kinds of command were not run here:
+> See [Rehearsal](#rehearsal). The GitHub Actions deploy (`.github/workflows/qed64-deploy.yml`, section 9) has never
+> run on GitHub (nothing was pushed); its job was run on this machine in fresh clones by `ci/rehearse-deploy.sh`
+> ([CI rehearsal](#ci-rehearsal)). **Start with the [first deploy checklist](#first-deploy-checklist).** Two kinds of
+> command were not run here:
 > * commands marked **[account]**, which need your Cloudflare login or R2 token;
 > * the 3.1 preconditions `showcase.sh gallery` / `ux`, which the verification lanes run (the rehearsal below found
 >   `final-full1` on pin B; the re-rehearsal on pin C found `multipin-C-full3-b`, the final-gate re-run `final-C-full2`).
@@ -124,6 +127,69 @@ bucket the loader accepts only `R2_PREFIX=qed64-showcase/`:
 
 Every script checks this before it runs rclone or wrangler. The rehearsal's `guard` step proves it on a fake bucket
 seeded with stand-ins for QED64's and lean4game's manifests.
+
+
+## First deploy checklist
+
+For the owner, in this order. Every step marked **[account]** needs your Cloudflare login, an R2 token or the GitHub
+repository's settings; nothing else contacts Cloudflare. Run the commands in `qed64-showcase/` of the checkout that
+has the artifacts (`release/<pin>/public/`, `out/overlay/snapshots/`), i.e. the machine that baked them.
+
+1. **Push the repository** (`git push origin main`, plus `git push origin lean-v4.32.2` for the v4.32.2 tag).
+   `lean-ci` runs; `qed64-deploy` runs and logs `CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping
+   deploy`, because the secrets do not exist yet. Add them only after step 3: with the secrets in place, every push to
+   `main` that touches `qed64-showcase/` deploys.
+2. **Preconditions, local** (section 3.1): `scripts/showcase.sh verify`, `scripts/showcase.sh gallery` (GREEN, then
+   `UX CURRENT …`), and `node scripts/deploy-manifest.mjs --check` (its `G2 UX:` line names a verdict run). The CI
+   deploy's copy of that verdict, `infra/ux-verdict.json`, is already committed for pin E `33b0967`, gallery
+   `3b4dc8bb…`, lock `190f09de…` (run `r2-main-full2`). After any change to `gallery/`, the lock or the overlays, run
+   `scripts/showcase.sh ux` again and re-record it, or the CI deploy refuses (`no verdict UX run for exactly this
+   gallery …`):
+   ```
+   node scripts/deploy-manifest.mjs --record-verdict      # writes infra/ux-verdict.json; refuses a stale manifest or a later red run
+   git add infra/ux-verdict.json && git commit -m "qed64-showcase: UX verdict for CI"
+   ```
+3. **Upload the artifacts** (section 3.2) **[account]**, then back up the release record (section 5):
+   ```
+   rclone listremotes                       # must list qed64-r2: (reads only the local config)
+   DRY_RUN=1 scripts/upload-artifacts.sh    # lists the bucket, writes nothing
+   scripts/upload-artifacts.sh              # about 2.42 GB the first time; copy only, never sync
+   ```
+4. **Create the Cloudflare API token** **[account]**: dashboard → My Profile → API Tokens → Create Token → Custom
+   token. Permissions: **Account → Workers Scripts → Edit**. Account Resources: **Include → the account that holds
+   `qed64-artifacts`**. No zone permission and **no R2 permission**: the Worker reads R2 through its binding, and a
+   leaked CI token then cannot touch any bucket. This is the scope lean4game's and QED64's guides name for CI;
+   it was not tried against a live account here. If `wrangler deploy` in step 6 stops with an authentication error
+   that names another permission, add exactly that one. Optionally set a TTL and IP filtering.
+   The account ID: dashboard → Workers & Pages → Account ID (right-hand column), or `npx --prefix infra wrangler whoami`.
+5. **Add two repository secrets** **[account]** on `github.com/FawadHa1der/lean-widgets` → Settings → Secrets and
+   variables → Actions → Secrets → New repository secret:
+
+   | Name | Value |
+   |---|---|
+   | `CLOUDFLARE_API_TOKEN` | the token from step 4 |
+   | `CLOUDFLARE_ACCOUNT_ID` | the 32-hex account ID |
+
+   No other secret is used. The R2 keys (S3 access key and secret) stay in your local rclone config and are never
+   added to GitHub.
+6. **First deploy**, either way:
+   * **From GitHub:** Actions → `qed64-deploy` → Run workflow, first with `dry_run` ticked (everything up to `wrangler
+     deploy --dry-run`; works even without the secrets), then without. The log must show `PUBLISHED CHECK SKIPPED`
+     (no live origin yet), `DEPLOYED-URL https://qed64-showcase.<subdomain>.workers.dev` and `SMOKE OK`; the smoke
+     checks every asset and every R2 key on the new deployment, so a missing upload turns the run red here.
+   * **From this machine:** `npx --prefix infra wrangler login` **[account]**, then `DRY_RUN=1 scripts/deploy-app.sh`
+     and `scripts/deploy-app.sh` (section 3.3; it checks the release record of step 3), then the smoke of section 3.4.
+7. **Set the repository variable** **[account]** Settings → Secrets and variables → Actions → Variables → New
+   repository variable: `SHOWCASE_ORIGIN` = `https://qed64-showcase.<subdomain>.workers.dev` (or your custom domain,
+   section 7), no trailing slash. From then on every CI deploy first runs `deploy-manifest.mjs --published` against it
+   (every R2 object of the new shell must already answer there: HEAD size, GET sha256 of every manifest and index) and
+   refuses to deploy a shell whose artifacts were not uploaded; the smoke then runs against this origin.
+8. **Verify** (section 3.4/3.5): the workflow log's `SMOKE OK`; `curl -sI <origin>/showcase/ | grep -i cross-origin`
+   shows the three `Cross-Origin-*` headers; open `<origin>/showcase/` in a Chromium-based browser; optionally the
+   scripted cold boot under the browser lock (section 3.5).
+
+Afterwards: a gallery-only change is a push (plus a new verdict record); a re-pin or rebake is `upload-artifacts.sh`
+first, then the push (the published check enforces that order).
 
 ## 1. Prerequisites
 
@@ -365,8 +431,9 @@ the earlier **names** back and redeploying the earlier **shell**.
    record `<time>-rollback`, so that `deploy-app.sh` compares against what is live now.
 
    **Keep the records.** They are the only copy of what each release published. Unlike lean4game, whose rollback reads
-   old indexes from git history, this tree has no git history, and `out/` is gitignored. After every real upload or
-   rollback, copy them somewhere durable, for example:
+   old indexes from git history, the published indexes here are build outputs in the gitignored `out/` (only QED64's
+   own five manifests are in git, in the submodule). After every real upload or rollback, copy them somewhere durable,
+   for example:
    ```
    rsync -a out/deploy/published/ ~/Backups/qed64-showcase-releases/    # or commit them to a private repo
    ```
@@ -429,46 +496,89 @@ new origin. `workers_dev = true` keeps the `*.workers.dev` URL working as well; 
   * the **R2 API token** (S3 keys) lives only in your local rclone config (`qed64-r2`). Its scope is Object Read &
     Write on `qed64-artifacts`, with an expiry;
   * **Workers deploys** use your `wrangler login`. For CI, use an API token with **Workers Scripts: Edit only, no R2
-    permission**, so that a leaked CI secret cannot touch artifacts.
+    permission**, so that a leaked CI secret cannot touch artifacts. The deploy workflow receives exactly two secrets,
+    `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, only in its deploy step; it runs on pushes to `main` and
+    manual dispatch, never on pull requests, so a fork's code never sees them.
 * Never commit keys or tokens. `wrangler.toml` holds no secrets and is gitignored anyway; `infra/deploy.env` holds only
   names.
 * Do not enable the bucket's public `r2.dev` URL. Reads go through the Worker binding, and the Worker serves only
   `/runtime/`, `/profiles/` and `/snapshots/` under its own prefix, so the showcase never exposes QED64's or
   lean4game's keys. Path traversal and empty segments are refused (`infra/worker.test.mjs`).
 
-## 9. CI (optional; manual deploys are recommended)
+## 9. CI: GitHub Actions
 
-`.github/workflows/deploy-showcase.yml.example` is a template modelled on lean4game's `deploy.yml`. Copy it to `.yml`
-to enable it. It only redeploys the shell, with a Workers-only token.
+Two workflows at the repository root (`.github/workflows/`), both runnable locally (below):
 
-**The catch.** The shell includes the pinned QED64 `dist/` from `release/<pin id>/dist`, and `release/` is
-gitignored (2.4 GB with the artifacts). A clean CI checkout cannot stage it. The manifest's R/G gates also need the
-artifacts and the UX record, which exist only on your machine. There are two options:
+* **`lean-ci.yml`** on every push and pull request: one job per widget package (elan, `lake exe cache get` where Mathlib
+  is a dependency, `lake build`, `lake test`, the showcase probe), the static showcase (regenerated dumps == committed,
+  assemble, React verification), and `qed64-static`: `check-portable`, the browser-lock tests, `qed64-src check`,
+  QED64's page built from the submodule byte-identical to the lock, `fetch-artifacts --git-only`, the widget export,
+  the Worker tests and the gallery gate. Every checkout uses `submodules: recursive`.
+* **`qed64-deploy.yml`** on pushes to `main` that touch `qed64-showcase/`, `.gitmodules` or the workflow, and on manual
+  dispatch. It deploys the **app shell only**, the lean4game way; the R2 artifacts are uploaded from your machine
+  (section 3.2), never from CI.
 
-* **A. Manual deploys from this machine (recommended).** Every gate runs. lean4game's artifacts already require
-  manual uploads, and so do these: they change only with a re-pin or rebake, which runs on this machine.
-* **B. CI with a pinned dist tarball.** Publish the dist where CI can download it. A GitHub release asset is the
-  simplest place; the URL goes in the secret `SHOWCASE_DIST_URL`. Build the tarball with:
-  ```
-  ID=$(node scripts/lib/pins.mjs active); BID=$(node scripts/lib/pins.mjs active-bid)
-  COPYFILE_DISABLE=1 tar --no-xattrs -C release/$ID -czf qed64-dist-$ID.tar.gz dist public/runtime/runtime-manifest.$BID.json
-  ```
-  (`COPYFILE_DISABLE=1 --no-xattrs`: macOS tar otherwise adds `._*` files, which are refused as extra files.) CI runs
-  `node scripts/stage-shell-from-tarball.mjs <tarball> --out out/deploy/assets --release-dir`. The script refuses a
-  tarball unless it holds exactly the lock's dist files, with their size and sha256, plus the lock's runtime manifest.
-  It adds the checkout's gallery and runs the 25 MiB check. `--release-dir` also writes the verified files to
-  `release/<pin id>/`, so that CI can then run the gallery gate **G1** (`node scripts/check-gallery.mjs`). After that,
-  CI writes `wrangler.toml` with `scripts/lib/wrangler-config.mjs write` and runs
-  `wrangler deploy --message "pin <pin id> (<buildId>) gallery <sha16> prefix <prefix> ci <commit>"`. This is the same label as
-  the manual path, so `wrangler versions list` stays usable for rollback.
+**What the deploy job does**, in order (each step stops the job on failure):
 
-  Limits of option B:
-  * a re-pin needs a new tarball;
-  * CI can only redeploy shells whose artifacts a manual upload already published;
-  * it skips the UX-verdict gate (G2) and the release-record check.
+1. **Gate.** Without the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` it logs
+   `CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping deploy` and every other step is skipped (green).
+   A dispatch with `dry_run` runs everything up to `wrangler deploy --dry-run` without them.
+2. `qed64-src check`, then **QED64's page built from the submodule** (`scripts/build-shell.mjs`: all 58 `dist/` files
+   byte-identical to the lock, or nothing is installed), `fetch-artifacts --git-only` (QED64's five tracked manifests
+   and indexes), the Worker tests.
+3. **`DEPLOY_FROM_LOCK=1 scripts/deploy-app.sh`**, the same script as the manual path, with these differences:
+   * the manifest is `deploy-manifest.mjs --from-lock`: the assets are hashed as usual, the R2 keys, sizes and sha256
+     come from the committed lock. On this machine it was proved **identical to the full manifest** apart from
+     `options.source = "lock"` (93 R2 objects, 75 assets, and the same rclone lists; `$W/logs/r3/equiv-*.log`). R1, R2
+     and the stock R3 read QED64's tracked files (their sha256 must equal the lock's); the overlay indexes are not in
+     git, so their R3 runs in the published check;
+   * **G2** comes from the committed `infra/ux-verdict.json` (written by `--record-verdict` on your machine) when the
+     job has no `out/ux` record; it must name exactly this gallery, lock and overlay indexes. The dispatch input
+     `allow_no_ux_verdict` sets `ALLOW_NO_UX_VERDICT=1`, deliberately;
+   * the **release-record check** (a file of the machine that uploaded) is replaced by the **published check**:
+     with the repository variable `SHOWCASE_ORIGIN` set, `deploy-manifest.mjs --published $SHOWCASE_ORIGIN` must pass
+     before wrangler runs (every immutable object: HEAD 200 with the manifest's size; every manifest and index: GET
+     sha256 == the manifest's; R3 on the fetched overlay indexes). Without the variable (the very first deploy) it
+     logs `PUBLISHED CHECK SKIPPED …` and the smoke below is the check;
+   * `wrangler deploy --message "pin … gallery … prefix … ci <commit>"` with the pinned wrangler 4.125.0, so
+     `wrangler versions list` tells versions apart for a rollback (section 5).
+4. **Smoke:** `deploy-manifest.mjs --smoke <origin> --all --range` against `SHOWCASE_ORIGIN`, or the workers.dev URL
+   wrangler printed (`DEPLOYED-URL …`). Up to 3 attempts 20 s apart, for edge propagation.
+5. The manifest, gate logs and wrangler output are kept as the run's artifact `qed64-deploy-record`.
 
-  Secrets: `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit), `CLOUDFLARE_ACCOUNT_ID`, `SHOWCASE_DIST_URL`. Without them
-  the workflow only runs the worker tests.
+**Secrets and variables** (first deploy checklist, steps 4, 5, 7): `CLOUDFLARE_API_TOKEN` (Account → Workers Scripts →
+Edit only), `CLOUDFLARE_ACCOUNT_ID`, and the variable `SHOWCASE_ORIGIN`. Nothing else.
+
+**What CI does not do.**
+* **Upload artifacts.** Decided against, not just left out. A CI upload needs the 2.4 GB of bytes: QED64's own files
+  could come from QED64's live origin (`fetch-artifacts` verifies each against the lock), but our overlays exist only
+  on the machine that baked them (or on this showcase's own origin, which is what the upload would fill). It would
+  also need R2 S3 keys with write access to the **shared** bucket `qed64-artifacts` (QED64's and lean4game's objects
+  too) as GitHub secrets, a much larger blast radius than a Workers-only token. Artifacts change only with a re-pin or
+  rebake, which runs on your machine anyway.
+* **Run the UX suite** (a 20-minute, memory-heavy Chrome run): G2 is the committed verdict instead.
+* **Roll back.** Section 5 stays manual (`rollback-artifacts.sh`, `wrangler rollback`).
+
+**GitHub Pages** (the static showcase, not the QED64 showcase). `lean-ci.yml`'s `pages` job publishes `showcase/site`
+on a push to `main` only when both one-time settings exist **[account]**: Settings → Pages → Build and deployment →
+Source = **GitHub Actions**, and the repository variable `DEPLOY_GITHUB_PAGES` = `true`. Without them the job is
+skipped and nothing fails; the site is still built, verified and uploaded as the artifact `showcase-site` on every run.
+
+**Running the workflows locally.** `ci/run-local.mjs` runs a workflow's jobs on this machine, each in a fresh clone of
+a commit (`git clone` + `git submodule update --init --recursive`), executing every `run:` step as written with
+GitHub's shell flags, working directories and environment. `uses:` steps are emulated (checkout, setup-node,
+artifacts); the host is macOS with its own tool versions and warm caches, which the summary lists as deviations.
+```
+npm ci --prefix ci                                                        # the runner's YAML parser
+node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --parallel 3
+node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job packages --matrix package=simp-lens
+ci/rehearse-deploy.sh                                                     # the deploy job, 6 scenarios + a tamper check (macOS)
+```
+`ci/rehearse-deploy.sh` needs the fake R2 that `scripts/deploy-rehearsal/rehearse.sh upload-dry upload deploy-dry load`
+leaves in `$QED64_SHOWCASE_WORK/deploy-rehearsal/state`. Its `wrangler` is
+`scripts/deploy-rehearsal/wrangler-shim.sh`: `wrangler deploy` becomes `wrangler deploy --dry-run` in the offline
+sandbox with no token, and the "deployed" Worker is `wrangler dev --local` on the generated `wrangler.toml` over a copy
+of the fake R2. See [CI rehearsal](#ci-rehearsal) for its results.
 
 ## 10. Troubleshooting
 
@@ -488,6 +598,11 @@ artifacts and the UX record, which exist only on your machine. There are two opt
 | `FAIL G1 … CHECK-GALLERY FAIL 121 ok, 1 failed — sim-gallery exit 1` (or `108 ok, 1 failed`) while the gallery is unchanged | `sim-gallery.mjs` runs `gallery.js` on real timers, so a stalled Node event loop on a loaded host can fail a timing-tight case. Seen twice: once under a concurrent UX run (four standalone reruns passed), and in the closure lane's first `rehearse.sh all` on 2026-10-03 (`108 ok, 1 failed`). The second was traced to run 15a's status-line sample, which needed a 250 ms gallery tick to land within a 100 ms window; it failed 4 of 4 times with an injected 200 ms event-loop stall per second. The sample now waits up to 350 ms for the tick, and passed 3 of 3 times under the same injection (`out/ux/closure/RESULTS.md`). Since then G1 prints the sim's own FAIL lines (the case's name) after the `—`. Rerun the script: the step refused, so nothing was uploaded or deployed. If the same case repeats on an idle host, read it and fix the gallery. |
 | `wrangler-config.mjs`: `WRANGLER-CONFIG MISMATCH` | `wrangler.toml` disagrees with `infra/deploy.env` (bucket, prefix, name, assets dir, `run_worker_first`). Fix the file, or delete it so `deploy-app.sh` regenerates it. |
 | `wrangler dev` logs `Unable to fetch the Request.cf object` | `wrangler dev`, even with `--local`, fetches `Request.cf` from `workers.cloudflare.com`. In the rehearsal the sandbox blocked it and wrangler used a placeholder. Harmless. |
+| CI: `CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping deploy` | Expected until the two repository secrets exist (first deploy checklist, step 5). The job is green and did nothing else. |
+| CI: `no verdict UX run for exactly this gallery + lock + overlays` | `infra/ux-verdict.json` names other inputs: the gallery, the lock or an overlay changed since the last record. Run `scripts/showcase.sh ux` locally, then `node scripts/deploy-manifest.mjs --record-verdict` and commit the file. A dispatch with `allow_no_ux_verdict` deploys anyway, deliberately. |
+| CI: `PUBLISHED FAILED: … does not serve this manifest's artifacts` | The shell's R2 objects are not (all) on `SHOWCASE_ORIGIN`: a re-pin or rebake was pushed before its upload. Run `scripts/upload-artifacts.sh` on the machine that has the artifacts, then re-run the workflow. Nothing was deployed. |
+| CI: `PUBLISHED CHECK SKIPPED: PUBLISHED_ORIGIN is not set` | The repository variable `SHOWCASE_ORIGIN` does not exist (first deploy). Set it after the first deploy (checklist, step 7). |
+| CI: `SHELL-FROM-SOURCE FAILED` | QED64's page built from the submodule differs from the lock: a different Node major, or the submodule is not at the lock's commit. `build-shell.mjs` lists every differing file; nothing is deployed. |
 | First visit is slow | Expected: about 710 MB in total, see 3.5. The gallery shows the phases. A cut-off download resumes (Range). On a slow link the gallery shows "Still downloading: <QED64's step> — X of Y so far" while bytes arrive (10 Mbit/s: ready at 565 s, no card); its "This is taking too long" card means no progress at all for 4 min after the first 6 min, and it closes by itself if QED64 then becomes ready (gallery/README.md "Timeouts"). |
 
 ## Rehearsal
@@ -634,9 +749,11 @@ Results of the second run, after the audit fixes, on QED64 9fdf9b8 (runtime `was
 
   Screenshot: `out/deploy-rehearsal/boot-hasse-view.png`.
 * **`stop`.** `stopped; nothing listens on 8790`. Afterwards `pgrep` found no wrangler, workerd or fake-s3 process.
-* **CI option B**, simulated in a clean copy of the tree (no `release/`, `out/`, `work/`, `node_modules/`) under
+* **CI option B** (history: that template and `stage-shell-from-tarball.mjs` were removed on 2026-10-04, when the
+  page started being built from source; today's CI is section 9 and [CI rehearsal](#ci-rehearsal)), simulated in a
+  clean copy of the tree (no `release/`, `out/`, `work/`, `node_modules/`) under
   `offline.sb`. The workflow's own `run:` blocks were extracted from the YAML; the only change was
-  `wrangler deploy --dry-run`, and the dist URL was a `file://` tarball made with the command in section 9
+  `wrangler deploy --dry-run`, and the dist URL was a `file://` tarball made with the then section 9's command
   (`logs/ci-sim.log`, `logs/ci-step8.log`):
   * worker tests 22/22;
   * `STAGE-SHELL OK … 58 dist files … + 17 gallery files`, including `OK   T5 … runtime-manifest….json matches the
@@ -664,3 +781,50 @@ Results of the second run, after the audit fixes, on QED64 9fdf9b8 (runtime `was
 What the rehearsal cannot show: Cloudflare's own edge, which may differ from `wrangler dev` (for example, a HEAD on an
 asset); the real R2 multipart limits; your account's workers.dev subdomain; DNS for a custom domain. Step 3.4 against
 the live URL covers these.
+
+## CI rehearsal
+
+The two workflows, run on this machine before anything was pushed (2026-10-04, R3 lane; logs in `$W/logs/r3/`, run
+directories in `$W/r3/ci/`). Every job ran in a fresh clone of a commit (`ci/run-local.mjs`), never in this checkout.
+
+* **Lint.** `actionlint` 1.7.12 on all workflows: rc 0 (it runs shellcheck on every `run:` block); `shellcheck` on the
+  new and changed shell scripts: rc 0 (`lint.log`).
+* **`--from-lock` equivalence**, in the main checkout: the full manifest and the `--from-lock` manifest, both with
+  prefix `qed64-showcase/`, are identical apart from `options.source = "lock"`, and their rclone lists are identical
+  (`equiv-local.log`, `equiv-lock.log`): 75 assets, 93 R2 objects, every G/L/R gate OK in both.
+* **`ci/rehearse-deploy.sh`**, run 1 on commit `3d78971` (`rehearse-deploy-1.log`; fake R2 = a copy-on-write copy of
+  the 93-object state of the pin-E rehearsal). `REHEARSE-DEPLOY OK`, every scenario as expected:
+  * `skip` (push, no secrets): the skip line; the 9 later steps skipped.
+  * `dry-run` (dispatch `dry_run`, no secrets): `SHELL-FROM-SOURCE OK` (58/58 files == lock), Worker tests 22/22,
+    `DEPLOY-MANIFEST OK` and `CHECK OK` with `G1 … CHECK-GALLERY OK 128 ok, 0 failed`, G2 from the committed record
+    (`verdict run r2-main-full2 … (committed record infra/ux-verdict.json …)`), `PUBLISHED CHECK SKIPPED`,
+    `STAGE-ASSETS OK (17.6 MiB)`, `WRANGLER-CONFIG OK`, wrangler 4.125.0 `--dry-run: exiting now` (6.50 KiB bundle,
+    binding `env.ARTIFACTS (qed64-artifacts)`), `DEPLOY DRY RUN OK`; no smoke. No root `npm ci` was needed.
+  * `unpublished` (origin = a wrangler dev over an EMPTY R2): `PUBLISHED FAILED`, every key 404; the job failed in the
+    deploy step and wrangler was never called.
+  * `deploy` (origin = the live stand-in over the fake R2): `PUBLISHED-OBJECTS … 93/93`, R3 OK on both fetched overlay
+    indexes, `PUBLISHED OK`, then the stand-in "deploy" (`wrangler deploy --dry-run` + `wrangler dev --local` on the
+    generated config), `DEPLOYED-URL http://127.0.0.1:8792`, and `SMOKE OK`: 168 URLs (75 assets + 93/93 R2 keys) with
+    size, isolation, cache and content-type headers, Range 206 / 416 / If-Range 200.
+  * `first` (no `SHOWCASE_ORIGIN`): `PUBLISHED CHECK SKIPPED`, the URL taken from the deploy's output, `SMOKE OK`.
+  * `no-verdict` (a scratch commit that only appends a CSS comment to the gallery): G2 `NO verdict … infra/ux-verdict.json
+    names other inputs`, `deploy-app.sh: no verdict UX run for exactly this gallery …`; wrangler never called.
+  * `tamper`: `--published` with one overlay index sha256 and one `.snapz` size altered in the manifest: both caught
+    (`91/93`), `PUBLISHED FAILED`, rc 1.
+  * Afterwards nothing listened on 8792 or 8802.
+* **`lean-ci.yml`**, run 1 on commit `3d78971` (`lean-ci-1.log`, `--parallel 3`): all 9 `packages` jobs green (ProofWidgets
+  cloned and built in each; Mathlib `v4.34.0` from `lake exe cache get`, `Decompressed 8714 already-cached file(s)`
+  from the host's warm `~/.cache/mathlib`, then `lake build`: dist-lens 3088 jobs, lean-widget-kit 3197, graph-scope
+  1042, tree-scope 1035, hasse-view 938, interval-inspector 866, expr-xray 25, simp-lens 22, chart-kit 21; `lake
+  test` green in the 8 packages with a test driver, skipped in lean-widget-kit). `showcase` green: `DUMPS OK: 8
+  regenerated dumps == committed`, 60/60 panels clean. `qed64-static` **failed, not on a check**: `check-portable`
+  printed `PORTABLE OK` and then its node process (v26.3.0) never exited. Its stacks (`node-exit-hang-sample.log`):
+  the main thread in `process.exit` → `NodePlatform::Shutdown` joining the worker threads, one V8 worker in a Maglev
+  compile job waiting in `CollectionBarrier::AwaitCollectionBackground` for a main-thread GC that cannot come. A
+  deadlock inside Node/V8 at exit (inference from the stacks; not reproduced on demand). The process was stopped
+  after 20 min (`FAIL(143)`). Every job now has `timeout-minutes`, and `ci/run-local.mjs` enforces them, so such a hang
+  fails a job in bounded time on GitHub and here.
+* What this does **not** show: GitHub's ubuntu runner itself (tool versions, cold caches, disk), Cloudflare's edge, a
+  real token's permissions, and the workers.dev URL format of a real deployment. The first real run covers them
+  (first deploy checklist, steps 6 and 8).
+

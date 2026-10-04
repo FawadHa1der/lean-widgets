@@ -10,7 +10,8 @@
 #   pages        publishes the static showcase to GitHub Pages, only on a push to main and only when the repository
 #                variable DEPLOY_GITHUB_PAGES is 'true' (one-time settings: qed64-showcase/docs/DEPLOY-CLOUDFLARE.md
 #                "GitHub Pages"); without them the job is skipped and nothing else changes.
-# Every checkout fetches submodules: QED64 is the submodule qed64-showcase/deps/qed64.
+# Every checkout fetches submodules: QED64 is the submodule qed64-showcase/deps/qed64. Every job has a timeout: a hung
+# process (seen once locally: node 26.3.0 deadlocked in process.exit) fails the job instead of holding a runner for 6 h.
 # Run any job locally in a fresh clone: node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job <id>
 name: lean-ci
 on:
@@ -33,6 +34,7 @@ jobs:
   packages:
     name: package ${{ matrix.package }}
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +65,11 @@ jobs:
       - name: Showcase probe (regenerates showcase/dumps/<package>.json)
         run: |
           probe="../../showcase/probes/$PKG.lean"
-          if [ -f "$probe" ]; then lake env lean "$probe" && ls -l "../../showcase/dumps/$PKG.json"
+          if [ -f "$probe" ]; then
+            # remove the committed dump first, so the uploaded file can only be the one this probe wrote
+            rm -f "../../showcase/dumps/$PKG.json"
+            lake env lean "$probe"
+            ls -l "../../showcase/dumps/$PKG.json"
           else echo "$PKG: no showcase probe"; fi
       - name: Upload the regenerated dump
         uses: actions/upload-artifact@v4
@@ -78,6 +84,7 @@ jobs:
   showcase:
     needs: packages
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,6 +126,7 @@ jobs:
 
   qed64-static:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: qed64-showcase
@@ -163,6 +171,7 @@ jobs:
     needs: showcase
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write

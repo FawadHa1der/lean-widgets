@@ -35,8 +35,12 @@ commit; `site/verify.html` is the same check in interactive form.
 
 ## Deployment
 
-`.github/workflows/pages.yml` (one directory up) builds + tests the whole
-suite, regenerates the dumps, assembles the site, and deploys `showcase/site`
-to GitHub Pages on every push to `main`. Enable it with repo Settings → Pages
-→ Source = "GitHub Actions". The pipeline fails if any package's tests fail —
-the showcase only deploys from a fully green suite.
+`.github/workflows/lean-ci.yml` (at the repository root) builds and tests every
+package in its own job, regenerates each package's dump from its probe (the
+regenerated dumps must be byte-identical to the committed ones), assembles the
+site with `build.sh --no-dump` and runs `verify.mjs`. It deploys `showcase/site`
+to GitHub Pages only on a push to `main` when the repository variable
+`DEPLOY_GITHUB_PAGES` is `true` and Settings → Pages → Source is "GitHub
+Actions"; without those two settings the `pages` job is skipped. The pipeline
+fails if any package's tests fail — the showcase only deploys from a fully
+green suite.

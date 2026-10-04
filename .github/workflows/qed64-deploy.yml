@@ -49,6 +49,7 @@ defaults:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: qed64-showcase

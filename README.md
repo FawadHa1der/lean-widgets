@@ -16,7 +16,9 @@ qed64-showcase/    the widgets running live in the stock QED64 page (in-browser 
                    build of packages/, snapshot bakes, gallery, Playwright UX suite, Cloudflare deploy kit
   deps/qed64       QED64 itself, as a git SUBMODULE at the served pin (github.com/FawadHa1der/QED64)
 test-all.sh        lake build + lake test in every package, with a summary table
-.github/workflows/ CI for the packages, the static showcase, portability and the QED64 page built from source
+.github/workflows/ lean-ci.yml (every package, the static showcase, the qed64-showcase static gates; GitHub Pages
+                   behind a repository variable) and qed64-deploy.yml (the QED64 showcase to Cloudflare)
+ci/                run-local.mjs (any workflow job, run in a fresh clone on your machine), rehearse-deploy.sh
 ```
 
 Clone with the submodule:
@@ -138,11 +140,25 @@ manifest, so mixing with Mathlib v4.34.0 projects is safe).
 the exact `Html` trees the InfoView receives, rendered through the same React
 conversion the InfoView uses: `./showcase/build.sh` produces `site/index.html`
 (public gallery) and `site/verify.html` (strict build: any React error or
-warning on any panel fails the page). `.github/workflows/pages.yml` runs the
-full test suite, rebuilds the showcase and verifies it headlessly on every push
-and pull request; it deploys the site to GitHub Pages only when the repository
-variable `DEPLOY_GITHUB_PAGES` is `true` (and Settings → Pages → Source is
-"GitHub Actions"), and only from a fully green suite.
+warning on any panel fails the page). `.github/workflows/lean-ci.yml` builds and
+tests every package (one job per package), regenerates every panel dump from the
+probes (they must equal the committed dumps), assembles the site and verifies it
+headlessly on every push and pull request; it deploys the site to GitHub Pages
+only when the repository variable `DEPLOY_GITHUB_PAGES` is `true` (and Settings →
+Pages → Source is "GitHub Actions"), and only from a fully green suite.
+
+## CI and deploys
+
+| Workflow | Runs on | What |
+|---|---|---|
+| `.github/workflows/lean-ci.yml` | every push and pull request | `packages` (9 jobs: elan, `lake exe cache get` where Mathlib is a dependency, `lake build`, `lake test`, the showcase probe), `showcase` (dumps == committed, assemble, React verification), `qed64-static` (no machine paths, browser-lock tests, QED64's page rebuilt from the submodule byte-identical to the lock, Worker tests, gallery gate), `pages` (opt-in) |
+| `.github/workflows/qed64-deploy.yml` | pushes to `main` touching `qed64-showcase/`, and manual dispatch | QED64's page from source, the gallery gate, then `wrangler deploy` of the showcase shell and a smoke test of the deployed URL. Skips with a log line until the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist. The 2.4 GB of R2 artifacts are uploaded from the owner's machine, never from CI. |
+
+Both workflows run on your machine, job by job, each in a fresh clone of a commit:
+`npm ci --prefix ci && node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml [--job <id>]`.
+`ci/rehearse-deploy.sh` runs the deploy job against `wrangler deploy --dry-run`, `wrangler dev --local` and a fake R2
+(macOS). The first-deploy checklist is in
+[qed64-showcase/docs/DEPLOY-CLOUDFLARE.md](qed64-showcase/docs/DEPLOY-CLOUDFLARE.md#first-deploy-checklist).
 
 Each package README documents its architecture and an honest LIMITATIONS section
 (e.g. the live panel round-trip needs a running Lean server and was verified

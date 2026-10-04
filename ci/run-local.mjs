@@ -16,8 +16,9 @@
 //     variable to every step's environment the way a self-hosted runner's environment would (used by
 //     ci/rehearse-deploy.sh for its wrangler stand-in). Nothing else from the caller's environment reaches a step
 //     except PATH, HOME, USER, LOGNAME, SHELL, LANG, LC_ALL, TMPDIR and TERM.
+//   * `timeout-minutes` (job and step) is enforced: the step's process group gets SIGTERM, then SIGKILL 10 s later.
 //   * not modelled: services, containers, reusable workflows, `include`/`exclude` in a matrix, concurrency,
-//     permissions, timeouts, continue-on-error, job-level `container`/`services`.
+//     permissions, continue-on-error, job-level `container`/`services`.
 //
 //   node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml [--job <id>]… [--matrix <key>=<v1,v2>]…
 //        [--event push|pull_request|workflow_dispatch] [--ref <commit-ish>] [--repo <path>] [--branch main]
@@ -205,13 +206,21 @@ function shellCmd(shell, file) {
     default: throw new Error(`shell '${shell}' is not supported by run-local`);
   }
 }
-function runProcess(cmd, args, { cwd, env, logFile, prefix }) {
+function runProcess(cmd, args, { cwd, env, logFile, prefix, timeoutMs = 0 }) {
   return new Promise((resolve) => {
     const out = fs.openSync(logFile, 'a');
-    const ch = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    // its own process group, so a timeout reaches every child (GitHub cancels the whole step the same way)
+    const ch = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+    let timer = null, killer = null;
+    if (timeoutMs > 0) timer = setTimeout(() => {
+      const m = `run-local: timeout-minutes reached after ${Math.round(timeoutMs / 60000)} min: SIGTERM to the step's process group`;
+      fs.writeSync(out, `\n${m}\n`); console.log(`${prefix}${m}`);
+      try { process.kill(-ch.pid, 'SIGTERM'); } catch {}
+      killer = setTimeout(() => { try { process.kill(-ch.pid, 'SIGKILL'); } catch {} }, 10000);
+    }, timeoutMs);
     const pipe = (s) => { let buf = ''; s.on('data', (d) => { fs.writeSync(out, d); buf += d.toString(); const parts = buf.split('\n'); buf = parts.pop(); for (const l of parts) console.log(`${prefix}${l}`); }); s.on('end', () => { if (buf) console.log(`${prefix}${buf}`); }); };
     pipe(ch.stdout); pipe(ch.stderr);
-    ch.on('close', (code, sig) => { fs.closeSync(out); resolve(code === null ? 128 + (sig ? 9 : 0) : code); });
+    ch.on('close', (code, sig) => { clearTimeout(timer); clearTimeout(killer); fs.closeSync(out); resolve(code === null ? 128 + (sig === 'SIGTERM' ? 15 : 9) : code); });
   });
 }
 const git = (args, opts = {}) => execFileSync('git', args, { stdio: ['ignore', 'pipe', 'pipe'], ...opts }).toString();
@@ -337,6 +346,7 @@ async function runInstance(id, matrix) {
   ctx.env = env;
   const defaults = { ...((WF.defaults || {}).run || {}), ...((j.defaults || {}).run || {}) };
   const extraPath = [];
+  const jobDeadline = j['timeout-minutes'] ? Date.now() + Number(j['timeout-minutes']) * 60000 : Infinity;
   const w = { ws, ctx, baseEnv: { ...baseEnv, ...RUNNER_ENV, HOME: process.env.HOME }, logFile: null };
   let n = 0;
   for (const step of j.steps || []) {
@@ -368,7 +378,9 @@ async function runInstance(id, matrix) {
           const sf = path.join(temp, `step-${n}.sh`); fs.writeFileSync(sf, script);
           const [cmd, args] = shellCmd(step.shell || defaults.shell, sf);
           fs.appendFileSync(lf, `# ${cmd} ${args.join(' ')}   (cwd ${cwd})\n${script}\n# ---- output\n`);
-          rc = await runProcess(cmd, args, { cwd, env: fullEnv, logFile: lf, prefix: `[${name}]   ` });
+          const stepMs = step['timeout-minutes'] ? Number(step['timeout-minutes']) * 60000 : Infinity;
+          const left = Math.min(stepMs, jobDeadline - Date.now());
+          rc = left <= 0 ? 124 : await runProcess(cmd, args, { cwd, env: fullEnv, logFile: lf, prefix: `[${name}]   `, timeoutMs: Number.isFinite(left) ? left : 0 });
         }
         // GITHUB_ENV / GITHUB_PATH / GITHUB_OUTPUT written by the step
         Object.assign(env, parseKvFile(stepEnv.GITHUB_ENV)); ctx.env = env;

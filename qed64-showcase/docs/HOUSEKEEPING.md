@@ -44,6 +44,9 @@ test ! -e "$("$R/scripts/with-browser-lock.sh" --print-lock)" && ! pgrep -f 'ser
 | `$W/clone-test/` | 2.6G + 4.8G + 0.3G | the R2 fresh-clone proofs (`lean-widgets/` with its own `out/ux/r2-clone-full1`, `clone with spaces/`, their work dirs); the logs are in `$W/logs/r2/` | `rm -rf "$W/clone-test"` (after reading `clone-test/lean-widgets/qed64-showcase/out/ux/` if needed) |
 | `$W/frozen-qed64-3b42714/`, `$W/frozen-qed64-5ac5d00/` | 14G, 5.7G | earlier lanes' frozen copies of QED64 checkouts (`src/`, `tree/`); no script reads them and QED64's sources now come from the submodule | `rm -rf "$W"/frozen-qed64-*` |
 | `$R/rollback/wasm64-4b025db7729c5f89/vendor-qed64/` | (part of `$R/rollback`, §3) | the last vendored-QED64 copy in the checkout (gitignored history) | see `$R/rollback` in §3 |
+| `$W/r3/ci/` | about 53G logical (`lean-ci-*`: 48G per full run, mostly the nine packages' `.lake` with Mathlib; `rehearse-*`: 4.9G per run, its fake-R2 state is an APFS clone of `$W/deploy-rehearsal/state`) | the R3 lane's fresh-clone CI runs (`ci/run-local.mjs`, `ci/rehearse-deploy.sh`); the logs and summaries that docs cite are in `$W/logs/r3/` and each run's `summary.json` | `rm -rf "$W/r3/ci"` (after copying any `summary.json` you want to keep) |
+| `$W/r3/m-local/`, `$W/r3/m-lock/` | 116K each | the R3 `--from-lock` equivalence manifests (result in `$W/logs/r3/equiv-*.log`) | `rm -rf "$W/r3/m-local" "$W/r3/m-lock"` |
+| `~/.cache/lean-widgets/ci-local/` | (none yet) | the default run directory of `ci/run-local.mjs` without `--out` | `rm -rf ~/.cache/lean-widgets/ci-local` |
 
 ## 2. Regenerable caches (deleting costs time on the next run, nothing else)
 

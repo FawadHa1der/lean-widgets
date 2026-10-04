@@ -150,7 +150,7 @@ tests. The platform-specific parts are in `scripts/lib/platform.{sh,mjs}`:
 The Linux side was proved in Docker `node:26-bookworm` (aarch64) on 2026-10-04 (`$W/logs/r2/linux-rehearsal-1.log`):
 fresh `clone --recursive`, bootstrap from a local origin, `verify` and `gallery` all passed, and so did
 `fetch-artifacts --check`, the worker tests, `lockfifo`/`lockrace`, `check-portable` and the deploy manifest. The CI job
-(`.github/workflows/showcase-source.yml`) needs no artifact origin: it rebuilds the page from the submodule, installs the
+(`qed64-static` in `.github/workflows/lean-ci.yml`; until 2026-10-04 `showcase-source.yml`) needs no artifact origin: it rebuilds the page from the submodule, installs the
 tracked manifests with `fetch-artifacts --git-only`, and runs the worker tests and the gallery gate. Its steps passed
 in the same image (`linux-ci-mirror-2.log`).
 

@@ -398,7 +398,9 @@ after it passes the gates (procedure as executed for `5ac5d00` on 2026-10-02; th
     then the shell: `DRY_RUN=1 scripts/upload-artifacts.sh`, `scripts/upload-artifacts.sh`, then
     `scripts/deploy-app.sh` (it refuses a shell whose R2 keys the newest upload did not publish), then
     `node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.workers.dev --all --range`. Back up
-    `out/deploy/published/` (the release records rollback needs).
+    `out/deploy/published/` (the release records rollback needs). For the GitHub Actions deploy, also record the UX
+    verdict for CI (`node scripts/deploy-manifest.mjs --record-verdict`, then commit `infra/ux-verdict.json`):
+    `.github/workflows/qed64-deploy.yml` deploys only a gallery + lock + overlays that file names.
 
 **Docker tag drift** (no QED64 promote needed; resolved on 2026-10-04: the current image `8228ea564e7b` rebuilds all
 7,616 native output files byte for byte and is recorded as an equivalent, docs/BUILD-FROM-SOURCE.md "Docker image
@@ -596,7 +598,8 @@ lean/                         examples/<pkg>.{lean,json}, expect/ (native golden
 gallery/                      the M2 gallery wrapper + qed64-bridge.js — gallery/README.md
 tests/                        experiments/ (X1–X5), ux/ (Playwright, UX lane)
 infra/, wrangler.toml.example deploy kit for an own-origin Worker + R2 (shared bucket qed64-artifacts, prefix qed64-showcase/;
-                              infra/deploy.env, infra/package.json = wrangler 4.125.0) — docs/DEPLOY-CLOUDFLARE.md (guide), docs/DEPLOY.md
+                              infra/deploy.env, infra/package.json = wrangler 4.125.0, infra/ux-verdict.json = the UX verdict CI
+                              deploys on) — docs/DEPLOY-CLOUDFLARE.md (guide), docs/DEPLOY.md; CI: ../.github/workflows/qed64-deploy.yml
 out/                          (gitignored) runtimes/<buildId>/{overlay,headless} (per runtime; active links overlay/snapshots/widgets{7,8},
                               headless), pins/ (switch journal, history), click-all/, ux/, deploy/
 work -> $QED64_SHOWCASE_WORK  (optional local symlink, gitignored) clones, trees, bakes, raw snaps, logs
