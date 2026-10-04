@@ -1,0 +1,174 @@
+# CI for every push and pull request:
+#   packages     one job per widget package (8 + lean-widget-kit): elan, `lake exe cache get` where Mathlib is a
+#                dependency, `lake build`, `lake test` (packages with a test driver), and the package's showcase probe,
+#                whose regenerated panel dump is uploaded. One Mathlib per job keeps every runner's disk use to one copy.
+#   showcase     the static React showcase: the regenerated dumps must be byte-identical to the committed ones, then
+#                assemble the site and verify every panel headlessly (fails on any React error or warning).
+#   qed64-static the qed64-showcase gates that need no browser and no artifacts: no machine paths, the browser-lock
+#                FIFO/stale-takeover tests, QED64's page rebuilt from the submodule byte-identical to the lock, the
+#                deploy Worker's tests, and the gallery's static gate (check-gallery + sim-gallery).
+#   pages        publishes the static showcase to GitHub Pages, only on a push to main and only when the repository
+#                variable DEPLOY_GITHUB_PAGES is 'true' (one-time settings: qed64-showcase/docs/DEPLOY-CLOUDFLARE.md
+#                "GitHub Pages"); without them the job is skipped and nothing else changes.
+# Every checkout fetches submodules: QED64 is the submodule qed64-showcase/deps/qed64.
+# Run any job locally in a fresh clone: node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job <id>
+name: lean-ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  packages:
+    name: package ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [interval-inspector, expr-xray, simp-lens, graph-scope, tree-scope, hasse-view, dist-lens, chart-kit, lean-widget-kit]
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    env:
+      PKG: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install elan (no default toolchain; lean-toolchain selects v4.34.0)
+        working-directory: .
+        run: bash ci/install-elan.sh
+      - name: Toolchain
+        run: lake --version
+      - name: Mathlib cache (only where Mathlib is a dependency)
+        run: |
+          if grep -q '"name": "mathlib"' lake-manifest.json; then lake exe cache get; else echo "$PKG: no Mathlib dependency"; fi
+      - name: lake build
+        run: lake build
+      - name: lake test
+        run: |
+          if grep -q '^testDriver' lakefile.toml; then lake test
+          else echo "$PKG: no test driver configured, lake test skipped (as test-all.sh does)"; fi
+      - name: Showcase probe (regenerates showcase/dumps/<package>.json)
+        run: |
+          probe="../../showcase/probes/$PKG.lean"
+          if [ -f "$probe" ]; then lake env lean "$probe" && ls -l "../../showcase/dumps/$PKG.json"
+          else echo "$PKG: no showcase probe"; fi
+      - name: Upload the regenerated dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: dump-${{ matrix.package }}
+          path: showcase/dumps/${{ matrix.package }}.json
+          if-no-files-found: ignore
+      - name: Disk use
+        if: always()
+        run: df -h . && du -sh .lake 2>/dev/null || true
+
+  showcase:
+    needs: packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download the regenerated dumps
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dump-*
+          path: ${{ runner.temp }}/dumps
+          merge-multiple: true
+      - name: Every probe was regenerated, byte-identical to the committed dump
+        run: |
+          rc=0; count=0
+          for probe in showcase/probes/*.lean; do
+            n=$(basename "$probe" .lean); count=$((count + 1))
+            if [ ! -f "$RUNNER_TEMP/dumps/$n.json" ]; then echo "MISSING regenerated dump for $n"; rc=1; continue; fi
+            cp "$RUNNER_TEMP/dumps/$n.json" "showcase/dumps/$n.json"
+          done
+          git diff --stat --exit-code -- showcase/dumps || { echo "regenerated dumps differ from the committed ones (above)"; rc=1; }
+          [ "$rc" = 0 ] && echo "DUMPS OK: $count regenerated dumps == committed"
+          exit "$rc"
+      - name: Assemble the site from the dumps
+        run: ./showcase/build.sh --no-dump
+      - name: Headless React verification (fails on any React error or warning)
+        run: node showcase/verify.mjs
+      - name: Upload the site (pull requests and pushes)
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-site
+          path: showcase/site
+      - name: Upload the Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_GITHUB_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: showcase/site
+
+  qed64-static:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qed64-showcase
+    env:
+      QED64_SHOWCASE_WORK: ${{ github.workspace }}/../qed64-showcase-work
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.3.0'   # the lock's toolchain.node; the page also builds byte-identically on 26.7.0
+      - name: No machine paths in committed code or configuration
+        run: node scripts/check-portable.mjs
+      - name: Browser-lock FIFO and stale-takeover tests (scratch lock dir; no browser)
+        run: |
+          MIN_FREE_GB=0 bash tests/ux/bringup/lockfifo.sh
+          bash tests/ux/bringup/lockrace.sh
+      - name: npm ci (Playwright test runner; no browser download)
+        run: npm ci --no-audit --no-fund
+      - name: QED64 sources = the submodule at the active pin's commit (gitlink == HEAD == lock)
+        run: node scripts/qed64-src.mjs check
+      - name: QED64's page built from source, byte-identical to the lock (every dist/ file's sha256)
+        run: node scripts/build-shell.mjs
+      - name: QED64's tracked manifests from git (no network; the gallery data reads the runtime manifest)
+        run: node scripts/fetch-artifacts.mjs --git-only
+      - name: Widget sources export (git archive of packages/ at the lock's WIDGETS_COMMIT)
+        run: node scripts/export-widgets.mjs --commit "$(node -p 'require("./QED64.lock.json").WIDGETS_COMMIT')"
+      - name: Deploy Worker tests (QED64's isImmutable imported from the submodule)
+        run: node --test infra/worker.test.mjs
+      - name: Gallery static gate (check-gallery + sim-gallery)
+        run: node scripts/check-gallery.mjs
+      - name: Upload the build provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-build
+          path: qed64-showcase/out/pins/shell-build-*.json
+          if-no-files-found: warn
+
+  pages:
+    needs: showcase
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_GITHUB_PAGES == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

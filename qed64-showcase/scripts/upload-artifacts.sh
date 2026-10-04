@@ -42,7 +42,10 @@ rclone listremotes | grep -qx "$R2_REMOTE:" || die "rclone remote '$R2_REMOTE:' 
 DRY=()
 if [ "${DRY_RUN:-0}" = 1 ]; then DRY=(--dry-run); echo "DRY RUN: rclone --dry-run (the bucket is listed, nothing is written)"; fi
 
+case " ${MANIFEST_ARGS:-} " in *" --from-lock "*) die "MANIFEST_ARGS has --from-lock: a shell-only manifest cannot upload (its R2 entries are the lock's values, not local files)" ;; esac
 manifest_preflight
+[ "$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).options.source || ""' "$DEPLOY_OUT/manifest.json")" = "" ] \
+  || die "$DEPLOY_OUT/manifest.json is a --from-lock (shell-only) manifest: nothing to upload from"
 
 # The phased, content-typed lists, straight from manifest.json (the generator already enforced every invariant).
 PLAN="$DEPLOY_OUT/upload"

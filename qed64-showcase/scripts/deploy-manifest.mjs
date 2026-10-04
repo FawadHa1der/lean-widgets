@@ -3,13 +3,29 @@
 // It never uploads, deploys or logs in anywhere; publishing needs the owner's account and go-ahead.
 //
 //   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8,widgets7] [--no-stock-snapshots]
-//                                    [--no-essential-pack] [--prefix <r2 key prefix>] [--out out/deploy]
+//                                    [--no-essential-pack] [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
 //       Enumerate every file, hash it (sha256), validate the invariants below, and write
 //       <out>/manifest.json (deterministic: no timestamps) plus one rclone file list per upload group
 //       (<out>/rclone/<group>.<immutable|mutable>.files, paths relative to that group's local root).
+//       --from-lock: the SHELL-ONLY manifest of a checkout without the artifacts (CI, a fresh clone): the assets are
+//       hashed as usual (release/<id>/dist from scripts/build-shell.mjs + gallery/), but every R2 entry's size and
+//       sha256 come from the committed lock (release.files public/*, overlays.*.files) instead of local files. Same
+//       keys, sizes and sha256 as the full manifest (options.source = "lock" is the only addition). R1, R2 and the stock
+//       R3 read the five manifests/indexes QED64 tracks in git (scripts/fetch-artifacts.mjs --git-only installs them;
+//       their sha256 must equal the lock's); the overlay indexes are not in git, so their R3 runs in --published.
+//       Such a manifest can stage and deploy the shell; scripts/upload-artifacts.sh refuses it.
 //   node scripts/deploy-manifest.mjs --check [--out out/deploy]
 //       Dry run: regenerate in memory with the options recorded in manifest.json, require it to be
 //       byte-identical to the written one (every file re-hashed), and re-run every invariant. Uploads nothing.
+//   node scripts/deploy-manifest.mjs --published <origin> [--out out/deploy]
+//       Are this manifest's R2 objects already published on <origin> (the live showcase Worker, or wrangler dev)?
+//       HEAD every immutable key (status 200, content-length == size); GET every manifest and index (status 200,
+//       body sha256 == the manifest's), and run R3 on each fetched overlay index. Writes nothing. CI runs it before
+//       `wrangler deploy` so a shell is never deployed in front of artifacts that were not uploaded.
+//   node scripts/deploy-manifest.mjs --record-verdict [--out out/deploy]
+//       Write infra/ux-verdict.json (committed): the G2 verdict run for this manifest's gallery + lock + overlays, from
+//       out/ux/showcase-ux-runs.jsonl. Refuses unless the manifest is current and G2 names a verdict with no later red
+//       full run on the same inputs. A checkout without the UX records (CI) accepts G2 from this file.
 //   node scripts/deploy-manifest.mjs --stage-assets [--out out/deploy]
 //       Clone (copy-on-write where the file system can: scripts/lib/platform.mjs cloneFile) exactly the manifest's asset files into <out>/assets — the directory wrangler deploys —
 //       and verify every staged file's sha256 against the manifest.
@@ -68,9 +84,10 @@ const MULTIPART_OVER = 300 * MiB;
 const argv = process.argv.slice(2);
 // Strict arguments (close-out 3, audit minor: `--help` used to fall through to generate and rewrite out/deploy).
 // generate is the default mode and may also be named; anything unknown prints the usage and exits 2 before any write.
-const MODES = { '--check': 'check', '--stage-assets': 'stage', '--commands': 'commands', '--smoke': 'smoke', generate: 'generate' };
-const BOOL_FLAGS = ['--all', '--range', '--no-essential-pack', '--no-stock-snapshots'];
-const VALUE_FLAGS = ['--out', '--overlays', '--prefix', '--bucket', '--remote']; // --smoke takes the origin as its value
+const MODES = { '--check': 'check', '--stage-assets': 'stage', '--commands': 'commands', '--smoke': 'smoke', '--published': 'published', '--record-verdict': 'record-verdict', generate: 'generate' };
+const ORIGIN_MODES = ['--smoke', '--published'];
+const BOOL_FLAGS = ['--all', '--range', '--no-essential-pack', '--no-stock-snapshots', '--from-lock'];
+const VALUE_FLAGS = ['--out', '--overlays', '--prefix', '--bucket', '--remote']; // --smoke / --published take the origin as their value
 function usage(code, why) {
   if (why) console.error(`deploy-manifest: ${why}`);
   const head = fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1).filter((l) => l.startsWith('//'));
@@ -83,7 +100,7 @@ function usage(code, why) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') usage(0);
-    if (a in MODES) { modes.push(a); if (a === '--smoke') { if (argv[i + 1] === undefined || argv[i + 1].startsWith('--')) usage(2, '--smoke needs an origin'); i++; } continue; }
+    if (a in MODES) { modes.push(a); if (ORIGIN_MODES.includes(a)) { if (argv[i + 1] === undefined || argv[i + 1].startsWith('--')) usage(2, `${a} needs an origin`); i++; } continue; }
     if (BOOL_FLAGS.includes(a)) continue;
     if (VALUE_FLAGS.includes(a)) { if (argv[i + 1] === undefined || argv[i + 1].startsWith('--')) usage(2, `${a} needs a value`); i++; continue; }
     usage(2, `unknown argument '${a}' (nothing was written)`);
@@ -92,7 +109,11 @@ function usage(code, why) {
 }
 const flag = (n) => argv.includes(n);
 const val = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
-const MODE = flag('--check') ? 'check' : flag('--stage-assets') ? 'stage' : flag('--commands') ? 'commands' : flag('--smoke') ? 'smoke' : 'generate';
+const MODE = flag('--check') ? 'check' : flag('--stage-assets') ? 'stage' : flag('--commands') ? 'commands' : flag('--smoke') ? 'smoke'
+  : flag('--published') ? 'published' : flag('--record-verdict') ? 'record-verdict' : 'generate';
+if (flag('--from-lock') && MODE !== 'generate') usage(2, '--from-lock applies to generate only (--check reads it from manifest.json)');
+// The committed G2 record (--record-verdict): what a checkout without out/ux (CI, a fresh clone) accepts as the verdict.
+const VERDICT_FILE = path.join(SC, 'infra', 'ux-verdict.json');
 const OUT = path.resolve(SC, val('--out', 'out/deploy'));
 
 let fails = 0;
@@ -149,13 +170,15 @@ function build(opts) {
   const lockFiles = lock.release.files;
   const assets = []; const r2 = [];
   const addAsset = (src, apath) => { const st = fs.statSync(src); assets.push({ path: apath, src: rel(src), size: st.size, sha256: sha256File(src) }); };
-  const addR2 = (src, urlPath, group, root) => {
-    const st = fs.statSync(src);
+  // Local mode hashes the file; --from-lock takes size + sha256 from the lock (`known`) and never reads the binary.
+  const addR2 = (src, urlPath, group, root, known = null) => {
+    const size = known ? known.bytes : fs.statSync(src).size;
     r2.push({ key: opts.prefix + urlPath.slice(1), url: urlPath, src: rel(src), group, root: rel(root), relPath: path.relative(root, src),
-      size: st.size, sha256: sha256File(src), contentType: contentType(src), immutable: isImmutable(urlPath),
-      phase: isImmutable(urlPath) ? 'immutable' : 'mutable', multipart: st.size > MULTIPART_OVER });
+      size, sha256: known ? known.sha256 : sha256File(src), contentType: contentType(src), immutable: isImmutable(urlPath),
+      phase: isImmutable(urlPath) ? 'immutable' : 'mutable', multipart: size > MULTIPART_OVER });
   };
   // assets: pinned dist at "/", gallery at "/showcase/" (docs and the X3 experiment page are not shipped)
+  if (!fs.existsSync(path.join(R, 'dist'))) throw new Error(`${rel(path.join(R, 'dist'))} missing: build it from source with 'node scripts/build-shell.mjs'`);
   for (const f of walk(path.join(R, 'dist'))) addAsset(f, path.relative(path.join(R, 'dist'), f));
   for (const f of walk(path.join(SC, 'gallery'))) {
     const r = path.relative(path.join(SC, 'gallery'), f);
@@ -164,14 +187,24 @@ function build(opts) {
   }
   // R2: the pinned release's public/ (runtime, profiles, stock snapshots) + our overlays
   const pub = path.join(R, 'public');
-  for (const f of walk(path.join(pub, 'runtime'))) addR2(f, `/${path.relative(pub, f)}`, 'runtime', path.join(pub, 'runtime'));
-  for (const f of walk(path.join(pub, 'profiles'))) {
+  // the files of public/<dir>: walked locally, or (--from-lock) the lock's release.files entries public/<dir>/…
+  const pubFiles = (dir) => (opts.fromLock
+    ? Object.keys(lockFiles).filter((k) => k.startsWith(`public/${dir}/`)).sort().map((k) => [path.join(R, k), lockFiles[k]])
+    : walk(path.join(pub, dir)).map((f) => [f, null]));
+  for (const [f, k] of pubFiles('runtime')) addR2(f, `/${path.relative(pub, f)}`, 'runtime', path.join(pub, 'runtime'), k);
+  for (const [f, k] of pubFiles('profiles')) {
     if (opts.noEssentialPack && /^mathlib-essential\.pack\./.test(path.basename(f))) continue;
-    addR2(f, `/${path.relative(pub, f)}`, 'profiles', path.join(pub, 'profiles'));
+    addR2(f, `/${path.relative(pub, f)}`, 'profiles', path.join(pub, 'profiles'), k);
   }
-  if (opts.stockSnapshots) for (const f of walk(path.join(pub, 'snapshots'))) addR2(f, `/${path.relative(pub, f)}`, 'snapshots-stock', path.join(pub, 'snapshots'));
+  if (opts.stockSnapshots) for (const [f, k] of pubFiles('snapshots')) addR2(f, `/${path.relative(pub, f)}`, 'snapshots-stock', path.join(pub, 'snapshots'), k);
   for (const o of opts.overlays) {
     const d = path.join(SC, 'out/overlay/snapshots', o);
+    if (opts.fromLock) {
+      const lo = lock.overlays && lock.overlays[o];
+      if (!lo || !lo.files || !lo.files['index.json']) throw new Error(`overlay ${o}: not recorded in QED64.lock.json overlays (scripts/pin-qed64.mjs record-overlays)`);
+      for (const n of Object.keys(lo.files).sort()) addR2(path.join(d, n), `/snapshots/${o}/${n}`, `overlay-${o}`, d, lo.files[n]);
+      continue;
+    }
     if (!fs.existsSync(path.join(d, 'index.json'))) throw new Error(`overlay ${o}: ${rel(d)}/index.json missing (scripts/showcase.sh overlay)`);
     for (const f of walk(d)) addR2(f, `/snapshots/${o}/${path.relative(d, f)}`, `overlay-${o}`, d);
   }
@@ -185,17 +218,30 @@ function build(opts) {
       note: 'Generated by scripts/deploy-manifest.mjs. Nothing is uploaded by this tool; publishing needs the owner\'s Cloudflare account and explicit go-ahead (docs/DEPLOY.md).',
       pin: { id: String(lock.qed64.commit).slice(0, 7), buildId: BID, qed64Commit: lock.qed64.commit, lockSha256: sha256File(path.join(SC, 'QED64.lock.json')), releaseDir: lock.release.dir },
       gallery: galleryContentHash(path.join(SC, 'gallery')),
-      options: { overlays: opts.overlays, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix },
+      options: { overlays: opts.overlays, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
       totals: { assets: assets.length, assetBytes: sum(assets), r2Objects: r2.length, r2Bytes: sum(r2), r2Multipart: r2.filter((o) => o.multipart).length, groups },
       assets, r2,
     },
-    ctx: { lock, BID, R, lockFiles },
+    ctx: { lock, BID, R, lockFiles, fromLock: !!opts.fromLock },
   };
 }
 
 // ------------------------------------------------------------------------------------------ validate
 function validate({ manifest: m, ctx }) {
-  const { BID, R, lockFiles } = ctx;
+  const { BID, R, lockFiles, fromLock } = ctx;
+  // The JSON an R2 entry names. Local mode: the file (its sha256 is the manifest's by construction). --from-lock: the
+  // file must be the one QED64 tracks in git (fetch-artifacts --git-only) with the lock's sha256; an overlay index is
+  // not in git, so it returns null there and R3 for it runs in --published against the origin.
+  const jsonOf = (o, label) => {
+    const p = path.join(SC, o.src);
+    if (!fromLock) return readJson(p);
+    if (!fs.existsSync(p)) {
+      if (o.group.startsWith('overlay-')) return null;
+      ok(false, `${label}: ${o.src} present (a file QED64 tracks in git: run 'node scripts/fetch-artifacts.mjs --git-only')`); return undefined;
+    }
+    if (!ok(sha256File(p) === o.sha256, `${label}: ${o.src} sha256 == the lock's`)) return undefined;
+    return readJson(p);
+  };
   const byUrl = new Map(m.r2.map((o) => [o.url, o]));
   const assetPaths = new Set(m.assets.map((a) => a.path));
   // A1–A5
@@ -213,23 +259,29 @@ function validate({ manifest: m, ctx }) {
   ok(ids.size === 1 && ids.has(BID) && pin.buildId === BID, `A4 bundle buildIds {${[...ids].join(', ')}} == {${BID}} and gallery/pin.json buildId ${pin.buildId}`);
   ok(m.assets.length <= ASSET_COUNT_CAP, `A5 asset count ${m.assets.length} ≤ ${ASSET_COUNT_CAP}`);
   // L1: release files equal the lock
-  const fromRelease = [...m.assets.filter((a) => a.src.startsWith(`${m.pin.releaseDir}/`)), ...m.r2.filter((o) => o.src.startsWith(`${m.pin.releaseDir}/`))];
+  // (--from-lock: the R2 entries ARE the lock's values, so L1 can only say something about the hashed dist files)
+  const fromRelease = [...m.assets.filter((a) => a.src.startsWith(`${m.pin.releaseDir}/`)), ...(fromLock ? [] : m.r2.filter((o) => o.src.startsWith(`${m.pin.releaseDir}/`)))];
   const lockBad = fromRelease.filter((x) => { const l = lockFiles[x.src.slice(m.pin.releaseDir.length + 1)]; return !l || l.sha256 !== x.sha256 || l.bytes !== x.size; });
-  ok(!lockBad.length, `L1 all ${fromRelease.length} files taken from ${m.pin.releaseDir}/ match QED64.lock.json (size + sha256)`, lockBad.slice(0, 5).map((x) => x.src).join(', '));
+  ok(!lockBad.length, `L1 all ${fromRelease.length} files taken from ${m.pin.releaseDir}/ match QED64.lock.json (size + sha256)${fromLock ? '; the R2 entries are the lock\'s own values (--from-lock)' : ''}`, lockBad.slice(0, 5).map((x) => x.src).join(', '));
   // R1 runtime
   const rtMut = byUrl.get('/runtime/runtime-manifest.json'); const rtPin = byUrl.get(`/runtime/runtime-manifest.${BID}.json`);
-  if (ok(!!rtMut && !!rtPin && rtMut.sha256 === rtPin.sha256, `R1 runtime-manifest.json == runtime-manifest.${BID}.json (the pinned shell fetches the latter first)`)) {
-    const rt = readJson(path.join(SC, rtPin.src)); const bad = []; let n = 0;
+  const rt = ok(!!rtMut && !!rtPin && rtMut.sha256 === rtPin.sha256, `R1 runtime-manifest.json == runtime-manifest.${BID}.json (the pinned shell fetches the latter first)`)
+    ? jsonOf(rtPin, 'R1') : undefined;
+  if (rt) {
+    const bad = []; let n = 0;
     for (const f of Object.values(rt.files || {})) for (const c of f.chunks || []) { n++; const o = byUrl.get(c.url); if (!o || o.size !== c.bytes || o.sha256 !== c.sha256) bad.push(c.url); }
     ok(rt.buildId === BID && n > 0 && !bad.length, `R1 runtime buildId ${rt.buildId}; all ${n} chunks present with the manifest's size and sha256`, bad.join(', '));
   }
   // R2 profiles
   const pidx = byUrl.get('/profiles/index.json');
-  if (ok(!!pidx, 'R2 profiles/index.json uploaded')) {
-    for (const p of readJson(path.join(SC, pidx.src)).profiles) {
+  const pj = ok(!!pidx, 'R2 profiles/index.json uploaded') ? jsonOf(pidx, 'R2') : undefined;
+  if (pj) {
+    for (const p of pj.profiles) {
       const mo = byUrl.get(p.manifest);
       if (!ok(!!mo, `R2 profile ${p.id}: manifest ${p.manifest} uploaded`)) continue;
-      const parts = readJson(path.join(SC, mo.src)).content.pack.transport.parts;
+      const mj = jsonOf(mo, `R2 profile ${p.id}`);
+      if (!mj) continue;
+      const parts = mj.content.pack.transport.parts;
       const absent = parts.filter((x) => !byUrl.has(x.url));
       if (!m.options.essentialPack && p.id === 'essential' && absent.length === parts.length) { info(`R2 profile essential: ${parts.length} parts deliberately not uploaded (--no-essential-pack: "Load exact imports" will fail)`); continue; }
       const bad = parts.filter((x) => { const o = byUrl.get(x.url); return !o || o.size !== x.byteLength || `sha256:${o.sha256}` !== x.digest; });
@@ -239,20 +291,9 @@ function validate({ manifest: m, ctx }) {
   // R3 snapshot indexes
   const indexes = m.r2.filter((o) => /^\/snapshots\/(?:[^/]+\/)?index\.json$/.test(o.url));
   for (const ix of indexes) {
-    const dir = /^\/snapshots\/([^/]+)\/index\.json$/.exec(ix.url)?.[1] || null;
-    const j = readJson(path.join(SC, ix.src)); const errs = [];
-    if (j.schema !== 'qed64.snapshot-index/v1') errs.push(`schema ${j.schema}`);
-    const names = j.snapshots.map((s) => s.name).sort().join(',');
-    if (dir && names !== 'init,mathlib') errs.push(`entries ${names} (overlay must be exactly init,mathlib)`);
-    for (const s of j.snapshots) {
-      const url = dir ? s.url.replace(/^\/snapshots\//, `/snapshots/${dir}/`) : s.url;
-      const o = byUrl.get(url);
-      if (s.runtime !== BID) errs.push(`${s.name}.runtime ${s.runtime}`);
-      if (!o) { errs.push(`${s.name}: ${url} not uploaded`); continue; }
-      if (`sha256:${o.sha256}` !== s.digest) errs.push(`${s.name}: sha256 != digest`);
-      if (o.size !== s.transfer) errs.push(`${s.name}: size ${o.size} != transfer ${s.transfer}`);
-    }
-    ok(!errs.length, `R3 ${ix.url}: runtime == ${BID}, ${j.snapshots.length} entries [${names}] present with sha256 == digest, size == transfer`, errs.join('; '));
+    const j = jsonOf(ix, `R3 ${ix.url}`);
+    if (j === null) { info(`R3 ${ix.url}: not tracked in git, its sha256 is the lock's (record-overlays); its content is checked by --published on the origin`); continue; }
+    if (j) r3Index(m, BID, ix, j);
   }
   ok(indexes.length === m.options.overlays.length + (m.options.stockSnapshots ? 1 : 0), `R3 ${indexes.length} snapshot index(es) uploaded (stock: ${m.options.stockSnapshots}, overlays: ${m.options.overlays.join(', ')})`);
   // R4
@@ -260,6 +301,35 @@ function validate({ manifest: m, ctx }) {
   const mp = m.r2.filter((o) => o.multipart);
   info(`R4 ${mp.length} object(s) > 300 MiB need a multipart upload (rclone): ${mp.map((o) => `${o.key} ${(o.size / MiB).toFixed(0)} MiB`).join(', ') || 'none'}`);
   info(`totals: ${m.totals.assets} assets ${(m.totals.assetBytes / MiB).toFixed(1)} MiB; ${m.totals.r2Objects} R2 objects ${(m.totals.r2Bytes / 1e9).toFixed(3)} GB`);
+}
+
+// R3 on one snapshot index (parsed JSON j of the R2 entry ix): schema, runtime, entries present with digest and size.
+function r3Index(m, BID, ix, j) {
+  const byUrl = new Map(m.r2.map((o) => [o.url, o]));
+  const dir = /^\/snapshots\/([^/]+)\/index\.json$/.exec(ix.url)?.[1] || null;
+  const errs = [];
+  if (j.schema !== 'qed64.snapshot-index/v1') errs.push(`schema ${j.schema}`);
+  const snaps = Array.isArray(j.snapshots) ? j.snapshots : [];
+  const names = snaps.map((s) => s.name).sort().join(',');
+  if (dir && names !== 'init,mathlib') errs.push(`entries ${names} (overlay must be exactly init,mathlib)`);
+  for (const s of snaps) {
+    const url = dir ? s.url.replace(/^\/snapshots\//, `/snapshots/${dir}/`) : s.url;
+    const o = byUrl.get(url);
+    if (s.runtime !== BID) errs.push(`${s.name}.runtime ${s.runtime}`);
+    if (!o) { errs.push(`${s.name}: ${url} not uploaded`); continue; }
+    if (`sha256:${o.sha256}` !== s.digest) errs.push(`${s.name}: sha256 != digest`);
+    if (o.size !== s.transfer) errs.push(`${s.name}: size ${o.size} != transfer ${s.transfer}`);
+  }
+  return ok(!errs.length, `R3 ${ix.url}: runtime == ${BID}, ${snaps.length} entries [${names}] present with sha256 == digest, size == transfer`, errs.join('; '));
+}
+
+// The committed G2 record (infra/ux-verdict.json) when it names exactly these inputs, else null.
+function committedVerdict({ gallery, lockSha256, overlays }) {
+  if (!fs.existsSync(VERDICT_FILE)) return null;
+  let v; try { v = readJson(VERDICT_FILE); } catch { return null; }
+  const same = v.schema === 'qed64-showcase.ux-verdict/v1' && v.gallery === gallery && v.lockSha256 === lockSha256
+    && JSON.stringify(Object.entries(v.overlays || {}).sort()) === JSON.stringify(Object.entries(overlays).sort());
+  return same ? v : null;
 }
 
 // G1: the gallery's static gate (no browser). G2: is the last green UX run recorded for this exact gallery?
@@ -278,12 +348,19 @@ function galleryGate(m) {
   // tested THIS manifest's gallery, lock (pin.lockSha256) and overlay indexes (the uploaded /snapshots/<o>/index.json)
   const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === `/snapshots/${o}/index.json`) || {}).sha256 || null]));
   const runs = readRuns();
-  const { match, last: lastV, recorded } = verdictFor({ gallery: m.gallery.contentSha256, lockSha256: m.pin.lockSha256, overlays }, runs);
+  const inputsNow = { gallery: m.gallery.contentSha256, lockSha256: m.pin.lockSha256, overlays };
+  const { match, last: lastV, recorded } = verdictFor(inputsNow, runs);
   // the same rule as the freshness line (ux-record.mjs laterFailures): a later red full run on the same inputs is named
-  const later = match ? laterFailures(match, { gallery: m.gallery.contentSha256, lockSha256: m.pin.lockSha256, overlays }, runs) : [];
+  const later = match ? laterFailures(match, inputsNow, runs) : [];
   const note = later.length ? `; BUT ${later.length} later full run(s) on the same inputs were NOT A VERDICT (${later.map((x) => `${x.run}: ${x.why.join(', ')}`).join('; ')}): not a clean bill of health, resolve before publishing` : '';
-  info(match ? `G2 UX: verdict run ${match.run} (${match.end}, lane ${match.lane}) was on THIS gallery ${m.gallery.contentSha256.slice(0, 16)}…, lock ${m.pin.lockSha256.slice(0, 12)}… and overlays ${Object.keys(overlays).join(', ')}${note}`
-    : `G2 UX: NO verdict 'showcase.sh ux' run for this gallery ${m.gallery.contentSha256.slice(0, 16)}… + lock + overlays (last verdict: ${lastV ? `${lastV.end} on ${String(lastV.galleryEnd).slice(0, 16)}…` : `none among ${recorded} recorded runs`}); run 'scripts/showcase.sh ux' before publishing`);
+  // No local UX record of these inputs (CI, a fresh clone): the committed record written by --record-verdict, which
+  // refused to record a verdict that a later red run on the same inputs contradicted.
+  const rec = match ? null : committedVerdict(inputsNow);
+  const what = `THIS gallery ${m.gallery.contentSha256.slice(0, 16)}…, lock ${m.pin.lockSha256.slice(0, 12)}… and overlays ${Object.keys(overlays).join(', ')}`;
+  info(match ? `G2 UX: verdict run ${match.run} (${match.end}, lane ${match.lane}) was on ${what}${note}`
+    : rec ? `G2 UX: verdict run ${rec.run} (${rec.end}, lane ${rec.lane}) was on ${what} (committed record ${rel(VERDICT_FILE)}, recorded ${rec.recordedAt})`
+      : `G2 UX: NO verdict 'showcase.sh ux' run for this gallery ${m.gallery.contentSha256.slice(0, 16)}… + lock + overlays (last verdict: ${lastV ? `${lastV.end} on ${String(lastV.galleryEnd).slice(0, 16)}…` : `none among ${recorded} recorded runs`}; ${rel(VERDICT_FILE)} ${fs.existsSync(VERDICT_FILE) ? 'names other inputs' : 'absent'}); run 'scripts/showcase.sh ux' before publishing, then 'node scripts/deploy-manifest.mjs --record-verdict' for CI`);
+  return { match, later, rec, overlays };
 }
 
 function writeOut(m) {
@@ -298,15 +375,17 @@ function writeOut(m) {
 const optsFromArgv = () => ({
   overlays: val('--overlays', 'widgets8,widgets7').split(',').filter(Boolean),
   stockSnapshots: !flag('--no-stock-snapshots'), noEssentialPack: flag('--no-essential-pack'), prefix: val('--prefix', ''),
+  fromLock: flag('--from-lock'),
 });
-const optsFromManifest = (m) => ({ overlays: m.options.overlays, stockSnapshots: m.options.stockSnapshots, noEssentialPack: !m.options.essentialPack, prefix: m.options.prefix });
+const optsFromManifest = (m) => ({ overlays: m.options.overlays, stockSnapshots: m.options.stockSnapshots, noEssentialPack: !m.options.essentialPack, prefix: m.options.prefix, fromLock: m.options.source === 'lock' });
 const loadManifest = () => { const p = path.join(OUT, 'manifest.json'); if (!fs.existsSync(p)) { console.error(`no ${rel(p)}: run 'node scripts/deploy-manifest.mjs' first`); process.exit(2); } return readJson(p); };
 
 // ------------------------------------------------------------------------------------------ modes
 if (MODE === 'generate') {
   const opts = optsFromArgv();
   for (const o of opts.overlays) if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(o)) { console.error(`bad overlay name ${o}`); process.exit(2); }
-  const b = build(opts);
+  let b;
+  try { b = build(opts); } catch (e) { console.log(`FAIL ${e.message}`); console.log('DEPLOY-MANIFEST FAILED: nothing written'); process.exit(1); }
   validate(b);
   galleryGate(b.manifest);
   if (fails) {
@@ -320,7 +399,8 @@ if (MODE === 'generate') {
 }
 if (MODE === 'check') {
   const written = loadManifest();
-  const b = build(optsFromManifest(written));
+  let b;
+  try { b = build(optsFromManifest(written)); } catch (e) { console.log(`FAIL ${e.message}`); console.log('DEPLOY-MANIFEST CHECK FAILED'); process.exit(1); }
   const same = JSON.stringify(b.manifest, null, 1) + '\n' === fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8');
   if (!ok(same, 'C1 regenerated manifest (every file re-hashed) is byte-identical to the written manifest.json')) {
     const was = new Map([...written.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...written.r2.map((o) => [`r2 ${o.key}`, o.sha256])]);
@@ -354,6 +434,7 @@ if (MODE === 'stage') {
 if (MODE === 'commands') {
   let E; try { E = loadDeployEnv(); } catch (e) { console.error(`deploy target refused: ${e.message}`); process.exit(3); }
   const m = loadManifest(); const bucket = val('--bucket', E.R2_BUCKET); const remote = val('--remote', E.R2_REMOTE);
+  if (m.options.source === 'lock') { console.error('--commands refused (nothing printed): this is a --from-lock (shell-only) manifest; the upload needs the full manifest of a checkout that has the artifacts'); process.exit(3); }
   // the shared-bucket guard on what the printed commands would ACTUALLY write: this manifest's prefix in that bucket
   try { checkSharedBucket(bucket, m.options.prefix); } catch (e) { console.error(`--commands refused (nothing printed): ${e.message}. Regenerate with --prefix ${E.R2_PREFIX || "''"}`); process.exit(3); }
   const q = (s) => (/[^A-Za-z0-9_./:=@,-]/.test(s) ? `'${s.replace(/'/g, `'\\''`)}'` : s);
@@ -382,6 +463,55 @@ if (MODE === 'commands') {
   console.log('npx --prefix infra wrangler deploy');
   console.log('node scripts/deploy-manifest.mjs --smoke https://<your-worker-host> --all --range');
   process.exit(0);
+}
+if (MODE === 'record-verdict') {
+  const m = loadManifest();
+  // the manifest must describe the checkout as it is now: same gallery content and the same lock bytes
+  const g = galleryContentHash(path.join(SC, 'gallery')).contentSha256; const l = sha256File(path.join(SC, 'QED64.lock.json'));
+  if (g !== m.gallery.contentSha256 || l !== m.pin.lockSha256) { console.error(`record-verdict refused: ${rel(path.join(OUT, 'manifest.json'))} is stale (gallery ${g.slice(0, 16)}… vs ${m.gallery.contentSha256.slice(0, 16)}…, lock ${l.slice(0, 12)}… vs ${m.pin.lockSha256.slice(0, 12)}…): regenerate it first`); process.exit(1); }
+  const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === `/snapshots/${o}/index.json`) || {}).sha256 || null]));
+  const runs = readRuns(); const inputsNow = { gallery: g, lockSha256: l, overlays };
+  const { match } = verdictFor(inputsNow, runs);
+  if (!match) { console.error(`record-verdict refused: no verdict 'showcase.sh ux' run on this gallery + lock + overlays in out/ux/showcase-ux-runs.jsonl (run scripts/showcase.sh ux)`); process.exit(1); }
+  const later = laterFailures(match, inputsNow, runs);
+  if (later.length) { console.error(`record-verdict refused: ${later.length} later full run(s) on the same inputs were NOT A VERDICT (${later.map((x) => x.run).join(', ')}): resolve first`); process.exit(1); }
+  const rec = { schema: 'qed64-showcase.ux-verdict/v1', note: 'Written by node scripts/deploy-manifest.mjs --record-verdict: the G2 verdict a checkout without out/ux (CI) accepts. Commit it with the gallery/lock it names.',
+    gallery: g, lockSha256: l, overlays, run: match.run, end: match.end, lane: match.lane, pin: m.pin.id, buildId: m.pin.buildId, recordedAt: new Date().toISOString() };
+  fs.writeFileSync(VERDICT_FILE, JSON.stringify(rec, null, 1) + '\n');
+  console.log(`RECORD-VERDICT OK: ${rel(VERDICT_FILE)} names run ${match.run} (${match.end}) on gallery ${g.slice(0, 16)}…, lock ${l.slice(0, 12)}…, overlays ${Object.keys(overlays).join(', ')}; commit it`);
+  process.exit(0);
+}
+if (MODE === 'published') {
+  const origin = val('--published', '').replace(/\/$/, '');
+  if (!/^https?:\/\//.test(origin)) { console.error('usage: --published <http(s)://origin>'); process.exit(2); }
+  const m = loadManifest(); const BID = m.pin.buildId;
+  let bad = 0, n = 0; const t0 = Date.now();
+  const fail = (u, why) => { bad++; if (bad <= 20) console.log(`FAIL ${u} — ${why}`); };
+  const req = (u, method) => fetch(origin + u, { method, headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}`, headers: new Headers(), arrayBuffer: async () => new ArrayBuffer(0) }));
+  const fetched = new Map();
+  for (const o of m.r2) {
+    n++;
+    if (o.immutable) {
+      const r = await req(o.url, 'HEAD');
+      if (r.status !== 200) fail(o.url, `status ${r.status}`);
+      else if (Number(r.headers.get('content-length')) !== o.size) fail(o.url, `content-length ${r.headers.get('content-length')} != ${o.size}`);
+      continue;
+    }
+    const r = await req(o.url, 'GET');
+    if (r.status !== 200) { fail(o.url, `status ${r.status}`); continue; }
+    const body = Buffer.from(await r.arrayBuffer());
+    const h = createHash('sha256').update(body).digest('hex');
+    if (body.length !== o.size || h !== o.sha256) { fail(o.url, `published ${body.length} B sha256 ${h.slice(0, 16)}… != manifest ${o.size} B ${o.sha256.slice(0, 16)}… (not this release's upload)`); continue; }
+    fetched.set(o.url, body);
+  }
+  ok(!bad, `PUBLISHED-OBJECTS ${origin}: ${n - bad}/${n} R2 objects of this manifest are published (immutable: HEAD status 200 + content-length; manifests and indexes: GET sha256 == manifest) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  // R3 on the overlay indexes, which a --from-lock manifest could not read locally (they are not tracked in git)
+  for (const o of m.options.overlays) {
+    const ix = m.r2.find((x) => x.url === `/snapshots/${o}/index.json`);
+    if (ix && fetched.has(ix.url)) r3Index(m, BID, ix, JSON.parse(fetched.get(ix.url).toString('utf8')));
+  }
+  console.log(fails ? `PUBLISHED FAILED: ${origin} does not serve this manifest's artifacts; upload them first (scripts/upload-artifacts.sh)` : `PUBLISHED OK ${origin}`);
+  process.exit(fails ? 1 : 0);
 }
 if (MODE === 'smoke') {
   const origin = val('--smoke', '').replace(/\/$/, '');

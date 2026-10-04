@@ -31,12 +31,17 @@
 #   all = upload-dry guard upload upload-s3 rollback deploy-dry load serve smoke (browser and stop are separate on purpose;
 #         upload-dry runs first because it writes \$DEPLOY_OUT/manifest.json, which guard reads)
 #
-# Env: REHEARSAL_DIR (default work/deploy-rehearsal), DEPLOY_OUT (default out/deploy-rehearsal/deploy, so the
+# Env: REHEARSAL_DIR (default $QED64_SHOWCASE_WORK/deploy-rehearsal), DEPLOY_OUT (default out/deploy-rehearsal/deploy, so the
 # rehearsal never touches out/deploy), PORT (8790), ALLOW_NO_UX_VERDICT (passed through), MANIFEST_ARGS.
 set -euo pipefail
 SC="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$SC"
-RD=${REHEARSAL_DIR:-$(cd "$SC/work" && pwd -P)/deploy-rehearsal}
+# shellcheck source=scripts/lib/env.sh
+. "$SC/scripts/lib/env.sh"     # W = $QED64_SHOWCASE_WORK (from the environment or .env.local)
+# The isolation below is macOS's sandbox-exec (offline.sb); there is no Linux equivalent here, so refuse rather than
+# run the rehearsal with network access.
+command -v sandbox-exec >/dev/null || { echo "rehearse.sh: needs macOS sandbox-exec (offline.sb: no outbound network); the rehearsal is macOS-only (docs/ARCHITECTURE.md \"Platforms\")" >&2; exit 2; }
+RD=${REHEARSAL_DIR:-$W/deploy-rehearsal}
 export DEPLOY_OUT=${DEPLOY_OUT:-out/deploy-rehearsal/deploy}
 case "$DEPLOY_OUT" in /*) DO_ABS=$DEPLOY_OUT ;; *) DO_ABS=$SC/$DEPLOY_OUT ;; esac
 PORT=${PORT:-8790}

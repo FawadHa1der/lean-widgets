@@ -9,6 +9,21 @@
 #                                                   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)
 #   DRY_RUN=1 scripts/deploy-app.sh                 everything up to `wrangler deploy --dry-run` (bundles the worker,
 #                                                   uploads nothing, needs no account)
+#   DEPLOY_FROM_LOCK=1 scripts/deploy-app.sh        a checkout WITHOUT the artifacts (GitHub Actions, a fresh clone): the
+#                                                   manifest is `deploy-manifest.mjs --from-lock` (shell hashed, R2 keys
+#                                                   from the committed lock; the shell must be built from source first:
+#                                                   scripts/build-shell.mjs + fetch-artifacts.mjs --git-only). The release
+#                                                   record check (a file of the machine that uploaded) is replaced by the
+#                                                   PUBLISHED_ORIGIN check below; G2 comes from the committed
+#                                                   infra/ux-verdict.json when out/ux is absent.
+#   PUBLISHED_ORIGIN=https://… scripts/deploy-app.sh  before deploying, `deploy-manifest.mjs --published <origin>`: every R2
+#                                                   object this shell needs answers on the live origin (HEAD size; GET
+#                                                   sha256 of every manifest and index). Unset with DEPLOY_FROM_LOCK=1 =
+#                                                   the very first deploy (no origin yet): skipped with a log line; the
+#                                                   post-deploy `--smoke --all` then checks every R2 key.
+#   WRANGLER_BIN=<path>                             another wrangler executable (the local CI rehearsal's stand-in,
+#                                                   scripts/deploy-rehearsal/wrangler-shim.sh); default the pinned
+#                                                   infra/node_modules/.bin/wrangler (npx --prefix infra wrangler)
 #
 # Steps: regenerate + check the manifest with the target's prefix (scripts/lib/deploy-common.sh: G1 must pass, G2
 # must name a verdict UX run unless ALLOW_NO_UX_VERDICT=1); compare it with the newest release record of R2_REMOTE
@@ -25,8 +40,14 @@ cd "$SC"
 . "$SC/scripts/lib/deploy-common.sh"
 load_deploy_env
 WRANGLER_CONFIG=${WRANGLER_CONFIG:-$SC/wrangler.toml}
+FROM_LOCK=${DEPLOY_FROM_LOCK:-0}
+case "$FROM_LOCK" in 0|1) ;; *) die "DEPLOY_FROM_LOCK must be 0 or 1" ;; esac
+# shell-only manifest of a checkout without the artifacts (MANIFEST_ARGS reaches the generator; --check reads the source
+# back from manifest.json)
+[ "$FROM_LOCK" = 1 ] && export MANIFEST_ARGS="--from-lock ${MANIFEST_ARGS:-}"
 # wrangler 4.125.0 lives in infra/ (infra/package.json), apart from the root package.json the UX suite uses.
 [ -x "$SC/infra/node_modules/.bin/wrangler" ] || npm ci --prefix "$SC/infra" --no-audit --no-fund
+if [ -n "${WRANGLER_BIN:-}" ]; then WR=("$WRANGLER_BIN"); echo "wrangler: $WRANGLER_BIN (WRANGLER_BIN)"; else WR=(npx --prefix "$SC/infra" wrangler); fi
 
 manifest_preflight
 
@@ -36,7 +57,9 @@ manifest_preflight
 # show up in the post-deploy smoke as 404s or SNAPSHOT_UNPAIRED. ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately
 # (e.g. the upload ran on another machine whose release record you do not have).
 REC=$(newest_record_for_remote "$R2_REMOTE")
-if ! node - "$DEPLOY_OUT/manifest.json" "${REC:-}" "$R2_BUCKET" "$R2_PREFIX" "$R2_REMOTE" <<'JS'
+if [ "$FROM_LOCK" = 1 ]; then
+  echo "release-record check: not applicable with DEPLOY_FROM_LOCK=1 (the records live on the machine that uploaded); the published check below takes its place"
+elif ! node - "$DEPLOY_OUT/manifest.json" "${REC:-}" "$R2_BUCKET" "$R2_PREFIX" "$R2_REMOTE" <<'JS'
 const fs = require('fs'), path = require('path');
 const [mPath, rec, bucket, prefix, remote] = process.argv.slice(2);
 if (!rec) { console.error(`RECORD MISSING: no release record of remote '${remote}' in ${path.dirname(mPath)}/published: run scripts/upload-artifacts.sh first`); process.exit(1); }
@@ -55,6 +78,15 @@ JS
 then
   [ "${ALLOW_UNRECORDED_UPLOAD:-0}" = 1 ] || die "the shell does not match the newest upload of '$R2_REMOTE' (see above); set ALLOW_UNRECORDED_UPLOAD=1 only if you know that bucket holds exactly this manifest's objects"
   echo "WARNING: proceeding without a matching release record because ALLOW_UNRECORDED_UPLOAD=1" >&2
+fi
+
+# Are the R2 objects this shell needs already on the live origin? (The release record says what THIS machine uploaded;
+# this asks the origin itself.)
+if [ -n "${PUBLISHED_ORIGIN:-}" ]; then
+  node "$SC/scripts/deploy-manifest.mjs" --published "$PUBLISHED_ORIGIN" --out "$DEPLOY_OUT" \
+    || die "the artifacts this shell needs are not (all) published on $PUBLISHED_ORIGIN: upload them first (scripts/upload-artifacts.sh on the machine that has them), nothing deployed"
+elif [ "$FROM_LOCK" = 1 ]; then
+  echo "PUBLISHED CHECK SKIPPED: PUBLISHED_ORIGIN is not set, i.e. the very first deploy (no live origin to ask yet). The artifacts must have been uploaded with scripts/upload-artifacts.sh; the post-deploy smoke (--smoke --all) checks every R2 key on the new deployment."
 fi
 
 node "$SC/scripts/deploy-manifest.mjs" --stage-assets --out "$DEPLOY_OUT" || die "--stage-assets FAILED"
@@ -85,10 +117,16 @@ else node "$SC/scripts/lib/wrangler-config.mjs" check "$WRANGLER_CONFIG" --asset
 # The version message names the pin and the gallery, so `wrangler versions list` shows which shell is which when
 # choosing a `wrangler rollback <version-id>` target (docs/DEPLOY-CLOUDFLARE.md, "Rollback").
 MSG=$(node -p 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));`pin ${m.pin.id ? `${m.pin.id} (${m.pin.buildId})` : m.pin.buildId} gallery ${m.gallery.contentSha256.slice(0,16)} prefix ${m.options.prefix}`' "$DEPLOY_OUT/manifest.json")
+# a CI deploy names its commit too (GitHub Actions sets GITHUB_SHA)
+[ -n "${GITHUB_SHA:-}" ] && MSG="$MSG ci ${GITHUB_SHA:0:12}"
 if [ "${DRY_RUN:-0}" = 1 ]; then
-  npx --prefix "$SC/infra" wrangler deploy --config "$WRANGLER_CONFIG" --message "$MSG" --dry-run --outdir "$DEPLOY_OUT/wrangler-dry-run" "$@"
+  "${WR[@]}" deploy --config "$WRANGLER_CONFIG" --message "$MSG" --dry-run --outdir "$DEPLOY_OUT/wrangler-dry-run" "$@"
   echo "DEPLOY DRY RUN OK: worker bundled into ${DEPLOY_OUT#"$SC"/}/wrangler-dry-run; nothing uploaded"
   exit 0
 fi
-npx --prefix "$SC/infra" wrangler deploy --config "$WRANGLER_CONFIG" --message "$MSG" "$@"
-echo "DEPLOYED. Next: node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke https://$WORKER_NAME.<your-subdomain>.workers.dev --all --range"
+rm -f "$DEPLOY_OUT/deployed-url.txt"
+"${WR[@]}" deploy --config "$WRANGLER_CONFIG" --message "$MSG" "$@" 2>&1 | tee "$DEPLOY_OUT/wrangler-deploy.log"
+# wrangler prints the workers.dev URL of the deployment; the smoke needs it (a custom domain: pass it yourself)
+URL=$(grep -oE 'https?://[A-Za-z0-9.:-]+' "$DEPLOY_OUT/wrangler-deploy.log" | grep -E '\.workers\.dev$|^http://127\.0\.0\.1:' | tail -1 || true)
+if [ -n "$URL" ]; then echo "$URL" > "$DEPLOY_OUT/deployed-url.txt"; echo "DEPLOYED-URL $URL"; fi
+echo "DEPLOYED. Next: node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke ${URL:-https://$WORKER_NAME.<your-subdomain>.workers.dev} --all --range"

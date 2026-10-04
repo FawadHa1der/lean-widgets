@@ -1,0 +1,128 @@
+# Deploy the qed64-showcase APP SHELL (QED64's page built from source at the pin + the gallery; about 18 MB of static
+# files) to the Cloudflare Worker `qed64-showcase`, the lean4game way: pushes redeploy the shell; the R2 artifacts
+# (2.4 GB: runtime, packs, snapshots, our overlays) are uploaded from the owner's machine with
+# qed64-showcase/scripts/upload-artifacts.sh and are never uploaded from here.
+#
+# Steps: build the pinned QED64 page from the submodule (byte-identical to the lock or nothing is deployed), the
+# gallery's static gate, the Worker's tests, then qed64-showcase/scripts/deploy-app.sh with DEPLOY_FROM_LOCK=1:
+#   * a shell-only manifest whose R2 keys, sizes and sha256 come from the committed lock (deploy-manifest --from-lock)
+#   * G2: the committed UX verdict qed64-showcase/infra/ux-verdict.json must name exactly this gallery + lock +
+#     overlays (written by `node scripts/deploy-manifest.mjs --record-verdict` after `scripts/showcase.sh ux`)
+#   * the published check: when the repository variable SHOWCASE_ORIGIN is set (the live showcase URL), every R2 object
+#     this shell needs must already answer there (HEAD size; GET sha256 of every manifest and index); unset = the very
+#     first deploy, skipped with a log line
+#   * `wrangler deploy` (wrangler 4.125.0 pinned in qed64-showcase/infra), then the smoke test of the deployed URL:
+#     every asset and every R2 key (status, size, isolation, cache and content-type headers) plus Range requests.
+# Secrets: CLOUDFLARE_API_TOKEN (an API token with Account > Workers Scripts > Edit only; no R2 permission) and
+# CLOUDFLARE_ACCOUNT_ID. Without them the job logs a skip line and does nothing else, like lean4game's deploy.yml.
+# workflow_dispatch: dry_run=true runs everything up to `wrangler deploy --dry-run` (no secrets needed);
+# allow_no_ux_verdict=true deploys without a committed UX verdict for these inputs (deliberate; see the guide).
+# Guide and first-deploy checklist: qed64-showcase/docs/DEPLOY-CLOUDFLARE.md. Local rehearsal (fresh clone, wrangler
+# --dry-run + wrangler dev --local over a fake R2): ci/rehearse-deploy.sh.
+name: qed64-deploy
+on:
+  push:
+    branches: [main]
+    paths: ['qed64-showcase/**', '.gitmodules', '.github/workflows/qed64-deploy.yml']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Stop at wrangler deploy --dry-run (no Cloudflare secrets needed; nothing is deployed)'
+        type: boolean
+        default: false
+      allow_no_ux_verdict:
+        description: 'Deploy although infra/ux-verdict.json does not name this gallery + lock + overlays'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qed64-deploy
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qed64-showcase
+    env:
+      QED64_SHOWCASE_WORK: ${{ github.workspace }}/../qed64-showcase-work
+    steps:
+      - id: gate
+        name: Deploy credentials present?
+        working-directory: .
+        env:
+          HAVE_SECRETS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          DRY: ${{ inputs.dry_run == true }}
+        run: |
+          if [ "$DRY" = true ]; then mode=dry-run
+          elif [ "$HAVE_SECRETS" = true ]; then mode=deploy
+          else mode=skip; echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping deploy (qed64-showcase/docs/DEPLOY-CLOUDFLARE.md, first deploy)"; fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "deploy mode: $mode"
+      - if: steps.gate.outputs.mode != 'skip'
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - if: steps.gate.outputs.mode != 'skip'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.3.0'   # the lock's toolchain.node
+      - if: steps.gate.outputs.mode != 'skip'
+        name: QED64 sources = the submodule at the active pin's commit (gitlink == HEAD == lock)
+        run: node scripts/qed64-src.mjs check
+      - if: steps.gate.outputs.mode != 'skip'
+        name: QED64's page built from source, byte-identical to the lock (else nothing is installed or deployed)
+        run: node scripts/build-shell.mjs
+      - if: steps.gate.outputs.mode != 'skip'
+        name: QED64's tracked manifests and indexes from git (the manifest's R1/R2/R3 read them)
+        run: node scripts/fetch-artifacts.mjs --git-only
+      - if: steps.gate.outputs.mode != 'skip'
+        name: Deploy Worker tests
+        run: node --test infra/worker.test.mjs
+      - if: steps.gate.outputs.mode != 'skip'
+        id: deploy
+        name: Deploy the shell (scripts/deploy-app.sh, DEPLOY_FROM_LOCK=1)
+        env:
+          DEPLOY_FROM_LOCK: '1'
+          DRY_RUN: ${{ steps.gate.outputs.mode == 'dry-run' && '1' || '0' }}
+          PUBLISHED_ORIGIN: ${{ vars.SHOWCASE_ORIGIN }}
+          ALLOW_NO_UX_VERDICT: ${{ inputs.allow_no_ux_verdict == true && '1' || '0' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          scripts/deploy-app.sh
+          if [ "$DRY_RUN" = 1 ]; then echo "dry run: nothing deployed, no smoke test"; exit 0; fi
+          # the public origin when configured (a custom domain), else the workers.dev URL wrangler printed
+          origin=${PUBLISHED_ORIGIN:-$(cat out/deploy/deployed-url.txt 2>/dev/null || true)}
+          if [ -z "$origin" ]; then echo "::error::no deployment URL in wrangler's output and vars.SHOWCASE_ORIGIN is not set"; exit 1; fi
+          echo "origin=$origin" >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.mode == 'deploy' && steps.deploy.outputs.origin != ''
+        name: Smoke test the deployment (every asset and R2 key, isolation and cache headers, Range)
+        env:
+          ORIGIN: ${{ steps.deploy.outputs.origin }}
+        run: |
+          # up to 3 attempts 20 s apart: a new Worker version can take a few seconds to reach every edge location
+          for i in 1 2 3; do
+            if node scripts/deploy-manifest.mjs --smoke "$ORIGIN" --all --range; then exit 0; fi
+            [ "$i" = 3 ] || { echo "smoke attempt $i failed; retrying in 20 s"; sleep 20; }
+          done
+          exit 1
+      - if: always() && steps.gate.outputs.mode != 'skip'
+        name: Upload the deploy record (manifest, gate logs, wrangler output)
+        uses: actions/upload-artifact@v4
+        with:
+          name: qed64-deploy-record
+          path: |
+            qed64-showcase/out/deploy/manifest.json
+            qed64-showcase/out/deploy/preflight.log*
+            qed64-showcase/out/deploy/wrangler-deploy.log
+            qed64-showcase/out/pins/shell-build-*.json
+          if-no-files-found: warn

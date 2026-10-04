@@ -1,0 +1,9 @@
+{
+  "name": "lean-widgets-ci-local",
+  "private": true,
+  "type": "module",
+  "description": "ci/run-local.mjs only: runs the GitHub Actions workflows' jobs in fresh clones on this machine. The YAML parser is its one dependency (npm ci --prefix ci).",
+  "dependencies": {
+    "yaml": "2.8.1"
+  }
+}
