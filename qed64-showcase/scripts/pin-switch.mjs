@@ -174,7 +174,8 @@ function checkPin(id, { full = false } = {}) {
     let rts = []; try { rts = [...new Set(readJson(ix).snapshots.map((x) => x.runtime))]; } catch { /* reported above */ }
     ok(rts.length === 1 && rts[0] === q.buildId, `out/runtimes/${bid}/overlay/${o}: index runtime ${rts.join(',') || '-'} == pins/${id}/QED64.lock.json runtime ${q.buildId}`);
   }
-  if (activeOrNull() === id) for (const r of overlayLinksMatchLock()) ok(r.ok, `active ${r.msg}`);
+  // the active overlay LINKS (not the stores): `use` makes them, and audits them again after the switch
+  if (activeOrNull() === id) for (const r of overlayLinksMatchLock()) out.push({ ok: !!r.ok, link: true, msg: `active ${r.msg}` });
   return out;
 }
 
@@ -224,8 +225,9 @@ function ourFollowingServers() {
 }
 const busy = (re) => { try { return execFileSync('pgrep', ['-fl', re]).toString().trim(); } catch { return ''; } };
 function printChecks(rows) { for (const r of rows) console.log(`${r.absent ? 'ABSENT' : r.ok ? 'OK  ' : 'FAIL'} ${r.msg}`); return rows.every((r) => r.ok); }
-/** Has this checkout materialized pin `id` at all (its release dir, its sources, or its runtime's stores)? */
-const materialized = (id) => { const d = pinDescriptor(id); return exists(releaseDir(id)) || headOf(srcDir(d.qed64.commit, id)) === d.qed64.commit || hasBuildStores(d.buildId) || exists(path.join(outRtDir(d.buildId), 'overlay')); };
+/** Has this checkout materialized pin `id` (its release dir or its QED64 sources)? A runtime store shared with another
+ *  pin (D and E share one runtime) does not count: it says nothing about THIS pin's shell. */
+const materialized = (id) => { const d = pinDescriptor(id); return exists(releaseDir(id)) || headOf(srcDir(d.qed64.commit, id)) === d.qed64.commit; };
 const activeOrNull = () => { try { return activePinId(); } catch { return null; } };
 
 if (cmd === 'list') {
@@ -269,7 +271,7 @@ if (cmd === 'list') {
   const id = argv[1];
   if (!ID_RE.test(id || '')) { console.error('usage: pin-switch.mjs check <pin id: 7-hex QED64 commit> [--full]'); process.exit(2); }
   if (flag('--if-materialized') && !materialized(id)) {
-    console.log(`NOT MATERIALIZED ${id}: registered (pins/${id}/), but this checkout has no release/${id}, no QED64 sources at its commit and no stores of its runtime; bootstrap it with: scripts/showcase.sh bootstrap --pin ${id}`);
+    console.log(`NOT MATERIALIZED ${id}: registered (pins/${id}/), but this checkout has no release/${id} and no QED64 sources at its commit; bootstrap it with: scripts/showcase.sh bootstrap --pin ${id}`);
     process.exit(0);
   }
   const good = printChecks(checkPin(id, { full: flag('--full') }));
@@ -282,7 +284,7 @@ if (cmd === 'list') {
   const from = activeOrNull();
   try { pinDescriptor(to); } catch (e) { refuse(e.message); }
   const rows = checkPin(to);
-  const incomplete = rows.filter((r) => !r.ok);
+  const incomplete = rows.filter((r) => !r.ok && !r.link); // the links themselves are what `use` (re)makes
   if (incomplete.length) {
     printChecks(incomplete);
     if (!flag('--allow-incomplete')) refuse(`pin ${to}'s stores are incomplete (above); --allow-incomplete only when bringing up a new runtime`);
@@ -319,7 +321,10 @@ if (cmd === 'list') {
     fs.renameSync(tmp, s.link); // atomic replace of the old symlink (rename(2) never follows the destination link)
   }
   const after = linkStates(to);
-  if (!after.every((s) => s.state === 'ok')) { for (const s of after.filter((x) => x.state !== 'ok')) console.log(`FAIL ${rel(s.link)} ${s.state}`); process.exit(1); }
+  const notOk = after.filter((x) => x.state !== 'ok' && x.state !== 'absent'); // absent: a build store this checkout never built
+  if (notOk.length) { for (const s of notOk) console.log(`FAIL ${rel(s.link)} ${s.state}`); process.exit(1); }
+  const absentN = after.filter((x) => x.state === 'absent').length;
+  if (absentN) console.log(`  ${absentN} build-store links not made: runtime ${pinDescriptor(to).buildId} was not built in this checkout (it serves fetched artifacts)`);
   // audit: what is now served (the overlay links) is paired with the runtime the new active lock names
   const ovl = overlayLinksMatchLock();
   if (!printChecks(ovl) && !flag('--allow-incomplete')) { console.log(`FAIL pin use ${to}: the active overlay links' runtime != the active lock's (journal left at 'switching'; fix the stores, then re-run pin use)`); process.exit(1); }
