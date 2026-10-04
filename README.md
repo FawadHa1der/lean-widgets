@@ -14,14 +14,25 @@ packages/<name>/   the eight widget packages + lean-widget-kit (each a self-cont
 showcase/          static React gallery of every widget's real panels (built from probes/ dumps)
 qed64-showcase/    the widgets running live in the stock QED64 page (in-browser wasm64 Lean): pins, native
                    build of packages/, snapshot bakes, gallery, Playwright UX suite, Cloudflare deploy kit
+  deps/qed64       QED64 itself, as a git SUBMODULE at the served pin (github.com/FawadHa1der/QED64)
 test-all.sh        lake build + lake test in every package, with a summary table
-.github/workflows/ CI for the packages and the static showcase
+.github/workflows/ CI for the packages, the static showcase, portability and the QED64 page built from source
+```
+
+Clone with the submodule:
+
+```bash
+git clone --recursive https://github.com/FawadHa1der/lean-widgets.git
+# (an existing clone: git submodule update --init)
 ```
 
 Build from source: `./test-all.sh` builds and tests every package (stock `elan`; the Mathlib-dependent
 packages need `lake exe cache get` once), `./showcase/build.sh && node showcase/verify.mjs` builds and checks
-the static showcase. The QED64 showcase additionally needs a QED64 checkout and the wasm64 kernel build; see
-[qed64-showcase/README.md](qed64-showcase/README.md) "Clone and build from source".
+the static showcase. The QED64 showcase builds QED64's page from the submodule and fetches QED64's binaries and the
+widget overlays by content hash: `qed64-showcase/scripts/showcase.sh bootstrap --origin <origin>` (macOS or Linux; no
+QED64 checkout, kernel build or Docker needed). Rebuilding the overlays themselves needs the wasm64 kernel fork's
+toolchain. See [qed64-showcase/docs/BUILD-FROM-SOURCE.md](qed64-showcase/docs/BUILD-FROM-SOURCE.md) and
+[qed64-showcase/docs/ARCHITECTURE.md](qed64-showcase/docs/ARCHITECTURE.md).
 
 Eight production-quality InfoView widget packages: the top-3 recommendations from the
 visualization research (not part of this repository), a proof-state-integrated

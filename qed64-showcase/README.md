@@ -64,45 +64,48 @@ figures below are history. **Status 2026-10-04:**
 
 ## Clone and build from source
 
-This project lives in the widgets repository (github.com/FawadHa1der/lean-widgets) at `qed64-showcase/`; the widget
-packages it serves are the repository's `packages/` (the native build compiles `git archive <WIDGETS_COMMIT>
-packages/`, recorded in each pin's lock). Nothing in code or configuration names a machine path
-(`node scripts/check-portable.mjs` proves it); every location is resolved at run time by `scripts/lib/env.sh` /
+This project lives in the widgets repository (github.com/FawadHa1der/lean-widgets) at `qed64-showcase/`. The widget
+packages it serves are the repository's `packages/`. **QED64 is a dependency, never a copy**
+([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)):
+
+* its **sources** are the git submodule `deps/qed64`, at the served pin's commit. Staged pins use git worktrees of it.
+* its **page** is built from those sources with QED64's own build. It is byte-identical to the lock, so the lock's
+  sha256s are the check.
+* its **binaries** (runtime, packs, stock snapshots) and our widget overlays are fetched by content hash from an
+  artifact origin.
+
+```
+git clone --recursive https://github.com/FawadHa1der/lean-widgets.git
+cd lean-widgets/qed64-showcase
+scripts/showcase.sh bootstrap --origin <showcase origin> [--qed64-origin https://qed64.fawadworkaddress.workers.dev]
+scripts/showcase.sh gallery && scripts/showcase.sh serve          # http://localhost:5190/showcase/
+npx playwright install chromium chromium-headless-shell && scripts/showcase.sh ux
+```
+
+`bootstrap` needs neither QED64_REPO, the kernel build nor Docker. It works on macOS and Linux and is described step
+by step in [docs/BUILD-FROM-SOURCE.md](docs/BUILD-FROM-SOURCE.md), together with the heavy path (rebuilding the
+overlays from the kernel fork's toolchain). Until the showcase's Worker is deployed, the overlays live only where they
+were baked: `--origin` can be the `serve.mjs` of such a checkout. Nothing in code or configuration names a machine
+path (`node scripts/check-portable.mjs` proves it). Every location is resolved at run time by `scripts/lib/env.sh` /
 `scripts/lib/env.mjs` from environment variables, optionally kept in the gitignored `.env.local` (template:
 `.env.example`; `node scripts/lib/env.mjs` prints what is resolved):
 
 | Variable | What | Needed by |
 |---|---|---|
-| `QED64_SHOWCASE_WORK` | heavy work dir (tens of GB, no spaces); default `~/.cache/lean-widgets/qed64-showcase-work` | everything that builds |
-| `QED64_REPO` | a QED64 checkout (github.com/FawadHa1der/QED64) at the pinned commit, `dist/` and `public/` built; read-only | `pin`, `verify`, `stage`, `overlay --preflight`, `scripts/fetch-vendor.mjs` |
-| `QED64_KERNEL_BUILD` | the wasm64 kernel build dir (`native/stage1`, `mathlib/`, `BUILT-COMMIT`; from github.com/FawadHa1der/lean4 branch `qed64-wasm64`); read-only | `verify`, `native`, `stage`, golden env |
+| `QED64_SHOWCASE_WORK` | heavy work dir (no spaces); default `~/.cache/lean-widgets/qed64-showcase-work` | everything that builds |
+| `ARTIFACT_ORIGIN`, `QED64_ARTIFACT_ORIGIN` | artifact origins (`--origin`, `--qed64-origin`) | `bootstrap`, `scripts/fetch-artifacts.mjs` |
+| `QED64_REPO` | a QED64 checkout with QED64's binaries and `work/` trees built; read-only | heavy path only: `pin clone` (registering a new pin), `stage` |
+| `QED64_KERNEL_BUILD` | the wasm64 kernel build dir (`native/stage1`, `mathlib/`, `BUILT-COMMIT`; from github.com/FawadHa1der/lean4 branch `qed64-wasm64`); read-only | heavy path: `native`, `stage`, golden env; `verify` checks it when set (else N/A) |
 | `QED64_KERNEL_SRC`, `LEAN4GAME_DIR` | further read-only trees watched by `scripts/assert-untouched.sh` (optional; reported when unset) | `assert-untouched` |
 | `LEAN_TOOLCHAIN_DIR` | stock Lean v4.34.0 (default `~/.elan/toolchains/leanprover--lean4---v4.34.0`) | goldens, native E3 |
 | `BROWSER_LOCK_DIR` | the host-wide browser lock (default `~/.cache/host-browser-lock`) | every browser run |
 
-From a fresh clone:
-
-```
-cd qed64-showcase
-cp .env.example .env.local && $EDITOR .env.local   # point QED64_REPO / QED64_KERNEL_BUILD at your checkouts
-npm ci                                             # @playwright/test 1.62.1 (browser revision 1234)
-node scripts/fetch-vendor.mjs                      # pins/<id>/vendor-qed64 from QED64_REPO, sha256-checked against QED64-PIN
-node scripts/export-widgets.mjs                    # $W/widgets-src = git archive <newest packages/ commit> packages/
-scripts/showcase.sh pin clone <id> --yes           # the release clone of each pin you serve (release/<id>/), then:
-scripts/showcase.sh all --rebuild                  # native → stage → bake → overlay → headless → gallery → ux
-scripts/showcase.sh verify && scripts/showcase.sh serve
-```
-
-Every step of that sequence is an existing, separately tested command; the R1 lane (2026-10-04) re-ran `fetch-vendor`
-(into a scratch dir, byte-identical to the vendored copies), `export-widgets`, `verify`, `gallery`, `pin current`, the
-deploy manifest and a full `ux` in the new location, but not `all --rebuild` from an empty work dir (hours of Docker
-and bake time; the served artifacts were reused, and their widget inputs are byte-identical to `packages/`).
-
-`release/`, `out/`, `rollback/`, `pins/*/vendor-qed64/`, `node_modules/`, `.env.local` and the work dir are
-machine-local and gitignored. Curated run records from `out/` are copied to `docs/results/` (same relative paths).
-`pins/<id>/{pin.json,QED64.lock.json,QED64-PIN}` and the active links (`QED64.lock.json`, `QED64-PIN`, `vendor/qed64`)
-are committed. A lock records the QED64 checkout, the kernel build and the work dir as placeholders
-(`${QED64_REPO}`, `${QED64_KERNEL_BUILD}`, `${QED64_SHOWCASE_WORK}`), never as a path.
+`release/`, `out/`, `rollback/`, `node_modules/`, `.env.local` and the work dir are machine-local and gitignored.
+Curated run records from `out/` are copied to `docs/results/` (same relative paths). The committed files are
+`pins/<id>/{pin.json,QED64.lock.json}` (lock schema v2: QED64 commit, source/shell/artifacts, the sha256 of every
+served file and overlay), the active lock link `QED64.lock.json`, the native click-all goldens
+(`lean/expect/click-all/`) and the native delta lists (`lean/native/`). A lock records the kernel build and the work dir
+as placeholders (`${QED64_KERNEL_BUILD}`, `${QED64_SHOWCASE_WORK}`), never as a path.
 
 ## What it is
 
@@ -141,8 +144,9 @@ bridge for two InfoView defects of the shipped page. Nothing under the QED64, ke
 ```
  read-only inputs                       this repo / $W (= $QED64_SHOWCASE_WORK, no spaces; scripts/lib/env.sh)
  ───────────────────────────────        ──────────────────────────────────────────────────────────────────────────────
- QED64 @<pin commit> ─git archive─►  pins/<id>/vendor-qed64/  pipeline + workers + boot sources (QED64-PIN: sha256 per file)
-            └────cp -c (APFS clone)─►  release/<id>/{dist,public}   (pins/<id>/QED64.lock.json: 145 files, sha256)
+ QED64 @<pin commit> = git submodule deps/qed64 (staged pins: git worktrees $W/qed64-pins/<id>); read in place, never copied
+            ├─npm ci + build:site─►  release/<id>/dist     byte-identical to pins/<id>/QED64.lock.json (scripts/build-shell.mjs)
+ artifact origin ──fetch by path────►  release/<id>/public   sha256 == the lock (scripts/fetch-artifacts.mjs; manifests from git)
  ../packages @WIDGETS_COMMIT ─git archive─► $W/widgets-src  WIDGETS_SOURCE_HASH c2efe78f… (222 files; scripts/export-widgets.mjs)
  kernel-build Mathlib tree ─cp -cpR─►  $W/mathlib4              APFS clone, new inodes
                                           │ scripts/build-native.sh: native64 lean/lake in Docker (qed64-toolchain:emsdk-6.0.5,
@@ -150,7 +154,7 @@ bridge for two InfoView defects of the shipped page. Nothing under the QED64, ke
                                           ▼   modules + 72 widget modules; header gate (no GMP, empty githash)
  QED64 served slim tree (5004 mods) ─►  $W/tree-slim-w7 (5107) · $W/tree-slim-w8 (5684) · $W/tree-fat     scripts/stage-trees.mjs (G1–G6)
    (per pin: pin.json servedTrees)
-                                          │ scripts/bake.sh: VENDORED bake-snapshot.mjs + the pinned runtime ($W/stage1)
+                                          │ scripts/bake.sh: deps/qed64's bake-snapshot.mjs + the pinned runtime ($W/stage1)
                                           ▼ judge-bake.mjs (N == EXPECTED-N, no errors) · pair-check.mjs (digest, runtime == buildId)
                                        $W/runtimes/<buildId>/bake-out-w{7,8}/widgets.<d16>.snapz   paired with that runtime
                                           │ make-overlay.mjs: entry renamed "mathlib", served init cloned beside it
@@ -188,16 +192,11 @@ open http://localhost:5190/showcase/  # e.g. …/showcase/#hasse-view, …/showc
 scripts/showcase.sh stop              # stops only a server this lane started via `serve`
 ```
 
-Prerequisites:
-
-* Node v26.3.0.
-* `node_modules/` with `@playwright/test` 1.62.1. It is already installed; on a fresh copy, run
-  `npm ci` (not run in this lane).
-* A Chromium with Memory64 and SharedArrayBuffer. Playwright browser revision 1234 is cached in
-  `~/Library/Caches/ms-playwright`.
-
-The release clone, the overlays and `$W` are gitignored build outputs. On a fresh checkout,
-recreate them with the full pipeline (below).
+Prerequisites (docs/BUILD-FROM-SOURCE.md): macOS or Linux; Node 26 (the lock records v26.3.0, another 26.x is a
+DRIFT); `npm ci` (`@playwright/test` 1.62.1; `bootstrap` runs it when `node_modules/` is missing); for `ux`, Playwright's
+Chromium (browser revision 1234: `npx playwright install chromium chromium-headless-shell`) and 16 GB of RAM. The
+release, the overlays and `$W` are gitignored outputs: `scripts/showcase.sh bootstrap` recreates the first two from
+source and fetched artifacts, and the heavy path (below and BUILD-FROM-SOURCE.md) rebuilds the overlays.
 
 `scripts/showcase.sh --help` lists every subcommand. These cheap checks were also run:
 
@@ -289,13 +288,15 @@ multiple pins".
 
 | Store | Keyed by | Where |
 |---|---|---|
-| descriptor (`pin.json`: commit, promote, kernel, buildId, main bundle, served base trees, `liveness.builtIn`), lock, `QED64-PIN`, vendored sources | pin | `pins/<id>/` |
+| descriptor (`pin.json`: commit, promote, kernel, buildId, main bundle, served base trees, `liveness.builtIn`), lock | pin | `pins/<id>/` |
+| QED64's sources at the pin's commit | pin | the submodule `deps/qed64` (active pin) or the worktree `$W/qed64-pins/<id>` |
 | release clone (QED64's `dist/` + `public/`) | pin | `release/<id>/` |
 | widget overlays, headless results | runtime | `out/runtimes/<buildId>/` |
 | stage1, raw regions, bakes, bake keys, bake logs | runtime | `$W/runtimes/<buildId>/` |
 
-The active pin is 15 symlinks at the familiar paths (`QED64.lock.json`, `QED64-PIN`, `vendor/qed64`, `out/headless`,
-`out/overlay/snapshots/widgets{7,8}`, `$W/{stage1, raw, bake-out-w7/w8, bake-work-w7/w8, BAKE-KEY-w7/w8.txt, bake-logs}`), so
+The active pin is 13 symlinks at the familiar paths (`QED64.lock.json`, `out/headless`,
+`out/overlay/snapshots/widgets{7,8}`, `$W/{stage1, raw, bake-out-w7/w8, bake-work-w7/w8, BAKE-KEY-w7/w8.txt, bake-logs}`;
+the build-store links exist only in a checkout that built them) plus the submodule's checkout, so
 every script reads the active pin through them or through `pins.mjs`; **no file hardcodes a pin** (`verify` FAILs on a
 runtime buildId outside the generated `gallery/pin.json`, on a hashed QED64 bundle name and on a `release/wasm64-…`
 path). The console allowlist names the QED64 bundle as `"@qed64-main-bundle"`. `serve.mjs` fixes its pin at start
@@ -326,10 +327,11 @@ wording `2081098d…`; D `eab4f147…` with the older wording) and a pin needs i
 | Pin | Where | Checked by |
 |---|---|---|
 | The QED64 commit, promote, runtime buildId and kernel of each pin | `pins/<id>/pin.json` and `pins/<id>/QED64.lock.json` `qed64` | `pin-qed64.mjs verify` (S0.5 #1–#10): the tracked JSON equals `git show`, the reassembled `lean.wasm` sha256 equals the manifest, the profile parts and snapz digests match, the bundle names exactly this buildId, (#9) QED64's own `pipeline/toolchain/KERNEL-PIN` at the pin names the kernel, (#10) every `dist/` copy of a tracked `public/` file (the workers) equals `git show`; `pin check`: descriptor == lock |
-| 24–26 vendored source files per pin (9fdf9b8 and 5ac5d00 add two probes under `pipeline/snapshot/`) | `pins/<id>/vendor-qed64/` + `QED64-PIN` (active: `vendor/qed64`) | `verify` #8: re-hash and git blob ids against `git ls-tree` |
-| 145 release files per pin (`dist/`, runtime chunks, packs, stock snapshots), APFS clones with nlink 1 | `release/<id>/`, the lock's `release.files` | `verify` #6; `deploy-manifest.mjs` L1 |
+| QED64's sources (no copies since 2026-10-04: the submodule `deps/qed64` / worktrees) | `.gitmodules` gitlink, the lock's `source` | `verify` #8: HEAD == commit, no tracked file modified, gitlink == HEAD == lock; no vendored copy present |
+| 145 release files per pin (`dist/` built from source, runtime chunks, packs, stock snapshots fetched or cloned), nlink 1 | `release/<id>/`, the lock's `release.files` | `verify` #6; `scripts/build-shell.mjs`, `scripts/fetch-artifacts.mjs --check`; `deploy-manifest.mjs` L1 |
+| the overlays of the pin's runtime (index + init + widgets `.snapz`) | `out/runtimes/<bid>/overlay/`, the lock's `overlays` | `verify` #11; `pin check`; `fetch-artifacts.mjs` |
 | Widget sources `16cdb73b…` | each lock's `WIDGETS_SOURCE_HASH`, `$W/widgets-src` | `verify` #7 recomputes it |
-| Toolchain: native64 `857544b439`, Docker image `8b6698bbf474` (the image the native oleans were built in), Mathlib `5ed2965`, ProofWidgets `106ff4f`, Node v26.3.0, Playwright 1.62.1 / rev 1234 | each lock's `toolchain` | `verify` #7. The Docker image is a rebuild-only input: a mismatch prints `DRIFT` (a `FAIL` with `pin-qed64.mjs verify --strict`), and `showcase.sh native` refuses on it |
+| Toolchain: native64 `857544b439`, Docker image `8b6698bbf474` (the image the native oleans were built in; recorded equivalents in `toolchain.docker.equivalent`), Mathlib `5ed2965`, ProofWidgets `106ff4f`, Node v26.3.0, Playwright 1.62.1 / rev 1234 | each lock's `toolchain` | `verify` #7 (N/A without `QED64_KERNEL_BUILD`). The Docker image and the Node version are rebuild-only inputs: a mismatch prints `DRIFT` (a `FAIL` with `pin-qed64.mjs verify --strict`), and `showcase.sh native` refuses an image the lock does not record |
 | The QED64 bundle the UX console allowlist names | `tests/ux/selectors.json` `"@qed64-main-bundle"`, resolved per pin; the allowlisted `notify` site (line 627) is recorded per pin in `pin.json` `consoleSites` | `verify` pin-constants (the token resolves to a bundle present in the active release); `pin check` (the line is the recorded notify line in every pin) |
 
 Snapshots are **binary-paired** to the runtime. The worker refuses a mismatch with
@@ -352,7 +354,7 @@ after it passes the gates (procedure as executed for `5ac5d00` on 2026-10-02; th
    (the one module script of `dist/index.html`), `consoleSites` (sha256 of line 627 of the main bundle, which must
    still be the `notify` line), `servedTrees`, `liveness.builtIn` (does the page's `status()` carry `liveness`?)).
    Copy an existing descriptor and change what differs.
-3. **Clone.** `scripts/showcase.sh pin clone <id>` (report), then `pin clone <id> --yes`: vendor, release clone, lock,
+3. **Clone.** `scripts/showcase.sh pin clone <id>` (report), then `pin clone <id> --yes`: release clone, lock,
    widgets hash, full verify. Writes only `pins/<id>/` and `release/<id>/`. `pin list` shows it staged.
 4. **Same runtime as a registered pin?** (C shares A's: identical `public/snapshots/index.json`.) Then its stores exist:
    `pin check <id>` is OK and nothing is rebuilt. **A new runtime** needs its stores in `out/runtimes/<bid>/` and
@@ -422,7 +424,7 @@ and only `native` refuses. Before re-running `native`:
 | Stage | Memory | Wall time (measured) |
 |---|---|---|
 | Native build (Docker Desktop VM 8 GB = 7.65 GiB usable; settings never changed) | Container peaks: 1.6 GiB (B3, T=6), 2.9 GiB (widgets, T=6), 3.75 GiB (DistLens, T=4) | 134 s + 230 s + 1363 s |
-| Bake (host Node, vendored `bake-snapshot.mjs`) | About 11 GB RSS (`time -l` maxrss 11.18 GB for w7, 10.30 GB for w8). `bake.sh` needs at least 12 GiB free+inactive. Never alongside a browser or Docker. | 385 s / 398 s |
+| Bake (host Node, `bake-snapshot.mjs` from `deps/qed64`) | About 11 GB RSS (`time -l` maxrss 11.18 GB for w7, 10.30 GB for w8). `bake.sh` needs at least 12 GiB free+inactive. Never alongside a browser or Docker. | 385 s / 398 s |
 | Headless wasm probes (E1/E3; E2) | 10.6–12.2 GB; 11.2–14.0 GB max RSS per Node process, one at a time | Stage 4: about 8 min per pass; controls 64 s |
 | Browser (Playwright, gallery + page) | One tab about 8–9 GB at ready (renderer 8.2–9.0 GiB, UX C3), transient peaks about 12 GB on a reload (C10 11.8–12.2 GB), two tabs or "Load exact imports" about 17 GB or more ("Browsers and memory"). The lock requires at least 6 GB free+inactive before boot. | Boot to ready: 13–14 s (preflight boot smoke) |
 | Disk (`du`; APFS clones share blocks) | – | `$W/mathlib4` 5.5 G, tree-slim-w7/w8 1.5/1.7 G, tree-fat 4.2 G, raw snaps 3.4 G, bake-work 1.1/1.2 G, overlays 0.36/0.40 G, `release/` 1.68 GB logical |
@@ -574,14 +576,16 @@ The host has 36 GB of RAM. Only one heavy job runs at a time. Large deletable ar
 ## Layout
 
 ```
-QED64.lock.json, QED64-PIN    the ACTIVE pin's lock and vendor hash list (links into pins/<id>/; see "Pins")
-pins/<id>/                    one registered QED64 pin each (id = 7-hex commit): pin.json, QED64.lock.json, QED64-PIN, vendor-qed64/
+QED64.lock.json               the ACTIVE pin's lock (a link into pins/<id>/; see "Pins")
+pins/<id>/                    one registered QED64 pin each (id = 7-hex commit): pin.json, QED64.lock.json
+deps/qed64                    git submodule: QED64 at the active pin's commit (staged pins: worktrees $W/qed64-pins/<id>)
 scripts/showcase.sh           one entry point (this README)
-scripts/                      pin-qed64 · assert-untouched · build-native · delta.py · header-gate · stage-trees · bake ·
+scripts/                      bootstrap: qed64-src · build-shell · fetch-artifacts; lib/platform.{sh,mjs} (macOS/Linux)
+                              pin-qed64 · assert-untouched · build-native · delta.py · header-gate · stage-trees · bake ·
                               judge-bake · pair-check · make-overlay · preflight-overlays · serve(.mjs|-start|-stop) ·
                               build-gallery · check-gallery · sim-gallery · deploy-manifest · headless/ (E1/E2/E3/E3b, controls)
-vendor/qed64 -> ../pins/<id>/vendor-qed64   git archive of the active pin's QED64 pipeline/worker/boot sources
-release/<id>/                 (gitignored) APFS clone of each pin's QED64 dist/ + public/{runtime,profiles,snapshots}
+vendor/react/                 React's UMD builds for the headless React contract check (not QED64 code)
+release/<id>/                 (gitignored) dist/ (QED64's page built from the submodule) + public/{runtime,profiles,snapshots} (fetched)
 rollback/wasm64-4b025db7…/    history: the 2026-10-01 re-pin's pre-edit copies (superseded by pins/1859b83; kept as is)
 scripts/lib/pins.mjs          the pin model; scripts/pin-switch.mjs: pin list | current | check | use
 lean/                         examples/<pkg>.{lean,json}, expect/ (native goldens), goldens/ (generator + gates) — lean/README.md

@@ -247,7 +247,7 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   const drift = (cond, msg, detail = '') => {
     if (cond) return ok(true, msg, detail);
     if (strictToolchain) return ok(false, msg, detail);
-    drifts++; console.log(`DRIFT ${msg}${detail ? ' — ' + detail : ''} (rebuild-only input: served artifacts unaffected; 'showcase.sh native' refuses on the image; --strict makes this a FAIL)`);
+    drifts++; console.log(`DRIFT ${msg}${detail ? ' — ' + detail : ''} (rebuild-only input: served artifacts unaffected; --strict makes this a FAIL)`);
   };
   const lock = readJson(LOCK);
   let act = null; try { act = activePinId(); } catch { /* no active pin yet */ }
@@ -347,7 +347,7 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
       const did = (dls.split('\n').find((l) => l.split(' ')[0] === DOCKER_IMAGE) || '').split(' ')[1] || '';
       const ids = [tc.docker.id, ...((tc.docker.equivalent || []).map((e) => e.id))];
       const hit = ids.find((x) => did.replace(/^sha256:/, '').startsWith(x));
-      drift(!!hit, `#7 docker ${DOCKER_IMAGE} id == ${tc.docker.id}${ids.length > 1 ? ` or a recorded equivalent (${ids.slice(1).join(', ')})` : ''}`, did ? `${did.slice(0, 19)}${hit && hit !== tc.docker.id ? ' (recorded equivalent: same oleans, byte for byte)' : ''}` : 'tag not present');
+      drift(!!hit, `#7 docker ${DOCKER_IMAGE} id == ${tc.docker.id}${ids.length > 1 ? ` or a recorded equivalent (${ids.slice(1).join(', ')})` : ''}`, did ? `${did.slice(0, 19)}${hit && hit !== tc.docker.id ? ' (recorded equivalent: same oleans, byte for byte)' : hit ? '' : "; 'showcase.sh native' refuses this image"}` : 'tag not present');
     }
     ok(fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim() === tc.mathlib.commit, `#7 Mathlib commit == ${tc.mathlib.commit.slice(0, 7)}`);
     const pw = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json')).packages.find((p) => p.name === 'proofwidgets');

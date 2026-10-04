@@ -175,16 +175,21 @@ docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null
 # toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is
 # QED64's (its pipeline/toolchain/build.sh re-runs `docker build -t` on it), so it can move under us; then
 # `native` refuses until the image is re-pinned (README "Re-pin": Docker tag drift). verify reports it as DRIFT.
+# toolchain.docker.equivalent lists further image ids shown to build the SAME oleans byte for byte (docs/BUILD-FROM-SOURCE.md
+# "Docker image drift"); they are accepted too.
 docker_image_guard() {
-  local img want got
+  local img want got e
   img="$(node -p 'require(process.argv[1]).toolchain.docker.image' "$SC/QED64.lock.json")"
   want="$(node -p 'require(process.argv[1]).toolchain.docker.id' "$SC/QED64.lock.json")"
   got="$(docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' 2>/dev/null | awk -v t="$img" '$1 == t {sub(/^sha256:/, "", $2); print $2; exit}')"
   case "$got" in
-    "$want"*) say "toolchain image $img = ${got:0:12} == lock" ;;
-    "") guard_fail "toolchain image $img not present (or Docker not reachable); the lock records $want" ;;
-    *) guard_fail "toolchain image $img is now ${got:0:12}, but the native oleans were built in $want (QED64.lock.json); the tag moved — see README \"Re-pin\" (Docker tag drift) before rebuilding" ;;
+    "$want"*) say "toolchain image $img = ${got:0:12} == lock"; return 0 ;;
+    "") guard_fail "toolchain image $img not present (or Docker not reachable); the lock records $want"; return 0 ;;
   esac
+  for e in $(node -p '((require(process.argv[1]).toolchain.docker.equivalent) || []).map((x) => x.id).join(" ")' "$SC/QED64.lock.json"); do
+    case "$got" in "$e"*) say "toolchain image $img = ${got:0:12}: a recorded equivalent of $want (same oleans, byte for byte)"; return 0 ;; esac
+  done
+  guard_fail "toolchain image $img is now ${got:0:12}, but the native oleans were built in $want (QED64.lock.json) and no recorded equivalent matches; the tag moved — see docs/BUILD-FROM-SOURCE.md \"Docker image drift\" before rebuilding"
 }
 lock_desc() { if [ -f "$LOCK" ]; then printf 'held: %s' "$(cat "$LOCK" 2>/dev/null)"; else printf 'free'; fi; }
 

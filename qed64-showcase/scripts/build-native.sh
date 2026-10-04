@@ -4,7 +4,8 @@
 #
 #   scripts/build-native.sh identity          B1  lean/lake identity inside the container
 #   scripts/build-native.sh reuse-gate <tag> [list]  B2  lake build --no-build (plan's 3 modules, or a module list)
-#   scripts/build-native.sh delta             B3  phase-1 Mathlib/ProofWidgets delta (out/delta-phase1.txt)
+#   scripts/build-native.sh delta             B3  phase-1 Mathlib/ProofWidgets delta (lean/native/delta-phase1.txt, committed:
+#                                                 the output of scripts/delta.py for the pinned Mathlib and widget sources)
 #   scripts/build-native.sh append            B4a append lean/lakefile-append.lean to the CLONE's lakefile (idempotent)
 #   scripts/build-native.sh widgets           B4  the seven phase-1 widget libraries (T=6)
 #   scripts/build-native.sh distlens          §9.1 DistLens + LeanWidgetKit (T=4; rerun with T=2 on rc 137)
@@ -37,7 +38,8 @@ die() { echo "build-native: $*" >&2; exit 2; }
 
 # Refuse to run if a read-only tree could be the write target.
 [ -d "$W/mathlib4/.lake/build/lib/lean/Mathlib" ] || die "no clone at $W/mathlib4 (run B0: cp -cpR $K/mathlib/mathlib4 $W/mathlib4)"
-[ "$(stat -f %l "$W/mathlib4/.lake/build/lib/lean/Mathlib/Order/Basic.olean")" = 1 ] || die "clone shares inodes (nlink != 1): refusing"
+. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # file_nlink (stat -f %l / stat -c %h)
+[ "$(file_nlink "$W/mathlib4/.lake/build/lib/lean/Mathlib/Order/Basic.olean")" = 1 ] || die "clone shares inodes (nlink != 1): refusing"
 [ -f "$W/widgets-src/SOURCE-HASH.txt" ] || die "no widget export at $W/widgets-src"
 
 # run <step-name> <bash command>  — one container, logged, stats-sampled, timed.
@@ -112,7 +114,7 @@ case "$step" in
     if [ -n "${2:-}" ]; then mods="$(tr '\n' ' ' < "$2")"; fi
     run "b2-reuse-gate-$tag" "lake build --no-build $mods" ;;
   delta)
-    list="$SC/out/delta-phase1.txt"; [ -s "$list" ] || die "missing $list (scripts/delta.py)"
+    list="$SC/lean/native/delta-phase1.txt"; [ -s "$list" ] || die "missing $list (scripts/delta.py)"
     run b3-delta "lake build $(tr '\n' ' ' < "$list")" ;;
   append)
     append_lakefile ;;

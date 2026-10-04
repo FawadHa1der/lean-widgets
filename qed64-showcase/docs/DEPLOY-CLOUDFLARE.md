@@ -214,7 +214,7 @@ Everything must be green on **the current pin** (`QED64.lock.json`) and **one ga
 `gallery/`, the overlays or the lock in between:
 
 ```
-scripts/showcase.sh verify      # pin, vendor, release files, pin-site inventory
+scripts/showcase.sh verify      # pin, QED64 sources (submodule), release files, overlays, pin-site inventory
 scripts/showcase.sh gallery     # "gallery gate GREEN on gallery content sha256 <h>"
 scripts/showcase.sh ux          # full UX suite, about 20 min under the browser lock; must end "…: VERDICT"
 ```

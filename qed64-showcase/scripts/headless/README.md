@@ -3,14 +3,15 @@
 These tools check a snapshot pairing *before* any browser is opened. They run the
 pinned QED64 runtime (`wasm64-2c18773ecfba45bb` since the 2026-10-01 re-pin; previously `wasm64-4b025db7729c5f89`) in Node, using only:
 
-* the vendored QED64 sources in `vendor/qed64`, and
+* QED64's sources at the pin's commit: the git submodule `deps/qed64` (a staged pin: its worktree
+  `$W/qed64-pins/<id>`; `scripts/lib/qed64-src.mjs`), never a copy, and
 * our own clones under `$W` (the work dir: `QED64_SHOWCASE_WORK`, resolved by `scripts/lib/env.sh`).
 
 They never write to a QED64 tree or a widget tree.
 
 | file | lane | what it does |
 |---|---|---|
-| `exact-header.mjs` | E1 | Compiles an example through the worker's batch path on the exact bake key, using the vendored `snapshot-probe.mjs --via-mem` |
+| `exact-header.mjs` | E1 | Compiles an example through the worker's batch path on the exact bake key, using QED64's `snapshot-probe.mjs --via-mem` (deps/qed64) |
 | `rpc-probe.mjs` + `wasm-lsp.mjs` | E3 | Runs `lean --worker` (the resident FileWorker) in Node and walks the InfoView's path: header status, then RPC, then panels and clicks. Compares the result with the native golden |
 | `react-contract.mjs` | E3b | Renders wasm-produced Html trees with React 18.3.1 in development mode. Any React error or warning fails the run |
 | `lib.mjs` | | Shared helpers: buildId pairing check, raw-snapshot provenance (`snapProvenance`), memory guard, single-runner lock, header parsing, tables |
@@ -93,10 +94,10 @@ BAKE-KEY file:
 * The new import lines go where the first import line was.
 * Diagnostics are mapped back to the example's own line numbers.
 
-It then runs the vendored probe:
+It then runs QED64's probe from the source dependency:
 
 ```
-/usr/bin/time -l node --stack-size=8192 vendor/qed64/pipeline/snapshot/snapshot-probe.mjs --via-mem \
+/usr/bin/time -l node --stack-size=8192 deps/qed64/pipeline/snapshot/snapshot-probe.mjs --via-mem \
   --artifact $W/stage1 --lib <tree> --snap <raw snap> --probe-file $W/headless/<name>.<snapset>.exact.lean \
   --budget-ms <n> --dump-messages
 ```
@@ -131,7 +132,7 @@ For widget bakes (stage 4) see [Stage 4](#stage-4-the-widget-bakes) below.
 **What it does.** This is the wasm counterpart of `lean/goldens/lsp-golden.mjs`. Its
 panel, selection, hover, Try-this and click logic is copied from there.
 
-**How it boots** (`wasm-lsp.mjs`). It follows the browser worker and the vendored
+**How it boots** (`wasm-lsp.mjs`). It follows the browser worker and QED64's
 `resident-probe.mjs` / `header-switch-probe.mjs`:
 
 1. It sets up its own shared Memory64, sized as the browser does: 2 GiB initial when a
@@ -142,7 +143,7 @@ panel, selection, hover, Try-this and click logic is copied from there.
 4. It calls `mark_preinitialized`.
 5. It sets up the stdin ring.
 6. It installs a per-byte stdout tap that feeds the product's own `LspFrameDecoder`
-   (`vendor/qed64/public/workers/lsp-frames.js`).
+   (`deps/qed64/public/workers/lsp-frames.js`).
 7. It calls `callMain(["--worker", "-Dserver.reportDelayMs=0"])`.
 
 **Front-door rules.** Client frames follow `lsp-front-door.js`:

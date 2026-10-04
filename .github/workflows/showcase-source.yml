@@ -1,0 +1,51 @@
+# qed64-showcase from source, on Linux, without any artifact origin: QED64 is the submodule qed64-showcase/deps/qed64;
+# its page is rebuilt with QED64's own build and must be byte-identical to the served pin's lock
+# (scripts/build-shell.mjs installs nothing otherwise). Then the checks that need no binaries: the source dependency,
+# the deploy Worker's tests and the gallery's static gate. The binaries and overlays (2.4 GB) are not fetched here:
+# `scripts/showcase.sh bootstrap --origin <origin>` does that (docs/BUILD-FROM-SOURCE.md); the same sequence was
+# rehearsed in Docker node:26-bookworm (docs/ARCHITECTURE.md "Platforms").
+name: showcase-source
+on:
+  push:
+    paths: ['qed64-showcase/**', '.gitmodules', '.github/workflows/showcase-source.yml']
+  pull_request:
+    paths: ['qed64-showcase/**', '.gitmodules', '.github/workflows/showcase-source.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-from-source:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qed64-showcase
+    env:
+      QED64_SHOWCASE_WORK: ${{ github.workspace }}/../qed64-showcase-work
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.3.0'   # the lock's toolchain.node; the page also builds byte-identically on 26.7.0
+      - name: npm ci (Playwright test runner; no browser download)
+        run: npm ci --no-audit --no-fund
+      - name: QED64 sources = the submodule at the active pin's commit (gitlink == HEAD == lock)
+        run: node scripts/qed64-src.mjs check
+      - name: QED64's page built from source, byte-identical to the lock (every dist/ file's sha256)
+        run: node scripts/build-shell.mjs
+      - name: Widget sources export (git archive of packages/ at the lock's WIDGETS_COMMIT)
+        run: node scripts/export-widgets.mjs --commit "$(node -p 'require("./QED64.lock.json").WIDGETS_COMMIT')"
+      - name: Deploy Worker tests (QED64's isImmutable imported from the submodule)
+        run: node --test infra/worker.test.mjs
+      - name: Gallery static gate (check-gallery + sim-gallery)
+        run: node scripts/check-gallery.mjs
+      - name: Upload the build provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-build
+          path: qed64-showcase/out/pins/shell-build-*.json
+          if-no-files-found: warn
