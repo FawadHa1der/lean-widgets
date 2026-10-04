@@ -141,10 +141,10 @@ has the artifacts (`release/<pin>/public/`, `out/overlay/snapshots/`), i.e. the 
    `main` that touches `qed64-showcase/` deploys.
 2. **Preconditions, local** (section 3.1): `scripts/showcase.sh verify`, `scripts/showcase.sh gallery` (GREEN, then
    `UX CURRENT …`), and `node scripts/deploy-manifest.mjs --check` (its `G2 UX:` line names a verdict run). The CI
-   deploy's copy of that verdict, `infra/ux-verdict.json`, is already committed for pin E `33b0967`, gallery
-   `3b4dc8bb…`, lock `190f09de…` (run `r2-main-full2`). After any change to `gallery/`, the lock or the overlays, run
-   `scripts/showcase.sh ux` again and re-record it, or the CI deploy refuses (`no verdict UX run for exactly this
-   gallery …`):
+   deploy's copy of that verdict is the committed `infra/ux-verdict.json` (`cat` it for the run, gallery, lock and
+   overlays it names; `--check` prints whether it matches the current inputs). After any change to `gallery/`, the
+   lock or the overlays, run `scripts/showcase.sh ux` again and re-record it, or the CI deploy refuses (`no verdict UX
+   run for exactly this gallery …`):
    ```
    node scripts/deploy-manifest.mjs --record-verdict      # writes infra/ux-verdict.json; refuses a stale manifest or a later red run
    git add infra/ux-verdict.json && git commit -m "qed64-showcase: UX verdict for CI"

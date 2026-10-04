@@ -476,7 +476,7 @@ if (MODE === 'record-verdict') {
   const later = laterFailures(match, inputsNow, runs);
   if (later.length) { console.error(`record-verdict refused: ${later.length} later full run(s) on the same inputs were NOT A VERDICT (${later.map((x) => x.run).join(', ')}): resolve first`); process.exit(1); }
   const rec = { schema: 'qed64-showcase.ux-verdict/v1', note: 'Written by node scripts/deploy-manifest.mjs --record-verdict: the G2 verdict a checkout without out/ux (CI) accepts. Commit it with the gallery/lock it names.',
-    gallery: g, lockSha256: l, overlays, run: match.run, end: match.end, lane: match.lane, pin: m.pin.id, buildId: m.pin.buildId, recordedAt: new Date().toISOString() };
+    gallery: g, lockSha256: l, overlays, run: match.run, end: match.end, lane: match.lane, pin: m.pin.id, recordedAt: new Date().toISOString() };
   fs.writeFileSync(VERDICT_FILE, JSON.stringify(rec, null, 1) + '\n');
   console.log(`RECORD-VERDICT OK: ${rel(VERDICT_FILE)} names run ${match.run} (${match.end}) on gallery ${g.slice(0, 16)}…, lock ${l.slice(0, 12)}…, overlays ${Object.keys(overlays).join(', ')}; commit it`);
   process.exit(0);
