@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "3b42714",
+  "buildId": "wasm64-3ab1c6a9da03bc29",
+  "registeredAt": "2026-10-02T11:06:00Z",
+  "label": "D: QED64 3b42714, runtime 0035b (kernel a8817d01f9: 0035 with dedicated-thread parking off by default) with the #52 worker: QED64's own liveness, QED64's L9 fix candidate",
+  "status": "staged: QED64's L9 fix candidate (not handed over). Final-gate lane 2026-10-02: passed the gate while served, on that day's gallery eab4f147 (VERDICT final-D-full1 + final-D-full2, headed sign-off final-D-headed2, CONTROLS PASS) and removes V1, but its reload storms were not at least as clean as C's (V2: D 3/26 vs C 2/26 interleaved, plus 1 smoke crash), so C stays served",
+  "qed64": {
+    "commit": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "kernel": "a8817d01f97227b1b04cc7d661b9e396f6ca8f34"
+  },
+  "mainBundle": "/assets/index--2zyppQV.js",
+  "consoleSites": {
+    "627": "5b1d6aa89b59ca4cfdc67c0a1fae918f85df72324663408fdb1f560f5a8b493f"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035b/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The #52 worker, byte-identical to 5ac5d00's (public/workers/*: 4/4 files equal): message-mode runtime mailbox, 1 s kick, Lean-level liveness probe with a 'wedged' reboot, FileWorker exit hook. The gallery defers (its probe after 30 s)."
+  },
+  "knownLimitations": [],
+  "notes": "QED64 3b42714 (\"promote kernel 0035b\", HARDENING #52 + #53): kernel 0035's L7 fix with the parked dedicated-thread cap at 0 (env LEAN_WASM_PARKED_DEDICATED opts in), so a finished dedicated thread exits as in 0034. Packs unchanged; stock snapshots rebaked (init.b6d945e3…, mathlib.265cd10c…), so the widget regions are rebaked for this runtime. A frozen read-only copy of the commit's source, dist/, public/, stage1 and the bump-0035b base tree is $W/frozen-qed64-3b42714 (FROZEN.txt)."
+}

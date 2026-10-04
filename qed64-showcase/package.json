@@ -1,0 +1,26 @@
+{
+  "name": "qed64-showcase",
+  "private": true,
+  "type": "module",
+  "description": "Eight Lean InfoView widget packages shown inside QED64 (pinned dependency, zero QED64 changes)",
+  "scripts": {
+    "pin": "node scripts/pin-qed64.mjs pin",
+    "verify": "node scripts/pin-qed64.mjs verify",
+    "serve": "node scripts/serve.mjs",
+    "serve:start": "scripts/serve-start.sh",
+    "serve:stop": "scripts/serve-stop.sh",
+    "x1": "node tests/experiments/x1-preflight.mjs",
+    "x2": "node tests/experiments/x2-rehearsal.mjs",
+    "x3": "node tests/experiments/x3-gallery-skeleton.mjs",
+    "x4": "node tests/experiments/x4-click-paths.mjs",
+    "x5": "node tests/experiments/x5-memory-knob.mjs",
+    "test:ux": "scripts/with-browser-lock.sh ux-suite npx playwright test -c tests/ux/playwright.config.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  },
+  "config": {
+    "playwrightBrowserRevision": "1234",
+    "note": "@playwright/test 1.62.1 -> playwright-core 1.62.1, whose browsers.json pins chromium and chromium-headless-shell revision 1234 (Chrome for Testing 151.0.7922.34), already cached in ~/Library/Caches/ms-playwright; no browser download needed. Same version QED64 itself uses (qed64/package.json playwright ^1.62.1 -> 1.62.1)."
+  }
+}

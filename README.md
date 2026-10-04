@@ -12,9 +12,16 @@
 ```
 packages/<name>/   the eight widget packages + lean-widget-kit (each a self-contained Lake project)
 showcase/          static React gallery of every widget's real panels (built from probes/ dumps)
+qed64-showcase/    the widgets running live in the stock QED64 page (in-browser wasm64 Lean): pins, native
+                   build of packages/, snapshot bakes, gallery, Playwright UX suite, Cloudflare deploy kit
 test-all.sh        lake build + lake test in every package, with a summary table
 .github/workflows/ CI for the packages and the static showcase
 ```
+
+Build from source: `./test-all.sh` builds and tests every package (stock `elan`; the Mathlib-dependent
+packages need `lake exe cache get` once), `./showcase/build.sh && node showcase/verify.mjs` builds and checks
+the static showcase. The QED64 showcase additionally needs a QED64 checkout and the wasm64 kernel build; see
+[qed64-showcase/README.md](qed64-showcase/README.md) "Clone and build from source".
 
 Eight production-quality InfoView widget packages: the top-3 recommendations from the
 visualization research (not part of this repository), a proof-state-integrated

@@ -1,0 +1,8 @@
+; offline.sb — macOS sandbox profile for the deploy rehearsal (sandbox-exec -f offline.sb <cmd>): every outbound
+; network connection is denied except to localhost, so nothing run under it can reach Cloudflare, R2 or any other
+; host (not even DNS: the resolver socket is denied too). Verified: `curl https://1.1.1.1` -> "Couldn't connect",
+; `curl https://example.com` -> "Could not resolve host", while wrangler dev / rclone / fake-s3 on 127.0.0.1 work.
+(version 1)
+(allow default)
+(deny network-outbound)
+(allow network-outbound (remote ip "localhost:*"))

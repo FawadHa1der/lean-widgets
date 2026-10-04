@@ -1,0 +1,23 @@
+{
+  "schema": "qed64-showcase.known-limitations/v1",
+  "note": "Root-caused wasm/QED64-runtime limitations that make a headless check fail. A failing check is only excused when its verdict matches `match` exactly in the named lane+package; the check itself still reports FAIL. See docs/HEADLESS-RESULTS.md.",
+  "limitations": [
+    {
+      "id": "L1-exported-level-imports",
+      "lane": "E2",
+      "pkg": "tree-scope",
+      "match": "/work/Demo.lean:104:0: error: #tree_scope: `rbSample` does not reduce to a constructor application",
+      "summary": "QED64's wasm runtime imports every module at OLeanLevel.exported (kernel PATCHES.md §0034: 'on Emscripten every import happens at OLeanLevel.exported … the wasm .exported policy is ours'; the worker also hides .olean.private facets, lean.worker.js HIDE_PRIVATE_FACETS). Non-exposed definitions of `module` files therefore arrive as axioms, so MetaM `whnf` cannot unfold them. Lean core's Lean.RBMap.ofList / insert / RBNode.ins / setBlack / balance1 / RBMap.empty are such definitions, so `#tree_scope (reflect := true) rbSample` (Demo.lean:104, TreeScope/Reflect.lean throwNotConcrete) is stuck at `RBMap.ofList` in wasm, while native Lean (full import of a non-module file) reduces it to `Subtype.mk`.",
+      "evidence": [
+        "wasm (w8 snapshot, exact-header probe): 'Lean.RBMap.ofList: AXIOM', 'whnf rbSample head = @RBMap.ofList' ($W/logs/s4-diag-rb-whnf.w8.log)",
+        "wasm (fresh import from tree-fat, which DOES contain Lean/Data/RBMap.olean.private): same AXIOM lines ($W/logs/s4-diag-rb-whnf.fat.log)",
+        "native lean v4.34.0, w8 golden LEAN_PATH: 'Lean.RBMap.ofList: defn … regular=6', 'whnf rbSample head = @Subtype.mk'",
+        "native lean on the verbatim tree-scope Demo.lean: rc=0, 0 errors, 0 warnings ($W/logs/s4-E2native-tree-scope.log)",
+        "wasm Demo.lean minus line 104 only: supervised-run 'Demo.olean stable at 319072 bytes' rc=0 ($W/logs/s4-diag-tree-scope-no104.log)"
+      ],
+      "fixableInOurRepo": false,
+      "why": "The import level is compiled into the pinned runtime (every pin so far: kernels 0034 and 0035, kernel patch policy); the private facets are already staged in tree-fat and are ignored. The Demo is run verbatim from the read-only widget sources and the showcase example (lean/examples/tree-scope.lean) does not use reflect := true on a core module-system type (E3 tree-scope PASS on both bakes).",
+      "userImpact": "In QED64, `#tree_scope (reflect := true) v` fails with the 'does not reduce to a constructor application' error for values whose definitions live in non-exposed `module` code (e.g. Lean.RBMap built by ofList/insert). The default semantic view of the same value works (Demo.lean:101 elaborates clean in wasm)."
+    }
+  ]
+}

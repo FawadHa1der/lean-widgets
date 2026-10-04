@@ -1,0 +1,8 @@
+{
+  "name": "qed64-showcase-deploy",
+  "private": true,
+  "description": "Deploy tooling only: wrangler pinned to the version wasm64-lean4game deploys with. Kept apart from the root package.json so the UX suite's node_modules never changes. Install with `npm ci --prefix infra`; run with `npx --prefix infra wrangler …`.",
+  "devDependencies": {
+    "wrangler": "4.125.0"
+  }
+}

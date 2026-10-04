@@ -1,0 +1,1113 @@
+{
+ "package": "interval-inspector",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:53:28.204Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import IntervalInspector"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "b75fe0949abeee3e3e000cdb7b35056118d8aea259a98453b543fb133bf97083",
+ "documentSha256": "b75fe0949abeee3e3e000cdb7b35056118d8aea259a98453b543fb133bf97083",
+ "elaborationMs": 2544,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 17,
+   "character": 0,
+   "command": "#interval_inspect (Set.Ioc (1:ℝ) 2 ∪",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 63,
+       "line": 17
+      },
+      "start": {
+       "character": 0,
+       "line": 17
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Ioc 1 2 ∪ Ioc 2 3 = Ioc 1 3",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 6,
+      "code": 2,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "rect": 3,
+      "span": 2,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 6,
+      "line": 4,
+      "rect": 3,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {},
+     "texts": [
+      "Ioc 1 2 ∪ Ioc 2 3 = Ioc 1 3",
+      "= L",
+      "∪",
+      "= R",
+      "1",
+      "2",
+      "3",
+      "Suggested lemmas",
+      "Set.Ioc_union_Ioc_eq_Ioc",
+      " — ",
+      "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+      "1 ≤ 2 ✓ ready",
+      "2 ≤ 3 ✓ ready"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "d960b272e1d0ff92c368954494de0183db594eda0d49ed17e3104aff0e114a44"
+    }
+   ]
+  },
+  {
+   "line": 20,
+   "character": 0,
+   "command": "#interval_inspect (Set.Icc (0:ℝ) 3 ⊆",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 49,
+       "line": 20
+      },
+      "start": {
+       "character": 0,
+       "line": 20
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Icc 0 3 ⊆ Icc 1 2",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "code": 2,
+      "div": 3,
+      "li": 1,
+      "line": 5,
+      "rect": 6,
+      "span": 2,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "line": 5,
+      "rect": 6,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {},
+     "texts": [
+      "Icc 0 3 ⊆ Icc 1 2",
+      "⊆ L",
+      "⊇ R",
+      "0",
+      "3",
+      "1",
+      "2",
+      "Suggested lemmas",
+      "Set.Icc_subset_Icc",
+      " — ",
+      "refine Set.Icc_subset_Icc ?_ ?_",
+      "1 ≤ 0 ✗ missing",
+      "3 ≤ 2 ✗ missing"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "ae426eb331c0b5cc53be1bb768c0ca774458d0bc34ab1268a3731f385bdfd9f3"
+    }
+   ]
+  },
+  {
+   "line": 23,
+   "character": 0,
+   "command": "#interval_inspect ((3:ℝ) ∈",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 39,
+       "line": 23
+      },
+      "start": {
+       "character": 0,
+       "line": 23
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "3 ∈ Icc 1 4",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 2,
+      "code": 2,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "span": 2,
+      "svg": 1,
+      "text": 4,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 2,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "svg": 1,
+      "text": 4
+     },
+     "components": {},
+     "texts": [
+      "3 ∈ Icc 1 4",
+      "3",
+      "3",
+      "1",
+      "4",
+      "Suggested lemmas",
+      "Set.mem_Icc",
+      " — ",
+      "refine Set.mem_Icc.mpr ⟨?_, ?_⟩",
+      "1 ≤ 3 ✓ ready",
+      "3 ≤ 4 ✓ ready"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "3a1b8b742cc45456c9877373f93f90f40cdd4a02ee7fac3fe4879770bda6e5b5"
+    }
+   ]
+  },
+  {
+   "line": 26,
+   "character": 0,
+   "command": "#interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 44,
+       "line": 26
+      },
+      "start": {
+       "character": 0,
+       "line": 26
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "(Ioc 1 2).Nonempty",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 2,
+      "code": 2,
+      "div": 3,
+      "li": 1,
+      "line": 3,
+      "rect": 1,
+      "span": 1,
+      "svg": 1,
+      "text": 3,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 2,
+      "line": 3,
+      "rect": 1,
+      "svg": 1,
+      "text": 3
+     },
+     "components": {},
+     "texts": [
+      "(Ioc 1 2).Nonempty",
+      "1",
+      "2",
+      "Nonempty ↔ 1 < 2",
+      "Suggested lemmas",
+      "Set.nonempty_Ioc",
+      " — ",
+      "refine Set.nonempty_Ioc.mpr ?_",
+      "1 < 2 ✓ ready"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "3d72b4a1c2e63fb8bcb8ae76d9c4eafcd0a68da242ce2695d6afac7c20ea9e0e"
+    }
+   ]
+  },
+  {
+   "line": 29,
+   "character": 0,
+   "command": "#interval_inspect (Set.Ico (0:ℕ) 2",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 53,
+       "line": 29
+      },
+      "start": {
+       "character": 0,
+       "line": 29
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Ico 0 2 ⊆ Icc 0 1",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "code": 1,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "rect": 2,
+      "span": 1,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "line": 4,
+      "rect": 2,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {},
+     "texts": [
+      "Ico 0 2 ⊆ Icc 0 1",
+      "⊆ L",
+      "⊇ R",
+      "0",
+      "2",
+      "1",
+      "open segments not shaded: no DenselyOrdered instance (they may be empty)",
+      "No table entry applies — fallbacks",
+      "fallback",
+      " — ",
+      "simp [Set.subset_def]; intro x hx; constructor <;> linarith"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "b4ea672df3226dca332b6ebf946c96c3869264baf5d111d4106a8b7cc0b1cf74"
+    }
+   ]
+  },
+  {
+   "line": 40,
+   "character": 2,
+   "command": "interval_inspect?",
+   "panels": [
+    {
+     "id": "IntervalInspector.IntervalInspectorPanel",
+     "kind": "rpc",
+     "method": "IntervalInspector.IntervalInspectorPanel.rpc",
+     "range": {
+      "end": {
+       "character": 19,
+       "line": 40
+      },
+      "start": {
+       "character": 2,
+       "line": 40
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "Ioc a b ∪ Ioc b c = Ioc a c",
+     "js": {
+      "bytes": 3860,
+      "sha256": "1ecb331cff64e4ff73df1333e3070fc8a6d874a657b5ff90fd305f22f000a72e",
+      "importsInfoview": true
+     },
+     "rpcMs": 8,
+     "error": null,
+     "tagCounts": {
+      "circle": 6,
+      "code": 1,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "rect": 3,
+      "span": 2,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 6,
+      "line": 4,
+      "rect": 3,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {
+      "MakeEditLink": 1
+     },
+     "texts": [
+      "Ioc a b ∪ Ioc b c = Ioc a c",
+      "= L",
+      "∪",
+      "= R",
+      "a",
+      "b",
+      "c",
+      "Suggested lemmas",
+      "Set.Ioc_union_Ioc_eq_Ioc",
+      " — ",
+      "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+      "a ≤ b ✓ ready",
+      "b ≤ c ✓ ready"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 19,
+          "line": 40
+         },
+         "start": {
+          "character": 2,
+          "line": 40
+         }
+        },
+        "newText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 40
+        },
+        "start": {
+         "character": 39,
+         "line": 40
+        }
+       }
+      }
+     ],
+     "htmlSha256": "545c98d075bbde4f7e24517af7283851edde0e398c40db56c5c22c7f39c04ab9"
+    }
+   ]
+  },
+  {
+   "line": 45,
+   "character": 2,
+   "command": "interval_inspect?",
+   "panels": [
+    {
+     "id": "IntervalInspector.IntervalInspectorPanel",
+     "kind": "rpc",
+     "method": "IntervalInspector.IntervalInspectorPanel.rpc",
+     "range": {
+      "end": {
+       "character": 19,
+       "line": 45
+      },
+      "start": {
+       "character": 2,
+       "line": 45
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "Ico 0 1 ⊆ Icc 0 1",
+     "js": {
+      "bytes": 3860,
+      "sha256": "1ecb331cff64e4ff73df1333e3070fc8a6d874a657b5ff90fd305f22f000a72e",
+      "importsInfoview": true
+     },
+     "rpcMs": 4,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "code": 1,
+      "div": 3,
+      "li": 1,
+      "line": 3,
+      "rect": 2,
+      "svg": 1,
+      "text": 5,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "line": 3,
+      "rect": 2,
+      "svg": 1,
+      "text": 5
+     },
+     "components": {
+      "MakeEditLink": 1
+     },
+     "texts": [
+      "Ico 0 1 ⊆ Icc 0 1",
+      "from set-builder",
+      "⊆ L",
+      "⊇ R",
+      "0",
+      "1",
+      "Suggested lemmas",
+      "Set.Ico_subset_Icc_self",
+      " — ",
+      "exact Set.Ico_subset_Icc_self"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "exact Set.Ico_subset_Icc_self"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "exact Set.Ico_subset_Icc_self",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 19,
+          "line": 45
+         },
+         "start": {
+          "character": 2,
+          "line": 45
+         }
+        },
+        "newText": "exact Set.Ico_subset_Icc_self"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 31,
+         "line": 45
+        },
+        "start": {
+         "character": 31,
+         "line": 45
+        }
+       }
+      }
+     ],
+     "htmlSha256": "46ef442af68e7cee446580d349661c5c3f6f8ddb8f023e9a66c3b41867da1681"
+    }
+   ]
+  },
+  {
+   "line": 51,
+   "character": 2,
+   "command": "interval_inspect?",
+   "panels": [
+    {
+     "id": "IntervalInspector.IntervalInspectorPanel",
+     "kind": "rpc",
+     "method": "IntervalInspector.IntervalInspectorPanel.rpc",
+     "range": {
+      "end": {
+       "character": 19,
+       "line": 51
+      },
+      "start": {
+       "character": 2,
+       "line": 51
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "x ∈ Ioo 0 2",
+     "js": {
+      "bytes": 3860,
+      "sha256": "1ecb331cff64e4ff73df1333e3070fc8a6d874a657b5ff90fd305f22f000a72e",
+      "importsInfoview": true
+     },
+     "rpcMs": 4,
+     "error": null,
+     "tagCounts": {
+      "circle": 2,
+      "code": 1,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "span": 2,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 2,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {
+      "MakeEditLink": 1
+     },
+     "texts": [
+      "x ∈ Ioo 0 2",
+      "x",
+      "x?",
+      "0?",
+      "2?",
+      "order unknown between x, 0",
+      "order unknown between x, 2",
+      "Suggested lemmas",
+      "Set.mem_Ioo",
+      " — ",
+      "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+      "0 < x ✗ missing",
+      "x < 2 ✗ missing"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 19,
+          "line": 51
+         },
+         "start": {
+          "character": 2,
+          "line": 51
+         }
+        },
+        "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 33,
+         "line": 51
+        },
+        "start": {
+         "character": 33,
+         "line": 51
+        }
+       }
+      }
+     ],
+     "htmlSha256": "13e0089c2b4aac70f496595d5bb00fd85e80eaadb16202460b417b4f3f0d1f58"
+    }
+   ]
+  }
+ ],
+ "selections": [
+  {
+   "line": 51,
+   "character": 2,
+   "command": "interval_inspect?",
+   "select": [
+    {
+     "goal": 0,
+     "hyp": "hx"
+    }
+   ],
+   "selectedLocations": [
+    {
+     "mvarId": "_uniq.2793",
+     "loc": {
+      "hyp": "_uniq.2792"
+     }
+    }
+   ],
+   "panels": [
+    {
+     "id": "IntervalInspector.IntervalInspectorPanel",
+     "kind": "rpc",
+     "method": "IntervalInspector.IntervalInspectorPanel.rpc",
+     "range": {
+      "end": {
+       "character": 19,
+       "line": 51
+      },
+      "start": {
+       "character": 2,
+       "line": 51
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "x ∈ Ioo 0 1",
+     "js": {
+      "bytes": 3860,
+      "sha256": "1ecb331cff64e4ff73df1333e3070fc8a6d874a657b5ff90fd305f22f000a72e",
+      "importsInfoview": true
+     },
+     "rpcMs": 4,
+     "error": null,
+     "tagCounts": {
+      "circle": 2,
+      "code": 1,
+      "div": 3,
+      "li": 1,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "span": 2,
+      "svg": 1,
+      "text": 6,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "circle": 2,
+      "line": 4,
+      "path": 1,
+      "rect": 1,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {
+      "MakeEditLink": 1
+     },
+     "texts": [
+      "x ∈ Ioo 0 1",
+      "x",
+      "x?",
+      "0?",
+      "1?",
+      "order unknown between x, 0",
+      "order unknown between x, 1",
+      "Suggested lemmas",
+      "Set.mem_Ioo",
+      " — ",
+      "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+      "0 < x ✗ missing",
+      "x < 1 ✗ missing"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 19,
+          "line": 51
+         },
+         "start": {
+          "character": 2,
+          "line": 51
+         }
+        },
+        "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 33,
+         "line": 51
+        },
+        "start": {
+         "character": 33,
+         "line": 51
+        }
+       }
+      }
+     ],
+     "htmlSha256": "8deafea52a5de5395ec1bf1afaeb063ca11e14a678b71d7370a72704ec6c4d37"
+    }
+   ]
+  }
+ ],
+ "clicks": [
+  {
+   "cursorLine": 40,
+   "kind": "makeEditLink",
+   "linkText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 40
+     },
+     "start": {
+      "character": 2,
+      "line": 40
+     }
+    },
+    "newText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 40
+    },
+    "start": {
+     "character": 39,
+     "line": 40
+    }
+   },
+   "editedSha256": "8c79f8d984eefa2a83ddabc873e216f0d174c17273bf2a56d29b500c7230f4ef",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset/Showcase.click1.lean",
+   "diagnosticsVersion": 2,
+   "reElaborationMs": 507,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 45,
+   "kind": "makeEditLink",
+   "linkText": "exact Set.Ico_subset_Icc_self",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 45
+     },
+     "start": {
+      "character": 2,
+      "line": 45
+     }
+    },
+    "newText": "exact Set.Ico_subset_Icc_self"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 31,
+     "line": 45
+    },
+    "start": {
+     "character": 31,
+     "line": 45
+    }
+   },
+   "editedSha256": "e527b5bff2d8bf7fe79a2aaaf1f96bedd8c350f0751f909291ba9c96ad4d519d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset/Showcase.click2.lean",
+   "diagnosticsVersion": 4,
+   "reElaborationMs": 517,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 51,
+   "kind": "makeEditLink",
+   "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 51
+     },
+     "start": {
+      "character": 2,
+      "line": 51
+     }
+    },
+    "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 33,
+     "line": 51
+    },
+    "start": {
+     "character": 33,
+     "line": 51
+    }
+   },
+   "editedSha256": "4f3485416954cba7cf3d5de8a0c655388dd493baa7d90aa0280ef19e56b357f9",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset/Showcase.click3.lean",
+   "diagnosticsVersion": 6,
+   "reElaborationMs": 515,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  }
+ ],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17 (#interval_inspect (Set.Ioc (1:ℝ) 2 ∪): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: text \"Set.Ioc_union_Ioc_eq_Ioc\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: text \"1 ≤ 2 ✓ ready\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20 (#interval_inspect (Set.Icc (0:ℝ) 3 ⊆): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23 (#interval_inspect ((3:ℝ) ∈): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23: text \"Set.mem_Icc\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26 (#interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26: text \"Nonempty\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29 (#interval_inspect (Set.Ico (0:ℕ) 2): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29: text \"DenselyOrdered\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40 (interval_inspect?): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40: text \"refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40: text \"a ≤ b ✓ ready\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40: text \"b ≤ c ✓ ready\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40: link \"refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 45 (interval_inspect?): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 45: text \"from set-builder\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 45: link \"exact Set.Ico_subset_Icc_self\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 51 (interval_inspect?): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 51: text \"x ∈ Ioo 0 2\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 51: link \"refine Set.mem_Ioo.mpr ⟨?_, ?_⟩\" present"
+  },
+  {
+   "ok": true,
+   "what": "selection @51 [{\"goal\":0,\"hyp\":\"hx\"}]: text \"x ∈ Ioo 0 1\""
+  },
+  {
+   "ok": true,
+   "what": "selection @51 [{\"goal\":0,\"hyp\":\"hx\"}]: text \"Set.mem_Ioo\""
+  },
+  {
+   "ok": true,
+   "what": "selection @51: panels answered"
+  },
+  {
+   "ok": true,
+   "what": "click @40 \"refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @40: diagnostics are for the edited version 2 (got 2)"
+  },
+  {
+   "ok": true,
+   "what": "click @40 \"refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @45 \"exact Set.Ico_subset_Icc_self\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @45: diagnostics are for the edited version 4 (got 4)"
+  },
+  {
+   "ok": true,
+   "what": "click @45 \"exact Set.Ico_subset_Icc_self\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @51 \"refine Set.mem_Ioo.mpr ⟨?_, ?_⟩\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @51: diagnostics are for the edited version 6 (got 6)"
+  },
+  {
+   "ok": true,
+   "what": "click @51 \"refine Set.mem_Ioo.mpr ⟨?_, ?_⟩\": post-click diagnostics \"clean\""
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 5714
+}

@@ -1,0 +1,273 @@
+{
+  "package": "simp-lens",
+  "title": "Simp Lens",
+  "blurb": "A filmstrip of every rewrite a simp call makes, exclusion previews, and a one-click minimal simp only [...] (Try this).",
+  "header": [
+    "import Mathlib",
+    "import SimpLens"
+  ],
+  "cursors": [
+    {
+      "line": 15,
+      "character": 0,
+      "command": "example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Simp Lens",
+          "rewrite"
+        ]
+      }
+    },
+    {
+      "line": 18,
+      "character": 0,
+      "command": "example (l : List Nat) : (l ++ []).map id",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Simp Lens"
+        ]
+      }
+    },
+    {
+      "line": 23,
+      "character": 2,
+      "command": "simp_lens [Nat.add_zero, Nat.zero_add",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Simp Lens"
+        ]
+      }
+    },
+    {
+      "line": 27,
+      "character": 2,
+      "command": "simp_lens at h ⊢",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "at h",
+          "at ⊢"
+        ]
+      }
+    },
+    {
+      "line": 31,
+      "character": 0,
+      "command": "example (p : Prop) (h : ¬True) : p := by simp_lens at h",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "closes the goal"
+        ]
+      }
+    },
+    {
+      "line": 34,
+      "character": 0,
+      "command": "example (a b : Nat) : (if true then a else b) = a",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Simp Lens"
+        ]
+      }
+    }
+  ],
+  "clicks": [
+    {
+      "cursorLine": 15,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 55,
+            "line": 15
+          },
+          "start": {
+            "character": 46,
+            "line": 15
+          }
+        },
+        "newText": "simp only [add_zero, zero_add]"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 18,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 81,
+            "line": 18
+          },
+          "start": {
+            "character": 72,
+            "line": 18
+          }
+        },
+        "newText": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 23,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 85,
+            "line": 23
+          },
+          "start": {
+            "character": 2,
+            "line": 23
+          }
+        },
+        "newText": "simp only [add_zero, List.append_nil, and_self]"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 27,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 27
+          },
+          "start": {
+            "character": 2,
+            "line": 27
+          }
+        },
+        "newText": "simp only [add_zero] at h ⊢"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 31,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 55,
+            "line": 31
+          },
+          "start": {
+            "character": 41,
+            "line": 31
+          }
+        },
+        "newText": "simp only [not_true_eq_false] at h"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 34,
+      "linkText": "[apply]",
+      "kind": "tryThis",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 75,
+            "line": 34
+          },
+          "start": {
+            "character": 56,
+            "line": 34
+          }
+        },
+        "newText": "simp only [↓reduceIte]"
+      },
+      "postClickDiagnostics": "clean"
+    }
+  ],
+  "hovers": [
+    {
+      "cursorLine": 15,
+      "panel": 0,
+      "code": 0,
+      "tagText": "n",
+      "expect": {
+        "typeText": "ℕ"
+      }
+    }
+  ],
+  "codeActions": [
+    {
+      "line": 15,
+      "character": 46,
+      "sameEditAsClick": 0,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    },
+    {
+      "line": 18,
+      "character": 72,
+      "sameEditAsClick": 1,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    },
+    {
+      "line": 23,
+      "character": 2,
+      "sameEditAsClick": 2,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    },
+    {
+      "line": 27,
+      "character": 2,
+      "sameEditAsClick": 3,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    },
+    {
+      "line": 31,
+      "character": 41,
+      "sameEditAsClick": 4,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    },
+    {
+      "line": 34,
+      "character": 56,
+      "sameEditAsClick": 5,
+      "expect": {
+        "titles": [
+          "Try this: simp only"
+        ]
+      }
+    }
+  ],
+  "dropped": [
+    "all `#guard_msgs` wrappers (the `Try this:` infos are the user-visible messages here)",
+    "`linter.unusedSimpArgs` parity demo (it would add a designed warning to an otherwise clean file)",
+    "`at *`, hypothesis-used-as-rule (`[h₁] at h₂`), definitional-only (`simp_lens only []`) and the `diagnostics` variants"
+  ]
+}

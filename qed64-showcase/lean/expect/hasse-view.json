@@ -1,0 +1,2316 @@
+{
+ "package": "hasse-view",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T04:00:15.862Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import HasseView"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
+ "documentSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
+ "elaborationMs": 2503,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 17,
+   "character": 0,
+   "command": "#hasse (Finset (Fin 3))",
+   "panels": [
+    {
+     "id": "HasseView.HassePanel",
+     "kind": "rpc",
+     "method": "HasseView.HassePanel.rpc",
+     "range": {
+      "end": {
+       "character": 23,
+       "line": 17
+      },
+      "start": {
+       "character": 0,
+       "line": 17
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "∅",
+     "js": {
+      "bytes": 3840,
+      "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
+      "importsInfoview": true
+     },
+     "rpcMs": 36,
+     "error": null,
+     "tagCounts": {
+      "div": 11,
+      "li": 14,
+      "line": 12,
+      "rect": 8,
+      "span": 14,
+      "svg": 1,
+      "text": 16,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "line": 12,
+      "rect": 8,
+      "svg": 1,
+      "text": 16
+     },
+     "components": {
+      "MakeEditLink": 14
+     },
+     "texts": [
+      "∅",
+      "⊥",
+      "{0}",
+      "atom",
+      "{1}",
+      "atom",
+      "{0, 1}",
+      "coatom",
+      "{2}",
+      "atom",
+      "{0, 2}",
+      "coatom",
+      "{1, 2}",
+      "coatom",
+      "{0, 1, 2}",
+      "⊤",
+      "poset: 8 elements, 12 cover edges",
+      "⊥ = ∅, ⊤ = {0, 1, 2}",
+      "atoms: {0}, {1}, {2}",
+      "coatoms: {0, 1}, {0, 2}, {1, 2}",
+      "lattice ✓",
+      "height: 3 (longest chain: 4 elements)",
+      "antichain width ≥ 3 (largest rank layer; exact width not computed)",
+      "Insertable examples (click to insert after the command)",
+      "cover",
+      "∅ ⋖ {0}",
+      "cover",
+      "∅ ⋖ {1}",
+      "cover",
+      "∅ ⋖ {2}",
+      "cover",
+      "{0} ⋖ {0, 1}",
+      "cover",
+      "{0} ⋖ {0, 2}",
+      "cover",
+      "{1} ⋖ {0, 1}",
+      "cover",
+      "{1} ⋖ {1, 2}",
+      "cover",
+      "{0, 1} ⋖ {0, 1, 2}",
+      "cover",
+      "{2} ⋖ {0, 2}",
+      "cover",
+      "{2} ⋖ {1, 2}",
+      "cover",
+      "{0, 2} ⋖ {0, 1, 2}",
+      "cover",
+      "{1, 2} ⋖ {0, 1, 2}",
+      "⊥",
+      "∀ x, ∅ ≤ x",
+      "⊤",
+      "∀ x, x ≤ {0, 1, 2}"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "∅ ⋖ {0}",
+      "∅ ⋖ {1}",
+      "∅ ⋖ {2}",
+      "{0} ⋖ {0, 1}",
+      "{0} ⋖ {0, 2}",
+      "{1} ⋖ {0, 1}",
+      "{1} ⋖ {1, 2}",
+      "{0, 1} ⋖ {0, 1, 2}",
+      "{2} ⋖ {0, 2}",
+      "{2} ⋖ {1, 2}",
+      "{0, 2} ⋖ {0, 1, 2}",
+      "{1, 2} ⋖ {0, 1, 2}",
+      "∀ x, ∅ ≤ x",
+      "∀ x, x ≤ {0, 1, 2}"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {0}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 18
+        },
+        "start": {
+         "character": 51,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 18
+        },
+        "start": {
+         "character": 51,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 18
+        },
+        "start": {
+         "character": 51,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0} ⋖ {0, 1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0} ⋖ {0, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1} ⋖ {0, 1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1} ⋖ {1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0, 1} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({0, 1} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 18
+        },
+        "start": {
+         "character": 62,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{2} ⋖ {0, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{2} ⋖ {1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 18
+        },
+        "start": {
+         "character": 56,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0, 2} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({0, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 18
+        },
+        "start": {
+         "character": 62,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1, 2} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ({1, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 18
+        },
+        "start": {
+         "character": 62,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, ∅ ≤ x",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 73,
+         "line": 18
+        },
+        "start": {
+         "character": 73,
+         "line": 18
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, x ≤ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 23,
+          "line": 17
+         },
+         "start": {
+          "character": 23,
+          "line": 17
+         }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 81,
+         "line": 18
+        },
+        "start": {
+         "character": 81,
+         "line": 18
+        }
+       }
+      }
+     ],
+     "htmlSha256": "4960117d60b2d9de52701dc57a9d7b6af7cf84eb8cfedb6609365fed3811dbcd"
+    }
+   ]
+  },
+  {
+   "line": 20,
+   "character": 0,
+   "command": "#hasse (Fin 4)",
+   "panels": [
+    {
+     "id": "HasseView.HassePanel",
+     "kind": "rpc",
+     "method": "HasseView.HassePanel.rpc",
+     "range": {
+      "end": {
+       "character": 14,
+       "line": 20
+      },
+      "start": {
+       "character": 0,
+       "line": 20
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3840,
+      "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
+      "importsInfoview": true
+     },
+     "rpcMs": 4,
+     "error": null,
+     "tagCounts": {
+      "div": 11,
+      "li": 5,
+      "line": 3,
+      "rect": 4,
+      "span": 5,
+      "svg": 1,
+      "text": 8,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "line": 3,
+      "rect": 4,
+      "svg": 1,
+      "text": 8
+     },
+     "components": {
+      "MakeEditLink": 5
+     },
+     "texts": [
+      "0",
+      "⊥",
+      "1",
+      "atom",
+      "2",
+      "coatom",
+      "3",
+      "⊤",
+      "poset: 4 elements, 3 cover edges",
+      "⊥ = 0, ⊤ = 3",
+      "atoms: 1",
+      "coatoms: 2",
+      "lattice ✓",
+      "height: 3 (longest chain: 4 elements)",
+      "antichain width ≥ 1 (largest rank layer; exact width not computed)",
+      "Insertable examples (click to insert after the command)",
+      "cover",
+      "0 ⋖ 1",
+      "cover",
+      "1 ⋖ 2",
+      "cover",
+      "2 ⋖ 3",
+      "⊥",
+      "∀ x, 0 ≤ x",
+      "⊤",
+      "∀ x, x ≤ 3"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "0 ⋖ 1",
+      "1 ⋖ 2",
+      "2 ⋖ 3",
+      "∀ x, 0 ≤ x",
+      "∀ x, x ≤ 3"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "0 ⋖ 1",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 20
+         },
+         "start": {
+          "character": 14,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : (0 : (Fin 4)) ⋖ 1 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 40,
+         "line": 21
+        },
+        "start": {
+         "character": 40,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1 ⋖ 2",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 20
+         },
+         "start": {
+          "character": 14,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : (1 : (Fin 4)) ⋖ 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 40,
+         "line": 21
+        },
+        "start": {
+         "character": 40,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2 ⋖ 3",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 20
+         },
+         "start": {
+          "character": 14,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : (2 : (Fin 4)) ⋖ 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 40,
+         "line": 21
+        },
+        "start": {
+         "character": 40,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, 0 ≤ x",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 20
+         },
+         "start": {
+          "character": 14,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : ∀ x : (Fin 4), (0 : (Fin 4)) ≤ x := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 55,
+         "line": 21
+        },
+        "start": {
+         "character": 55,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, x ≤ 3",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 20
+         },
+         "start": {
+          "character": 14,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : ∀ x : (Fin 4), x ≤ (3 : (Fin 4)) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 55,
+         "line": 21
+        },
+        "start": {
+         "character": 55,
+         "line": 21
+        }
+       }
+      }
+     ],
+     "htmlSha256": "b53886bd09ac0abc05ef0c479288ed9fd2be165c5662fd7459250ffb6cc10665"
+    }
+   ]
+  },
+  {
+   "line": 21,
+   "character": 0,
+   "command": "#hasse (Bool × Bool)",
+   "panels": [
+    {
+     "id": "HasseView.HassePanel",
+     "kind": "rpc",
+     "method": "HasseView.HassePanel.rpc",
+     "range": {
+      "end": {
+       "character": 20,
+       "line": 21
+      },
+      "start": {
+       "character": 0,
+       "line": 21
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "(true, true)",
+     "js": {
+      "bytes": 3840,
+      "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
+      "importsInfoview": true
+     },
+     "rpcMs": 3,
+     "error": null,
+     "tagCounts": {
+      "div": 11,
+      "li": 6,
+      "line": 4,
+      "rect": 4,
+      "span": 6,
+      "svg": 1,
+      "text": 8,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "line": 4,
+      "rect": 4,
+      "svg": 1,
+      "text": 8
+     },
+     "components": {
+      "MakeEditLink": 6
+     },
+     "texts": [
+      "(true, true)",
+      "⊤",
+      "(true, false)",
+      "atom coatom",
+      "(false, true)",
+      "atom coatom",
+      "(false, false)",
+      "⊥",
+      "poset: 4 elements, 4 cover edges",
+      "⊥ = (false, false), ⊤ = (true, true)",
+      "atoms: (true, false), (false, true)",
+      "coatoms: (true, false), (false, true)",
+      "lattice ✓",
+      "height: 2 (longest chain: 3 elements)",
+      "antichain width ≥ 2 (largest rank layer; exact width not computed)",
+      "Insertable examples (click to insert after the command)",
+      "cover",
+      "(true, false) ⋖ (true, true)",
+      "cover",
+      "(false, true) ⋖ (true, true)",
+      "cover",
+      "(false, false) ⋖ (true, false)",
+      "cover",
+      "(false, false) ⋖ (false, true)",
+      "⊥",
+      "∀ x, (false, false) ≤ x",
+      "⊤",
+      "∀ x, x ≤ (true, true)"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "(true, false) ⋖ (true, true)",
+      "(false, true) ⋖ (true, true)",
+      "(false, false) ⋖ (true, false)",
+      "(false, false) ⋖ (false, true)",
+      "∀ x, (false, false) ≤ x",
+      "∀ x, x ≤ (true, true)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "(true, false) ⋖ (true, true)",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ((true, false) : (Bool × Bool)) ⋖ (true, true) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 69,
+         "line": 22
+        },
+        "start": {
+         "character": 69,
+         "line": 22
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "(false, true) ⋖ (true, true)",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ((false, true) : (Bool × Bool)) ⋖ (true, true) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 69,
+         "line": 22
+        },
+        "start": {
+         "character": 69,
+         "line": 22
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "(false, false) ⋖ (true, false)",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ((false, false) : (Bool × Bool)) ⋖ (true, false) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 71,
+         "line": 22
+        },
+        "start": {
+         "character": 71,
+         "line": 22
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "(false, false) ⋖ (false, true)",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ((false, false) : (Bool × Bool)) ⋖ (false, true) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 71,
+         "line": 22
+        },
+        "start": {
+         "character": 71,
+         "line": 22
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, (false, false) ≤ x",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ∀ x : (Bool × Bool), ((false, false) : (Bool × Bool)) ≤ x := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 80,
+         "line": 22
+        },
+        "start": {
+         "character": 80,
+         "line": 22
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, x ≤ (true, true)",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 20,
+          "line": 21
+         },
+         "start": {
+          "character": 20,
+          "line": 21
+         }
+        },
+        "newText": "\nexample : ∀ x : (Bool × Bool), x ≤ ((true, true) : (Bool × Bool)) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 78,
+         "line": 22
+        },
+        "start": {
+         "character": 78,
+         "line": 22
+        }
+       }
+      }
+     ],
+     "htmlSha256": "df49b2c449f466e47e1a39b3d1f4ccc85d5c7dff4a74f3e04e2f41d8e3335d81"
+    }
+   ]
+  },
+  {
+   "line": 24,
+   "character": 0,
+   "command": "#hasse (Finset (Fin 3)) updown 1",
+   "panels": [
+    {
+     "id": "HasseView.HassePanel",
+     "kind": "rpc",
+     "method": "HasseView.HassePanel.rpc",
+     "range": {
+      "end": {
+       "character": 49,
+       "line": 24
+      },
+      "start": {
+       "character": 0,
+       "line": 24
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "∅",
+     "js": {
+      "bytes": 3840,
+      "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
+      "importsInfoview": true
+     },
+     "rpcMs": 28,
+     "error": null,
+     "tagCounts": {
+      "div": 14,
+      "li": 14,
+      "line": 12,
+      "rect": 10,
+      "span": 14,
+      "svg": 1,
+      "text": 16,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "line": 12,
+      "rect": 10,
+      "svg": 1,
+      "text": 16
+     },
+     "components": {
+      "MakeEditLink": 14
+     },
+     "texts": [
+      "∅",
+      "⊥",
+      "{0}",
+      "atom",
+      "{1}",
+      "atom",
+      "{0, 1}",
+      "coatom",
+      "{2}",
+      "atom",
+      "{0, 2}",
+      "coatom",
+      "{1, 2}",
+      "coatom",
+      "{0, 1, 2}",
+      "⊤",
+      "poset: 8 elements, 12 cover edges",
+      "⊥ = ∅, ⊤ = {0, 1, 2}",
+      "atoms: {0}, {1}, {2}",
+      "coatoms: {0, 1}, {0, 2}, {1, 2}",
+      "lattice ✓",
+      "height: 3 (longest chain: 4 elements)",
+      "antichain width ≥ 3 (largest rank layer; exact width not computed)",
+      "highlight: 0, 7",
+      "upset of {0}: {0}, {0, 1}, {0, 2}, {0, 1, 2}",
+      "downset of {0}: ∅, {0}",
+      "Insertable examples (click to insert after the command)",
+      "cover",
+      "∅ ⋖ {0}",
+      "cover",
+      "∅ ⋖ {1}",
+      "cover",
+      "∅ ⋖ {2}",
+      "cover",
+      "{0} ⋖ {0, 1}",
+      "cover",
+      "{0} ⋖ {0, 2}",
+      "cover",
+      "{1} ⋖ {0, 1}",
+      "cover",
+      "{1} ⋖ {1, 2}",
+      "cover",
+      "{0, 1} ⋖ {0, 1, 2}",
+      "cover",
+      "{2} ⋖ {0, 2}",
+      "cover",
+      "{2} ⋖ {1, 2}",
+      "cover",
+      "{0, 2} ⋖ {0, 1, 2}",
+      "cover",
+      "{1, 2} ⋖ {0, 1, 2}",
+      "⊥",
+      "∀ x, ∅ ≤ x",
+      "⊤",
+      "∀ x, x ≤ {0, 1, 2}"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "∅ ⋖ {0}",
+      "∅ ⋖ {1}",
+      "∅ ⋖ {2}",
+      "{0} ⋖ {0, 1}",
+      "{0} ⋖ {0, 2}",
+      "{1} ⋖ {0, 1}",
+      "{1} ⋖ {1, 2}",
+      "{0, 1} ⋖ {0, 1, 2}",
+      "{2} ⋖ {0, 2}",
+      "{2} ⋖ {1, 2}",
+      "{0, 2} ⋖ {0, 1, 2}",
+      "{1, 2} ⋖ {0, 1, 2}",
+      "∀ x, ∅ ≤ x",
+      "∀ x, x ≤ {0, 1, 2}"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {0}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 25
+        },
+        "start": {
+         "character": 51,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 25
+        },
+        "start": {
+         "character": 51,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∅ ⋖ {2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 25
+        },
+        "start": {
+         "character": 51,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0} ⋖ {0, 1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0} ⋖ {0, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1} ⋖ {0, 1}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1} ⋖ {1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0, 1} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({0, 1} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 25
+        },
+        "start": {
+         "character": 62,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{2} ⋖ {0, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{2} ⋖ {1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 56,
+         "line": 25
+        },
+        "start": {
+         "character": 56,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{0, 2} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({0, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 25
+        },
+        "start": {
+         "character": 62,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "{1, 2} ⋖ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ({1, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 62,
+         "line": 25
+        },
+        "start": {
+         "character": 62,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, ∅ ≤ x",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 73,
+         "line": 25
+        },
+        "start": {
+         "character": 73,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, x ≤ {0, 1, 2}",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 49,
+          "line": 24
+         },
+         "start": {
+          "character": 49,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 81,
+         "line": 25
+        },
+        "start": {
+         "character": 81,
+         "line": 25
+        }
+       }
+      }
+     ],
+     "htmlSha256": "cc478506203dbee04e484c752d51d28c9850ac6aa90eaf2640420aee3e518b26"
+    }
+   ]
+  },
+  {
+   "line": 31,
+   "character": 0,
+   "command": "#hasse Bowtie highlight [1, 2]",
+   "panels": [
+    {
+     "id": "HasseView.HassePanel",
+     "kind": "rpc",
+     "method": "HasseView.HassePanel.rpc",
+     "range": {
+      "end": {
+       "character": 30,
+       "line": 31
+      },
+      "start": {
+       "character": 0,
+       "line": 31
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3840,
+      "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
+      "importsInfoview": true
+     },
+     "rpcMs": 6,
+     "error": null,
+     "tagCounts": {
+      "div": 11,
+      "li": 8,
+      "line": 6,
+      "rect": 7,
+      "span": 8,
+      "svg": 1,
+      "text": 8,
+      "ul": 1
+     },
+     "svgTagCounts": {
+      "line": 6,
+      "rect": 7,
+      "svg": 1,
+      "text": 8
+     },
+     "components": {
+      "MakeEditLink": 8
+     },
+     "texts": [
+      "0",
+      "⊥",
+      "1",
+      "atom",
+      "2",
+      "atom",
+      "3",
+      "4",
+      "poset: 5 elements, 6 cover edges",
+      "⊥ = 0, ⊤ = (none)",
+      "atoms: 1, 2",
+      "not a lattice: 1, 2 have no join",
+      "height: 2 (longest chain: 3 elements)",
+      "antichain width ≥ 2 (largest rank layer; exact width not computed)",
+      "highlight: 1, 2",
+      "Insertable examples (click to insert after the command)",
+      "cover",
+      "0 ⋖ 1",
+      "cover",
+      "0 ⋖ 2",
+      "cover",
+      "1 ⋖ 3",
+      "cover",
+      "1 ⋖ 4",
+      "cover",
+      "2 ⋖ 3",
+      "cover",
+      "2 ⋖ 4",
+      "⊥",
+      "∀ x, 0 ≤ x",
+      "witness",
+      "no join of 1, 2"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "0 ⋖ 1",
+      "0 ⋖ 2",
+      "1 ⋖ 3",
+      "1 ⋖ 4",
+      "2 ⋖ 3",
+      "2 ⋖ 4",
+      "∀ x, 0 ≤ x",
+      "no join of 1, 2"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "0 ⋖ 1",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (0 : Bowtie) ⋖ 1 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0 ⋖ 2",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (0 : Bowtie) ⋖ 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1 ⋖ 3",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (1 : Bowtie) ⋖ 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1 ⋖ 4",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (1 : Bowtie) ⋖ 4 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2 ⋖ 3",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (2 : Bowtie) ⋖ 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2 ⋖ 4",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : (2 : Bowtie) ⋖ 4 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 39,
+         "line": 32
+        },
+        "start": {
+         "character": 39,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "∀ x, 0 ≤ x",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : ∀ x : Bowtie, (0 : Bowtie) ≤ x := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 32
+        },
+        "start": {
+         "character": 53,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "no join of 1, 2",
+       "title": null,
+       "edit": {
+        "range": {
+         "end": {
+          "character": 30,
+          "line": 31
+         },
+         "start": {
+          "character": 30,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 138,
+         "line": 32
+        },
+        "start": {
+         "character": 138,
+         "line": 32
+        }
+       }
+      }
+     ],
+     "htmlSha256": "056b9d38024971ff56f9b4137899c04dc792203978e82587f6582bd241b3342e"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [
+  {
+   "cursorLine": 17,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {0}",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 18
+    },
+    "start": {
+     "character": 51,
+     "line": 18
+    }
+   },
+   "editedSha256": "67f4dd46b0222a9147d264f3eedcb468e6831cde321d38dbf4255c18c19c0f67",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click1.lean",
+   "diagnosticsVersion": 2,
+   "reElaborationMs": 561,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 17,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, ∅ ≤ x",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 73,
+     "line": 18
+    },
+    "start": {
+     "character": 73,
+     "line": 18
+    }
+   },
+   "editedSha256": "89fd4edd78cc02d2f26b06a8a9456a02925e684cae29fb19ecafc1aa7b944ad6",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click2.lean",
+   "diagnosticsVersion": 4,
+   "reElaborationMs": 554,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 17,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, x ≤ {0, 1, 2}",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 81,
+     "line": 18
+    },
+    "start": {
+     "character": 81,
+     "line": 18
+    }
+   },
+   "editedSha256": "9052daeb559b613bbdfc4bbce0a525c216cdb1ac3ac28cc357fcb574780d8a2c",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click3.lean",
+   "diagnosticsVersion": 6,
+   "reElaborationMs": 544,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 31,
+   "kind": "makeEditLink",
+   "linkText": "no join of 1, 2",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 138,
+     "line": 32
+    },
+    "start": {
+     "character": 138,
+     "line": 32
+    }
+   },
+   "editedSha256": "d10f11a680e5869c47f74789fbe42b783443519f07b3a3b3d143c2ba7a0732ef",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click4.lean",
+   "diagnosticsVersion": 8,
+   "reElaborationMs": 527,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 31,
+   "kind": "makeEditLink",
+   "linkText": "0 ⋖ 1",
+   "linkTitle": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (0 : Bowtie) ⋖ 1 := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "editedSha256": "3a95db69b39cbf4fcf65e0cdfcc5f99382b4f11fd02bc357d121565fe4e8b893",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click5.lean",
+   "diagnosticsVersion": 10,
+   "reElaborationMs": 526,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  }
+ ],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17 (#hasse (Finset (Fin 3))): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: text \"Insertable examples (click to insert after the command)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: link \"∅ ⋖ {0}\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: link \"∀ x, ∅ ≤ x\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: link \"∀ x, x ≤ {0, 1, 2}\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: svg <rect> × 8"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: svg <line> × 12"
+  },
+  {
+   "ok": true,
+   "what": "cursor 17: svg <text> × 16"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20 (#hasse (Fin 4)): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 21 (#hasse (Bool × Bool)): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 24 (#hasse (Finset (Fin 3)) updown 1): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31 (#hasse Bowtie highlight [1, 2]): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"no join of 1, 2\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: link \"no join of 1, 2\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: link \"0 ⋖ 1\" present"
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∅ ⋖ {0}\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @17: diagnostics are for the edited version 2 (got 2)"
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∅ ⋖ {0}\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∀ x, ∅ ≤ x\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @17: diagnostics are for the edited version 4 (got 4)"
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∀ x, ∅ ≤ x\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∀ x, x ≤ {0, 1, 2}\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @17: diagnostics are for the edited version 6 (got 6)"
+  },
+  {
+   "ok": true,
+   "what": "click @17 \"∀ x, x ≤ {0, 1, 2}\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"no join of 1, 2\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @31: diagnostics are for the edited version 8 (got 8)"
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"no join of 1, 2\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"0 ⋖ 1\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @31: diagnostics are for the edited version 10 (got 10)"
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"0 ⋖ 1\": post-click diagnostics \"clean\""
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 8040
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "1859b83",
+  "buildId": "wasm64-4b025db7729c5f89",
+  "registeredAt": "2026-09-30T22:52:00Z",
+  "label": "A: QED64 1859b83, runtime 0034 (kernel 9fbb45afcb), the old shell and worker",
+  "status": "staged: the rehearsed fallback (2026-10-02: verify, controls, boots green; C21/C22/C23 green in the browser: C22 (3) passes since the hardening lane main-loop probe, harden-A-c21c22 on :5196; final-gate storms V2 3/26)",
+  "qed64": {
+    "commit": "1859b830b3621dbacc1752a818634d06a1c94bd0",
+    "promote": "965c2494b3e4419986a6d0da1fea393a72667b19",
+    "kernel": "9fbb45afcb9bfe152215bd670711a3b37f782ea3"
+  },
+  "mainBundle": "/assets/index-CzXuAkOQ.js",
+  "consoleSites": {
+    "627": "5b1d6aa89b59ca4cfdc67c0a1fae918f85df72324663408fdb1f560f5a8b493f"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-51/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-51/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": false,
+    "note": "No QED64 liveness on this page (status().liveness absent): the gallery's own probe is the primary L7 recovery (probe after 10 s without progress, restart about 20 s after the last progress)."
+  },
+  "knownLimitations": [
+    "L7: rare runtime freeze (about 1 in 20 C20 runs), recovered only by the gallery's liveness probe",
+    "No QED64 liveness: before the hardening lane the gallery could not tell a pool saturated longer than its 2 x 5 s probe sequence from a freeze (C22 (3) restarted a healthy session in multipin-A-liveness); fixed by the gallery main-loop probe (harden-A-c21c22: 0 restarts)"
+  ],
+  "notes": "The pin of the first build (2026-09-30); last VERDICT closeout-full1 (gallery c8492b70…). Re-keyed by commit on 2026-10-02 (was release/wasm64-4b025db7729c5f89)."
+}

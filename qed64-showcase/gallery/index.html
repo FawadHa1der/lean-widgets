@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- An icon of our own: without one a headed browser requests /favicon.ico, which the server answers 404 (UX suite C19). -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="color-scheme" content="light dark">
+<title>Lean Widget Gallery</title>
+<meta name="description" content="Eight Lean InfoView widget packages running live in QED64, the in-browser wasm64 Lean 4.34.0 playground.">
+<link rel="stylesheet" href="gallery.css">
+<!-- The same-origin InfoView RPC repair (stage A, X4); installed on the QED64 page window by gallery.js. -->
+<script src="qed64-bridge.js"></script>
+<script type="module" src="gallery.js"></script>
+</head>
+<body>
+<a id="skip-link" class="skip-link" href="#qed64-frame">Skip to the Lean editor</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">∀</span>
+    <div class="brand-text">
+      <h1>Lean widget gallery</h1>
+      <p class="brand-sub">Eight InfoView widgets, live in <abbr title="QED64: an in-browser wasm64 Lean 4 playground">QED64</abbr></p>
+    </div>
+  </div>
+  <div class="toolbar" role="toolbar" aria-label="Example actions">
+    <button type="button" id="reset-btn" class="btn" aria-label="Reset example" disabled>
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M8 3a5 5 0 1 1-4.6 3.1l1.4.6A3.5 3.5 0 1 0 8 4.5V7L4.5 3.75 8 .5V3z" fill="currentColor"/></svg>
+      <span>Reset<span class="opt"> example</span></span>
+    </button>
+    <button type="button" id="copy-btn" class="btn" aria-label="Copy the example for VS Code" disabled>
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M5 2h7a2 2 0 0 1 2 2v7h-1.5V4a.5.5 0 0 0-.5-.5H5V2zM2 6a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6zm2-.5a.5.5 0 0 0-.5.5v6c0 .28.22.5.5.5h5a.5.5 0 0 0 .5-.5V6a.5.5 0 0 0-.5-.5H4z" fill="currentColor"/></svg>
+      <span id="copy-label">Copy<span class="opt"> for VS Code</span></span>
+    </button>
+  </div>
+  <p id="status-line" class="status-line" data-phase="starting" aria-live="off" title="Gallery and QED64 status">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span id="status-text">Starting…</span>
+  </p>
+</header>
+
+<div class="mobile-bar">
+  <label for="example-select" class="mobile-label">Widget</label>
+  <select id="example-select" aria-describedby="mobile-blurb"></select>
+  <p id="mobile-blurb" class="mobile-blurb"></p>
+  <details id="mobile-hints" class="mobile-hints">
+    <summary>Things to try</summary>
+    <ul id="mobile-hint-list" class="hint-list"></ul>
+  </details>
+</div>
+
+<div class="layout">
+  <nav id="rail" class="rail" aria-label="Widget examples">
+    <p class="rail-intro" id="rail-intro">Pick a widget. Its example opens in the editor with the cursor where the panel appears. Arrow keys move, Enter opens, F6 jumps between the list and the editor.</p>
+    <ol id="card-list" class="card-list" aria-describedby="rail-intro"></ol>
+    <footer class="rail-foot">
+      <p><span id="pin-badge" class="badge" title="The QED64 version this gallery is pinned to">QED64 …</span> <span id="overlay-badge" class="badge" title="The snapshot that carries the widgets">snapshot …</span></p>
+      <p class="fine" title="Kept in this browser's localStorage: qed64-showcase:saved, newer ones in qed64-showcase:saved-history">The editor on the right is QED64's own page, unmodified. If you had typed your own text into QED64 on this site, the gallery kept a copy before opening an example.</p>
+      <span class="restore-row">
+        <select id="restore-pick" class="restore-pick" aria-label="Which kept buffer to open" hidden></select>
+        <button type="button" id="restore-btn" class="btn btn-small" hidden>Open my saved buffer</button>
+      </span>
+    </footer>
+  </nav>
+
+  <main id="stage" class="stage">
+    <div id="notice" class="notice" role="status" hidden>
+      <span id="notice-text"></span>
+      <button type="button" id="notice-close" class="icon-btn" aria-label="Dismiss notice">×</button>
+    </div>
+    <div id="stage-veil" class="veil">
+      <div class="veil-card">
+        <span class="spinner" aria-hidden="true"></span>
+        <p id="veil-text">Loading the gallery…</p>
+        <noscript><p>This showcase needs JavaScript and a Chromium-based desktop browser (Chrome, Edge, Brave, Arc) on a computer with 16 GB of RAM or more, one showcase tab at a time (a tab uses about 8–9 GB, about 12 GB on a reload).</p></noscript>
+      </div>
+    </div>
+    <section id="error-card" class="error-card" role="alert" aria-labelledby="error-title" hidden>
+      <h2 id="error-title">Something went wrong</h2>
+      <p id="error-note" class="error-note" hidden></p>
+      <p id="error-detail"></p>
+      <ul id="error-checks" class="checks"></ul>
+      <details id="error-tech" class="tech">
+        <summary>Technical details</summary>
+        <pre id="error-raw"></pre>
+      </details>
+      <div class="error-actions">
+        <button type="button" id="error-retry" class="btn btn-primary">Try again</button>
+        <button type="button" id="error-reset" class="btn" hidden>Reset example</button>
+        <a id="error-stock" class="btn" href="/" target="_blank" rel="noopener">Open the stock QED64 page</a>
+        <button type="button" id="error-dismiss" class="btn btn-quiet">Dismiss</button>
+      </div>
+    </section>
+    <iframe id="qed64-frame" class="qed64-frame" title="QED64 Lean editor and InfoView (the unmodified QED64 page)" allow="clipboard-read; clipboard-write"></iframe>
+  </main>
+</div>
+
+<p id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+<template id="card-template">
+  <li class="card">
+    <button type="button" class="card-main" tabindex="-1">
+      <img class="card-thumb" alt="" loading="lazy" decoding="async" hidden>
+      <span class="card-head">
+        <span class="card-title"></span>
+        <span class="card-tags"><span class="chip" data-state="unknown">…</span></span>
+      </span>
+      <span class="card-blurb"></span>
+      <span class="card-more"></span>
+    </button>
+    <div class="card-hints" hidden>
+      <p class="hints-title">Things to try</p>
+      <ul class="hint-list"></ul>
+      <button type="button" class="hints-toggle btn-link" hidden></button>
+    </div>
+  </li>
+</template>
+</body>
+</html>

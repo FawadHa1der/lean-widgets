@@ -1,0 +1,1550 @@
+{
+ "package": "simp-lens",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:51:20.849Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import SimpLens"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
+ "documentSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
+ "elaborationMs": 2598,
+ "documentDiagnostics": [
+  {
+   "severity": "information",
+   "line": 15,
+   "character": 46,
+   "endLine": 15,
+   "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+  },
+  {
+   "severity": "information",
+   "line": 18,
+   "character": 72,
+   "endLine": 18,
+   "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+  },
+  {
+   "severity": "information",
+   "line": 23,
+   "character": 2,
+   "endLine": 23,
+   "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+  },
+  {
+   "severity": "information",
+   "line": 27,
+   "character": 2,
+   "endLine": 27,
+   "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+  },
+  {
+   "severity": "information",
+   "line": 31,
+   "character": 41,
+   "endLine": 31,
+   "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+  },
+  {
+   "severity": "information",
+   "line": 34,
+   "character": 56,
+   "endLine": 34,
+   "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+  }
+ ],
+ "cursors": [
+  {
+   "line": 15,
+   "character": 0,
+   "command": "example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 55,
+       "line": 15
+      },
+      "start": {
+       "character": 46,
+       "line": 15
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 1,
+     "error": null,
+     "tagCounts": {
+      "b": 3,
+      "code": 2,
+      "details": 5,
+      "div": 19,
+      "span": 24,
+      "summary": 5
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 8
+     },
+     "texts": [
+      "Simp Lens",
+      " — 4 rewrites",
+      " ✓ goal closed",
+      "minimal call: ",
+      "simp only [add_zero, zero_add]",
+      "1.",
+      "add_zero",
+      "post",
+      "→",
+      "2.",
+      "add_zero",
+      "post",
+      "→",
+      "3.",
+      "zero_add",
+      "post",
+      "→",
+      "4.",
+      "eq_self",
+      "post",
+      "→",
+      "Exclusion previews",
+      "(3)",
+      "○ redundant ",
+      "without ",
+      "add_zero",
+      "lands at: ",
+      "goal still closed",
+      "○ redundant ",
+      "without ",
+      "zero_add",
+      "lands at: ",
+      "goal still closed",
+      "● essential ",
+      "without ",
+      "eq_self",
+      "lands at: ",
+      "n = n"
+     ],
+     "codeTexts": [
+      "n + 0",
+      "n",
+      "n + 0",
+      "n",
+      "0 + n",
+      "n",
+      "n = n",
+      "True"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "6a655d9372ebd9328859aa04d80416cfc6005845ffb04ee4d918fd7838e028fe"
+    }
+   ]
+  },
+  {
+   "line": 18,
+   "character": 0,
+   "command": "example (l : List Nat) : (l ++ []).map id",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 81,
+       "line": 18
+      },
+      "start": {
+       "character": 72,
+       "line": 18
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "b": 3,
+      "code": 2,
+      "details": 7,
+      "div": 30,
+      "span": 40,
+      "summary": 7
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 14
+     },
+     "texts": [
+      "Simp Lens",
+      " — 7 rewrites",
+      " ✓ goal closed",
+      "minimal call: ",
+      "simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]",
+      "1.",
+      "List.append_nil",
+      "post",
+      "→",
+      "2.",
+      "List.map_id_fun",
+      "post",
+      "→",
+      "3.",
+      "id_eq",
+      "post",
+      "→",
+      "4.",
+      "List.map_id_fun",
+      "post",
+      "→",
+      "5.",
+      "List.map_nil",
+      "post",
+      "→",
+      "6.",
+      "List.append_nil",
+      "post",
+      "→",
+      "7.",
+      "eq_self",
+      "post",
+      "→",
+      "Exclusion previews",
+      "(5)",
+      "○ redundant ",
+      "without ",
+      "List.append_nil",
+      "lands at: ",
+      "goal still closed",
+      "○ redundant ",
+      "without ",
+      "List.map_id_fun",
+      "lands at: ",
+      "goal still closed",
+      "○ redundant ",
+      "without ",
+      "id_eq",
+      "lands at: ",
+      "goal still closed",
+      "○ redundant ",
+      "without ",
+      "List.map_nil",
+      "lands at: ",
+      "goal still closed",
+      "● essential ",
+      "without ",
+      "eq_self",
+      "lands at: ",
+      "l = l"
+     ],
+     "codeTexts": [
+      "l ++ []",
+      "l",
+      "List.map id l",
+      "id l",
+      "id l",
+      "l",
+      "List.map id l",
+      "id l",
+      "List.map id []",
+      "[]",
+      "l ++ []",
+      "l",
+      "l = l",
+      "True"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "4f40fed98f7931d818e6cbd65def5efd321791380d32ee5a785eb57c3593de2f"
+    }
+   ]
+  },
+  {
+   "line": 23,
+   "character": 2,
+   "command": "simp_lens [Nat.add_zero, Nat.zero_add",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 85,
+       "line": 23
+      },
+      "start": {
+       "character": 2,
+       "line": 23
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "b": 3,
+      "code": 2,
+      "details": 6,
+      "div": 23,
+      "span": 30,
+      "summary": 6
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 10
+     },
+     "texts": [
+      "Simp Lens",
+      " — 5 rewrites",
+      " ✓ goal closed",
+      "minimal call: ",
+      "simp only [add_zero, List.append_nil, and_self]",
+      "1.",
+      "add_zero",
+      "post",
+      "→",
+      "2.",
+      "eq_self",
+      "post",
+      "→",
+      "3.",
+      "List.append_nil",
+      "post",
+      "→",
+      "4.",
+      "eq_self",
+      "post",
+      "→",
+      "5.",
+      "and_self",
+      "post",
+      "→",
+      "Exclusion previews",
+      "(4)",
+      "○ redundant ",
+      "without ",
+      "add_zero",
+      "lands at: ",
+      "goal still closed",
+      "● essential ",
+      "without ",
+      "eq_self",
+      "lands at: ",
+      "n = n ∧ l = l",
+      "○ redundant ",
+      "without ",
+      "List.append_nil",
+      "lands at: ",
+      "goal still closed",
+      "○ redundant ",
+      "without ",
+      "and_self",
+      "lands at: ",
+      "goal still closed"
+     ],
+     "codeTexts": [
+      "n + 0",
+      "n",
+      "n = n",
+      "True",
+      "l ++ []",
+      "l",
+      "l = l",
+      "True",
+      "True ∧ True",
+      "True"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "d81eb06a07f262e52a524ab250ebcfee33e3b15999efa438f89d6288c60b541b"
+    }
+   ]
+  },
+  {
+   "line": 27,
+   "character": 2,
+   "command": "simp_lens at h ⊢",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 18,
+       "line": 27
+      },
+      "start": {
+       "character": 2,
+       "line": 27
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "b": 5,
+      "code": 2,
+      "details": 3,
+      "div": 22,
+      "span": 18,
+      "summary": 3
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 6
+     },
+     "texts": [
+      "Simp Lens",
+      " — 3 rewrites",
+      "minimal call: ",
+      "simp only [add_zero] at h ⊢",
+      "at h",
+      " — 1 rewrite",
+      "1.",
+      "add_zero",
+      "post",
+      "→",
+      "at ⊢",
+      " — 2 rewrites",
+      "1.",
+      "add_zero",
+      "post",
+      "→",
+      "2.",
+      "add_zero",
+      "post",
+      "→",
+      "Exclusion previews",
+      "(1)",
+      "○ redundant ",
+      "without ",
+      "add_zero",
+      "lands at: ",
+      "n = 5"
+     ],
+     "codeTexts": [
+      "n + 0",
+      "n",
+      "n + 0",
+      "n",
+      "n + 0",
+      "n"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "99bad11f035faa85a6a7212ef9e7330707452e3af0f3ad7c4b8fa90f0f12c27e"
+    }
+   ]
+  },
+  {
+   "line": 31,
+   "character": 0,
+   "command": "example (p : Prop) (h : ¬True) : p := by simp_lens at h",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 55,
+       "line": 31
+      },
+      "start": {
+       "character": 41,
+       "line": 31
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "b": 4,
+      "code": 2,
+      "details": 3,
+      "div": 12,
+      "span": 10,
+      "summary": 3
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 2
+     },
+     "texts": [
+      "Simp Lens",
+      " — 1 rewrite",
+      " ✓ goal closed",
+      "minimal call: ",
+      "simp only [not_true_eq_false] at h",
+      "at h",
+      " — 1 rewrite",
+      " ✓ closes the goal",
+      "1.",
+      "not_true_eq_false",
+      "post",
+      "→",
+      "Exclusion previews",
+      "(1)",
+      "● essential ",
+      "without ",
+      "not_true_eq_false",
+      "h lands at: ",
+      "¬True"
+     ],
+     "codeTexts": [
+      "¬True",
+      "False"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "9116ba96f7a66c00750c0f7339aa5dca6e3fe5bffc70c617ca3e63c620643b58"
+    }
+   ]
+  },
+  {
+   "line": 34,
+   "character": 0,
+   "command": "example (a b : Nat) : (if true then a else b) = a",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 75,
+       "line": 34
+      },
+      "start": {
+       "character": 56,
+       "line": 34
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Simp Lens",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "b": 2,
+      "code": 1,
+      "details": 1,
+      "div": 13,
+      "span": 15,
+      "summary": 1
+     },
+     "svgTagCounts": {},
+     "components": {
+      "InteractiveCode": 6
+     },
+     "texts": [
+      "Simp Lens",
+      " — 3 rewrites",
+      " ✓ goal closed",
+      "minimal call: ",
+      "simp only [↓reduceIte]",
+      "1.",
+      "eq_self",
+      "post",
+      "→",
+      "2.",
+      "reduceIte",
+      "pre",
+      "(+1 side-condition lemma)",
+      "→",
+      "3.",
+      "eq_self",
+      "post",
+      "→",
+      "Exclusion previews disabled (-previews)."
+     ],
+     "codeTexts": [
+      "true = true",
+      "True",
+      "if true = true then a else b",
+      "a",
+      "a = a",
+      "True"
+     ],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "ef84631208cf717b50f47ebec68b9ed88afed74d9c46d3c6545176ee8dccc6c7"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [
+  {
+   "cursorLine": 15,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [add_zero, zero_add]",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 55,
+      "line": 15
+     },
+     "start": {
+      "character": 46,
+      "line": 15
+     }
+    },
+    "newText": "simp only [add_zero, zero_add]"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "32d3871f35c50c4865e65b4551bdabc066952a29315ea887c88b299527f19c6a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click1.lean",
+   "diagnosticsVersion": 2,
+   "reElaborationMs": 511,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 18,
+     "character": 72,
+     "endLine": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    },
+    {
+     "severity": "information",
+     "line": 23,
+     "character": 2,
+     "endLine": 23,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    },
+    {
+     "severity": "information",
+     "line": 27,
+     "character": 2,
+     "endLine": 27,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    },
+    {
+     "severity": "information",
+     "line": 31,
+     "character": 41,
+     "endLine": 31,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    },
+    {
+     "severity": "information",
+     "line": 34,
+     "character": 56,
+     "endLine": 34,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 18,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 81,
+      "line": 18
+     },
+     "start": {
+      "character": 72,
+      "line": 18
+     }
+    },
+    "newText": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "b77e54020e8b7df35334d4e17afc9862cc0f504b8a9ff3f3aea1188b7f60cdd8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click2.lean",
+   "diagnosticsVersion": 4,
+   "reElaborationMs": 512,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 15,
+     "character": 46,
+     "endLine": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    },
+    {
+     "severity": "information",
+     "line": 24,
+     "character": 2,
+     "endLine": 24,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    },
+    {
+     "severity": "information",
+     "line": 28,
+     "character": 2,
+     "endLine": 28,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    },
+    {
+     "severity": "information",
+     "line": 32,
+     "character": 41,
+     "endLine": 32,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    },
+    {
+     "severity": "information",
+     "line": 35,
+     "character": 56,
+     "endLine": 35,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 23,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [add_zero, List.append_nil, and_self]",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 85,
+      "line": 23
+     },
+     "start": {
+      "character": 2,
+      "line": 23
+     }
+    },
+    "newText": "simp only [add_zero, List.append_nil, and_self]"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "310716e229624898b045f5d38ef1504f4b7a127e8d0f8e921757bbfbcf40551b",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click3.lean",
+   "diagnosticsVersion": 6,
+   "reElaborationMs": 516,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 15,
+     "character": 46,
+     "endLine": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    },
+    {
+     "severity": "information",
+     "line": 18,
+     "character": 72,
+     "endLine": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    },
+    {
+     "severity": "information",
+     "line": 27,
+     "character": 2,
+     "endLine": 27,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    },
+    {
+     "severity": "information",
+     "line": 31,
+     "character": 41,
+     "endLine": 31,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    },
+    {
+     "severity": "information",
+     "line": 34,
+     "character": 56,
+     "endLine": 34,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 27,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [add_zero] at h ⊢",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 18,
+      "line": 27
+     },
+     "start": {
+      "character": 2,
+      "line": 27
+     }
+    },
+    "newText": "simp only [add_zero] at h ⊢"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "2ca0ff4530ce20bc2a2de145358dc4b327ea03618ee3ee907e2a4fdd7e087829",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click4.lean",
+   "diagnosticsVersion": 8,
+   "reElaborationMs": 516,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 15,
+     "character": 46,
+     "endLine": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    },
+    {
+     "severity": "information",
+     "line": 18,
+     "character": 72,
+     "endLine": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    },
+    {
+     "severity": "information",
+     "line": 23,
+     "character": 2,
+     "endLine": 23,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    },
+    {
+     "severity": "information",
+     "line": 31,
+     "character": 41,
+     "endLine": 31,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    },
+    {
+     "severity": "information",
+     "line": 34,
+     "character": 56,
+     "endLine": 34,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 31,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [not_true_eq_false] at h",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 55,
+      "line": 31
+     },
+     "start": {
+      "character": 41,
+      "line": 31
+     }
+    },
+    "newText": "simp only [not_true_eq_false] at h"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "764f50c9a71c6cd6db7e74733da37327b2cf13cfb7d3439951174e2a3f11f4fc",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click5.lean",
+   "diagnosticsVersion": 10,
+   "reElaborationMs": 516,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 15,
+     "character": 46,
+     "endLine": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    },
+    {
+     "severity": "information",
+     "line": 18,
+     "character": 72,
+     "endLine": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    },
+    {
+     "severity": "information",
+     "line": 23,
+     "character": 2,
+     "endLine": 23,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    },
+    {
+     "severity": "information",
+     "line": 27,
+     "character": 2,
+     "endLine": 27,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    },
+    {
+     "severity": "information",
+     "line": 34,
+     "character": 56,
+     "endLine": 34,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 34,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "linkTitle": null,
+   "suggestion": "simp only [↓reduceIte]",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 75,
+      "line": 34
+     },
+     "start": {
+      "character": 56,
+      "line": 34
+     }
+    },
+    "newText": "simp only [↓reduceIte]"
+   },
+   "documentVersionInEdit": null,
+   "newSelection": null,
+   "editedSha256": "9b8e75dcb56851bf1bf6a48e290349476338f99a896417fd29750c4577375830",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click6.lean",
+   "diagnosticsVersion": 12,
+   "reElaborationMs": 517,
+   "postClickDiagnostics": [
+    {
+     "severity": "information",
+     "line": 15,
+     "character": 46,
+     "endLine": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    },
+    {
+     "severity": "information",
+     "line": 18,
+     "character": 72,
+     "endLine": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    },
+    {
+     "severity": "information",
+     "line": 23,
+     "character": 2,
+     "endLine": 23,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    },
+    {
+     "severity": "information",
+     "line": 27,
+     "character": 2,
+     "endLine": 27,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    },
+    {
+     "severity": "information",
+     "line": 31,
+     "character": 41,
+     "endLine": 31,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    }
+   ],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  }
+ ],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 15 (example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 15: text \"Simp Lens\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 15: text \"rewrite\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 15: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 18 (example (l : List Nat) : (l ++ []).map id): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 18: text \"Simp Lens\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 18: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23 (simp_lens [Nat.add_zero, Nat.zero_add): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23: text \"Simp Lens\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 23: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 27 (simp_lens at h ⊢): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 27: text \"at h\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 27: text \"at ⊢\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 27: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31 (example (p : Prop) (h : ¬True) : p := by simp_lens at h): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"closes the goal\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 34 (example (a b : Nat) : (if true then a else b) = a): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 34: text \"Simp Lens\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 34: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "hover @15 \"n\": type \"ℕ\" (got \"ℕ\")"
+  },
+  {
+   "ok": true,
+   "what": "code action @15:46: an action's edit equals the rendered Try-this link edit of click #0"
+  },
+  {
+   "ok": true,
+   "what": "code action @15:46: edit equals click #0 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @15: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "code action @18:72: an action's edit equals the rendered Try-this link edit of click #1"
+  },
+  {
+   "ok": true,
+   "what": "code action @18:72: edit equals click #1 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @18: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "code action @23:2: an action's edit equals the rendered Try-this link edit of click #2"
+  },
+  {
+   "ok": true,
+   "what": "code action @23:2: edit equals click #2 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @23: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "code action @27:2: an action's edit equals the rendered Try-this link edit of click #3"
+  },
+  {
+   "ok": true,
+   "what": "code action @27:2: edit equals click #3 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @27: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "code action @31:41: an action's edit equals the rendered Try-this link edit of click #4"
+  },
+  {
+   "ok": true,
+   "what": "code action @31:41: edit equals click #4 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @31: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "code action @34:56: an action's edit equals the rendered Try-this link edit of click #5"
+  },
+  {
+   "ok": true,
+   "what": "code action @34:56: edit equals click #5 frozen expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "code action @34: title contains \"Try this: simp only\""
+  },
+  {
+   "ok": true,
+   "what": "click @15 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @15: diagnostics are for the edited version 2 (got 2)"
+  },
+  {
+   "ok": true,
+   "what": "click @15 \"[apply]\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @18 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @18: diagnostics are for the edited version 4 (got 4)"
+  },
+  {
+   "ok": true,
+   "what": "click @18 \"[apply]\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @23 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @23: diagnostics are for the edited version 6 (got 6)"
+  },
+  {
+   "ok": true,
+   "what": "click @23 \"[apply]\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @27 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @27: diagnostics are for the edited version 8 (got 8)"
+  },
+  {
+   "ok": true,
+   "what": "click @27 \"[apply]\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @31: diagnostics are for the edited version 10 (got 10)"
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"[apply]\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @34 \"[apply]\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @34: diagnostics are for the edited version 12 (got 12)"
+  },
+  {
+   "ok": true,
+   "what": "click @34 \"[apply]\": post-click diagnostics \"clean\""
+  }
+ ],
+ "hovers": [
+  {
+   "cursorLine": 15,
+   "panel": 0,
+   "code": 0,
+   "tagText": "n",
+   "codeText": "n + 0",
+   "subexprPos": "/0/1",
+   "typeText": "ℕ",
+   "exprExplicitText": "n",
+   "doc": null
+  }
+ ],
+ "codeActions": [
+  {
+   "line": 15,
+   "character": 46,
+   "range": {
+    "start": {
+     "line": 15,
+     "character": 46
+    },
+    "end": {
+     "line": 15,
+     "character": 46
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [add_zero, zero_add]",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 55,
+         "line": 15
+        },
+        "start": {
+         "character": 46,
+         "line": 15
+        }
+       },
+       "newText": "simp only [add_zero, zero_add]"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 0,
+   "matchingTitle": "Try this: simp only [add_zero, zero_add]",
+   "equalsFrozenExpectedEdit": true
+  },
+  {
+   "line": 18,
+   "character": 72,
+   "range": {
+    "start": {
+     "line": 18,
+     "character": 72
+    },
+    "end": {
+     "line": 18,
+     "character": 72
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 81,
+         "line": 18
+        },
+        "start": {
+         "character": 72,
+         "line": 18
+        }
+       },
+       "newText": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 1,
+   "matchingTitle": "Try this: simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]",
+   "equalsFrozenExpectedEdit": true
+  },
+  {
+   "line": 23,
+   "character": 2,
+   "range": {
+    "start": {
+     "line": 23,
+     "character": 2
+    },
+    "end": {
+     "line": 23,
+     "character": 2
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [add_zero, List.append_nil, and_self]",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 85,
+         "line": 23
+        },
+        "start": {
+         "character": 2,
+         "line": 23
+        }
+       },
+       "newText": "simp only [add_zero, List.append_nil, and_self]"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 2,
+   "matchingTitle": "Try this: simp only [add_zero, List.append_nil, and_self]",
+   "equalsFrozenExpectedEdit": true
+  },
+  {
+   "line": 27,
+   "character": 2,
+   "range": {
+    "start": {
+     "line": 27,
+     "character": 2
+    },
+    "end": {
+     "line": 27,
+     "character": 2
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [add_zero] at h ⊢",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 18,
+         "line": 27
+        },
+        "start": {
+         "character": 2,
+         "line": 27
+        }
+       },
+       "newText": "simp only [add_zero] at h ⊢"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 3,
+   "matchingTitle": "Try this: simp only [add_zero] at h ⊢",
+   "equalsFrozenExpectedEdit": true
+  },
+  {
+   "line": 31,
+   "character": 41,
+   "range": {
+    "start": {
+     "line": 31,
+     "character": 41
+    },
+    "end": {
+     "line": 31,
+     "character": 41
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [not_true_eq_false] at h",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 55,
+         "line": 31
+        },
+        "start": {
+         "character": 41,
+         "line": 31
+        }
+       },
+       "newText": "simp only [not_true_eq_false] at h"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 4,
+   "matchingTitle": "Try this: simp only [not_true_eq_false] at h",
+   "equalsFrozenExpectedEdit": true
+  },
+  {
+   "line": 34,
+   "character": 56,
+   "range": {
+    "start": {
+     "line": 34,
+     "character": 56
+    },
+    "end": {
+     "line": 34,
+     "character": 56
+    }
+   },
+   "actions": [
+    {
+     "title": "Try this: simp only [↓reduceIte]",
+     "kind": "quickfix",
+     "isPreferred": null,
+     "lazy": false,
+     "edits": [
+      {
+       "range": {
+        "end": {
+         "character": 75,
+         "line": 34
+        },
+        "start": {
+         "character": 56,
+         "line": 34
+        }
+       },
+       "newText": "simp only [↓reduceIte]"
+      }
+     ],
+     "documentVersion": 1
+    }
+   ],
+   "sameEditAsClick": 5,
+   "matchingTitle": "Try this: simp only [↓reduceIte]",
+   "equalsFrozenExpectedEdit": true
+  }
+ ],
+ "ok": true,
+ "failures": [],
+ "totalMs": 8856
+}

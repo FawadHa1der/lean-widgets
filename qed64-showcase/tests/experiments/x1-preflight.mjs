@@ -1,0 +1,25 @@
+// X1 — the server is correct: QED64's own preflight against serve.mjs (BUILD-PLAN §3 X1).
+// preflight.mjs runs IN PLACE from $Q; it is read-only without --run-dir (preflight.mjs:149-150),
+// and its boot mode only launches Playwright's chromium (preflight.mjs:113-143) into a temp profile.
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { BID, ORIGIN, cooldown, writeResult } from './lib.mjs';
+import { need } from '../../scripts/lib/env.mjs';
+const Q = need('QED64_REPO');
+
+const pre = path.join(Q, 'tests/adversarial/preflight.mjs');
+const url = `${ORIGIN}/${process.argv[2] ? `?snapshots=${process.argv[2]}` : ''}`;
+const run = (args) => {
+  const t0 = Date.now();
+  const r = spawnSync('node', [pre, '--url', url, ...args], { encoding: 'utf8', timeout: 600000 });
+  const out = (r.stdout || '') + (r.stderr || '');
+  process.stdout.write(out);
+  return { args, exit: r.status, ms: Date.now() - t0, okLine: (out.match(/^PREFLIGHT (OK|REFUSED).*$/m) || [null])[0], output: out.trim().split('\n') };
+};
+const noBoot = run(['--no-boot']);
+await cooldown();
+const boot = run([]);
+const okRe = new RegExp(`^PREFLIGHT OK buildId=${BID}\\b`);
+const pass = noBoot.exit === 0 && boot.exit === 0 && okRe.test(noBoot.okLine || '') && okRe.test(boot.okLine || '');
+writeResult(process.argv[2] ? `x1-${process.argv[2].replace(/\W+/g, '-')}` : 'x1', { pass, url, noBoot, boot });
+process.exit(pass ? 0 : 1);

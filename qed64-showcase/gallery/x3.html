@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X3 gallery skeleton</title>
+<style>
+  :root { --bg: #fff; --fg: #1f2328; --muted: #57606a; --line: #d0d7de; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --line: #30363d; } }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+  body { display: grid; grid-template-rows: auto 1fr; }
+  header { padding: 8px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  header b { font-weight: 600; } #log { color: var(--muted); font: 12px ui-monospace, monospace; white-space: pre-wrap; margin: 0; }
+  iframe { width: 100%; height: 100%; border: 0; }
+</style>
+</head>
+<body>
+<header><b>X3 — M2 skeleton</b><pre id="log">starting…</pre></header>
+<iframe id="qed64" title="QED64 editor"></iframe>
+<script type="module">
+// BUILD-PLAN §3 X3: a same-origin wrapper that seeds the boot document, iframes the stock page with
+// the rehearsal overlay, reaches iframe.contentWindow.qed64, and switches documents with setValue.
+const params = new URLSearchParams(location.search);
+const OVERLAY = params.get('snapshots') || 'snapshots/rehearsal';
+const DOC_A = `import Mathlib.Basic.Real.Basic
+
+example (x y : ℝ) (h1 : x < y) (h2 : 0 < x) : x * 2 < y * 2 := by
+  linarith
+`;
+const DOC_B = `import Mathlib.Order.Basic
+
+example (a b : ℕ) (h : a ≤ b) : a ≤ b + 1 := Nat.le_succ_of_le h
+`;
+const R = (window.__x3 = { done: false, steps: [] });
+const logEl = document.getElementById('log');
+const step = (what, extra = {}) => { const s = { t: Math.round(performance.now()), what, ...extra }; R.steps.push(s); logEl.textContent = R.steps.map((x) => `${x.t}ms ${x.what}`).join('\n'); };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function until(fn, timeoutMs, label) {
+  const t0 = performance.now();
+  for (;;) {
+    let v; try { v = fn(); } catch { v = undefined; }
+    if (v) return { v, ms: Math.round(performance.now() - t0) };
+    if (performance.now() - t0 > timeoutMs) throw new Error(`timeout: ${label}`);
+    await sleep(100);
+  }
+}
+try {
+  R.parentCrossOriginIsolated = self.crossOriginIsolated;
+  // 1. seed the boot input (main.ts:340-342), keeping any user buffer aside
+  try {
+    const prev = localStorage.getItem('qed64.buffer');
+    if (prev !== null && prev !== DOC_A) localStorage.setItem('qed64-showcase:saved', prev);
+    localStorage.setItem('qed64.buffer', DOC_A);
+  } catch (e) { R.storageError = String(e); }
+  step('seeded qed64.buffer');
+  // 2. iframe the stock page with the overlay
+  const frame = document.getElementById('qed64');
+  const t0 = performance.now();
+  frame.src = `/?snapshots=${encodeURIComponent(OVERLAY).replace(/%2F/g, '/')}`;
+  const hook = await until(() => frame.contentWindow?.qed64?.status && frame.contentWindow.qed64, 60000, 'contentWindow.qed64');
+  step('contentWindow.qed64 reachable', { ms: hook.ms });
+  const cw = frame.contentWindow;
+  R.iframeCrossOriginIsolated = cw.crossOriginIsolated;
+  R.iframeUrl = cw.location.href;
+  const ready = await until(() => cw.qed64.status().phase === 'ready' && cw.qed64.status(), 300000, 'first ready');
+  R.bootMs = Math.round(performance.now() - t0);
+  const s1 = ready.v;
+  R.first = { phase: s1.phase, version: s1.version, header: s1.header, session: s1.session, snapshots: [...(cw.qed64.relay.session?.snapshots ?? [])], firstLine: cw.qed64.editor.getModel().getValue().split('\n')[0] };
+  step('ready (boot)', { ms: R.bootMs });
+  await sleep(1000);
+  // 3. switch documents with setValue; measure time to ready at an advanced version
+  const before = cw.qed64.status();
+  const vBefore = before.version; const hvBefore = before.header?.version;
+  const tSwitch = performance.now();
+  cw.qed64.editor.getModel().setValue(DOC_B);
+  const sw = await until(() => { const s = cw.qed64.status(); return s.phase === 'ready' && s.version > vBefore && s; }, 120000, 'ready after switch');
+  R.switchMs = Math.round(performance.now() - tSwitch);
+  R.switched = { phase: sw.v.phase, version: sw.v.version, versionBefore: vBefore, header: sw.v.header, headerVersionBefore: hvBefore, session: sw.v.session, snapshots: [...(cw.qed64.relay.session?.snapshots ?? [])], stats: { ...cw.qed64.relay.stats } };
+  step('ready (after setValue)', { ms: R.switchMs });
+  R.ok = true;
+} catch (e) {
+  R.ok = false; R.error = String(e && e.stack || e); step('ERROR ' + String(e));
+} finally { R.done = true; }
+</script>
+</body>
+</html>

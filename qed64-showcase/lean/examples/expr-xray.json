@@ -1,0 +1,116 @@
+{
+  "package": "expr-xray",
+  "title": "Expr X-Ray",
+  "blurb": "Foldable expression trees with instance/implicit/coercion/universe badges, and a defeq-aware ranked diff; a goal panel driven by shift-click selections.",
+  "header": [
+    "import Mathlib",
+    "import ExprXRay"
+  ],
+  "cursors": [
+    {
+      "line": 16,
+      "character": 0,
+      "command": "#xray_diff @ite Nat (2 = 2)",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Decidable"
+        ]
+      }
+    },
+    {
+      "line": 20,
+      "character": 0,
+      "command": "#xray (1 + 1 : Nat)",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "HAdd.hAdd"
+        ]
+      }
+    },
+    {
+      "line": 23,
+      "character": 0,
+      "command": "#xray ((3 : Nat) : Int)",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Nat.cast"
+        ]
+      }
+    },
+    {
+      "line": 29,
+      "character": 0,
+      "command": "#xray_diff Nat.succ redTwo",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 32,
+      "character": 0,
+      "command": "#xray_diff @PUnit.{1}",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 39,
+      "character": 4,
+      "command": "simp",
+      "expect": {}
+    }
+  ],
+  "selections": [
+    {
+      "line": 39,
+      "character": 4,
+      "command": "simp",
+      "select": [
+        {
+          "goal": 0,
+          "target": "if n = n then 1 else 0",
+          "occurrence": 0
+        }
+      ],
+      "expect": {
+        "texts": [
+          "clean (explicit only) app if n = n then 1 else 0 : ℕ"
+        ],
+        "note": "the x-ray of the selected subterm, not of the whole goal"
+      }
+    },
+    {
+      "line": 39,
+      "character": 4,
+      "command": "simp",
+      "select": [
+        {
+          "goal": 0,
+          "target": "if n = n then 1 else 0",
+          "occurrence": 0
+        },
+        {
+          "goal": 0,
+          "target": "if n = n then 1 else 0",
+          "occurrence": 1
+        }
+      ],
+      "expect": {
+        "texts": [
+          "mismatches (1, ranked)",
+          "instance argument #3 of ite differs"
+        ],
+        "note": "the two occurrences differ only in their Decidable instance"
+      }
+    }
+  ],
+  "clicks": [],
+  "dropped": [
+    "`#xray_diff id, id` (metavariable-undetermined demo) and the defeq-at-default `hiddenTwo` / re-ranking ite examples",
+    "universe-polymorphic `#xray @id.{2}`, `(Type 1)`, `ULift.up.{5,3}` and the binder/let/projection examples",
+    "the second panel theorem `demo_panel` (the instance-mismatch theorem is kept for the 0/1/2-selection panel)"
+  ]
+}

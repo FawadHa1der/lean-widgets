@@ -1,0 +1,18 @@
+{
+  "package": "conv-control",
+  "title": "E3 positive control: Mathlib conv? panel on the stock snapshots (stage A X4b)",
+  "headless": { "expectMode": "covered", "expectMissing": [] },
+  "header": ["import Mathlib.Tactic.Widget.Conv"],
+  "cursors": [
+    { "line": 3, "character": 4, "command": "conv?",
+      "expect": { "method": "Mathlib.Tactic.Conv.SelectionPanel.rpc" } }
+  ],
+  "selections": [
+    { "line": 3, "character": 4, "command": "conv?",
+      "select": [ { "goal": 0, "target": "c + b", "occurrence": 0 } ],
+      "expect": { "linkTexts": ["Generate conv"] } }
+  ],
+  "clicks": [
+    { "selection": 0, "linkText": "Generate conv", "kind": "makeEditLink", "postClickDiagnostics": "clean" }
+  ]
+}

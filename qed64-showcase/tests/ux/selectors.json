@@ -1,0 +1,228 @@
+{
+  "_frozen": "2026-10-01 by X4 on the QED64 1859b83 dist; re-checked by X4 on the 9fdf9b8 dist at 21:19Z with an identical verdict. \"@qed64-main-bundle\" is resolved to the ACTIVE pin's main bundle (scripts/lib/pins.mjs resolveSelectors; bundle names are content hashes and differ per pin); the line0 sites are checked per pin by scripts/pin-switch.mjs check (the same notify line in every registered pin) (out/experiments/x4.json; the previous result is kept under rollback/<old buildId>/out-experiments/), @leanprover/infoview 0.11.1, lean4monaco 1.1.16, ProofWidgets 106ff4f. Every entry below was exercised by a passing X4 run unless marked unverified.",
+  "page": {
+    "status": "globalThis.qed64.status()",
+    "pill": "#ptext",
+    "action": "#action",
+    "editorLines": ".monaco-editor .view-lines"
+  },
+  "infoview": {
+    "frame": "#infoview iframe",
+    "panelSummary": "summary",
+    "updatingSummary": "summary[class*=gold]",
+    "errorDiv": "div.error",
+    "rpcPanelError": "text=/Unrecognised error|abortSignal/",
+    "coreTryThis": "span.link.pointer.dim.font-code",
+    "makeEditLink": "a.link.pointer.dim",
+    "goalTarget": "div:has(> .goal-vdash)",
+    "subterm": "span",
+    "selectedSubterm": "[class*=highlight-selected]",
+    "frame_fromGallery": "#qed64-frame >> #infoview iframe  (page.frameLocator('#qed64-frame').frameLocator('#infoview iframe'))",
+    "htmlDisplayPanel": "details:has(> summary:text-is('HTML Display'))",
+    "rpcPanelHost": "the cursor's info block: details whose summary reads <file>.lean:<line>:<col>; mk_rpc_widget% panels (HasseView, GraphScope, DistLens, IntervalInspector interval_inspect?, ExprXRay with_panel_widgets) render inside it without their own <details>",
+    "coreTryThisText": "[apply]  (exercised by hints.mjs on all 6 simp-lens Try-this clicks)",
+    "goalTargetRow": "div[data-is-goal]",
+    "hypothesisRow": ".goal-hyp",
+    "selectableSubterm": "span[data-vscode-context*=selectableLocationId]",
+    "svgEdgeLink": "[title^='insert: example'] (GraphScope edges: empty text, found by title)",
+    "messagesSection": "details:has(> summary:text-matches('^(All )?Messages'))  (never part of a widget panel)",
+    "positionBlock": "details whose summary reads <file>.lean:<line>:<char> (0-based char), not under a Messages section: the cursor info block of exactly that position (tests/ux/bringup/lib.mjs checkPanel)",
+    "expectPanel": "examples.json tryThis[kind=cursor].expectPanel {at:{lineNumber, character}, widget, kind, panelTitle, svgTagCounts, texts, golden}: the golden panel bound to the hint position; panelTitle \"HTML Display\" = the nested details of that title inside the position block, null = the mk_rpc_widget% panel rendered in the block itself",
+    "hoverPopup": ".tooltip .tooltip-code-content  (@leanprover/infoview 0.11.1 hover popup of an InteractiveCode tag; its own text is \"<expr> : <type>\", e.g. \"n : ℕ\"; absent until a tag with data-has-tooltip-on-hover is hovered, removed when the mouse leaves)",
+    "hoverTarget": "[data-has-tooltip-on-hover]  (an InteractiveCode tag inside a panel's .font-code element; a plain <code> has none and shows no popup)",
+    "expectSelectPanel": "examples.json tryThis[kind=select].expectSelectPanel {at, widget, texts, appear, squash:true, picks, golden}: texts are in the golden panel of that exact selection (lean/expect[/w8]/<pkg>.json selections[]), `appear` are those absent from the golden no-selection panel at the same position; hints.mjs requires `appear` absent and 0 selected before, >= picks selected and all texts present after (whitespace-insensitive leaf runs, inside the position block), and 0 selected again after shift-clicking the picks off",
+    "expectHover": "examples.json tryThis[kind=hover].expectHover {tagText, codeText, codeIndex, exprText, typeText, popupText, golden}: hints.mjs requires no hoverPopup before, hovers the innermost element reading tagText inside the panel's .font-code/code element reading codeText (in THIS position's panel), then a hoverPopup whose text is exactly popupText, and none after moving away",
+    "selectedSubtermNote": "one element per shift-click selection; shift-clicking a selected subterm again deselects it"
+  },
+  "interactions": {
+    "selectSubterm": "locator(goalTarget).locator(subterm, {hasText}).last().click({modifiers:['Shift']})",
+    "requiresBridge": "gallery/qed64-bridge.js must be installed on the QED64 page window (iframe.contentWindow) before any mk_rpc_widget% panel renders or any applyEdit link is clicked"
+  },
+  "conv": {
+    "panelTitle": "Conv",
+    "subtermText": "c + b",
+    "generateText": "Generate conv"
+  },
+  "_frozen_gallery": "2026-10-01 by the M2 bring-up (tests/ux/bringup/*.mjs, out/ux/bringup/*.json) in Playwright 1.62.1 / chromium-headless-shell rev 1234 against the gallery served at /showcase/ with overlay widgets8. Every gallery entry was exercised by a passing bring-up run; scripts/check-gallery.mjs checks each id/class against gallery/index.html and the API keys against gallery/gallery.js.",
+  "gallery": {
+    "frame": "#qed64-frame",
+    "card": "li.card[data-id=<pkg>]",
+    "cardButton": "#card-<pkg>  (.card-main, roving tabindex; aria-current=true when open)",
+    "cardChip": "#card-<pkg> .chip  (data-state: unknown|available|missing|loading|live|edited|refused|error)",
+    "cardThumb": "#card-<pkg> .card-thumb  (src thumbs/<pkg>.png)",
+    "cardHints": "li.card[data-id=<pkg>] .card-hints .hint  (in examples.json tryThis order)",
+    "hintsToggle": "li.card[data-id=<pkg>] .hints-toggle  ('Show all N' / 'Show fewer')",
+    "narrowSelect": "#example-select",
+    "narrowHints": "#mobile-hints summary, #mobile-hint-list .hint",
+    "resetButton": "#reset-btn",
+    "copyButton": "#copy-btn",
+    "copyLabel": "#copy-label  ('Copied ✓' for 1.8 s after a copy)",
+    "restoreSavedButton": "#restore-btn  (visible iff a user buffer is kept: qed64-showcase:saved and/or qed64-showcase:saved-history; reads \"Open my saved buffer\" for one, \"Open\" beside the chooser for several; opens the chooser selection, default the NEWEST)",
+    "statusLine": "#status-line[data-phase]  (starting|preflight|booting|switching|ready|refused|halted|error|unsupported)",
+    "statusText": "#status-text",
+    "notice": "#notice:not([hidden]) #notice-text",
+    "errorCard": "#error-card:not([hidden])  (#error-title, #error-note (compact mode only), #error-detail, #error-checks li.ok|li.bad, #error-retry ('Try again' | 'Reset example' | 'Restart Lean' | 'Try anyway' on the low-memory card), #error-reset (stall card only), #error-stock (hidden on the capability card), #error-dismiss ('Dismiss' | 'Keep waiting' on the stall card; hidden on the capability card)); class is-compact while QED64's own failed boot card is showing (UX suite C11); kind 'unsupported' = the browser capability card (title 'This browser cannot run the Lean widget gallery', or 'This device may not have enough memory' with 'Try anyway'; UX suite C24)",
+    "veil": "#stage-veil:not(.is-hidden)  (hidden: class is-hidden, aria-hidden=\"true\", inert, visibility hidden after the fade; UX suite C17)",
+    "liveRegion": "#live-region",
+    "pageStyleInjected": "#qed64-showcase-page (hides the page's #examples menu), #qed64-showcase-stack (<= 720 px) — both in the QED64 page document",
+    "restoreChooser": "#restore-pick  (select; visible iff >= 2 kept buffers; options newest first: \"newest: …\", \"older N: …\", \"first saved: …\")",
+    "skipLink": "#skip-link  (first focusable element; activating it focuses Monaco and keeps the #<pkg> deep-link hash — UX suite C17)",
+    "stallCard": "#error-card with status().error.kind === 'stalled' (role=alert, title 'Lean has stopped making progress', or 'Lean is still working' when Lean answered within the last 20 s (status().stall.variant 'alive')): #error-retry 'Restart Lean' (relay.restart on the same text), #error-reset 'Reset example' (restart on the example), #error-dismiss 'Keep waiting' (re-arms) — QED64 L7, UX suite C21; since the liveness probe restarts a wedged runtime by itself (notice #notice-text 'Lean stopped responding and was restarted…'), the card is its fallback"
+  },
+  "showcaseApi": {
+    "global": "window.__showcase",
+    "version": 8,
+    "select(pkg)": "Promise<status()> once ready/refused with the cursor set; rejects {code:'SUPERSEDED'} when a newer selection wins",
+    "reset()": "Promise<status()>: setValue(example) even on identical text (re-arms a halted relay)",
+    "restoreSaved(i)": "Promise<boolean>: puts kept buffer i (lib.js savedEntries, newest first; default 0 = newest) in the editor (status().custom = true, current = null)",
+    "status()": "{phase, current, shown, overlay, requestedOverlay, fellBack, preflight:{ok, overlay, attempts, availability, regionImports}, booted, everReady, bootMs, lastSwitchMs, op:{label, elapsedMs, doneMs}, error, notice, seed:{saved, action, error}, edited, custom, caps:{ok, hard, soft, missing (coi|sab|memory64|memory), lacks, deviceMemory, checks:[{id, ok, soft, need, detail}], override} (the browser capability check before boot; phase 'unsupported' when it fails), saved:{present, history, entries, exampleEdit}, mem:{requestedGiB, bytes, ok, wrapped, applied, light, sessions, telemetry}, bridge:{installed, installs:[{t, reason, readyState, qed64Present, alreadyInstalled, href}], late}, cursor:{lineNumber, column}, qed64:{phase, version, header, session, relay, rebootReason, lastDeath, collision}, selections:[{token, id, source, outcome}] (last 20 selections and how each settled: ok|SUPERSEDED|error code), stall:{thresholdMs, active, variant: stopped|alive|null (the card's wording: 'alive' = Lean answered recently, title 'Lean is still working'), idleMs, shown, restarts, progressMsgs, tapped, events:[{t, source: shown|reworded|keep-waiting|card|reset|liveness|cleared, variant, version, session, idleMs, pool, how}]}, liveness:{mode: auto|observe|off, probeAfterMs, probeTimeoutMs, restartGapMs, misses, sent, answered, missed, late, wedged, wedgedActive, restarts, rateLimited, restartFailed, outstanding, lastAnswerMs, maxAnswerMs, unavailable, frames (Lean frames only), lastFrameAgoMs, syntheticFrames, syntheticReplies (frames / probe replies QED64's JS layer made itself: no proof of life), alive, aliveVia:{frame, qed64-answered, late-answer, main-loop}, mainLoop:{method, sent, answered, synthetic, outstanding, lastAnsweredAgoMs, lastMs, maxMs}, probeDeferMs, deferring, effectiveProbeAfterMs, deferred, qed64:{builtIn, detectedAt, session, counters:{probes, answered, stalls, resumed, rescues}, totals, lastAnsweredAgoMs, wedgedReboots, rebooting, lastReboot:{t, from, to, version, lastDeath, counters}}, events:[{t, source: probe (with main: the main-loop probe id)|answered|alive|missed|late (ms, proofOfLife)|synthetic-reply|main-answered|main-synthetic|wedged|resumed|cleared|mode|qed64-detected|qed64-stall|qed64-resumed|qed64-rescue|qed64-wedged|qed64-rebooted, id, version, session, idleMs, ms, action: relay.restart|observed|rate-limited|restart-failed|deferred}]}, boot:{timeoutMs (360000; ?bootTimeout=<s>), stallMs (240000; ?bootStall=<s>), noticeMs (120000; ?bootNotice=<s>), waiting (the label of a running progress-aware boot wait, else null), elapsedMs, idleMs (since the last progress), bytes (sum of per-step high-water marks of the byte progress QED64 reported to qed64.ui: prepared bytes, not network bytes), current:{label, loaded, total} (QED64's current step), label, uiTapped, uiWrapped (the qed64.ui methods wrapped: busy, progress, idle), uiCalls, sources:{bytes, label, status, resource} (progress events by kind; resource = a page resource from a URL not seen before in this boot), resources (page resource entries read), resourceUrls (distinct resource URLs without query/hash; final audit 2026-10-03: a re-fetched URL is no progress), pageBootOverlay (QED64's own #boot still shown), noticeShown, stalls (true-stall TIMEOUTs), recovered (late 'ready' after the stall card, boot finished), latePending, events:[{t, source: notice|stalled|recovered|late-dropped, ...}]} (the slow-link boot fix, 2026-10-03: the first-boot wait re-arms on progress, shows the 'Still downloading' notice instead of the card while progress continues, and errors only after timeoutMs AND stallMs without progress)}",
+    "bridgeStats()": "{stripped, applied, shown, inserted, passed, errors[], ws:{fetched, cached, coalesced, released, tapped}} (copy of the page window's __qed64Bridge) or null",
+    "currentText()": "the editor model's text or null",
+    "examples()": "[{id, title, module, phase, firstCursor, textSha256}]",
+    "liveness(mode)": "the L7 liveness probe: with mode ('auto' | 'observe' | 'off') switches it (observe = detect and record, never restart: hang hunts; also ?liveness=observe); returns status().liveness. Probes are textDocument/hover at 0:0 with string ids showcase-live-<n> and full params, each sent with a main-loop probe ($/showcase/liveness, string id showcase-main-<n>, params {}: an unknown method the FileWorker's main loop answers MethodNotFound at once, without a pool thread; liveness.mainLoop); a hover reply later than probeTimeoutMs is late by its elapsed time (never 'answered'); replies are swallowed in the relay.toClient tap; 2 unanswered (probeTimeoutMs each) after probeAfterMs of silence = wedged; auto restarts once per restartGapMs (relay.restart, notice 'Lean stopped responding and was restarted'), then the stall card is the fallback (UX suite C21, C22). On a QED64 page with its own liveness (status().liveness present: QED64 9fdf9b8+, HARDENING #52) the probe DEFERS to it: it starts only after probeDeferMs (30 s; ?probeDefer=<s>) without progress, never acts while QED64 reports a stall in its grace window (action 'deferred'), and QED64's own rescues, stalls and 'wedged' reboots are reported in liveness.qed64 and the qed64-* events (notice 'Lean stopped responding; QED64 is restarting it')",
+    "invariants": [
+      "status().bridge.installs[*].qed64Present === false and status().bridge.late === 0 (installed before the page's module script; a late install lets the page's own listener run too)",
+      "bridgeStats().errors.length === 0",
+      "status().stall.shown === 0 on a healthy run (no false stall alarm; W1-W8 and C20 assert it), thresholdMs 45000 by default (?stall=<s> overrides, >= 5)",
+      "status().liveness.wedged === 0 and restarts === 0 on a healthy run (no false liveness alarm; W1-W8, C20 and C22 assert it), probeAfterMs 10000 / probeTimeoutMs 5000 / restartGapMs 120000 by default (?probe, ?probeTimeout, ?restartGap override)"
+    ],
+    "storage": "qed64-showcase:saved (first displaced user buffer, never overwritten), qed64-showcase:saved-history (later ones, newest first, max 5), qed64-showcase:edited-example (the latest gallery-edited example, one slot; never counted as a user buffer)"
+  },
+  "consoleAllowlist": {
+    "_why": "docs: gallery/README.md 'Console messages'. Anything not listed fails the UX suite (pageerror, console.error, console.warning, crash).",
+    "pageerror": [
+      {
+        "message": "^unsupported",
+        "stackIncludes": "$onExtensionActivationError",
+        "maxPerPageLoad": 1
+      }
+    ],
+    "consoleError": [
+      {
+        "text": "^$",
+        "url": "@qed64-main-bundle",
+        "line0": 627,
+        "pairWith": {
+          "lspErrorCode": -32800,
+          "beforeMs": 3000,
+          "afterMs": 500
+        },
+        "note": "monaco-vscode-api NotificationService.notify: an LSP RequestCancelled (-32800) reply with an empty message (codeAction cancelled by an edit or the header); pairWith: each one must be explained by its own LSP -32800 error reply seen by the LSP tap (tests/ux/lib/lsp-tap.mjs) in the 3 s before it (or 0.5 s after); fail-closed without tap reports"
+      }
+    ],
+    "consoleWarning": [
+      {
+        "text": "^TODO: catch JSON\\.parse failure: +SyntaxError: Unexpected token 'e', \"esms,true,",
+        "url": "/infoview/webview.js",
+        "maxPerInfoviewLoad": 1
+      }
+    ],
+    "onlyInScenarios": {
+      "relayRestartOrReboot": [
+        {
+          "consoleError": "^Outdated RPC session$",
+          "url": "@qed64-main-bundle"
+        },
+        {
+          "pageerror": "^Session disposed\\.$",
+          "stackIncludes": ".dispose (",
+          "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        }
+      ],
+      "crashBreakerTripped": [
+        {
+          "consoleError": "^QED64: checker halted after repeated crashes"
+        },
+        {
+          "pageerror": "^QED64: checker halted after repeated crashes"
+        },
+        {
+          "pageerror": "^Session disposed\\.$",
+          "stackIncludes": ".dispose (",
+          "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        }
+      ],
+      "bootFailure": [
+        {
+          "consoleError": "^QED64: the Lean checker died \\(bootFailed\\)$"
+        },
+        {
+          "pageerror": "^QED64: the Lean checker died \\(bootFailed\\)"
+        },
+        {
+          "consoleError": "^Failed to load resource: the server responded with a status of 404 \\(Not Found\\)$"
+        },
+        {
+          "pageerror": "^Session disposed\\.$",
+          "stackIncludes": ".dispose (",
+          "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        }
+      ],
+      "networkCut": [
+        {
+          "consoleError": "^Failed to load resource: net::ERR_(INTERNET_DISCONNECTED|CONTENT_LENGTH_MISMATCH|INCOMPLETE_CHUNKED_ENCODING|EMPTY_RESPONSE|CONNECTION_RESET|FAILED)$"
+        },
+        {
+          "consoleWarning": "^\\[qed64\\] raw prefetch error: network error — the checker will stream it instead$"
+        }
+      ],
+      "exactImportsFallback": [
+        {
+          "consoleWarning": "^\\[qed64\\] exact import failed: ",
+          "url": "@qed64-main-bundle"
+        }
+      ],
+      "livenessObserved": [
+      {
+        "consoleWarning": "^\\[showcase\\] liveness: Lean answered none of 2 probes on s\\d+ v\\d+ \\(observe mode: not restarting\\)$",
+        "url": "/showcase/gallery.js"
+      }
+    ],
+    "qed64WedgedReboot": [
+   {
+    "consoleError": "^QED64: the Lean checker died \\(wedged\\)$",
+    "url": "@qed64-main-bundle"
+   },
+   {
+    "pageerror": "^QED64: the Lean checker died \\(wedged\\)"
+   },
+        {
+          "pageerror": "^Session disposed\\.$",
+          "stackIncludes": ".dispose (",
+          "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        }
+      ],
+  "stallRestart": [
+        {
+          "consoleError": "^QED64: restarting with exact imports$",
+          "url": "@qed64-main-bundle"
+        },
+        {
+          "pageerror": "^QED64: restarting with exact imports"
+        },
+        {
+          "pageerror": "^Session disposed\\.$",
+          "stackIncludes": ".dispose (",
+          "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        }
+      ]
+    },
+    "neverAllowed": [
+      "Unrecognised error",
+      "abortSignal",
+      "$tryShowTextDocument",
+      "Cannot read properties of undefined (reading 'resolve')",
+      "V8 javascript OOM",
+      "page crash"
+    ],
+    "_enforcedBy": "tests/ux/bringup/console.mjs classifyConsole (via lib.mjs): widgets.mjs, hints.mjs and questions.mjs exit 1 on any pageerror / console.error / console.warning outside this list, on a neverAllowed substring, over a per-load limit (loads = document requests of the QED64 frame / the InfoView frame), on an allowlisted empty console.error without its own LSP -32800 reply (pairWith; widgets/hints/questions install the LSP tap, tests/ux/bringup/lib.mjs installTap), or on a crash; scripts/check-gallery.mjs 8c unit-tests the classifier",
+    "_scenarioNotes": {
+      "bootFailure": "tests that deliberately make the boot fail (C8 missing overlay, C9 unpaired overlay, C11 network cut, C12 unreachable overlay): the relay's own death path logs and throws 'QED64: the Lean checker died (bootFailed)' once per counted death (3 before the breaker), and a missing overlay file is a 404 resource error. Never allowed in any other test.",
+      "networkCut": "tests that cut the network on purpose (C11 CHAOS, C12 aborted routes): Chromium logs the aborted / truncated resource, and QED64's snapshot prefetcher warns that it falls back to streaming. Never allowed in any other test.",
+      "exactImportsFallback": "C16 only: after 'Load exact imports' QED64 compiles the header's import lines against the essential pack; when that fails it warns '[qed64] exact import failed: …; serving the header from the preloaded library' and keeps serving the covered header (resident-session.ts:209-224, the designed degradation C16 checks).",
+      "qed64WedgedReboot": "C23 (its forced-death fixture), and C20 and W1-W8 only when QED64 9fdf9b8+ itself declared a session wedged and rebooted it (an L7 occurrence handled upstream, status().liveness.qed64.wedgedReboots > 0): its relay answers every request in flight with 'QED64: the Lean checker died (wedged)' (lsp-relay.ts onDied -> failInFlight), which lean4monaco logs at the same site as stallRestart. Never allowed in any other test.",
+      "livenessObserved": "tests (or hang hunts, UX_LIVENESS=observe) in which the gallery's liveness probe, in OBSERVE mode, declares a frozen checker wedged: gallery.js logs one console.warn per wedge and restarts nothing (C21 (b); C20 and W1-W8 only when an observe-mode wedge was recorded). Never allowed in any other test.",
+      "stallRestart": "tests that answer a stalled checker (QED64 L7) with the gallery's Restart Lean / Reset (C21; C20 and W1-W8 only when a real stall was recovered): QED64's relay.restart() answers every request still in flight with the hard-coded error 'QED64: restarting with exact imports' (lsp-relay.ts:127 failInFlight; -32603, rpc calls -32900), which lean4monaco logs at its NotificationService site and leaves as an unhandled rejection. A stalled checker always has requests in flight (nothing was answered), so a restart of one produces these; a restart from ready (C16) has none. Never allowed in any other test."
+    }
+  }
+}

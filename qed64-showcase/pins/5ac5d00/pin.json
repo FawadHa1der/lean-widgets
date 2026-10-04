@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "5ac5d00",
+  "buildId": "wasm64-4b025db7729c5f89",
+  "registeredAt": "2026-10-02T05:50:00Z",
+  "label": "C: QED64 5ac5d00 (interim, local main), runtime 0034 again (kernel 9fbb45afcb) with the #52 worker: QED64's own liveness, no 0035 parked threads",
+  "status": "staged: the fallback; served 2026-10-02 to 2026-10-04 (re-chosen by the final-gate lane on its interleaved reload storms: C 2/26, D 3/26, A 3/26, all V2; CONTROLS PASS then); replaced by E 33b0967 on 2026-10-04 (pin-e lane)",
+  "qed64": {
+    "commit": "5ac5d00f99f7a1ccfd76af7fd1a54428969bd7b5",
+    "promote": "5ac5d00f99f7a1ccfd76af7fd1a54428969bd7b5",
+    "kernel": "9fbb45afcb9bfe152215bd670711a3b37f782ea3"
+  },
+  "mainBundle": "/assets/index-BvT6MV1R.js",
+  "consoleSites": {
+    "627": "5b1d6aa89b59ca4cfdc67c0a1fae918f85df72324663408fdb1f560f5a8b493f"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-51/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-51/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The 9fdf9b8 worker (#52): message-mode runtime mailbox, 1 s kick, Lean-level liveness probe with a 'wedged' reboot, FileWorker exit hook, on the 0034 runtime. The gallery defers (its probe after 30 s)."
+  },
+  "knownLimitations": [],
+  "notes": "QED64 5ac5d00 is the owner's unpushed interim main (HARDENING #53): the served runtime is back to wasm64-4b025db7729c5f89 (the same runtime, stock snapshots and packs as 1859b83), so it shares that runtime's widget overlays, bakes and headless store. The final fix (0035 with the parked cap at 0) will come with a new commit and runtime id."
+}

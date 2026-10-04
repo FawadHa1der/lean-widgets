@@ -1,0 +1,43 @@
+# qed64-showcase — Cloudflare Worker (static assets) + R2 (artifacts), deployed "the lean4game way".
+# TEMPLATE. scripts/deploy-app.sh writes ./wrangler.toml (gitignored) from this file when it is absent, filling
+# name / main / [assets] directory / bucket_name / R2_PREFIX from infra/deploy.env (or the environment variables of
+# the same name), and refuses an existing wrangler.toml whose values disagree with them
+# (scripts/lib/wrangler-config.mjs). Step-by-step guide: docs/DEPLOY-CLOUDFLARE.md.
+# Mirrors QED64's wrangler.toml (@1859b83) and wasm64-lean4game/wrangler.toml.
+name = "qed64-showcase"
+main = "infra/worker.js"
+compatibility_date = "2026-08-01"
+# Serve on qed64-showcase.<account>.workers.dev; attach a custom domain later (guide, "Custom domain").
+workers_dev = true
+
+# App shell = the pinned QED64 dist at "/" + the gallery at "/showcase/", staged by
+#   node scripts/deploy-manifest.mjs --stage-assets      (scripts/deploy-app.sh does this)
+# Workers static assets cap every file at 25 MiB (deploy-manifest gate A1); the multi-hundred-MB
+# artifacts are in R2 and are never staged here (gate A2).
+[assets]
+directory = "out/deploy/assets"
+binding = "ASSETS"
+# Assets are served BEFORE the worker by default, which would skip the COOP/COEP headers the page
+# cannot live without: run the worker for every request so withHeaders() applies to the shell too.
+run_worker_first = true
+# Missing files are a 404, never an SPA fallback (same as scripts/serve.mjs and QED64).
+not_found_handling = "none"
+# "/showcase" -> "/showcase/" and "/showcase/" -> showcase/index.html.
+html_handling = "auto-trailing-slash"
+
+# Artifacts: /runtime/ /profiles/ /snapshots/ (incl. our overlays /snapshots/widgets8/, /snapshots/widgets7/).
+# Default: SHARED with QED64 (bucket qed64-artifacts, which already holds QED64's objects at the root and
+# lean4game's under lean4game/); the showcase's objects live under R2_PREFIX, so the three mutable manifest
+# sets never collide and the existing bucket-scoped upload token (rclone remote qed64-r2) serves all three.
+# Own bucket instead: bucket_name = "qed64-showcase-artifacts" and R2_PREFIX = "" (set R2_BUCKET / R2_PREFIX
+# the same way for scripts/upload-artifacts.sh).
+[[r2_buckets]]
+binding = "ARTIFACTS"
+bucket_name = "qed64-artifacts"
+
+[vars]
+R2_PREFIX = "qed64-showcase/"
+# A bare "/" (no query) redirects to the gallery. The gallery's own iframe URL
+# "/?snapshots=snapshots/<overlay>" carries a query and is never redirected. Remove to serve the
+# stock QED64 page at "/" (needs the stock snapshots, which deploy-manifest uploads by default).
+ROOT_REDIRECT = "/showcase/"

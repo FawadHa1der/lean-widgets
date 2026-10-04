@@ -1,0 +1,18 @@
+# Machine-local and generated: never committed (see README "Clone and build from source").
+.DS_Store
+/.env.local
+/work
+/release/
+/rollback/
+/out/
+node_modules/
+test-results/
+playwright-report/
+/app/node_modules/
+/app/dist/
+/wrangler.toml
+/.wrangler/
+# QED64 sources at each pin's commit: fetched and hash-verified against the committed pins/<id>/QED64-PIN
+# (node scripts/fetch-vendor.mjs), never committed
+/pins/*/vendor-qed64/
+/pins/*/vendor-qed64.*

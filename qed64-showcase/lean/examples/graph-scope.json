@@ -1,0 +1,145 @@
+{
+  "package": "graph-scope",
+  "title": "GraphScope",
+  "blurb": "Concrete SimpleGraphs drawn with stats and evidence; click an edge, a vertex or the components line to insert a verified `by decide` example.",
+  "header": [
+    "import Mathlib",
+    "import GraphScope"
+  ],
+  "cursors": [
+    {
+      "line": 19,
+      "character": 0,
+      "command": "#graph_scope (cycleGraph 5)",
+      "expect": {
+        "svgTagCounts": {
+          "circle": 5,
+          "line": 5
+        },
+        "texts": [
+          "bipartite: no (odd cycle: 2-1-0-4-3)",
+          "components: 1 (connected)"
+        ],
+        "linkTexts": [
+          "0",
+          "components: 1 (connected)"
+        ]
+      }
+    },
+    {
+      "line": 22,
+      "character": 0,
+      "command": "#graph_scope (completeGraph (Fin 4))",
+      "expect": {}
+    },
+    {
+      "line": 29,
+      "character": 0,
+      "command": "#graph_scope twoTriangles",
+      "expect": {
+        "texts": [
+          "components: 2 (disconnected)"
+        ],
+        "linkTexts": [
+          "components: 2 (disconnected)"
+        ]
+      }
+    },
+    {
+      "line": 32,
+      "character": 0,
+      "command": "#graph_scope (pathGraph 5) walk",
+      "expect": {}
+    },
+    {
+      "line": 35,
+      "character": 0,
+      "command": "#graph_scope (cycleGraph 6) layout layered",
+      "expect": {}
+    }
+  ],
+  "clicks": [
+    {
+      "cursorLine": 19,
+      "linkText": "",
+      "linkTitle": "insert: example : ((cycleGraph 5)).Adj (0) (1) := by decide",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 27,
+            "line": 19
+          },
+          "start": {
+            "character": 27,
+            "line": 19
+          }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (0) (1) := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 19,
+      "linkText": "0",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 27,
+            "line": 19
+          },
+          "start": {
+            "character": 27,
+            "line": 19
+          }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (0) = 2 := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 19,
+      "linkText": "components: 1 (connected)",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 27,
+            "line": 19
+          },
+          "start": {
+            "character": 27,
+            "line": 19
+          }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Connected := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 29,
+      "linkText": "components: 2 (disconnected)",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 25,
+            "line": 29
+          },
+          "start": {
+            "character": 25,
+            "line": 29
+          }
+        },
+        "newText": "\nexample : ¬ (twoTriangles).Connected := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    }
+  ],
+  "dropped": [
+    "the local `pathGraph` / `completeBipartiteGraph` DecidableRel instances (GraphScope.Demo's global instances are in scope via `import GraphScope`)",
+    "star5, `fromEdgeSet`, `⊥`, `completeBipartiteGraph (Fin 2) (Fin 3)`, path `layout circle`, duplicate overlay orders",
+    "K5 shrunk to K4 (the gate does one interpreted parse+elab+eval per vertex)"
+  ]
+}

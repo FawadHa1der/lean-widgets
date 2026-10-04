@@ -1,0 +1,2878 @@
+{
+  "schema": "qed64-showcase.gallery-examples/v1",
+  "generator": "scripts/build-gallery.mjs",
+  "source": "lean/examples/*.lean + *.json",
+  "count": 8,
+  "examples": [
+    {
+      "id": "chart-kit",
+      "title": "ChartKit",
+      "blurb": "Exact-rational SVG charts (bar, step, line, scatter, categorical) — the chart is the theorem's data.",
+      "module": "ChartKit",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import ChartKit"
+      ],
+      "text": "import Mathlib\nimport ChartKit\n\n/-! # ChartKit: exact-rational charts in the InfoView\nPut the cursor on a `#chart` line: an \"HTML Display\" panel shows the chart as\na theme-aware SVG (click its summary to fold it).  All data, ticks and pixel\ncoordinates are exact `ℚ`, so the `#guard`s below check that the plotted data\n*is* the theorem.  Marks: bar, step (CDF), line, scatter; plus a categorical axis. -/\n\nopen ChartKit\nnamespace Showcase.ChartKit\n\n/-- Ways two dice sum to `s ∈ [2, 12]`: `6 - |s - 7|`. -/\ndef diceWays (s : Nat) : Nat := 6 - ((s : Int) - 7).natAbs\n\n/-- `(s, P(sum = s))` in exact 36ths. -/\ndef dicePmf : Array (Rat × Rat) :=\n  (Array.range 11).map fun i => (((i + 2 : Nat) : Rat), (diceWays (i + 2) : Rat) / 36)\n\n/-- The running sum of `dicePmf`: the CDF. -/\ndef diceCdf : Array (Rat × Rat) :=\n  (Array.range 11).map fun i =>\n    (((i + 2 : Nat) : Rat), (((List.range (i + 1)).map (diceWays ·.succ.succ)).sum : Rat) / 36)\n\n#guard dicePmf.foldl (fun acc (_, p) => acc + p) 0 = 1   -- the masses sum to 1\n#guard diceCdf.back?.map (·.2) = some 1                  -- the CDF ends at 1\n\ndef diceChart : ChartSpec := {\n  title? := some \"Sum of two dice\", xLabel := \"sum\", yLabel := \"probability\",\n  series := #[{ name := \"P(sum)\", mark := .bar, data := dicePmf }] }\n#chart diceChart\n\ndef cdfChart : ChartSpec := {\n  title? := some \"CDF of two dice\", xLabel := \"sum\", yLabel := \"P(sum <= s)\",\n  series := #[{ name := \"cdf\", mark := .step, data := diceCdf }] }\n#chart cdfChart\n\n-- Two line series with a legend: n²/10 against 2ⁿ/10.\n#chart { title? := some \"n^2/10 vs 2^n/10\", xLabel := \"n\",\n         series := #[\n           { name := \"n^2/10\", mark := .line,\n             data := (Array.range 9).map fun (n : Nat) => ((n : Rat), ((n * n : Nat) : Rat) / 10) },\n           { name := \"2^n/10\", mark := .line,\n             data := (Array.range 9).map fun (n : Nat) => ((n : Rat), ((2 ^ n : Nat) : Rat) / 10) }] }\n\n-- Scatter: the quadratic residues mod 11.\n#chart { title? := some \"n^2 mod 11\", showLegend := false,\n         series := #[\n           { name := \"n^2 mod 11\", mark := .scatter,\n             data := (Array.range 11).map fun (n : Nat) => ((n : Rat), ((n * n % 11 : Nat) : Rat)) }] }\n\n-- Categorical x axis with exact value labels above the bars.\ndef weekChart : ChartSpec := {\n  title? := some \"Commits per weekday\", yLabel := \"commits\",\n  series := #[{ name := \"commits\", mark := .bar,\n                data := #[(0, 12), (1, 17), (2, 8), (3, 21), (4, 5)] }],\n  xTickLabels := #[\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\"], valueLabels := true, showLegend := false }\n#chart weekChart\n\nend Showcase.ChartKit\n",
+      "textSha256": "bf34ce6416fa1c86372f6814ffeda4ad1ec8178df58b3fd7c124707a05c3afa2",
+      "lineCount": 60,
+      "firstCursor": {
+        "line": 30,
+        "character": 0,
+        "lineNumber": 31,
+        "column": 1,
+        "command": "#chart diceChart"
+      },
+      "cursors": [
+        {
+          "line": 30,
+          "character": 0,
+          "command": "#chart diceChart"
+        },
+        {
+          "line": 35,
+          "character": 0,
+          "command": "#chart cdfChart"
+        },
+        {
+          "line": 38,
+          "character": 0,
+          "command": "#chart { title? := some \"n^2/10 vs 2^n/10\""
+        },
+        {
+          "line": 46,
+          "character": 0,
+          "command": "#chart { title? := some \"n^2 mod 11\""
+        },
+        {
+          "line": 57,
+          "character": 0,
+          "command": "#chart weekChart"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 31 · #chart diceChart",
+          "detail": "An “HTML Display” panel draws a diagram and shows “Sum of two dice”, “probability”.",
+          "claimTexts": [
+            "Sum of two dice",
+            "probability"
+          ],
+          "expectTexts": [
+            "Sum of two dice",
+            "probability"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 31,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 12,
+              "line": 24,
+              "text": 15
+            },
+            "texts": [
+              "Sum of two dice",
+              "probability"
+            ],
+            "golden": "lean/expect/w8/chart-kit.json"
+          },
+          "line": 30,
+          "character": 0,
+          "lineNumber": 31,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 36 · #chart cdfChart",
+          "detail": "An “HTML Display” panel draws a diagram and shows “CDF of two dice”, “P(sum <= s)”.",
+          "claimTexts": [
+            "CDF of two dice",
+            "P(sum <= s)"
+          ],
+          "expectTexts": [
+            "CDF of two dice"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 36,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 1,
+              "line": 26,
+              "polyline": 1,
+              "text": 16
+            },
+            "texts": [
+              "P(sum <= s)",
+              "CDF of two dice"
+            ],
+            "golden": "lean/expect/w8/chart-kit.json"
+          },
+          "line": 35,
+          "character": 0,
+          "lineNumber": 36,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 39 · #chart {…}",
+          "detail": "An “HTML Display” panel draws a diagram and shows “n^2/10 vs 2^n/10”.",
+          "claimTexts": [
+            "n^2/10 vs 2^n/10"
+          ],
+          "expectTexts": [
+            "n^2/10 vs 2^n/10",
+            "2^n/10"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 39,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 2,
+              "line": 20,
+              "polyline": 2,
+              "text": 13
+            },
+            "texts": [
+              "n^2/10 vs 2^n/10",
+              "n^2/10"
+            ],
+            "golden": "lean/expect/w8/chart-kit.json"
+          },
+          "line": 38,
+          "character": 0,
+          "lineNumber": 39,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 47 · #chart {…}",
+          "detail": "An “HTML Display” panel draws a diagram and shows “n^2 mod 11”.",
+          "claimTexts": [
+            "n^2 mod 11"
+          ],
+          "expectTexts": [
+            "n^2 mod 11"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 47,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "line": 26,
+              "circle": 11,
+              "text": 13
+            },
+            "texts": [
+              "n^2 mod 11"
+            ],
+            "golden": "lean/expect/w8/chart-kit.json"
+          },
+          "line": 46,
+          "character": 0,
+          "lineNumber": 47,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 58 · #chart weekChart",
+          "detail": "An “HTML Display” panel draws a diagram and shows “Commits per weekday”, “commits”.",
+          "claimTexts": [
+            "Commits per weekday",
+            "commits"
+          ],
+          "expectTexts": [
+            "Commits per weekday",
+            "Mon"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 58,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 5,
+              "line": 24,
+              "text": 18
+            },
+            "texts": [
+              "Commits per weekday",
+              "commits"
+            ],
+            "golden": "lean/expect/w8/chart-kit.json"
+          },
+          "line": 57,
+          "character": 0,
+          "lineNumber": 58,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 5,
+        "clicks": 0,
+        "selections": 0,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/chart-kit.png",
+        "width": 480,
+        "height": 220,
+        "bytes": 12062,
+        "sha256": "d8e6192e0d6e8eab",
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "hasse-view",
+      "title": "HasseView",
+      "blurb": "Hasse diagrams of finite orders with lattice diagnostics; click a cover edge, ⊥/⊤ or a no-join witness to insert a decided example.",
+      "module": "HasseView",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import HasseView"
+      ],
+      "text": "import Mathlib\nimport HasseView\n\n/-! # HasseView: Hasse diagrams of finite orders, with insertable facts\nCursor on a `#hasse` line: the panel draws the cover relation of a finite\norder (ranks bottom to top) with a caption: ⊥/⊤, atoms, height, and whether\nit is a lattice — or a concrete pair with no join when it is not.\nBelow the caption, \"insertable examples\" are links: a COVER edge inserts\n`example : (a : α) ⋖ b := by decide`, the ⊥ / ⊤ badges insert `∀ x, ⊥ ≤ x`\nfacts, and a non-lattice's WITNESS inserts the no-join statement — each on a\nnew line after the command, gate-checked before it is offered.\n`updown i` shades the up-set/down-set of element i; `highlight [...]` rings\nelements (indices follow the `Fintype` enumeration). -/\n\nnamespace Showcase.HasseView\n\n-- The powerset cube: 8 subsets, 12 cover edges, a lattice of height 3.\n#hasse (Finset (Fin 3))\n\n-- A chain, and a product order (the 2-cube).\n#hasse (Fin 4)\n#hasse (Bool × Bool)\n\n-- Up-set/down-set of {0} (index 1), with ∅ and {0,1,2} ringed.\n#hasse (Finset (Fin 3)) updown 1 highlight [0, 7]\n\n/-- The bowtie from HasseView's demo module: `0` below `1, 2`, both below\n`3, 4` — so `1, 2` have upper bounds `3, 4` but no least one (no join). -/\nabbrev Bowtie := _root_.HasseView.Demo.Bowtie\n\n-- A NON-lattice: the caption names the pair; click the witness to insert it.\n#hasse Bowtie highlight [1, 2]\n\nend Showcase.HasseView\n",
+      "textSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
+      "lineCount": 34,
+      "firstCursor": {
+        "line": 17,
+        "character": 0,
+        "lineNumber": 18,
+        "column": 1,
+        "command": "#hasse (Finset (Fin 3))"
+      },
+      "cursors": [
+        {
+          "line": 17,
+          "character": 0,
+          "command": "#hasse (Finset (Fin 3))"
+        },
+        {
+          "line": 20,
+          "character": 0,
+          "command": "#hasse (Fin 4)"
+        },
+        {
+          "line": 21,
+          "character": 0,
+          "command": "#hasse (Bool × Bool)"
+        },
+        {
+          "line": 24,
+          "character": 0,
+          "command": "#hasse (Finset (Fin 3)) updown 1"
+        },
+        {
+          "line": 31,
+          "character": 0,
+          "command": "#hasse Bowtie highlight [1, 2]"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 18 · #hasse (Finset (Fin 3))",
+          "detail": "The HassePanel widget draws a diagram and shows “Insertable examples (click to insert after the command)”.",
+          "claimTexts": [
+            "Insertable examples (click to insert after the command)"
+          ],
+          "expectTexts": [
+            "Insertable examples (click to insert after the command)"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 18,
+              "character": 0
+            },
+            "widget": "HasseView.HassePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 8,
+              "line": 12,
+              "text": 16
+            },
+            "texts": [],
+            "golden": "lean/expect/w8/hasse-view.json"
+          },
+          "line": 17,
+          "character": 0,
+          "lineNumber": 18,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “∅ ⋖ {0}” in the panel (line 18)",
+          "detail": "Click the link in the panel: it inserts `example : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "∅ ⋖ {0}",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 17
+              },
+              "start": {
+                "character": 23,
+                "line": 17
+              }
+            }
+          },
+          "line": 17,
+          "character": 0,
+          "lineNumber": 18,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “∀ x, ∅ ≤ x” in the panel (line 18)",
+          "detail": "Click the link in the panel: it inserts `example : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "∀ x, ∅ ≤ x",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 17
+              },
+              "start": {
+                "character": 23,
+                "line": 17
+              }
+            }
+          },
+          "line": 17,
+          "character": 0,
+          "lineNumber": 18,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “∀ x, x ≤ {0, 1, 2}” in the panel (line 18)",
+          "detail": "Click the link in the panel: it inserts `example : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "∀ x, x ≤ {0, 1, 2}",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide",
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 17
+              },
+              "start": {
+                "character": 23,
+                "line": 17
+              }
+            }
+          },
+          "line": 17,
+          "character": 0,
+          "lineNumber": 18,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “no join of 1, 2” in the panel (line 32)",
+          "detail": "Click the link in the panel: it inserts `example : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "no join of 1, 2",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide",
+            "range": {
+              "end": {
+                "character": 30,
+                "line": 31
+              },
+              "start": {
+                "character": 30,
+                "line": 31
+              }
+            }
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “0 ⋖ 1” in the panel (line 32)",
+          "detail": "Click the link in the panel: it inserts `example : (0 : Bowtie) ⋖ 1 := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "0 ⋖ 1",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : (0 : Bowtie) ⋖ 1 := by decide",
+            "range": {
+              "end": {
+                "character": 30,
+                "line": 31
+              },
+              "start": {
+                "character": 30,
+                "line": 31
+              }
+            }
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 21 · #hasse (Fin 4)",
+          "detail": "The HassePanel widget draws a diagram and shows “poset: 4 elements, 3 cover edges”, “coatoms: 2”.",
+          "claimTexts": [
+            "poset: 4 elements, 3 cover edges",
+            "coatoms: 2"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 21,
+              "character": 0
+            },
+            "widget": "HasseView.HassePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 4,
+              "line": 3,
+              "text": 8
+            },
+            "texts": [
+              "poset: 4 elements, 3 cover edges",
+              "coatoms: 2"
+            ],
+            "golden": "lean/expect/w8/hasse-view.json"
+          },
+          "line": 20,
+          "character": 0,
+          "lineNumber": 21,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 22 · #hasse (Bool × Bool)",
+          "detail": "The HassePanel widget draws a diagram and shows “poset: 4 elements, 4 cover edges”, “atoms: (true, false), (false, true)”.",
+          "claimTexts": [
+            "poset: 4 elements, 4 cover edges",
+            "atoms: (true, false), (false, true)"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 22,
+              "character": 0
+            },
+            "widget": "HasseView.HassePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 4,
+              "line": 4,
+              "text": 8
+            },
+            "texts": [
+              "poset: 4 elements, 4 cover edges",
+              "atoms: (true, false), (false, true)"
+            ],
+            "golden": "lean/expect/w8/hasse-view.json"
+          },
+          "line": 21,
+          "character": 0,
+          "lineNumber": 22,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 25 · #hasse (Finset (Fin 3)) updown 1 highlight [0, 7]",
+          "detail": "The HassePanel widget draws a diagram and shows “highlight: 0, 7”, “upset of {0}: {0}, {0, 1}, {0, 2}, {0, 1, 2}”.",
+          "claimTexts": [
+            "highlight: 0, 7",
+            "upset of {0}: {0}, {0, 1}, {0, 2}, {0, 1, 2}"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 25,
+              "character": 0
+            },
+            "widget": "HasseView.HassePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 10,
+              "line": 12,
+              "text": 16
+            },
+            "texts": [
+              "highlight: 0, 7",
+              "upset of {0}: {0}, {0, 1}, {0, 2}, {0, 1, 2}"
+            ],
+            "golden": "lean/expect/w8/hasse-view.json"
+          },
+          "line": 24,
+          "character": 0,
+          "lineNumber": 25,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 32 · #hasse Bowtie highlight [1, 2]",
+          "detail": "The HassePanel widget draws a diagram and shows “no join of 1, 2”, “poset: 5 elements, 6 cover edges”.",
+          "claimTexts": [
+            "no join of 1, 2",
+            "poset: 5 elements, 6 cover edges"
+          ],
+          "expectTexts": [
+            "no join of 1, 2"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 32,
+              "character": 0
+            },
+            "widget": "HasseView.HassePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 7,
+              "line": 6,
+              "text": 8
+            },
+            "texts": [
+              "poset: 5 elements, 6 cover edges",
+              "atoms: 1, 2"
+            ],
+            "golden": "lean/expect/w8/hasse-view.json"
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 5,
+        "clicks": 5,
+        "selections": 0,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/hasse-view.png",
+        "width": 480,
+        "height": 220,
+        "bytes": 23470,
+        "sha256": "c6665618cefa3069",
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "interval-inspector",
+      "title": "Interval Inspector",
+      "blurb": "Interval goals drawn on a labeled number line, with lemma suggestions whose side conditions are checked ready/missing; click a suggestion to apply it.",
+      "module": "IntervalInspector",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import IntervalInspector"
+      ],
+      "text": "import Mathlib\nimport IntervalInspector\n\n/-! # Interval Inspector: interval goals as a labeled number line\nCursor on a `#interval_inspect` line: an \"HTML Display\" panel draws the sets\nas bars on one axis (filled dot = closed end, hollow = open), shades regions\nthat break `⊆`/`=` in red, and lists the Mathlib lemmas that apply, with each\nside condition marked ready ✓ / missing ✗.\nCursor on `interval_inspect?` inside a proof: the same panel for the current\ngoal, and every suggested tactic is a link — click one to replace the\n`interval_inspect?` line with it (each proof's last line closes the goal both\nbefore and after any click).  Shift-click `hx` in the goal view (last proof)\nto draw that hypothesis instead of the goal. -/\n\nnamespace Showcase.IntervalInspector\n\n-- Two half-open bars meeting at 2; suggests `Set.Ioc_union_Ioc_eq_Ioc`.\n#interval_inspect (Set.Ioc (1:ℝ) 2 ∪ Set.Ioc 2 3 = Set.Ioc 1 3)\n\n-- A mismatch: [0, 3] ⊄ [1, 2]; the uncovered regions are shaded red.\n#interval_inspect (Set.Icc (0:ℝ) 3 ⊆ Set.Icc 1 2)\n\n-- Membership: a purple marker for the member.\n#interval_inspect ((3:ℝ) ∈ Set.Icc 1 4)\n\n-- Nonemptiness: the caption ties the shape to its order condition.\n#interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty\n\n-- Honest over ℕ: no `DenselyOrdered`, so no mismatch shading on (1, 2).\n#interval_inspect (Set.Ico (0:ℕ) 2 ⊆ Set.Icc (0:ℕ) 1)\n\n-- Each proof's last line has one branch for before a click and one for after\n-- it; these two linters would flag whichever branch does not run.\nset_option linter.unreachableTactic false\nset_option linter.unusedTactic false\n\n-- In a proof: both side conditions of the suggestion are ✓ ready from h₁ h₂.\n-- Clicking `refine …` leaves exactly those two goals, closed by `assumption`.\nexample {a b c : ℝ} (h₁ : a ≤ b) (h₂ : b ≤ c) :\n    Set.Ioc a b ∪ Set.Ioc b c = Set.Ioc a c := by\n  interval_inspect?\n  all_goals first | exact Set.Ioc_union_Ioc_eq_Ioc h₁ h₂ | assumption\n\n-- A set-builder goal recognised as `Ico`: click `exact Set.Ico_subset_Icc_self`.\nexample : {x : ℝ | 0 ≤ x ∧ x < 1} ⊆ Set.Icc 0 1 := by\n  interval_inspect?\n  all_goals exact Set.Ico_subset_Icc_self\n\n-- Shift-click `hx`: the panel switches to the hypothesis.  Both views suggest\n-- `refine Set.mem_Ioo.mpr ⟨?_, ?_⟩`; its goals `0 < x`, `x < 2` close below.\nexample {x : ℝ} (hx : x ∈ Set.Ioo (0:ℝ) 1) : x ∈ Set.Ioo (0:ℝ) 2 := by\n  interval_inspect?\n  all_goals first\n    | exact ⟨hx.1, hx.2.trans one_lt_two⟩ | exact hx.1 | exact hx.2.trans one_lt_two\n\nend Showcase.IntervalInspector\n",
+      "textSha256": "b75fe0949abeee3e3e000cdb7b35056118d8aea259a98453b543fb133bf97083",
+      "lineCount": 56,
+      "firstCursor": {
+        "line": 17,
+        "character": 0,
+        "lineNumber": 18,
+        "column": 1,
+        "command": "#interval_inspect (Set.Ioc (1:ℝ) 2 ∪"
+      },
+      "cursors": [
+        {
+          "line": 17,
+          "character": 0,
+          "command": "#interval_inspect (Set.Ioc (1:ℝ) 2 ∪"
+        },
+        {
+          "line": 20,
+          "character": 0,
+          "command": "#interval_inspect (Set.Icc (0:ℝ) 3 ⊆"
+        },
+        {
+          "line": 23,
+          "character": 0,
+          "command": "#interval_inspect ((3:ℝ) ∈"
+        },
+        {
+          "line": 26,
+          "character": 0,
+          "command": "#interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty"
+        },
+        {
+          "line": 29,
+          "character": 0,
+          "command": "#interval_inspect (Set.Ico (0:ℕ) 2"
+        },
+        {
+          "line": 40,
+          "character": 2,
+          "command": "interval_inspect?"
+        },
+        {
+          "line": 45,
+          "character": 2,
+          "command": "interval_inspect?"
+        },
+        {
+          "line": 51,
+          "character": 2,
+          "command": "interval_inspect?"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 18 · #interval_inspect (Set.Ioc (1:ℝ) 2 ∪ Set.Ioc 2 3 = Set.Ioc 1 3)",
+          "detail": "An “HTML Display” panel draws a diagram and shows “Set.Ioc_union_Ioc_eq_Ioc”, “1 ≤ 2 ✓ ready”.",
+          "claimTexts": [
+            "Set.Ioc_union_Ioc_eq_Ioc",
+            "1 ≤ 2 ✓ ready"
+          ],
+          "expectTexts": [
+            "Set.Ioc_union_Ioc_eq_Ioc",
+            "1 ≤ 2 ✓ ready"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 18,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 3,
+              "line": 4,
+              "circle": 6,
+              "text": 6
+            },
+            "texts": [
+              "Ioc 1 2 ∪ Ioc 2 3 = Ioc 1 3",
+              "1 ≤ 2 ✓ ready"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 17,
+          "character": 0,
+          "lineNumber": 18,
+          "column": 1
+        },
+        {
+          "kind": "select",
+          "label": "Shift-click hypothesis hx (line 52)",
+          "detail": "Cursor on `interval_inspect?`, then shift-click hypothesis hx in the goal view; the panel then shows “x ∈ Ioo 0 1” (it inspects the hypothesis hx instead of the goal x ∈ Ioo 0 2).",
+          "claimTexts": [
+            "x ∈ Ioo 0 1"
+          ],
+          "expectTexts": [
+            "x ∈ Ioo 0 1",
+            "Set.mem_Ioo"
+          ],
+          "expectSelect": [
+            {
+              "goal": 0,
+              "hyp": "hx"
+            }
+          ],
+          "expectSelectPanel": {
+            "at": {
+              "lineNumber": 52,
+              "character": 2
+            },
+            "widget": "IntervalInspector.IntervalInspectorPanel",
+            "texts": [
+              "x ∈ Ioo 0 1",
+              "Set.mem_Ioo"
+            ],
+            "appear": [
+              "x ∈ Ioo 0 1"
+            ],
+            "squash": true,
+            "picks": 1,
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 51,
+          "character": 2,
+          "lineNumber": 52,
+          "column": 3
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_” in the panel (line 41)",
+          "detail": "Click the link in the panel: it replaces `interval_inspect?` with `refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 40
+              },
+              "start": {
+                "character": 2,
+                "line": 40
+              }
+            }
+          },
+          "line": 40,
+          "character": 2,
+          "lineNumber": 41,
+          "column": 3
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “exact Set.Ico_subset_Icc_self” in the panel (line 46)",
+          "detail": "Click the link in the panel: it replaces `interval_inspect?` with `exact Set.Ico_subset_Icc_self`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "exact Set.Ico_subset_Icc_self",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "exact Set.Ico_subset_Icc_self",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 45
+              },
+              "start": {
+                "character": 2,
+                "line": 45
+              }
+            }
+          },
+          "line": 45,
+          "character": 2,
+          "lineNumber": 46,
+          "column": 3
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “refine Set.mem_Ioo.mpr ⟨?_, ?_⟩” in the panel (line 52)",
+          "detail": "Click the link in the panel: it replaces `interval_inspect?` with `refine Set.mem_Ioo.mpr ⟨?_, ?_⟩`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 51
+              },
+              "start": {
+                "character": 2,
+                "line": 51
+              }
+            }
+          },
+          "line": 51,
+          "character": 2,
+          "lineNumber": 52,
+          "column": 3
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 21 · #interval_inspect (Set.Icc (0:ℝ) 3 ⊆ Set.Icc 1 2)",
+          "detail": "An “HTML Display” panel draws a diagram and shows “Icc 0 3 ⊆ Icc 1 2”, “refine Set.Icc_subset_Icc ?_ ?_”.",
+          "claimTexts": [
+            "Icc 0 3 ⊆ Icc 1 2",
+            "refine Set.Icc_subset_Icc ?_ ?_"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 21,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 6,
+              "line": 5,
+              "circle": 4,
+              "text": 6
+            },
+            "texts": [
+              "Icc 0 3 ⊆ Icc 1 2",
+              "refine Set.Icc_subset_Icc ?_ ?_"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 20,
+          "character": 0,
+          "lineNumber": 21,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 24 · #interval_inspect ((3:ℝ) ∈ Set.Icc 1 4)",
+          "detail": "An “HTML Display” panel draws a diagram and shows “Set.mem_Icc”, “3 ∈ Icc 1 4”.",
+          "claimTexts": [
+            "Set.mem_Icc",
+            "3 ∈ Icc 1 4"
+          ],
+          "expectTexts": [
+            "Set.mem_Icc"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 24,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 1,
+              "line": 4,
+              "circle": 2,
+              "path": 1,
+              "text": 4
+            },
+            "texts": [
+              "3 ∈ Icc 1 4",
+              "refine Set.mem_Icc.mpr ⟨?_, ?_⟩"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 23,
+          "character": 0,
+          "lineNumber": 24,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 27 · #interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty",
+          "detail": "An “HTML Display” panel draws a diagram and shows “(Ioc 1 2).Nonempty”, “Nonempty ↔ 1 < 2”.",
+          "claimTexts": [
+            "(Ioc 1 2).Nonempty",
+            "Nonempty ↔ 1 < 2"
+          ],
+          "expectTexts": [
+            "Nonempty"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 27,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 1,
+              "line": 3,
+              "circle": 2,
+              "text": 3
+            },
+            "texts": [
+              "(Ioc 1 2).Nonempty",
+              "Nonempty ↔ 1 < 2"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 26,
+          "character": 0,
+          "lineNumber": 27,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 30 · #interval_inspect (Set.Ico (0:ℕ) 2 ⊆ Set.Icc (0:ℕ) 1)",
+          "detail": "An “HTML Display” panel draws a diagram and shows “open segments not shaded: no DenselyOrdered instance (they may be empty)”, “Ico 0 2 ⊆ Icc 0 1”.",
+          "claimTexts": [
+            "open segments not shaded: no DenselyOrdered instance (they may be empty)",
+            "Ico 0 2 ⊆ Icc 0 1"
+          ],
+          "expectTexts": [
+            "DenselyOrdered"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 30,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 2,
+              "line": 4,
+              "circle": 4,
+              "text": 6
+            },
+            "texts": [
+              "open segments not shaded: no DenselyOrdered instance (they may be empty)",
+              "Ico 0 2 ⊆ Icc 0 1"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 29,
+          "character": 0,
+          "lineNumber": 30,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 41 · interval_inspect?",
+          "detail": "The IntervalInspectorPanel widget draws a diagram and shows “refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_”, “a ≤ b ✓ ready”.",
+          "claimTexts": [
+            "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+            "a ≤ b ✓ ready"
+          ],
+          "expectTexts": [
+            "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+            "a ≤ b ✓ ready"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 41,
+              "character": 2
+            },
+            "widget": "IntervalInspector.IntervalInspectorPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 3,
+              "line": 4,
+              "circle": 6,
+              "text": 6
+            },
+            "texts": [
+              "Ioc a b ∪ Ioc b c = Ioc a c",
+              "a ≤ b ✓ ready"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 40,
+          "character": 2,
+          "lineNumber": 41,
+          "column": 3
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 46 · interval_inspect?",
+          "detail": "The IntervalInspectorPanel widget draws a diagram and shows “from set-builder”, “Ico 0 1 ⊆ Icc 0 1”.",
+          "claimTexts": [
+            "from set-builder",
+            "Ico 0 1 ⊆ Icc 0 1"
+          ],
+          "expectTexts": [
+            "from set-builder"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 46,
+              "character": 2
+            },
+            "widget": "IntervalInspector.IntervalInspectorPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 2,
+              "line": 3,
+              "circle": 4,
+              "text": 5
+            },
+            "texts": [
+              "Ico 0 1 ⊆ Icc 0 1",
+              "from set-builder"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 45,
+          "character": 2,
+          "lineNumber": 46,
+          "column": 3
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 52 · interval_inspect?",
+          "detail": "The IntervalInspectorPanel widget draws a diagram and shows “x ∈ Ioo 0 2”, “order unknown between x, 0”.",
+          "claimTexts": [
+            "x ∈ Ioo 0 2",
+            "order unknown between x, 0"
+          ],
+          "expectTexts": [
+            "x ∈ Ioo 0 2"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 52,
+              "character": 2
+            },
+            "widget": "IntervalInspector.IntervalInspectorPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "rect": 1,
+              "line": 4,
+              "circle": 2,
+              "path": 1,
+              "text": 6
+            },
+            "texts": [
+              "x ∈ Ioo 0 2",
+              "order unknown between x, 0"
+            ],
+            "golden": "lean/expect/w8/interval-inspector.json"
+          },
+          "line": 51,
+          "character": 2,
+          "lineNumber": 52,
+          "column": 3
+        }
+      ],
+      "counts": {
+        "cursors": 8,
+        "clicks": 3,
+        "selections": 1,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/interval-inspector.png",
+        "width": 480,
+        "height": 198,
+        "bytes": 20525,
+        "sha256": "23ab60779f063c28",
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "simp-lens",
+      "title": "Simp Lens",
+      "blurb": "A filmstrip of every rewrite a simp call makes, exclusion previews, and a one-click minimal simp only [...] (Try this).",
+      "module": "SimpLens",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import SimpLens"
+      ],
+      "text": "import Mathlib\nimport SimpLens\n\n/-! # Simp Lens: watch every rewrite `simp` makes\nSwap `simp` for `simp_lens` and put the cursor on it.  The InfoView shows a\n\"Simp Lens\" panel: the rewrite count (✓ when the goal closed), the minimal\n`simp only [...]` call, a filmstrip of numbered frames (lemma badge, pre/post\nphase, the rewritten subterm before → after — hover a term for its type) and\nexclusion previews (does the call still work without each lemma?).\nThe Messages panel says `Try this:` — click `[apply]` to replace the\n`simp_lens` call by the minimal call (the lightbulb code action does the same). -/\n\nnamespace Showcase.SimpLens\n\n-- Repeated and mixed rewrites on the target.\nexample (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens\n\n-- List normalization: append, map, id.\nexample (l : List Nat) : (l ++ []).map id = l.map id ++ [].map id := by simp_lens\n\n-- The code-review scenario: a fat call where only two supplied lemmas fire.\nset_option linter.unusedSimpArgs false in\nexample (n : Nat) (l : List Nat) : n + 0 = n ∧ l ++ [] = l := by\n  simp_lens [Nat.add_zero, Nat.zero_add, List.append_nil, List.map_cons, Nat.mul_one]\n\n-- Locations: one filmstrip section per location; the suggestion keeps `at h ⊢`.\nexample (n : Nat) (h : n + 0 = 5) : n + 0 + 0 = 5 := by\n  simp_lens at h ⊢\n  exact h\n\n-- A hypothesis that simplifies to `False` closes the goal (\"✓ closes the goal\").\nexample (p : Prop) (h : ¬True) : p := by simp_lens at h\n\n-- `-previews` skips the exclusion re-runs (keeps slow, fat calls cheap).\nexample (a b : Nat) : (if true then a else b) = a := by simp_lens -previews\n\nend Showcase.SimpLens\n",
+      "textSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
+      "lineCount": 37,
+      "firstCursor": {
+        "line": 15,
+        "character": 0,
+        "lineNumber": 16,
+        "column": 1,
+        "command": "example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens"
+      },
+      "cursors": [
+        {
+          "line": 15,
+          "character": 0,
+          "command": "example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens"
+        },
+        {
+          "line": 18,
+          "character": 0,
+          "command": "example (l : List Nat) : (l ++ []).map id"
+        },
+        {
+          "line": 23,
+          "character": 2,
+          "command": "simp_lens [Nat.add_zero, Nat.zero_add"
+        },
+        {
+          "line": 27,
+          "character": 2,
+          "command": "simp_lens at h ⊢"
+        },
+        {
+          "line": 31,
+          "character": 0,
+          "command": "example (p : Prop) (h : ¬True) : p := by simp_lens at h"
+        },
+        {
+          "line": 34,
+          "character": 0,
+          "command": "example (a b : Nat) : (if true then a else b) = a"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 16 · example (n : Nat) : 0 + (n + 0 + 0) = n := by simp_lens",
+          "detail": "An “HTML Display” panel shows “— 4 rewrites”, “simp only [add_zero, zero_add]”.",
+          "claimTexts": [
+            "— 4 rewrites",
+            "simp only [add_zero, zero_add]"
+          ],
+          "expectTexts": [
+            "Simp Lens",
+            "rewrite"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 16,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "— 4 rewrites",
+              "simp only [add_zero, zero_add]"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 15,
+          "character": 0,
+          "lineNumber": 16,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 16",
+          "detail": "Click [apply] in the message: it replaces `simp_lens` with `simp only [add_zero, zero_add]`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [add_zero, zero_add]",
+            "range": {
+              "end": {
+                "character": 55,
+                "line": 15
+              },
+              "start": {
+                "character": 46,
+                "line": 15
+              }
+            }
+          },
+          "line": 15,
+          "character": 0,
+          "lineNumber": 16,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 19",
+          "detail": "Click [apply] in the message: it replaces `simp_lens` with `simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]",
+            "range": {
+              "end": {
+                "character": 81,
+                "line": 18
+              },
+              "start": {
+                "character": 72,
+                "line": 18
+              }
+            }
+          },
+          "line": 18,
+          "character": 0,
+          "lineNumber": 19,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 24",
+          "detail": "Click [apply] in the message: it replaces `simp_lens [Nat.add_zero, Nat.zero_add, List.append_nil, List.map_cons, Nat.mul_one]` with `simp only [add_zero, List.append_nil, and_self]`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [add_zero, List.append_nil, and_self]",
+            "range": {
+              "end": {
+                "character": 85,
+                "line": 23
+              },
+              "start": {
+                "character": 2,
+                "line": 23
+              }
+            }
+          },
+          "line": 23,
+          "character": 2,
+          "lineNumber": 24,
+          "column": 3
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 28",
+          "detail": "Click [apply] in the message: it replaces `simp_lens at h ⊢` with `simp only [add_zero] at h ⊢`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [add_zero] at h ⊢",
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 27
+              },
+              "start": {
+                "character": 2,
+                "line": 27
+              }
+            }
+          },
+          "line": 27,
+          "character": 2,
+          "lineNumber": 28,
+          "column": 3
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 32",
+          "detail": "Click [apply] in the message: it replaces `simp_lens at h` with `simp only [not_true_eq_false] at h`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [not_true_eq_false] at h",
+            "range": {
+              "end": {
+                "character": 55,
+                "line": 31
+              },
+              "start": {
+                "character": 41,
+                "line": 31
+              }
+            }
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "tryThis",
+          "label": "Apply the “Try this” on line 35",
+          "detail": "Click [apply] in the message: it replaces `simp_lens -previews` with `simp only [↓reduceIte]`; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "[apply]",
+            "linkTitle": null,
+            "kind": "tryThis",
+            "newText": "simp only [↓reduceIte]",
+            "range": {
+              "end": {
+                "character": 75,
+                "line": 34
+              },
+              "start": {
+                "character": 56,
+                "line": 34
+              }
+            }
+          },
+          "line": 34,
+          "character": 0,
+          "lineNumber": 35,
+          "column": 1
+        },
+        {
+          "kind": "hover",
+          "label": "Hover `n` in the panel (line 16)",
+          "detail": "Hover `n` in the panel's `n + 0`: a popup shows its type, `n : ℕ`.",
+          "claimTexts": [
+            "n : ℕ"
+          ],
+          "expectHover": {
+            "tagText": "n",
+            "codeText": "n + 0",
+            "codeIndex": 0,
+            "exprText": "n",
+            "typeText": "ℕ",
+            "popupText": "n : ℕ",
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 15,
+          "character": 0,
+          "lineNumber": 16,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 19 · example (…) : (l ++ []).map id = l.map id ++ [].map id := …",
+          "detail": "An “HTML Display” panel shows “— 7 rewrites”, “simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]”.",
+          "claimTexts": [
+            "— 7 rewrites",
+            "simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+          ],
+          "expectTexts": [
+            "Simp Lens"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 19,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "— 7 rewrites",
+              "simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 18,
+          "character": 0,
+          "lineNumber": 19,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 24 · simp_lens […]",
+          "detail": "An “HTML Display” panel shows “— 5 rewrites”, “simp only [add_zero, List.append_nil, and_self]”.",
+          "claimTexts": [
+            "— 5 rewrites",
+            "simp only [add_zero, List.append_nil, and_self]"
+          ],
+          "expectTexts": [
+            "Simp Lens"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 24,
+              "character": 2
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "— 5 rewrites",
+              "simp only [add_zero, List.append_nil, and_self]"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 23,
+          "character": 2,
+          "lineNumber": 24,
+          "column": 3
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 28 · simp_lens at h ⊢",
+          "detail": "An “HTML Display” panel shows “simp only [add_zero] at h ⊢”.",
+          "claimTexts": [
+            "simp only [add_zero] at h ⊢"
+          ],
+          "expectTexts": [
+            "at h",
+            "at ⊢"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 28,
+              "character": 2
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "simp only [add_zero] at h ⊢",
+              "at ⊢"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 27,
+          "character": 2,
+          "lineNumber": 28,
+          "column": 3
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 32 · example (p : Prop) (h : ¬True) : p := by simp_lens at h",
+          "detail": "An “HTML Display” panel shows “closes the goal”, “simp only [not_true_eq_false] at h”.",
+          "claimTexts": [
+            "closes the goal",
+            "simp only [not_true_eq_false] at h"
+          ],
+          "expectTexts": [
+            "closes the goal"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 32,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "simp only [not_true_eq_false] at h",
+              "✓ closes the goal"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 35 · example (a b : Nat) : (if true then a else b) = a := …",
+          "detail": "An “HTML Display” panel shows “simp only [↓reduceIte]”, “(+1 side-condition lemma)”.",
+          "claimTexts": [
+            "simp only [↓reduceIte]",
+            "(+1 side-condition lemma)"
+          ],
+          "expectTexts": [
+            "Simp Lens"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 35,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "simp only [↓reduceIte]",
+              "(+1 side-condition lemma)"
+            ],
+            "golden": "lean/expect/w8/simp-lens.json"
+          },
+          "line": 34,
+          "character": 0,
+          "lineNumber": 35,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 6,
+        "clicks": 6,
+        "selections": 0,
+        "hovers": 1
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/simp-lens.png",
+        "width": 480,
+        "height": 253,
+        "bytes": 28901,
+        "sha256": "ab666863983d7d32",
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "expr-xray",
+      "title": "Expr X-Ray",
+      "blurb": "Foldable expression trees with instance/implicit/coercion/universe badges, and a defeq-aware ranked diff; a goal panel driven by shift-click selections.",
+      "module": "ExprXRay",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import ExprXRay"
+      ],
+      "text": "import Mathlib\nimport ExprXRay\n\n/-! # Expr X-Ray: the hidden structure of a term\nCursor on `#xray e`: an \"HTML Display\" panel shows `e` as a tree of\n`kind ‹pretty› : type` nodes (click a ▸ to fold/unfold) with badges for\ninstance/implicit arguments, coercions and universes, in five presets.\nCursor on `#xray_diff a, b`: a ranked list of mismatches, each with a defeq\nbadge (`≢` blocks `rw`, `≈ʳ`/`≈ᵈ` is harmless), then both trees side by side.\nIn the proof at the bottom, put the cursor on `simp`: the X-Ray panel shows\nthe goal; shift-click one subterm to x-ray it, or two to compare them. -/\n\nnamespace Showcase.ExprXRay\n\n-- Both sides print as `if 2 = 2 then 1 else 0`; the diff ranks the\n-- `Decidable` instance argument as the top mismatch.\n#xray_diff @ite Nat (2 = 2) (instDecidableEqNat 2 2) 1 0,\n           @ite Nat (2 = 2) (Classical.propDecidable (2 = 2)) 1 0\n\n-- Instance and implicit arguments hiding inside `1 + 1`.\n#xray (1 + 1 : Nat)\n\n-- A coercion: the head is `Nat.cast`, flagged `↑coe`.\n#xray ((3 : Nat) : Int)\n\n/-- A reducible wrapper: differs from `2` only syntactically. -/\n@[reducible] def redTwo : Nat := 2\n\n-- Every mismatch is defeq: a green \"syntactic only\" banner.\n#xray_diff Nat.succ redTwo, Nat.succ (2 : Nat)\n\n-- A universe-only difference, invisible without `pp.universes`.\n#xray_diff @PUnit.{1}, @PUnit.{2}\n\n-- The panel: shift-click the two `if …` sides of the goal to compare them.\ntheorem xray_panel (n : Nat) :\n    @ite Nat (n = n) (instDecidableEqNat n n) 1 0 =\n    @ite Nat (n = n) (Classical.propDecidable (n = n)) 1 0 := by\n  with_panel_widgets [ExprXRay.XRayPanel]\n    simp\n\nend Showcase.ExprXRay\n",
+      "textSha256": "4f95808c4a557f109f5fcfd5602560a837be0d67f2dcecce23cb25f8d2954763",
+      "lineCount": 42,
+      "firstCursor": {
+        "line": 16,
+        "character": 0,
+        "lineNumber": 17,
+        "column": 1,
+        "command": "#xray_diff @ite Nat (2 = 2)"
+      },
+      "cursors": [
+        {
+          "line": 16,
+          "character": 0,
+          "command": "#xray_diff @ite Nat (2 = 2)"
+        },
+        {
+          "line": 20,
+          "character": 0,
+          "command": "#xray (1 + 1 : Nat)"
+        },
+        {
+          "line": 23,
+          "character": 0,
+          "command": "#xray ((3 : Nat) : Int)"
+        },
+        {
+          "line": 29,
+          "character": 0,
+          "command": "#xray_diff Nat.succ redTwo"
+        },
+        {
+          "line": 32,
+          "character": 0,
+          "command": "#xray_diff @PUnit.{1}"
+        },
+        {
+          "line": 39,
+          "character": 4,
+          "command": "simp"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 17 · #xray_diff @ite Nat (…) (…) 1 0, @ite Nat (…) (…) 1 0",
+          "detail": "An “HTML Display” panel shows “Decidable (2 = 2)”, “if 2 = 2 then 1 else 0”.",
+          "claimTexts": [
+            "Decidable (2 = 2)",
+            "if 2 = 2 then 1 else 0"
+          ],
+          "expectTexts": [
+            "Decidable"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 17,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              ": Decidable (2 = 2)",
+              "if 2 = 2 then 1 else 0"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 16,
+          "character": 0,
+          "lineNumber": 17,
+          "column": 1
+        },
+        {
+          "kind": "select",
+          "label": "Shift-click the first `if n = n then 1 else 0` (line 40)",
+          "detail": "Cursor on `simp`, then shift-click the first `if n = n then 1 else 0` in the goal view; the panel then shows “clean (explicit only) app if n = n then 1 else 0 : ℕ” (the x-ray of the selected subterm, not of the whole goal).",
+          "claimTexts": [
+            "clean (explicit only) app if n = n then 1 else 0 : ℕ"
+          ],
+          "expectTexts": [
+            "clean (explicit only) app if n = n then 1 else 0 : ℕ"
+          ],
+          "expectSelect": [
+            {
+              "goal": 0,
+              "target": "if n = n then 1 else 0",
+              "occurrence": 0
+            }
+          ],
+          "expectSelectPanel": {
+            "at": {
+              "lineNumber": 40,
+              "character": 4
+            },
+            "widget": "ExprXRay.XRayPanel",
+            "texts": [
+              "clean (explicit only) app if n = n then 1 else 0 : ℕ"
+            ],
+            "appear": [
+              "clean (explicit only) app if n = n then 1 else 0 : ℕ"
+            ],
+            "squash": true,
+            "picks": 1,
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 39,
+          "character": 4,
+          "lineNumber": 40,
+          "column": 5
+        },
+        {
+          "kind": "select",
+          "label": "Shift-click the first `if n = n then 1 else 0` then its second occurrence (line 40)",
+          "detail": "Cursor on `simp`, then shift-click the first `if n = n then 1 else 0`, then its second occurrence in the goal view; the panel then shows “mismatches (1, ranked)” and “instance argument #3 of ite differs” (the two occurrences differ only in their Decidable instance).",
+          "claimTexts": [
+            "mismatches (1, ranked)",
+            "instance argument #3 of ite differs"
+          ],
+          "expectTexts": [
+            "mismatches (1, ranked)",
+            "instance argument #3 of ite differs"
+          ],
+          "expectSelect": [
+            {
+              "goal": 0,
+              "target": "if n = n then 1 else 0",
+              "occurrence": 0
+            },
+            {
+              "goal": 0,
+              "target": "if n = n then 1 else 0",
+              "occurrence": 1
+            }
+          ],
+          "expectSelectPanel": {
+            "at": {
+              "lineNumber": 40,
+              "character": 4
+            },
+            "widget": "ExprXRay.XRayPanel",
+            "texts": [
+              "mismatches (1, ranked)",
+              "instance argument #3 of ite differs"
+            ],
+            "appear": [
+              "mismatches (1, ranked)",
+              "instance argument #3 of ite differs"
+            ],
+            "squash": true,
+            "picks": 2,
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 39,
+          "character": 4,
+          "lineNumber": 40,
+          "column": 5
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 21 · #xray (1 + 1 : Nat)",
+          "detail": "An “HTML Display” panel shows “HAdd.hAdd”.",
+          "claimTexts": [
+            "HAdd.hAdd"
+          ],
+          "expectTexts": [
+            "HAdd.hAdd"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 21,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              ": {α β : Type} → {γ : outParam Type} → [self : HAdd α β γ] → α…",
+              "@HAdd.hAdd"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 20,
+          "character": 0,
+          "lineNumber": 21,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 24 · #xray ((3 : Nat) : Int)",
+          "detail": "An “HTML Display” panel shows “Nat.cast”, “{R : Type} → [NatCast R] → ℕ → R”.",
+          "claimTexts": [
+            "Nat.cast",
+            "{R : Type} → [NatCast R] → ℕ → R"
+          ],
+          "expectTexts": [
+            "Nat.cast"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 24,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              ": {R : Type} → [NatCast R] → ℕ → R",
+              "↑coe"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 23,
+          "character": 0,
+          "lineNumber": 24,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 30 · #xray_diff Nat.succ redTwo, Nat.succ (2 : Nat)",
+          "detail": "An “HTML Display” panel shows “mismatches (2, ranked)”.",
+          "claimTexts": [
+            "mismatches (2, ranked)"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 30,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              ": ℕ → ℕ",
+              "mismatches (2, ranked)"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 29,
+          "character": 0,
+          "lineNumber": 30,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 33 · #xray_diff @PUnit.{1}, @PUnit.{2}",
+          "detail": "An “HTML Display” panel shows “universe levels of PUnit differ: [1] vs [2] (NOT defeq — this blocks rw)”, “Type 1”.",
+          "claimTexts": [
+            "universe levels of PUnit differ: [1] vs [2] (NOT defeq — this blocks rw)",
+            "Type 1"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 33,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {},
+            "texts": [
+              "universe levels of PUnit differ: [1] vs [2] (NOT defeq — this blocks rw)",
+              ": Type 1"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 32,
+          "character": 0,
+          "lineNumber": 33,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 40 · simp",
+          "detail": "The XRayPanel widget shows “Expr X-Ray 🩻”, “(if n = n then 1 else 0) = if n = n then 1 else 0”.",
+          "claimTexts": [
+            "Expr X-Ray 🩻",
+            "(if n = n then 1 else 0) = if n = n then 1 else 0"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 40,
+              "character": 4
+            },
+            "widget": "ExprXRay.XRayPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {},
+            "texts": [
+              "Expr X-Ray 🩻",
+              "(if n = n then 1 else 0) = if n = n then 1 else 0"
+            ],
+            "golden": "lean/expect/w8/expr-xray.json"
+          },
+          "line": 39,
+          "character": 4,
+          "lineNumber": 40,
+          "column": 5
+        }
+      ],
+      "counts": {
+        "cursors": 6,
+        "clicks": 0,
+        "selections": 2,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/expr-xray.png",
+        "width": 480,
+        "height": 300,
+        "bytes": 53901,
+        "sha256": "5f775095e3b53c13",
+        "fit": "cover"
+      }
+    },
+    {
+      "id": "tree-scope",
+      "title": "TreeScope",
+      "blurb": "Any concrete tree-shaped value drawn by reflection, or semantically with invariant checks (red–black, heaps); filmstrips of evolving trees.",
+      "module": "TreeScope",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import TreeScope"
+      ],
+      "text": "import Mathlib\nimport TreeScope\n\n/-! # TreeScope: any tree-shaped value, drawn\nCursor on a `#tree_scope v` line: an \"HTML Display\" panel draws `v` as a tree.\nTypes with a semantic instance (red–black maps, binomial heaps, Mathlib\n`BinaryTree`, `Std.TreeMap`) show their meaning — node colours, `bh=` / `rank=`\nsublabels, and a caption that checks the invariants (violations are flagged\non the guilty nodes); any other concrete inductive value is shown as its\nconstructor tree by reflection (no `Repr` needed).\n`#tree_evolve init [op₁, …]` shows a filmstrip of frames with `new` badges;\n`#html renderForest …` lays out a gallery of small trees. -/\n\nnamespace Showcase.TreeScope\n\n-- Reflection: a list is a `cons` chain; literals fold into the labels.\n#tree_scope [10, 20, 30]\n\n/-- A tiny arithmetic AST (no `Repr` instance: pure term reflection). -/\ninductive Arith where\n  | num (n : Nat)\n  | add (a b : Arith)\n  | mul (a b : Arith)\n\n/-- `(1 + 2 * 3) * (4 + 5)` as an `Arith` value. -/\ndef sample : Arith := .mul (.add (.num 1) (.mul (.num 2) (.num 3))) (.add (.num 4) (.num 5))\n#tree_scope sample\n\n/-- A red–black map: colours, black-heights and an `invariants ok` caption. -/\ndef rbSample : Lean.RBMap Nat String compare :=\n  Lean.RBMap.ofList [(5, \"e\"), (2, \"b\"), (8, \"h\"), (1, \"a\"), (4, \"d\"), (7, \"g\"), (3, \"c\")]\n#tree_scope rbSample\n\n/-- Hand-built and INVALID: a red-red chain and a black-height mismatch. -/\ndef brokenRB : Lean.RBNode Nat (fun _ => String) :=\n  .node .black (.node .red (.node .red .leaf 1 \"a\" .leaf) 2 \"b\" .leaf) 5 \"e\"\n    (.node .black .leaf 8 \"h\" (.node .black .leaf 9 \"i\" .leaf))\n#tree_scope brokenRB\n\n-- Filmstrip: five inserts into a red–black map, rotations lighting up `new`.\n#tree_evolve (Lean.RBMap.empty : Lean.RBMap Nat String compare) [\n  (·.insert 1 \"a\"), (·.insert 2 \"b\"), (·.insert 3 \"c\"), (·.insert 4 \"d\"), (·.insert 5 \"e\")]\n\n-- All 5 = catalan 3 binary-tree shapes with 3 internal nodes.\nopen _root_.TreeScope in\n#html renderForest (BinTree.catalanGallery 3) (maxRowWidth := 600)\n\nend Showcase.TreeScope\n",
+      "textSha256": "f03a06ebc87149cbf518b9c79a913552b0e24ce9326fa38c10d9b028a4889752",
+      "lineCount": 48,
+      "firstCursor": {
+        "line": 16,
+        "character": 0,
+        "lineNumber": 17,
+        "column": 1,
+        "command": "#tree_scope [10, 20, 30]"
+      },
+      "cursors": [
+        {
+          "line": 16,
+          "character": 0,
+          "command": "#tree_scope [10, 20, 30]"
+        },
+        {
+          "line": 26,
+          "character": 0,
+          "command": "#tree_scope sample"
+        },
+        {
+          "line": 31,
+          "character": 0,
+          "command": "#tree_scope rbSample"
+        },
+        {
+          "line": 37,
+          "character": 0,
+          "command": "#tree_scope brokenRB"
+        },
+        {
+          "line": 40,
+          "character": 0,
+          "command": "#tree_evolve"
+        },
+        {
+          "line": 45,
+          "character": 0,
+          "command": "#html renderForest"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 17 · #tree_scope [10, 20, 30]",
+          "detail": "An “HTML Display” panel draws a diagram and shows “tree: 4 nodes, depth 4”, “cons 10”.",
+          "claimTexts": [
+            "tree: 4 nodes, depth 4",
+            "cons 10"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 17,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 1,
+              "rect": 4,
+              "line": 3,
+              "text": 4
+            },
+            "texts": [
+              "tree: 4 nodes, depth 4",
+              "cons 10"
+            ],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 16,
+          "character": 0,
+          "lineNumber": 17,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 27 · #tree_scope sample",
+          "detail": "An “HTML Display” panel draws a diagram and shows “tree: 9 nodes, depth 4”.",
+          "claimTexts": [
+            "tree: 9 nodes, depth 4"
+          ],
+          "expectTexts": [
+            "mul"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 27,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 1,
+              "rect": 9,
+              "line": 8,
+              "text": 9
+            },
+            "texts": [
+              "tree: 9 nodes, depth 4",
+              "num 1"
+            ],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 26,
+          "character": 0,
+          "lineNumber": 27,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 32 · #tree_scope rbSample",
+          "detail": "An “HTML Display” panel draws a diagram and shows “invariants ok”, “tree: 7 nodes, depth 3”.",
+          "claimTexts": [
+            "invariants ok",
+            "tree: 7 nodes, depth 3"
+          ],
+          "expectTexts": [
+            "invariants ok"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 32,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 1,
+              "rect": 7,
+              "line": 6,
+              "text": 14
+            },
+            "texts": [
+              "7:\"g\"",
+              "tree: 7 nodes, depth 3"
+            ],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 38 · #tree_scope brokenRB",
+          "detail": "An “HTML Display” panel draws a diagram and shows “red-red”.",
+          "claimTexts": [
+            "red-red"
+          ],
+          "expectTexts": [
+            "red-red"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 38,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 1,
+              "rect": 8,
+              "line": 4,
+              "text": 13
+            },
+            "texts": [
+              "9:\"i\"",
+              "bh ⚠"
+            ],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 37,
+          "character": 0,
+          "lineNumber": 38,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 41 · #tree_evolve (…) [ (…), (…), (…), (…), (·.insert 5 \"e\")]",
+          "detail": "An “HTML Display” panel draws 6 diagrams and shows “step 0: init”, “tree: 1 nodes, depth 1”.",
+          "claimTexts": [
+            "step 0: init",
+            "tree: 1 nodes, depth 1"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 41,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 6,
+              "g": 6,
+              "rect": 16,
+              "line": 10,
+              "text": 40
+            },
+            "texts": [
+              "step 0: init",
+              "tree: 1 nodes, depth 1"
+            ],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 40,
+          "character": 0,
+          "lineNumber": 41,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 46 · #html renderForest (…) (maxRowWidth := 600)",
+          "detail": "An “HTML Display” panel draws a diagram.",
+          "claimTexts": [],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 46,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 6,
+              "rect": 23,
+              "line": 18,
+              "text": 23
+            },
+            "texts": [],
+            "golden": "lean/expect/w8/tree-scope.json"
+          },
+          "line": 45,
+          "character": 0,
+          "lineNumber": 46,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 6,
+        "clicks": 0,
+        "selections": 0,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/tree-scope.png",
+        "width": 480,
+        "height": 220,
+        "bytes": 9330,
+        "sha256": "c6bcd7abb3fda586",
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "graph-scope",
+      "title": "GraphScope",
+      "blurb": "Concrete SimpleGraphs drawn with stats and evidence; click an edge, a vertex or the components line to insert a verified `by decide` example.",
+      "module": "GraphScope",
+      "phase": 1,
+      "header": [
+        "import Mathlib",
+        "import GraphScope"
+      ],
+      "text": "import Mathlib\nimport GraphScope\n\n/-! # GraphScope: draw a `SimpleGraph`, click facts into the file\nCursor on a `#graph_scope` line: the panel draws the graph (forests as layered\ntrees, other graphs on a circle) plus a stats block — degrees, components,\nconnectivity, bipartiteness with evidence (a 2-colouring or an odd cycle).\nThe drawing is clickable: an EDGE inserts `example : G.Adj a b := by decide`,\na VERTEX its degree fact, the components line `G.Connected` (or `¬`), each on\na new line after the command and verified to compile before it is offered.\n`walk [...]` numbers the steps of a walk, `highlight [...]` rings vertices,\n`layout circle|layered` forces a layout.  (`pathGraph` is decidable here via\nthe global instance shipped by GraphScope's demo module.) -/\n\nopen SimpleGraph\n\nnamespace Showcase.GraphScope\n\n-- An odd cycle: not bipartite, and the stats name an odd-cycle witness.\n#graph_scope (cycleGraph 5)\n\n-- The complete graph K₄.\n#graph_scope (completeGraph (Fin 4))\n\n/-- Two disjoint triangles via `fromRel`: disconnected. -/\ndef twoTriangles : SimpleGraph (Fin 6) :=\n  SimpleGraph.fromRel fun a b =>\n    (a, b) ∈ [((0 : Fin 6), (1 : Fin 6)), (1, 2), (0, 2), (3, 4), (4, 5), (3, 5)]\ninstance : DecidableRel twoTriangles.Adj := by unfold twoTriangles; infer_instance\n#graph_scope twoTriangles\n\n-- Overlays on a path (a tree, drawn in layers): a walk and highlighted ends.\n#graph_scope (pathGraph 5) walk [1, 2, 3] highlight [0, 4]\n\n-- A 6-cycle forced into BFS layers: the non-tree edge becomes a chord.\n#graph_scope (cycleGraph 6) layout layered\n\nend Showcase.GraphScope\n",
+      "textSha256": "fc68ee30a02b4ade3abc20902503e711d8880fca2a1ba6cd80c0b5060e6ec6c5",
+      "lineCount": 38,
+      "firstCursor": {
+        "line": 19,
+        "character": 0,
+        "lineNumber": 20,
+        "column": 1,
+        "command": "#graph_scope (cycleGraph 5)"
+      },
+      "cursors": [
+        {
+          "line": 19,
+          "character": 0,
+          "command": "#graph_scope (cycleGraph 5)"
+        },
+        {
+          "line": 22,
+          "character": 0,
+          "command": "#graph_scope (completeGraph (Fin 4))"
+        },
+        {
+          "line": 29,
+          "character": 0,
+          "command": "#graph_scope twoTriangles"
+        },
+        {
+          "line": 32,
+          "character": 0,
+          "command": "#graph_scope (pathGraph 5) walk"
+        },
+        {
+          "line": 35,
+          "character": 0,
+          "command": "#graph_scope (cycleGraph 6) layout layered"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 20 · #graph_scope (cycleGraph 5)",
+          "detail": "The GraphScopePanel widget draws a diagram and shows “bipartite: no (odd cycle: 2-1-0-4-3)”, “components: 1 (connected)”.",
+          "claimTexts": [
+            "bipartite: no (odd cycle: 2-1-0-4-3)",
+            "components: 1 (connected)"
+          ],
+          "expectTexts": [
+            "bipartite: no (odd cycle: 2-1-0-4-3)",
+            "components: 1 (connected)"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 20,
+              "character": 0
+            },
+            "widget": "GraphScope.GraphScopePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 5,
+              "line": 5,
+              "circle": 5,
+              "text": 5
+            },
+            "texts": [
+              "graph: 5 vertices, 5 edges",
+              "degrees: 2 2 2 2 2 (min 2, max 2)"
+            ],
+            "golden": "lean/expect/w8/graph-scope.json"
+          },
+          "line": 19,
+          "character": 0,
+          "lineNumber": 20,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click the edge 0–1 in the drawing (line 20)",
+          "detail": "Click the line between vertices 0 and 1: it inserts `example : ((cycleGraph 5)).Adj (0) (1) := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "",
+            "linkTitle": "insert: example : ((cycleGraph 5)).Adj (0) (1) := by decide",
+            "kind": "makeEditLink",
+            "newText": "\nexample : ((cycleGraph 5)).Adj (0) (1) := by decide",
+            "range": {
+              "end": {
+                "character": 27,
+                "line": 19
+              },
+              "start": {
+                "character": 27,
+                "line": 19
+              }
+            }
+          },
+          "line": 19,
+          "character": 0,
+          "lineNumber": 20,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click vertex 0 in the drawing (line 20)",
+          "detail": "Click the vertex labelled 0 (its circle or number): it inserts `example : ((cycleGraph 5)).degree (0) = 2 := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "0",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ((cycleGraph 5)).degree (0) = 2 := by decide",
+            "range": {
+              "end": {
+                "character": 27,
+                "line": 19
+              },
+              "start": {
+                "character": 27,
+                "line": 19
+              }
+            }
+          },
+          "line": 19,
+          "character": 0,
+          "lineNumber": 20,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “components: 1 (connected)” in the panel (line 20)",
+          "detail": "Click the link in the panel: it inserts `example : ((cycleGraph 5)).Connected := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "components: 1 (connected)",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ((cycleGraph 5)).Connected := by decide",
+            "range": {
+              "end": {
+                "character": 27,
+                "line": 19
+              },
+              "start": {
+                "character": 27,
+                "line": 19
+              }
+            }
+          },
+          "line": 19,
+          "character": 0,
+          "lineNumber": 20,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “components: 2 (disconnected)” in the panel (line 30)",
+          "detail": "Click the link in the panel: it inserts `example : ¬ (twoTriangles).Connected := by decide` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "components: 2 (disconnected)",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ¬ (twoTriangles).Connected := by decide",
+            "range": {
+              "end": {
+                "character": 25,
+                "line": 29
+              },
+              "start": {
+                "character": 25,
+                "line": 29
+              }
+            }
+          },
+          "line": 29,
+          "character": 0,
+          "lineNumber": 30,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 23 · #graph_scope (completeGraph (Fin 4))",
+          "detail": "The GraphScopePanel widget draws a diagram and shows “graph: 4 vertices, 6 edges”, “degrees: 3 3 3 3 (min 3, max 3)”.",
+          "claimTexts": [
+            "graph: 4 vertices, 6 edges",
+            "degrees: 3 3 3 3 (min 3, max 3)"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 23,
+              "character": 0
+            },
+            "widget": "GraphScope.GraphScopePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 4,
+              "line": 6,
+              "circle": 4,
+              "text": 4
+            },
+            "texts": [
+              "graph: 4 vertices, 6 edges",
+              "degrees: 3 3 3 3 (min 3, max 3)"
+            ],
+            "golden": "lean/expect/w8/graph-scope.json"
+          },
+          "line": 22,
+          "character": 0,
+          "lineNumber": 23,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 30 · #graph_scope twoTriangles",
+          "detail": "The GraphScopePanel widget draws a diagram and shows “components: 2 (disconnected)”.",
+          "claimTexts": [
+            "components: 2 (disconnected)"
+          ],
+          "expectTexts": [
+            "components: 2 (disconnected)"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 30,
+              "character": 0
+            },
+            "widget": "GraphScope.GraphScopePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 6,
+              "line": 6,
+              "circle": 6,
+              "text": 6
+            },
+            "texts": [
+              "components: 2 (disconnected)"
+            ],
+            "golden": "lean/expect/w8/graph-scope.json"
+          },
+          "line": 29,
+          "character": 0,
+          "lineNumber": 30,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 33 · #graph_scope (pathGraph 5) walk [1, 2, 3] highlight [0, 4]",
+          "detail": "The GraphScopePanel widget draws a diagram and shows “graph: 5 vertices, 4 edges”, “degrees: 1 2 2 2 1 (min 1, max 2)”.",
+          "claimTexts": [
+            "graph: 5 vertices, 4 edges",
+            "degrees: 1 2 2 2 1 (min 1, max 2)"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 33,
+              "character": 0
+            },
+            "widget": "GraphScope.GraphScopePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 5,
+              "line": 4,
+              "circle": 7,
+              "text": 7
+            },
+            "texts": [
+              "graph: 5 vertices, 4 edges",
+              "degrees: 1 2 2 2 1 (min 1, max 2)"
+            ],
+            "golden": "lean/expect/w8/graph-scope.json"
+          },
+          "line": 32,
+          "character": 0,
+          "lineNumber": 33,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 36 · #graph_scope (cycleGraph 6) layout layered",
+          "detail": "The GraphScopePanel widget draws a diagram and shows “bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})”.",
+          "claimTexts": [
+            "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 36,
+              "character": 0
+            },
+            "widget": "GraphScope.GraphScopePanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 1,
+              "g": 6,
+              "line": 6,
+              "circle": 6,
+              "text": 6
+            },
+            "texts": [
+              "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})"
+            ],
+            "golden": "lean/expect/w8/graph-scope.json"
+          },
+          "line": 35,
+          "character": 0,
+          "lineNumber": 36,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 5,
+        "clicks": 4,
+        "selections": 0,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/graph-scope.png",
+        "width": 480,
+        "height": 220,
+        "bytes": 13960,
+        "sha256": "cd615926c11f875e",
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "dist-lens",
+      "title": "DistLens",
+      "blurb": "Exact PMF weights as bars with CDF and moments, bind filmstrips, Markov chains with exact stationary distributions — every weight a click-to-insert verified goal.",
+      "module": "DistLens",
+      "phase": 2,
+      "header": [
+        "import Mathlib",
+        "import DistLens"
+      ],
+      "text": "import Mathlib\nimport DistLens\n\n/-! # DistLens: exact distributions and Markov chains, with verified goals\nCursor on `#dist p`: the panel draws the exact ℚ weights of a `PMF` as bars\nwith fraction labels, the CDF, `E[X]`/`Var[X]` — and lists every weight as\nan insertable goal: click one to insert\n`example : p x = a/b := by unfold p; pmf_num` after the command (the test\nsuite compiles these).  `#dist_film p` shows a filmstrip of how a `bind`\nbuilds `p`.  Cursor on `#chain step`: the transition graph with exact edge\nlabels and the exact stationary distribution π, whose per-state equations\nare insertable too; `init [i] steps n` adds a power-iteration filmstrip. -/\n\nopen PMF\nopen scoped ENNReal\n\nnamespace Showcase.DistLens\n\n/-- A fair six-sided die (outcomes = `Fin 6` indices `0`–`5`). -/\nnoncomputable def die : PMF (Fin 6) := uniformOfFintype (Fin 6)\n#dist die\n\n/-- Sum of two independent die indices: the 1/36 … 6/36 … 1/36 triangle. -/\nnoncomputable def twoDice : PMF ℕ := die.bind fun a => die.map fun b => a.val + b.val\n#dist twoDice\n#dist_film twoDice\n\n/-- Weather: sunny stays sunny w.p. 3/4; rain clears w.p. 1/2. -/\nnoncomputable def weather : Fin 2 → PMF (Fin 2) :=\n  ![PMF.ofFintype ![3/4, 1/4] (by simp [Fin.sum_univ_succ]; ennreal_num),\n    PMF.ofFintype ![1/2, 1/2] (by simp [Fin.sum_univ_succ]; ennreal_num)]\n#chain weather\n#chain weather init [0] steps 3\n\nend Showcase.DistLens\n",
+      "textSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
+      "lineCount": 35,
+      "firstCursor": {
+        "line": 20,
+        "character": 0,
+        "lineNumber": 21,
+        "column": 1,
+        "command": "#dist die"
+      },
+      "cursors": [
+        {
+          "line": 20,
+          "character": 0,
+          "command": "#dist die"
+        },
+        {
+          "line": 24,
+          "character": 0,
+          "command": "#dist twoDice"
+        },
+        {
+          "line": 25,
+          "character": 0,
+          "command": "#dist_film twoDice"
+        },
+        {
+          "line": 31,
+          "character": 0,
+          "command": "#chain weather"
+        },
+        {
+          "line": 32,
+          "character": 0,
+          "command": "#chain weather init [0] steps 3"
+        }
+      ],
+      "tryThis": [
+        {
+          "kind": "cursor",
+          "label": "Line 21 · #dist die",
+          "detail": "The DistPanel widget draws 2 diagrams and shows “dist: 6 outcomes over Fin 6”, “E[X] = 5/2”.",
+          "claimTexts": [
+            "dist: 6 outcomes over Fin 6",
+            "E[X] = 5/2"
+          ],
+          "expectTexts": [
+            "dist: 6 outcomes over Fin 6",
+            "E[X] = 5/2"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 21,
+              "character": 0
+            },
+            "widget": "DistLens.DistPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 2,
+              "rect": 6,
+              "line": 2,
+              "polyline": 1,
+              "text": 13
+            },
+            "texts": [
+              "dist: 6 outcomes over Fin 6",
+              "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+            ],
+            "golden": "lean/expect/dist-lens.json"
+          },
+          "line": 20,
+          "character": 0,
+          "lineNumber": 21,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num” in the panel (line 21)",
+          "detail": "Click the link in the panel: it inserts `example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+            "range": {
+              "end": {
+                "character": 9,
+                "line": 20
+              },
+              "start": {
+                "character": 9,
+                "line": 20
+              }
+            }
+          },
+          "line": 20,
+          "character": 0,
+          "lineNumber": 21,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “example : twoDice 5 = 1/6 := …” in the panel (line 25)",
+          "detail": "Click the link in the panel: it inserts `example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+            "range": {
+              "end": {
+                "character": 13,
+                "line": 24
+              },
+              "start": {
+                "character": 13,
+                "line": 24
+              }
+            }
+          },
+          "line": 24,
+          "character": 0,
+          "lineNumber": 25,
+          "column": 1
+        },
+        {
+          "kind": "click",
+          "clickKind": "makeEditLink",
+          "label": "Click “example : ((PMF.ofFintype ![2/3, 1/3] (…)).bind weather) 0 = 2/3 := …” in the panel (line 32)",
+          "detail": "Click the link in the panel: it inserts `example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num` on a new line after the command; the file re-checks with no errors.",
+          "expectClick": {
+            "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+            "linkTitle": null,
+            "kind": "makeEditLink",
+            "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+            "range": {
+              "end": {
+                "character": 14,
+                "line": 31
+              },
+              "start": {
+                "character": 14,
+                "line": 31
+              }
+            }
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 25 · #dist twoDice",
+          "detail": "The DistPanel widget draws 2 diagrams and shows “E[X] = 5”, “dist: 11 outcomes over ℕ”.",
+          "claimTexts": [
+            "E[X] = 5",
+            "dist: 11 outcomes over ℕ"
+          ],
+          "expectTexts": [
+            "1/36",
+            "E[X] = 5"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 25,
+              "character": 0
+            },
+            "widget": "DistLens.DistPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 2,
+              "rect": 11,
+              "line": 2,
+              "polyline": 1,
+              "text": 23
+            },
+            "texts": [
+              "dist: 11 outcomes over ℕ",
+              "Var[X] = 35/6"
+            ],
+            "golden": "lean/expect/dist-lens.json"
+          },
+          "line": 24,
+          "character": 0,
+          "lineNumber": 25,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 26 · #dist_film twoDice",
+          "detail": "An “HTML Display” panel draws 8 diagrams and shows “branch 0 (weight 1/6)”, “branch 1 (weight 1/6) (1 changed)”.",
+          "claimTexts": [
+            "branch 0 (weight 1/6)",
+            "branch 1 (weight 1/6) (1 changed)"
+          ],
+          "expectTexts": [],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 26,
+              "character": 0
+            },
+            "widget": "ProofWidgets.HtmlDisplayPanel",
+            "kind": "static",
+            "panelTitle": "HTML Display",
+            "svgTagCounts": {
+              "svg": 8,
+              "rect": 53,
+              "line": 8,
+              "text": 106
+            },
+            "texts": [
+              "branch 0 (weight 1/6)",
+              "branch 1 (weight 1/6) (1 changed)"
+            ],
+            "golden": "lean/expect/dist-lens.json"
+          },
+          "line": 25,
+          "character": 0,
+          "lineNumber": 26,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 32 · #chain weather",
+          "detail": "The ChainPanel widget draws 2 diagrams and shows “stationary: unique”.",
+          "claimTexts": [
+            "stationary: unique"
+          ],
+          "expectTexts": [
+            "stationary: unique",
+            "2/3"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 32,
+              "character": 0
+            },
+            "widget": "DistLens.ChainPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 2,
+              "rect": 2,
+              "line": 3,
+              "circle": 4,
+              "text": 10
+            },
+            "texts": [],
+            "golden": "lean/expect/dist-lens.json"
+          },
+          "line": 31,
+          "character": 0,
+          "lineNumber": 32,
+          "column": 1
+        },
+        {
+          "kind": "cursor",
+          "label": "Line 33 · #chain weather init [0] steps 3",
+          "detail": "The ChainPanel widget draws 6 diagrams and shows “step 2 (2 changed)”, “step 0”.",
+          "claimTexts": [
+            "step 2 (2 changed)",
+            "step 0"
+          ],
+          "expectTexts": [
+            "step 2 (2 changed)",
+            "11/16"
+          ],
+          "expectPanel": {
+            "at": {
+              "lineNumber": 33,
+              "character": 0
+            },
+            "widget": "DistLens.ChainPanel",
+            "kind": "rpc",
+            "panelTitle": null,
+            "svgTagCounts": {
+              "svg": 6,
+              "rect": 10,
+              "line": 7,
+              "circle": 4,
+              "text": 26
+            },
+            "texts": [
+              "step 0",
+              "step 1 (2 changed)"
+            ],
+            "golden": "lean/expect/dist-lens.json"
+          },
+          "line": 32,
+          "character": 0,
+          "lineNumber": 33,
+          "column": 1
+        }
+      ],
+      "counts": {
+        "cursors": 5,
+        "clicks": 3,
+        "selections": 0,
+        "hovers": 0
+      },
+      "golden": {
+        "present": true,
+        "ok": true,
+        "mode": "superset",
+        "exampleSha256Matches": true,
+        "failures": 0
+      },
+      "thumb": {
+        "src": "thumbs/dist-lens.png",
+        "width": 480,
+        "height": 220,
+        "bytes": 9899,
+        "sha256": "1fad7fec04ca020f",
+        "fit": "contain"
+      }
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "package": "dist-lens",
+  "title": "DistLens",
+  "blurb": "Exact PMF weights as bars with CDF and moments, bind filmstrips, Markov chains with exact stationary distributions — every weight a click-to-insert verified goal.",
+  "header": [
+    "import Mathlib",
+    "import DistLens"
+  ],
+  "cursors": [
+    {
+      "line": 20,
+      "character": 0,
+      "command": "#dist die",
+      "expect": {
+        "svgTagCounts": {
+          "rect": 6
+        },
+        "texts": [
+          "dist: 6 outcomes over Fin 6",
+          "E[X] = 5/2",
+          "Var[X] = 35/12"
+        ],
+        "linkTexts": [
+          "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+        ]
+      }
+    },
+    {
+      "line": 24,
+      "character": 0,
+      "command": "#dist twoDice",
+      "expect": {
+        "svgTagCounts": {
+          "rect": 11
+        },
+        "texts": [
+          "1/36",
+          "E[X] = 5"
+        ]
+      }
+    },
+    {
+      "line": 25,
+      "character": 0,
+      "command": "#dist_film twoDice",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 31,
+      "character": 0,
+      "command": "#chain weather",
+      "expect": {
+        "texts": [
+          "stationary: unique",
+          "2/3",
+          "1/3"
+        ]
+      }
+    },
+    {
+      "line": 32,
+      "character": 0,
+      "command": "#chain weather init [0] steps 3",
+      "expect": {
+        "texts": [
+          "step 2 (2 changed)",
+          "11/16"
+        ]
+      }
+    }
+  ],
+  "clicks": [
+    {
+      "cursorLine": 20,
+      "linkText": "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 20
+          },
+          "start": {
+            "character": 9,
+            "line": 20
+          }
+        },
+        "newText": "\nexample : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 24,
+      "linkText": "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 13,
+            "line": 24
+          },
+          "start": {
+            "character": 13,
+            "line": 24
+          }
+        },
+        "newText": "\nexample : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 31,
+      "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 31
+          },
+          "start": {
+            "character": 14,
+            "line": 31
+          }
+        },
+        "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+      },
+      "postClickDiagnostics": "clean"
+    }
+  ],
+  "dropped": [
+    "all 17 `example … := by … pmf_num` blocks (the heaviest part of the Demo; they are exactly what the clicks insert)",
+    "`bernoulli`/`binomial` (deprecated at this pin; would need `linter.deprecated false`), loadedDie, uniformOfFinset, dieParity",
+    "the 3-state triangle chain and the identity-chain `#guard_msgs` pin; `#chain … steps 4` → `steps 3`"
+  ]
+}

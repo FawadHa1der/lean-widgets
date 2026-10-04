@@ -1,0 +1,1445 @@
+{
+ "package": "dist-lens",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T04:03:42.410Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import DistLens"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
+ "documentSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
+ "elaborationMs": 7983,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 20,
+   "character": 0,
+   "command": "#dist die",
+   "panels": [
+    {
+     "id": "DistLens.DistPanel",
+     "kind": "rpc",
+     "method": "DistLens.DistPanel.rpc",
+     "range": {
+      "end": {
+       "character": 9,
+       "line": 20
+      },
+      "start": {
+       "character": 0,
+       "line": 20
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "dist: 6 outcomes over Fin 6",
+     "js": {
+      "bytes": 3838,
+      "sha256": "dd258cd73bf37eb42e668fbee76e07a43a01cfa605c81a8e7942a37b6a00a935",
+      "importsInfoview": true
+     },
+     "rpcMs": 6,
+     "error": null,
+     "tagCounts": {
+      "div": 12,
+      "line": 2,
+      "polyline": 1,
+      "rect": 6,
+      "svg": 2,
+      "text": 13
+     },
+     "svgTagCounts": {
+      "line": 2,
+      "polyline": 1,
+      "rect": 6,
+      "svg": 2,
+      "text": 13
+     },
+     "components": {
+      "MakeEditLink": 6
+     },
+     "texts": [
+      "dist: 6 outcomes over Fin 6",
+      "1/6",
+      "0",
+      "1/6",
+      "1",
+      "1/6",
+      "2",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "cdf",
+      "E[X] = 5/2",
+      "Var[X] = 35/12",
+      "verified weight goals (click to insert):",
+      "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+      "example : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 9,
+          "line": 20
+         },
+         "start": {
+          "character": 9,
+          "line": 20
+         }
+        },
+        "newText": "\nexample : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 65,
+         "line": 21
+        },
+        "start": {
+         "character": 65,
+         "line": 21
+        }
+       }
+      }
+     ],
+     "htmlSha256": "f92ce5c769df107933a005f1face20311d6e8bdbb2b8eb7f763c942ca10023f9"
+    }
+   ]
+  },
+  {
+   "line": 24,
+   "character": 0,
+   "command": "#dist twoDice",
+   "panels": [
+    {
+     "id": "DistLens.DistPanel",
+     "kind": "rpc",
+     "method": "DistLens.DistPanel.rpc",
+     "range": {
+      "end": {
+       "character": 13,
+       "line": 24
+      },
+      "start": {
+       "character": 0,
+       "line": 24
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "dist: 11 outcomes over ℕ",
+     "js": {
+      "bytes": 3838,
+      "sha256": "dd258cd73bf37eb42e668fbee76e07a43a01cfa605c81a8e7942a37b6a00a935",
+      "importsInfoview": true
+     },
+     "rpcMs": 2,
+     "error": null,
+     "tagCounts": {
+      "div": 17,
+      "line": 2,
+      "polyline": 1,
+      "rect": 11,
+      "svg": 2,
+      "text": 23
+     },
+     "svgTagCounts": {
+      "line": 2,
+      "polyline": 1,
+      "rect": 11,
+      "svg": 2,
+      "text": 23
+     },
+     "components": {
+      "MakeEditLink": 11
+     },
+     "texts": [
+      "dist: 11 outcomes over ℕ",
+      "1/36",
+      "0",
+      "1/18",
+      "1",
+      "1/12",
+      "2",
+      "1/9",
+      "3",
+      "5/36",
+      "4",
+      "1/6",
+      "5",
+      "5/36",
+      "6",
+      "1/9",
+      "7",
+      "1/12",
+      "8",
+      "1/18",
+      "9",
+      "1/36",
+      "10",
+      "cdf",
+      "E[X] = 5",
+      "Var[X] = 35/6",
+      "verified weight goals (click to insert):",
+      "example : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "example : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+      "example : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 95,
+         "line": 25
+        },
+        "start": {
+         "character": 95,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 95,
+         "line": 25
+        },
+        "start": {
+         "character": 95,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 95,
+         "line": 25
+        },
+        "start": {
+         "character": 95,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 96,
+         "line": 25
+        },
+        "start": {
+         "character": 96,
+         "line": 25
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 13,
+          "line": 24
+         },
+         "start": {
+          "character": 13,
+          "line": 24
+         }
+        },
+        "newText": "\nexample : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 97,
+         "line": 25
+        },
+        "start": {
+         "character": 97,
+         "line": 25
+        }
+       }
+      }
+     ],
+     "htmlSha256": "10893fd8f45e61c9b79d73e2a8915375c863be6f0878f52dd832746336ac38eb"
+    }
+   ]
+  },
+  {
+   "line": 25,
+   "character": 0,
+   "command": "#dist_film twoDice",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 18,
+       "line": 25
+      },
+      "start": {
+       "character": 0,
+       "line": 25
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "source",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 9,
+      "line": 8,
+      "rect": 53,
+      "svg": 8,
+      "text": 106
+     },
+     "svgTagCounts": {
+      "line": 8,
+      "rect": 53,
+      "svg": 8,
+      "text": 106
+     },
+     "components": {},
+     "texts": [
+      "source",
+      "1/6",
+      "0",
+      "1/6",
+      "1",
+      "1/6",
+      "2",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "branch 0 (weight 1/6)",
+      "1/6",
+      "0",
+      "1/6",
+      "1",
+      "1/6",
+      "2",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "branch 1 (weight 1/6) (1 changed)",
+      "1/6",
+      "1",
+      "1/6",
+      "2",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "1/6",
+      "6",
+      "branch 2 (weight 1/6) (1 changed)",
+      "1/6",
+      "2",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "1/6",
+      "6",
+      "1/6",
+      "7",
+      "branch 3 (weight 1/6) (1 changed)",
+      "1/6",
+      "3",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "1/6",
+      "6",
+      "1/6",
+      "7",
+      "1/6",
+      "8",
+      "branch 4 (weight 1/6) (1 changed)",
+      "1/6",
+      "4",
+      "1/6",
+      "5",
+      "1/6",
+      "6",
+      "1/6",
+      "7",
+      "1/6",
+      "8",
+      "1/6",
+      "9",
+      "branch 5 (weight 1/6) (1 changed)",
+      "1/6",
+      "5",
+      "1/6",
+      "6",
+      "1/6",
+      "7",
+      "1/6",
+      "8",
+      "1/6",
+      "9",
+      "1/6",
+      "10",
+      "result (10 changed)",
+      "1/36",
+      "0",
+      "1/18",
+      "1",
+      "1/12",
+      "2",
+      "1/9",
+      "3",
+      "5/36",
+      "4",
+      "1/6",
+      "5",
+      "5/36",
+      "6",
+      "1/9",
+      "7",
+      "1/12",
+      "8",
+      "1/18",
+      "9",
+      "1/36",
+      "10"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "1eeb1c3ef357a14d36b08c44e55536f87fa60ce5ff05836697161a576e1c7e69"
+    }
+   ]
+  },
+  {
+   "line": 31,
+   "character": 0,
+   "command": "#chain weather",
+   "panels": [
+    {
+     "id": "DistLens.ChainPanel",
+     "kind": "rpc",
+     "method": "DistLens.ChainPanel.rpc",
+     "range": {
+      "end": {
+       "character": 14,
+       "line": 31
+      },
+      "start": {
+       "character": 0,
+       "line": 31
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "chain: 2 states",
+     "js": {
+      "bytes": 3839,
+      "sha256": "27904afaa5a6a3884437020f6ec49b7f408b328c971b537444a8df31e62a0489",
+      "importsInfoview": true
+     },
+     "rpcMs": 2,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "div": 6,
+      "line": 3,
+      "rect": 2,
+      "svg": 2,
+      "text": 10
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "line": 3,
+      "rect": 2,
+      "svg": 2,
+      "text": 10
+     },
+     "components": {
+      "MakeEditLink": 2
+     },
+     "texts": [
+      "chain: 2 states",
+      "3/4",
+      "1/4",
+      "1/2",
+      "1/2",
+      "0",
+      "1",
+      "stationary: unique",
+      "2/3",
+      "0",
+      "1/3",
+      "1",
+      "verify the stationary equations (click to insert):",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 31
+         },
+         "start": {
+          "character": 14,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 151,
+         "line": 32
+        },
+        "start": {
+         "character": 151,
+         "line": 32
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 14,
+          "line": 31
+         },
+         "start": {
+          "character": 14,
+          "line": 31
+         }
+        },
+        "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 151,
+         "line": 32
+        },
+        "start": {
+         "character": 151,
+         "line": 32
+        }
+       }
+      }
+     ],
+     "htmlSha256": "c3faa65eaef4edb425832f51b881fe7541f78451ffca0ceb42ee5abe8b6e76f9"
+    }
+   ]
+  },
+  {
+   "line": 32,
+   "character": 0,
+   "command": "#chain weather init [0] steps 3",
+   "panels": [
+    {
+     "id": "DistLens.ChainPanel",
+     "kind": "rpc",
+     "method": "DistLens.ChainPanel.rpc",
+     "range": {
+      "end": {
+       "character": 31,
+       "line": 32
+      },
+      "start": {
+       "character": 0,
+       "line": 32
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "chain: 2 states",
+     "js": {
+      "bytes": 3839,
+      "sha256": "27904afaa5a6a3884437020f6ec49b7f408b328c971b537444a8df31e62a0489",
+      "importsInfoview": true
+     },
+     "rpcMs": 2,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "div": 10,
+      "line": 7,
+      "rect": 10,
+      "svg": 6,
+      "text": 26
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "line": 7,
+      "rect": 10,
+      "svg": 6,
+      "text": 26
+     },
+     "components": {
+      "MakeEditLink": 2
+     },
+     "texts": [
+      "chain: 2 states",
+      "3/4",
+      "1/4",
+      "1/2",
+      "1/2",
+      "0",
+      "1",
+      "stationary: unique",
+      "2/3",
+      "0",
+      "1/3",
+      "1",
+      "verify the stationary equations (click to insert):",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "step 0",
+      "1",
+      "0",
+      "0",
+      "1",
+      "step 1 (2 changed)",
+      "3/4",
+      "0",
+      "1/4",
+      "1",
+      "step 2 (2 changed)",
+      "11/16",
+      "0",
+      "5/16",
+      "1",
+      "step 3 (2 changed)",
+      "43/64",
+      "0",
+      "21/64",
+      "1"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+      "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 31,
+          "line": 32
+         },
+         "start": {
+          "character": 31,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 151,
+         "line": 33
+        },
+        "start": {
+         "character": 151,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num",
+       "title": "insert this example",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 31,
+          "line": 32
+         },
+         "start": {
+          "character": 31,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 151,
+         "line": 33
+        },
+        "start": {
+         "character": 151,
+         "line": 33
+        }
+       }
+      }
+     ],
+     "htmlSha256": "cd3b75f0bf2158ec9acb829fff86be03392e346363723e0aeeb2ceaa447230a8"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [
+  {
+   "cursorLine": 20,
+   "kind": "makeEditLink",
+   "linkText": "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "linkTitle": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "editedSha256": "8329ae9d9deedad40863f6e3519957466183d63a9d0674a639a6c7e03f4cf1f8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click1.lean",
+   "diagnosticsVersion": 2,
+   "reElaborationMs": 525,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 24,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "linkTitle": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 95,
+     "line": 25
+    },
+    "start": {
+     "character": 95,
+     "line": 25
+    }
+   },
+   "editedSha256": "71f574dd971a5d847bbe1e30cbec99b7ea7e37ee4394eec33f972bf4b01b13b0",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click2.lean",
+   "diagnosticsVersion": 4,
+   "reElaborationMs": 897,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 31,
+   "kind": "makeEditLink",
+   "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+   "linkTitle": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 31
+     },
+     "start": {
+      "character": 14,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 151,
+     "line": 32
+    },
+    "start": {
+     "character": 151,
+     "line": 32
+    }
+   },
+   "editedSha256": "627730e1615b54b96f8a3536162e8d3c41b7a608239dd5612566242543e2e1a1",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click3.lean",
+   "diagnosticsVersion": 6,
+   "reElaborationMs": 536,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  }
+ ],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20 (#dist die): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: text \"dist: 6 outcomes over Fin 6\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: text \"E[X] = 5/2\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: text \"Var[X] = 35/12\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: link \"example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 20: svg <rect> × 6"
+  },
+  {
+   "ok": true,
+   "what": "cursor 24 (#dist twoDice): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 24: text \"1/36\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 24: text \"E[X] = 5\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 24: svg <rect> × 11"
+  },
+  {
+   "ok": true,
+   "what": "cursor 25 (#dist_film twoDice): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 25: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31 (#chain weather): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"stationary: unique\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"2/3\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"1/3\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 32 (#chain weather init [0] steps 3): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 32: text \"step 2 (2 changed)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 32: text \"11/16\" present"
+  },
+  {
+   "ok": true,
+   "what": "click @20 \"example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @20: diagnostics are for the edited version 2 (got 2)"
+  },
+  {
+   "ok": true,
+   "what": "click @20 \"example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @24 \"example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @24: diagnostics are for the edited version 4 (got 4)"
+  },
+  {
+   "ok": true,
+   "what": "click @24 \"example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @31: diagnostics are for the edited version 6 (got 6)"
+  },
+  {
+   "ok": true,
+   "what": "click @31 \"example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num\": post-click diagnostics \"clean\""
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 11555
+}

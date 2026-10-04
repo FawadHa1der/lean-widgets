@@ -1,0 +1,165 @@
+{
+  "package": "hasse-view",
+  "title": "HasseView",
+  "blurb": "Hasse diagrams of finite orders with lattice diagnostics; click a cover edge, ⊥/⊤ or a no-join witness to insert a decided example.",
+  "header": [
+    "import Mathlib",
+    "import HasseView"
+  ],
+  "cursors": [
+    {
+      "line": 17,
+      "character": 0,
+      "command": "#hasse (Finset (Fin 3))",
+      "expect": {
+        "svgTagCounts": {
+          "rect": 8,
+          "line": 12,
+          "text": 16
+        },
+        "texts": [
+          "Insertable examples (click to insert after the command)"
+        ],
+        "linkTexts": [
+          "∅ ⋖ {0}",
+          "∀ x, ∅ ≤ x",
+          "∀ x, x ≤ {0, 1, 2}"
+        ]
+      }
+    },
+    {
+      "line": 20,
+      "character": 0,
+      "command": "#hasse (Fin 4)",
+      "expect": {}
+    },
+    {
+      "line": 21,
+      "character": 0,
+      "command": "#hasse (Bool × Bool)",
+      "expect": {}
+    },
+    {
+      "line": 24,
+      "character": 0,
+      "command": "#hasse (Finset (Fin 3)) updown 1",
+      "expect": {}
+    },
+    {
+      "line": 31,
+      "character": 0,
+      "command": "#hasse Bowtie highlight [1, 2]",
+      "expect": {
+        "texts": [
+          "no join of 1, 2"
+        ],
+        "linkTexts": [
+          "no join of 1, 2",
+          "0 ⋖ 1"
+        ]
+      }
+    }
+  ],
+  "clicks": [
+    {
+      "cursorLine": 17,
+      "linkText": "∅ ⋖ {0}",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 23,
+            "line": 17
+          },
+          "start": {
+            "character": 23,
+            "line": 17
+          }
+        },
+        "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 17,
+      "linkText": "∀ x, ∅ ≤ x",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 23,
+            "line": 17
+          },
+          "start": {
+            "character": 23,
+            "line": 17
+          }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 17,
+      "linkText": "∀ x, x ≤ {0, 1, 2}",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 23,
+            "line": 17
+          },
+          "start": {
+            "character": 23,
+            "line": 17
+          }
+        },
+        "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 31,
+      "linkText": "no join of 1, 2",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 30,
+            "line": 31
+          },
+          "start": {
+            "character": 30,
+            "line": 31
+          }
+        },
+        "newText": "\nexample : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 31,
+      "linkText": "0 ⋖ 1",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 30,
+            "line": 31
+          },
+          "start": {
+            "character": 30,
+            "line": 31
+          }
+        },
+        "newText": "\nexample : (0 : Bowtie) ⋖ 1 := by decide"
+      },
+      "postClickDiagnostics": "clean"
+    }
+  ],
+  "dropped": [
+    "Div12 (Nat.divisors-based Fintype.subtype; every candidate gate-rejected, one interpreted compile each)",
+    "the local Bowtie instances incl. `Preorder` by `decide` over 125 triples (reused from HasseView.Demo via `abbrev`)",
+    "`Fin 5` shrunk to `Fin 4`; the duplicate overlay-order demos"
+  ]
+}

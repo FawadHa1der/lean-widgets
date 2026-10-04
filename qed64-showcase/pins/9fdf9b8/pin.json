@@ -1,0 +1,26 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "9fdf9b8",
+  "buildId": "wasm64-2c18773ecfba45bb",
+  "registeredAt": "2026-10-01T20:35:00Z",
+  "label": "B: QED64 9fdf9b8, runtime 0035 (kernel 3ae65d36f9), QED64's L7 fix; L9 renderer crash",
+  "status": "staged for evidence only (L9)",
+  "qed64": {
+    "commit": "9fdf9b8581d3d4a71b8f79e45b1858dd906bcb85",
+    "promote": "9fdf9b8581d3d4a71b8f79e45b1858dd906bcb85",
+    "kernel": "3ae65d36f96b2434881f27fffe9f03d608d974f0"
+  },
+  "mainBundle": "/assets/index-Jv35CWTg.js",
+  "consoleSites": { "627": "5b1d6aa89b59ca4cfdc67c0a1fae918f85df72324663408fdb1f560f5a8b493f" },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "QED64's own liveness (status().liveness): mailbox kick, probe after 6 s of silence, died 'wedged' about 22-25 s after the last frame. The gallery defers (its probe after 30 s)."
+  },
+  "knownLimitations": ["L9: a reload or a relay restart can crash the renderer (V8 OOM; kernel 0035's parked dedicated threads); C10 crashed in 6 of 8 full runs"],
+  "notes": "Pinned 2026-10-01; one VERDICT (final-full1), never two in a row. Staged, not served, since 2026-10-02 (L9)."
+}

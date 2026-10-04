@@ -1,0 +1,85 @@
+{
+  "package": "chart-kit",
+  "title": "ChartKit",
+  "blurb": "Exact-rational SVG charts (bar, step, line, scatter, categorical) — the chart is the theorem's data.",
+  "header": [
+    "import Mathlib",
+    "import ChartKit"
+  ],
+  "cursors": [
+    {
+      "command": "#chart diceChart",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "svgTagCounts": {
+          "rect": 12,
+          "line": 24,
+          "text": 15
+        },
+        "texts": [
+          "Sum of two dice",
+          "probability"
+        ]
+      },
+      "line": 30,
+      "character": 0
+    },
+    {
+      "command": "#chart cdfChart",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "CDF of two dice"
+        ]
+      },
+      "line": 35,
+      "character": 0
+    },
+    {
+      "command": "#chart { title? := some \"n^2/10 vs 2^n/10\"",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "n^2/10 vs 2^n/10",
+          "2^n/10"
+        ]
+      },
+      "line": 38,
+      "character": 0
+    },
+    {
+      "command": "#chart { title? := some \"n^2 mod 11\"",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "n^2 mod 11"
+        ]
+      },
+      "line": 46,
+      "character": 0
+    },
+    {
+      "command": "#chart weekChart",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Commits per weekday",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "21"
+        ]
+      },
+      "line": 57,
+      "character": 0
+    }
+  ],
+  "clicks": [],
+  "dropped": [
+    "floatChart / Series.ofFloats (IEEE-754 bit decoding of Floats in the interpreter; Float-heavy)",
+    "the `#chart (text := true)` `#guard_msgs` pin (text mode is an info message, not a panel)",
+    "growth/scatter specs are inlined instead of separate defs (same data as the Demo, scatter without the xLabel)"
+  ]
+}

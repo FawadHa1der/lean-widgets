@@ -1,0 +1,202 @@
+{
+ "bringup": {
+  "lastFix": [
+   "fix:bringup:r1",
+   {
+    "lane": "bringup",
+    "gatePassed": true,
+    "deliverables": [
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/bringup/questions.mjs (MAJOR fix: every question q2,q3,q4,q9-q14 and malformedHash has an explicit ok predicate over the fields the README cites, printed as 'qN OK' or 'qN FAIL (<parts>)'. The pass rule now requires every wanted question to exist with ok===true, and a question that was never reached counts as failed. q3 now requires: identical Reset bumps the version; halted gallery, relay and visible card; breaker tripped; stale state made observable (the stale panel is tagged data-q3-stale, then the cursor moves off the line while halted and the panel must vanish); ready on a NEW session; version > last ready; relay serving; card gone; panel back as an UNTAGGED element passing position-bound checkPanel)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/bringup/console.mjs (pairWith: each allowlisted empty console.error needs its own LSP -32800 reply in [-3 s, +0.5 s]; fail-closed without tap reports; reports unpaired/paired)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/lib/lsp-tap.mjs (new: the UX suite's TAP_SRC moved here, one source shared by both oracles)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/lib/qed64.mjs (imports TAP_SRC from lsp-tap.mjs and passes reports to classifyConsole; its own pairing is unchanged)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/bringup/lib.mjs (installTap(ctx), tapSummary, wall timestamps on console/pageerror records; checkPanel returns graphicBox = union of every painted shape of all the panel's own svgs, padded 8 px, with overflowX)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/bringup/widgets.mjs, hints.mjs (LSP tap installed, console classified with reports; hints.mjs' own diag tap renamed installDiagTap). widgets.mjs makeThumb: an svg drawing is letterboxed whole into a fixed 480x220 frame (max 1.5x scale); other panels, and a drawing wider than the panel, keep the top crop; it writes gallery/thumbs/thumbs.json",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/tests/ux/selectors.json (consoleAllowlist.consoleError[0].pairWith {lspErrorCode:-32800, beforeMs:3000, afterMs:500}; _enforcedBy updated)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/scripts/build-gallery.mjs (click hints name the element: 'Click vertex 0 in the drawing', 'Click the edge 0\u20131 in the drawing'; the detail shows the WHOLE edit; long link labels are shortened only at term boundaries via abbrevTerm; thumb.fit contain|cover from thumbs.json)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/scripts/check-gallery.mjs (okTry: the parseHash cases are separate named assertions and a throw becomes a FAIL line; 8b: every svg-panel example has a letterboxed 480x220 fit:contain thumbnail plus the CSS rule; 8c: 6 new pairWith unit tests)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/gallery/gallery.js (img.dataset.fit), gallery/gallery.css (.card-thumb[data-fit=contain] object-fit contain; hint text overflow-wrap:anywhere), gallery/examples.json (regenerated), gallery/thumbs/*.png (8 regenerated, 9.9-53.9 KB) + gallery/thumbs/thumbs.json",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/gallery/README.md (questions.mjs row and resolved Q3 rewritten with the fresh-panel proof and mutant E; Q14 letterbox thumbnails; the console allowlist pairing in the table and enforcement text; hint-copy note; RSS reported as an 8.9-12.3 GiB range over five cold runs; static-validation section with okTry/8b/8c additions and current counts)",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/out/ux/bringup/questions.json, questions-q3.json, questions-q3-mutE.json, widgets-after-audit5.json, widgets-after-audit5b.json, widgets-rss-audit5c.json, hints.json, after-audit5/ and after-audit5b/ (gallery-<pkg>.png 1440x900 and panel-<pkg>.png; before = out/ux/bringup/after/), q3-halted.png, q3-after-reset.png",
+     "/Users/fawadhaider/code/qed64-showcase-work/mutants/audit5-mutE/ (gallery copy whose Reset handler returns at once)"
+    ],
+    "evidence": [
+     "Real gallery, full run (work/logs/audit5-questions.log): 'malformedHash OK', 'q2 OK', 'q3 OK', 'q4 OK', 'q9 OK', 'q10 OK', 'q11 OK', 'q12 OK', 'q13 OK', 'q14 OK', 'CONSOLE OK \u2026 paired {\"consoleError[0]\":{\"n\":7,\"replies\":7}}', 'QUESTIONS OK', rc=0",
+     "q3 detail (questions.json): identical Reset version 5->6 in 221 ms, same session; halted s3 breakerTrips 1 with the card visible; while halted with the cursor moved away, the InfoView shows 'Probe.lean:1:0 Error updating: \u2026 checker halted \u2026' and panelStillShown false; after Reset: session s4, version 7, relay serving, card hidden, ready in 7.8 s; panel at :31:0 back in 310 ms, stale:false. Re-run with the tightened version check (audit5-questions-q3.log): 'q3 OK', 'QUESTIONS OK' rc=0",
+     "Mutant E, a copy whose Reset handler returns at once, served on :5193 (work/logs/audit5-mutE-fixed.log): 'q3 FAIL (identicalFinished, identicalBumped, afterResetReady, newSession, versionIncreased, relayServing, cardGone, freshPanelBack)', 'QUESTIONS FAIL failed q3', rc=1 (before this fix the same mutant exited 0)",
+     "parseHash mutant (scratch copy with the try/catch removed): 'FAIL  parseHash: malformed escape #% \u2026 \u2014 threw URIError: URI malformed', 'FAIL  parseHash: truncated UTF-8 escape \u2026', 'CHECK-GALLERY FAIL 115 ok, 3 failed', rc=1. These are named failures, not a crash.",
+     "Pairing: widgets runs paired 6/6, 7/7 and 6/6; hints paired 33/33; questions paired 7/7; 0 unpaired anywhere. In the 8c unit tests, no reports, one reply for two errors, a reply 5 s before or 2 s after, and code -32603 each fail.",
+     "widgets.mjs --thumbs (audit5-widgets-thumbs2.log) 'WIDGETS OK 8/8', unrec false x8. thumbs.json: chart-kit, hasse-view, tree-scope, graph-scope and dist-lens are letterbox 480x220; interval-inspector, whose drawing is wider than the panel, plus simp-lens and expr-xray are top-crop. The graph-scope card in after-audit5b/gallery-graph-scope.png shows the whole pentagon with vertices 0-4.",
+     "After screenshots with the new thumbnails (audit5-widgets-after-audit5b.log) 'WIDGETS OK 8/8'; hasse-view card shows the full edit `example : \u2200 x : (Finset (Fin 3)), x \u2264 ({0, 1, 2} : (Finset (Fin 3))) := by decide`",
+     "hints.mjs re-run with the new hint copy (audit5-hints.log): 'HINTS OK 71/71', click settle 0.64-2.63 s, CONSOLE OK",
+     "RSS over five cold default widgets runs: 8.86 (after-audit5), 11.28 (auditor's widgets-audit5), 11.38 (after-audit5b), 11.40 (rss-audit5c), and 12.33 GiB (first --thumbs run, whose file was later overwritten); README now quotes the range 8.9-12.3 GiB",
+     "Gates: 'BUILD-GALLERY CHECK OK 8 examples'; 'CHECK-GALLERY OK 119 ok, 0 failed'; '--live: CHECK-GALLERY OK 130 ok, 0 failed'; 'SIM-GALLERY OK 56 ok, 0 failed'",
+     "Hygiene: every browser run went through with-browser-lock.sh (the lock was released each time; other lanes held it in between). My :5190 server (pid 58757) and :5193 mutant server were stopped, and no chrome-headless-shell of mine is left. This lane wrote nothing under the protected trees; recent mtimes there (.git/objects, qed64/work/bump-0035, kernel src/runtime) come from other concurrent sessions."
+    ],
+    "openIssues": [
+     "assert-untouched.sh has no stage stamp (out/.stage-stamp is missing), so I could not run its VERDICT. find -newermt over the protected trees shows changes made since 12:20 local time by other active sessions (qed64 .git/objects, the work/bump-0035 worktree, kernel src/runtime). None of this lane's commands wrote there.",
+     "tests/ux/lib/qed64.mjs was edited (TAP_SRC moved to lsp-tap.mjs, reports passed into classifyConsole). node --check passes, but I did not run the full Playwright UX suite on it in this lane.",
+     "RSS is reported as a range because 1 s ps sampling makes single peaks noisy; the ?mem comparison in the Memory knob table is still a set of single runs.",
+     "Carried over: D1/D2 page defects and L2 remain QED64-side (upstream reports suggested, not filed); a late bridge install is only announced, not auto-recovered; the allowlist pins /assets/index-CzXuAkOQ.js line 627; status().mem.sessions cosmetic; TreeScope reflect on non-exposed values (L1) not re-run in the browser; C19 headed sign-off and the frozen C1-C18 suite are outside this lane.",
+     "Observed, not fixed: the interval-inspector number-line svg is wider than the InfoView panel at 1440x900 and the InfoView clips it. That is the widget's own layout, so its thumbnail keeps the top crop."
+    ],
+    "decisions": [
+     "q3 'panel back' is proven fresh rather than inferred from text: the stale panel element is tagged and the cursor is moved off the line while halted, so the stale state is observable. The panel must then return as an untagged element from a new session with a higher document version.",
+     "The pairing lives in console.mjs as a selectors.json rule property (pairWith) and is fail-closed. Both the UX suite and the bring-up runs use one shared LSP tap module, so the two oracles cannot drift.",
+     "Thumbnails: svg drawings are letterboxed whole into a fixed 480x220 frame shown with object-fit:contain, so the folded 84 px and open 132 px cards both show the full drawing. Drawings wider than the panel and non-svg panels keep the top crop with cover.",
+     "Hint labels are derived from the frozen edit (degree -> vertex, Adj -> edge). Details show the whole edit, and labels are abbreviated only at term boundaries.",
+     "No single-number RSS metric; the README quotes the range over cold runs."
+    ],
+    "metrics": {
+     "widgetsRendered": "8/8 (3 runs)",
+     "unrecognisedErrors": 0,
+     "hintsVerified": "71/71",
+     "questions": "q2,q3,q4,q9,q10,q11,q12,q13,q14,malformedHash all ok",
+     "mutantE": "caught (exit 1, 8 failing q3 checks)",
+     "parseHashMutant": "named FAIL lines (exit 1)",
+     "emptyErrorsPaired": "6/6, 7/7, 6/6 widgets; 33/33 hints; 7/7 questions",
+     "thumbnailsBytes": {
+      "min": 9330,
+      "max": 53901
+     },
+     "letterboxedThumbs": 5,
+     "coldBootMs": "13043-13395",
+     "clickSettleMs": "642-2630",
+     "rssPeakGiBDefaultRange": "8.86-12.33 (5 cold runs)",
+     "checkGallery": "119/119 (live 130/130)",
+     "simGallery": "56/56"
+    }
+   }
+  ],
+  "lastAudit": [
+   "audit:bringup:r2",
+   {
+    "verdict": "pass",
+    "findings": [
+     {
+      "severity": "minor",
+      "issue": "Nothing checks that the card thumbnails are actually wired into the cards or load in the browser. The gate item 'every card thumbnail present' is only checked against the PNG files on disk and examples.json.",
+      "evidence": "Mutant: a scratch copy of the project whose gallery.js line 193 says `img.src = ex.thumb.src.replace(\".png\", \".jpg\")`. `node scripts/check-gallery.mjs` in that copy gives 'CHECK-GALLERY OK 119 ok, 0 failed', rc=0 (scratchpad/audit6/cg-src.log). Served on :5193 in real Chrome (work/logs/audit6-thumbprobe.log), the cards show 'thumbsLoaded 0 / 8' with every img hidden and naturalWidth 0. The real gallery on :5191 shows 'thumbsLoaded 8 / 8'. widgets.mjs and hints.mjs never look at .card-thumb (grep finds no naturalWidth or card-thumb check in tests/). The other two static mutants were caught: a corrupted golden edit (graph-scope newText (0)(1)->(1)(2)) gave 'BUILD-GALLERY STALE', 118/1 failed, rc=1; a swapped thumbnail PNG gave 'card thumbnails: 7/8', 117/2 failed, rc=1.",
+      "fix": "In check-gallery 8b, assert that e.thumb.src === `thumbs/${e.id}.png` and that gallery.js assigns `img.src = ex.thumb.src`. In widgets.mjs, assert that every `#card-<pkg> .card-thumb` is visible with naturalWidth === 480 (the check selectors.json cardThumb already promises)."
+     },
+     {
+      "severity": "minor",
+      "issue": "Cursor hint labels on the cards are cut mid-expression, often with no ellipsis, so a reader sees a partial command that looks complete, sometimes with unbalanced brackets. The lane's abbrevTerm boundary rule covers click-link labels only.",
+      "evidence": "examples.json labels compared with their source lines: interval-inspector 'Line 24 \u00b7 #interval_inspect ((3:\u211d) \u2208' (full line: '... \u2208 Set.Icc 1 4)'), 'Line 18 \u00b7 #interval_inspect (Set.Ioc (1:\u211d) 2 \u222a' (also visible in out/ux/bringup/audit6/gallery-interval-inspector.png), simp-lens 'Line 24 \u00b7 simp_lens [Nat.add_zero, Nat.zero_add' (unclosed '['), tree-scope 'Line 41 \u00b7 #tree_evolve', expr-xray 'Line 33 \u00b7 #xray_diff @PUnit.{1}', graph-scope 'Line 33 \u00b7 #graph_scope (pathGraph 5) walk'. Only 3 of the 18 shortened labels end in '\u2026'.",
+      "fix": "In scripts/build-gallery.mjs, run cursor labels through the same abbrevTerm boundary logic and always add '\u2026' when text is dropped (or show the whole line and let CSS wrap it). Add a check-gallery assertion that a shortened label ends in '\u2026' and has balanced brackets."
+     },
+     {
+      "severity": "minor",
+      "issue": "The lane changed the UX suite's console oracle (tests/ux/lib/qed64.mjs now passes the LSP tap reports into the fail-closed pairWith classifier) without running the Playwright UX suite on it. The lane reports this as open.",
+      "evidence": "Lane openIssues item 2. On inspection the format is consistent: qed64.mjs:255 records recvWall, :170 records wall, and :200 calls classifyConsoleWith(..., {reports}). But no browser run of npm run test:ux exists after the edit.",
+      "fix": "Run the UX suite once (under the browser lock) before treating the shared oracle as proven."
+     }
+    ]
+   }
+  ]
+ },
+ "docs": {
+  "lastFix": [
+   "fix:docs:r2",
+   {
+    "lane": "docs (fix round 3 after adversarial audit 2): documentation, one-command workflow, deploy kit, upstream defect report",
+    "gatePassed": true,
+    "deliverables": [
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/scripts/lib/gallery-hash.mjs (NEW). It gives one gallery content sha256: sha256 over the lines '<sha256>  <path>' of the SHIPPED gallery files, which are exactly the /showcase/ deploy assets (all files except *.md, x3.html and dotfiles). It exports galleryContentHash() and isShippedGalleryFile(), and deploy-manifest.mjs uses the same filter. The equivalent shell pipeline is documented in the file and gives the same hash (2550fa1d\u2026 from both).",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/scripts/deploy-manifest.mjs. Generate now writes manifest.json and the rclone lists ONLY when fails == 0; otherwise it prints 'nothing written'. New gate G1, in both generate and --check: scripts/check-gallery.mjs must exit 0, with a 600 s watchdog. New check G2 (info only): manifest.gallery.contentSha256 is compared with the green full-suite runs in out/ux/showcase-ux-runs.jsonl. The manifest records `gallery: {contentSha256, files}`, so C1 also catches gallery drift. --commands now prints the gallery and UX preconditions.",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/scripts/showcase.sh. (a) _inlock sets REFUSE_RC=77 for its own preflight refusals. locked_run maps only 75, 76 and 77 to REFUSED; any other rc, including a command's own 3, passes through as '<what>: FAILED rc=N'. (b) `all` skips headless when out/headless/summary.json is for the lock buildId, has gate.stage4Green and gate.E2Green, and no bake or overlay was redone in that run. --rebuild or a redone bake re-runs S4. (c) `gallery` prints 'gallery gate GREEN on gallery content sha256 <h>' and 'UX CURRENT/UX STALE'. It dies if gallery/ changed while the gate ran. (d) `ux` appends {start,end,lane,rc,galleryStart,galleryEnd,args} to out/ux/showcase-ux-runs.jsonl. Only a full-suite run (no args) with rc 0 and an unchanged gallery counts as a verdict. Header and usage are updated, and shellcheck is clean.",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/README.md. The UX row now says its verdict is for the gallery as of 09:23 and that the current gallery 2550fa1d\u2026 has no UX run yet (UX STALE). A new 'Static gallery gate' row gives the hash and time. The Deploy row is tied to the same hash and states that publishing step 2 is not yet satisfied. The `all` row lists the exact skip rules, including headless. The exit-code text covers 75/76/77 and pass-through. The `gallery` and `ux` rows describe the hash and the record. The Testing section is rewritten with dated, hash-stamped evidence, including the 12:34\u201313:14 red window the audit found. Re-pin steps 7 and 8 are updated.",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/docs/DEPLOY.md. The dry-run block now starts with `showcase.sh gallery`, and G1/G2 and write-only-on-green are explained. Publishing step 2 now requires the gallery gate GREEN, a green full `showcase.sh ux` run (UX CURRENT) and a green --check (G1 OK, G2 'was on THIS gallery'), all on one gallery sha256. Results are re-recorded at 13:21\u201313:23 on gallery 2550fa1d\u2026 (75 assets, 17.6 MiB; 93 R2 objects, 2.420 GB; smoke 168 URLs; worker 11/11), with the 12:41 record kept as labelled history. The consistency rule is updated.",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/06-qed64-showcase-options.md. A caveat was added to the Implemented UX bullet: the UX runs predate the gallery's 12:34\u201313:14 edits, and the current gallery 2550fa1d\u2026 has no UX run yet. The first 213 lines are byte-identical (sha256 eb247858\u2026 before and after).",
+     "/Users/fawadhaider/code/lean questions/infoview-widget-research/qed64-showcase/out/deploy/manifest.json, the rclone lists and assets/, regenerated at 13:21 on gallery 2550fa1d10b093ae24ad538d26c59c706da141bdd3ecea8e074cb4a6980372e1."
+    ],
+    "evidence": [
+     "Audit finding 1, the gallery gate re-run after the edits settled. Polling showed the gallery's shipped files unchanged from 13:14:48, after the bringup lane's thumbs2 run released the lock (rc=0). At 13:10 a read-only `node scripts/check-gallery.mjs` gave 'CHECK-GALLERY FAIL 116 ok, 3 failed' ('BUILD-GALLERY STALE 8 examples', 'card thumbnails: 2/8 present \u2026 recorded in examples.json'), which confirms the red window. At 13:21, `SHOWCASE_LANE=docs-fix3 showcase.sh gallery` rc=0: 'BUILD-GALLERY CHECK OK 8 examples', 'SIM-GALLERY OK 56 ok', 'CHECK-GALLERY OK 119 ok, 0 failed', '[showcase] gallery gate GREEN on gallery content sha256 2550fa1d10b093ae24ad538d26c59c706da141bdd3ecea8e074cb4a6980372e1', 'UX STALE: no green full-suite showcase.sh ux run on this gallery'. `gallery --live` gave 'CHECK-GALLERY OK 130 ok'. Logs: $W/logs/docs-fix3-gallery.log and docs-fix3-gallery-live.log.",
+     "The first gallery attempt at 13:20 was stopped by the new guard: 'ERROR: gallery/ changed while the gate ran (885b8ec0\u2026 -> bc1f7a18\u2026)'. The gallery lane was editing gallery/README.md (13:20:28), so the hash was narrowed to the shipped files. Shell and node give the same value: 2550fa1d\u2026 for 17 shipped files.",
+     "Deploy on the same gallery (logs docs-fix3-deploy-{generate,check,stage,smoke}.log). Generate: 'OK   G1 scripts/check-gallery.mjs exit 0 on gallery 2550fa1d10b093ae\u2026 (27 s): CHECK-GALLERY OK 119 ok, 0 failed', 'DEPLOY-MANIFEST OK 75 assets, 93 R2 objects; gallery 2550fa1d\u2026'. --check: 'OK   C1 \u2026 byte-identical', 'DEPLOY-MANIFEST CHECK OK (dry run: nothing uploaded); gallery 2550fa1d\u2026'; re-run at 13:24, still OK with the hash unchanged. G2: 'NO green full-suite 'showcase.sh ux' run recorded for this gallery'. --stage-assets: 'S1 \u2026 exactly the manifest's 75 assets', 'S2 every staged asset matches its manifest sha256'. --smoke http://localhost:5190 --all: 'OK   SMOKE \u2026 168 URLs (75 assets + 93/93 R2 keys)', against a server this lane started with `showcase.sh serve` and then stopped with `showcase.sh stop` (afterwards :5190 returned 000). `node --test infra/worker.test.mjs`: tests 11, pass 11, fail 0.",
+     "Audit finding 2, write-only-on-green. In an APFS-clone scratch copy, mutation M2 (widgets8 index mathlib.runtime = wasm64-1111111111111111) gave 'FAIL R3 \u2026 mathlib.runtime wasm64-1111111111111111', then 'DEPLOY-MANIFEST FAILED (2 FAIL): nothing written; out/deploy/manifest.json and the rclone lists are unchanged'. The sha256 over manifest.json plus the rclone lists was b70af298\u2026 both before and after. The real index.json was unchanged (c028313f\u2026). G1 negative, live at 13:00: generate in the clone gave 'FAIL G1 \u2026 CHECK-GALLERY FAIL 116 ok, 3 failed' and wrote nothing.",
+     "Audit finding 3, the headless skip. `showcase.sh --dry-run all` rc=0 prints 'SKIP headless: out/headless/summary.json (2026-10-01T04:58:14.681Z, wasm64-4b025db7729c5f89) has stage4Green and E2Green (E2 7/8 clean) (--rebuild to redo; ~20 min, 12 GB+ RSS peaks)'. `--dry-run all --rebuild` prints 'headless: a bake/overlay was redone in this run, so S4 re-runs' plus the controls, stage4, e2 and summary plan. A unit test of headless_green gives: missing summary \u2192 'RUN: no out/headless/summary.json'; E2Green=false \u2192 'RUN: \u2026 E2Green=false'; other runtime \u2192 'RUN: summary.json runtime wasm64-1111111111111111 != lock'; the real summary \u2192 GREEN. Logs: docs-fix3-dryrun-all.log and docs-fix3-dryrun-all-rebuild.log.",
+     "Audit finding 4, rc mapping (docs-fix3-rc-mapping.log). This ran in a scratch copy whose diff shows only the browser and bake pgrep patterns changed, and the test was a script file so that no shell's argv held the markers. Results: `locked probe3 -- bash -c 'exit 3'` printed 'probe3: FAILED rc=3' with NO REFUSED line. A fake bake inside the lock gave 'REFUSED: a snapshot bake is running', 'command exited rc=77', 'REFUSED: probeB: refused by the lock/preflight (rc=77)' and exit 3. A live owner with LOCK_WAIT_S=6 gave rc=75 \u2192 REFUSED. A fake browser in the cooldown gave rc=76 \u2192 REFUSED. No lock was left behind.",
+     "UX record and gallery freshness, tested with stub runners (docs-fix3-ux-gallery-hash.log). A green `ux --grep \"two words\"` (argv '[--grep] [two words]') was recorded but left UX STALE. A green full run gave 'UX CURRENT: green full-suite showcase.sh ux run \u2026 (lane docs-fix3) was on this gallery'. A failing run was recorded with rc 1. A run that edited gallery.css mid-run printed 'WARNING: gallery/ changed during the UX run' and left UX STALE. A failing check-gallery made `gallery` exit 1.",
+     "`showcase.sh verify` rc=0: 'OK   22 hardcoded runtime buildIds in 16 files \u2026 inventory matches the 16 PIN_SITES', 'VERIFY OK (1 DRIFT in a rebuild-only input)', '[showcase] VERIFY: all checks OK'. shellcheck scripts/showcase.sh is clean. node --check passes on deploy-manifest.mjs and gallery-hash.mjs.",
+     "06 study: `head -213 | shasum -a 256` gives eb247858f0bc4c0f8273bb21eb55a9d559fee9a145e1db33688f9130767362fd both before and after the edit."
+    ],
+    "openIssues": [
+     "There is no UX verdict on the current gallery. The UX lane's full6/full7 runs (08:50\u201309:23 local) predate the gallery's 12:34\u201313:14 edits to gallery.js/css, thumbs and examples.json. This lane may not launch a browser, so `scripts/showcase.sh ux` must be run on gallery 2550fa1d\u2026 by the UX or gallery lane. Until then `showcase.sh gallery` prints UX STALE, deploy-manifest G2 prints NO green run, and DEPLOY publishing step 2 is not satisfied. README, DEPLOY.md and the 06 study all say so.",
+     "out/ux/showcase-ux-runs.jsonl does not exist yet. Only `showcase.sh ux` writes it; `npm run test:ux`, which belongs to the UX lane, leaves no record. If the UX lane keeps using npm, its runs will not show as UX CURRENT. One option is for that lane to call showcase.sh ux, or to append the same record itself.",
+     "The green claims hold only for gallery content sha256 2550fa1d10b093ae24ad538d26c59c706da141bdd3ecea8e074cb4a6980372e1. Any later edit by the gallery lane to a shipped gallery file invalidates them, and `--check` C1/G1 and `showcase.sh gallery` will show it. `showcase.sh gallery` rebuilds stale gallery data, which writes gallery/examples.json and pin.json; README tells other lanes to use the read-only check-gallery.mjs while gallery/ is being edited.",
+     "assert-untouched for the 'docs-fix' stamp still gives VERDICT: CHANGED, caused by other sessions. The kernel HEAD moved again, 9af8a865 \u2192 6e28e4bd, and QED64 has 24 newer working-tree paths and 48 newer .git files. QED64 HEAD is still 1859b830. This lane only read those trees. Log: $W/logs/docs-fix3-untouched.log.",
+     "Docker tag drift is unchanged: verify prints DRIFT #7 (qed64-toolchain:emsdk-6.0.5 is now 30170d13e0f7, while the lock has 8b6698bbf474), so `native` refuses until it is re-pinned. That is still the README 'Docker tag drift' procedure.",
+     "Carried over: the Node v26 exit deadlock is contained only in verify (vstep watchdog). G1 has its own 600 s spawnSync timeout. The Cloudflare file-count limit (A5) still needs confirming before publishing. Nothing was deployed and nobody logged in.",
+     "This lane launched no browser. Other lanes' serve.mjs processes (pids 93331 and 94159) and a browser lock held by another lane were left untouched."
+    ],
+    "decisions": [
+     "The gallery hash covers only the SHIPPED gallery files (the deploy's showcase/ assets), not all of gallery/. A docs-only edit to gallery/README.md must not invalidate a behavioural verdict, as happened live at 13:20. Using the same filter as the deploy manifest makes the hash name exactly what would be published.",
+     "G1 is a hard FAIL in both generate and --check, so a red gallery can never get a green manifest. G2 (UX on the same gallery) is info only, because UX runs started through npm leave no record. Publishing step 2 in DEPLOY.md and --commands make it a written precondition instead.",
+     "Only a full-suite `showcase.sh ux` run with no args, rc 0 and an unchanged gallery hash from start to end counts as a UX verdict. Subset (--grep) runs are recorded but not counted.",
+     "locked_run passes a locked command's own rc through, even 3, and does not remap it to 1. The REFUSED line is the authoritative refusal signal, and the README documents this.",
+     "I did not run `showcase.sh gallery` while the gallery data was stale, because its rebuild would have written gallery/, which belongs to another lane. I waited until the gallery lane's edits settled (shipped files unchanged since 13:14:48, bringup lock released) before taking green evidence."
+    ],
+    "metrics": {
+     "galleryContentSha256": "2550fa1d10b093ae24ad538d26c59c706da141bdd3ecea8e074cb4a6980372e1",
+     "galleryShippedFiles": 17,
+     "checkGallery": "119 ok static, 130 ok --live (13:21-13:23)",
+     "simGallery": "56 ok",
+     "deployManifest": {
+      "assets": 75,
+      "assetMiB": 17.6,
+      "r2Objects": 93,
+      "r2GB": 2.42,
+      "smokeUrls": 168,
+      "regeneratedAt": "13:21",
+      "checkReRunAt": "13:24"
+     },
+     "workerTests": "11/11",
+     "verifyRc": 0,
+     "rcMappingCases": "exit3 passthrough, 77/75/76 REFUSED",
+     "uxRunsOnCurrentGallery": 0,
+     "browsersLaunchedByThisLane": 0,
+     "untouchedVerdict": "CHANGED (other sessions; read-only here)"
+    }
+   }
+  ],
+  "lastAudit": [
+   "audit:docs:r3",
+   {
+    "verdict": "fail",
+    "findings": [
+     {
+      "severity": "major",
+      "issue": "A full-suite UX run can be recorded as passing for a gallery it never tested. The record (the new UX-freshness gate behind `UX CURRENT` and deploy G2, and a precondition for publishing) always stores the hash of the LOCAL gallery/. It never checks which gallery the server under test is actually serving. `server_is_showcase` only checks that pin.json's buildId matches the lock and that the COEP/CORP headers are present. `cmd_ux` also honours UX_ORIGIN without recording it, and still checks :5190 instead of that origin.",
+      "evidence": "Right now another lane's serve.mjs on :5192 runs with GALLERY_DIR=/Users/fawadhaider/code/qed64-showcase-work/mutants/audit6-mutBridge. It serves a different bridge: qed64-bridge.js served=6d905aae4b08 vs local=ecd543563ec3. Yet `PORT=5192 showcase.sh serve` prints '[showcase] already serving the showcase on :5192' (rc=0), so the guard accepts a mutant gallery as 'the showcase'. In scripts/showcase.sh, cmd_ux (lines ~531-563) computes g0/g1 with gallery_hash, which hashes the local files, and appends {galleryStart,galleryEnd,args} with no origin and no served-content hash. UX_ORIGIN is mentioned only at line 540, as a note. So `UX_ORIGIN=http://localhost:5192 showcase.sh ux`, or any GALLERY_DIR server sitting on :5190, would mark local gallery 2550fa1d as UX CURRENT. Deploy G2 reads the same record.",
+      "fix": "In cmd_ux, hash the shipped /showcase/ files as SERVED by the origin under test, using the isShippedGalleryFile list fetched over HTTP. Require that hash to equal the local hash at the start and at the end of the run. Record the origin and the served hash, and never count a run as a verdict when UX_ORIGIN is set or the hashes differ. Also make server_is_showcase compare the served gallery hash, or at least the served qed64-bridge.js, with the local copy."
+     },
+     {
+      "severity": "major",
+      "issue": "`showcase.sh all` can exit 0 after verify has FAILED. cmd_all swallows verify's failure ('continuing: later stages may repair them') but never re-verifies. The script's exit code is then just cmd_ux's rc. This breaks the documented contract 'Exit: 0 ok \u00b7 1 a step failed'. The overlay skip also only checks that index.json exists, so a corrupt overlay that verify flags is never rebuilt or re-checked within `all`.",
+      "evidence": "scripts/showcase.sh:587 `cmd_verify || say \"verify reported failures (continuing: later stages may repair them)\"`; :593 `SKIP overlay $t` only on `-f \u2026/index.json`; :598-599 `cmd_gallery` then `cmd_ux` with no aggregation of rc. Header :70 says 'Exit: 0 ok \u00b7 1 a step failed'. In an APFS clone with tests/experiments/lib.mjs using wasm64-1111111111111111 and widgets8 mathlib.transfer+1, `showcase.sh verify` rc=1 ('FAIL hardcoded buildIds\u2026', 'FAIL overlay widgets8 \u2026 size 364676234 != transfer 364676235'). Neither failure is repaired by any later stage of `all` without --rebuild, so all's exit is whatever the UX run returns. I could not run `all` end to end, because the browser is locked by another lane; my attempt to stub the lock for this test was denied. The evidence is the control flow above.",
+      "fix": "Remember verify's rc in cmd_all, re-run verify after the build stages if it failed, and exit 1 when it is still red, even if ux passes. Alternatively, have the overlay skip require a passing pair-check or cheap overlay check rather than just the existence of index.json."
+     },
+     {
+      "severity": "minor",
+      "issue": "The headless skip in `all` trusts out/headless/summary.json without checking that it describes the current bakes. summary.json records snapSha256 for every package, but headless_green only compares the runtime and the gate flags. A bake redone in an earlier, separate invocation (e.g. `showcase.sh bake w8`, then `all`) would therefore skip S4 on stale results.",
+      "evidence": "In a clone I replaced all 15 e1.snapSha256 values in summary.json with 64 zeros (the real value is 84fc22d7\u2026, which equals `shasum -a 256 $W/bake-work-w8/widgets.snap`). `showcase.sh --dry-run all` still printed '[showcase] SKIP headless: out/headless/summary.json (2026-10-01T04:58:14.681Z, wasm64-4b025db7729c5f89) has stage4Green and E2Green'. The code is headless_green at showcase.sh:573-583.",
+      "fix": "Have headless_green also require that each bake's snapSha256 in summary.json equals the current $W/bake-work-w{7,8}/widgets.snap. A cheaper alternative is to compare the overlay index digest, if summary.json records it."
+     },
+     {
+      "severity": "minor",
+      "issue": "The UX verdict and the publishing precondition are bound only to the gallery's shipped files. Overlay snapshots, serve.mjs/worker headers and tests/ux are not covered. A rebaked overlay keeps `UX CURRENT` and `G2 \u2026 was on THIS gallery`. DEPLOY.md step 2 can then be satisfied for a deploy whose overlays were never UX-tested. Separately, 'full suite' is inferred only from 'no args'. The record keeps no pass/skip counts, and the Playwright config sets no forbidOnly, so a committed test.only or an env-driven skip would still produce a 'full-suite' verdict.",
+      "evidence": "scripts/lib/gallery-hash.mjs hashes only gallery/ (17 files). In mutation M2 (example source changed), the hash stayed at 2550fa1d\u2026 while G1 went red, which shows the hash does not cover the gallery's inputs. In ux_freshness and deploy-manifest galleryGate, green means rc===0 && galleryStart===galleryEnd && !args.length. tests/ux/playwright.config.mjs has no forbidOnly.",
+      "fix": "Add the lock sha256, the overlay index sha256s and report.json's stats (expected/unexpected/skipped) to the run record. Require them to match the manifest's pin/overlays for G2. Set forbidOnly, or check that the test count equals the expected total."
+     },
+     {
+      "severity": "minor",
+      "issue": "Some documentation is inaccurate or stale. README Quick start says 'Every one of them was run on 2026-10-01', but the list includes `open http://localhost:5190/showcase/`, which launches a browser in a lane that was not allowed one. The kernel HEAD history in README and the upstream report ends at 3ae65d36, but HEAD is now 6e28e4bd. README says refusals and failures print different lines, but a refused locked step prints both 'probe: FAILED rc=75' and 'REFUSED'.",
+      "evidence": "`git --no-optional-locks -C wasm64-lean-kernel log --oneline -4` gives 6e28e4bd9d at HEAD, above 3ae65d36f9. `LOCK_WAIT_S=5 showcase.sh locked probe -- bash -c 'exit 3'` printed '[showcase] probe: FAILED rc=75 \u2026' followed by '[showcase] REFUSED: probe: refused by the lock/preflight (rc=75\u2026)', and exited rc=3.",
+      "fix": "Reword Quick start to say which commands were actually run. Date-stamp the kernel HEAD history or describe it generically. Suppress the FAILED line for rc 75/76/77, or document that both lines appear."
+     }
+    ]
+   }
+  ]
+ }
+}

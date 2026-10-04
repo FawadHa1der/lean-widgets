@@ -1,0 +1,581 @@
+{
+ "package": "tree-scope",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:59:30.649Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import TreeScope"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "f03a06ebc87149cbf518b9c79a913552b0e24ce9326fa38c10d9b028a4889752",
+ "documentSha256": "f03a06ebc87149cbf518b9c79a913552b0e24ce9326fa38c10d9b028a4889752",
+ "elaborationMs": 2493,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 16,
+   "character": 0,
+   "command": "#tree_scope [10, 20, 30]",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 24,
+       "line": 16
+      },
+      "start": {
+       "character": 0,
+       "line": 16
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "cons 10",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 2,
+      "g": 1,
+      "line": 3,
+      "rect": 4,
+      "svg": 1,
+      "text": 4
+     },
+     "svgTagCounts": {
+      "g": 1,
+      "line": 3,
+      "rect": 4,
+      "svg": 1,
+      "text": 4
+     },
+     "components": {},
+     "texts": [
+      "cons 10",
+      "cons 20",
+      "cons 30",
+      "nil",
+      "tree: 4 nodes, depth 4"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "4b12560d05179959e7c4f69b4dd7be8f2b497f62addad1f6850bb05b687e6d54"
+    }
+   ]
+  },
+  {
+   "line": 26,
+   "character": 0,
+   "command": "#tree_scope sample",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 18,
+       "line": 26
+      },
+      "start": {
+       "character": 0,
+       "line": 26
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "mul",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 2,
+      "g": 1,
+      "line": 8,
+      "rect": 9,
+      "svg": 1,
+      "text": 9
+     },
+     "svgTagCounts": {
+      "g": 1,
+      "line": 8,
+      "rect": 9,
+      "svg": 1,
+      "text": 9
+     },
+     "components": {},
+     "texts": [
+      "mul",
+      "add",
+      "num 1",
+      "mul",
+      "num 2",
+      "num 3",
+      "add",
+      "num 4",
+      "num 5",
+      "tree: 9 nodes, depth 4"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "15a4166640e39060dcc24baf5ec72d9851cdb3a0660a608285e60b8b60e62249"
+    }
+   ]
+  },
+  {
+   "line": 31,
+   "character": 0,
+   "command": "#tree_scope rbSample",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 20,
+       "line": 31
+      },
+      "start": {
+       "character": 0,
+       "line": 31
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "4:\"d\"",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 4,
+      "g": 1,
+      "line": 6,
+      "rect": 7,
+      "span": 2,
+      "svg": 1,
+      "text": 14
+     },
+     "svgTagCounts": {
+      "g": 1,
+      "line": 6,
+      "rect": 7,
+      "svg": 1,
+      "text": 14
+     },
+     "components": {},
+     "texts": [
+      "4:\"d\"",
+      "bh=2",
+      "2:\"b\"",
+      "bh=1",
+      "1:\"a\"",
+      "bh=1",
+      "3:\"c\"",
+      "bh=1",
+      "7:\"g\"",
+      "bh=1",
+      "5:\"e\"",
+      "bh=0",
+      "8:\"h\"",
+      "bh=0",
+      "■ red",
+      "■ black",
+      "invariants ok",
+      "tree: 7 nodes, depth 3"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "5c62214fbd7de319b21bb4d52ec61d0eb58b2fc79d6de6a2cadd8924623beb79"
+    }
+   ]
+  },
+  {
+   "line": 37,
+   "character": 0,
+   "command": "#tree_scope brokenRB",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 20,
+       "line": 37
+      },
+      "start": {
+       "character": 0,
+       "line": 37
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "5:\"e\"",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 4,
+      "g": 1,
+      "line": 4,
+      "rect": 8,
+      "span": 3,
+      "svg": 1,
+      "text": 13
+     },
+     "svgTagCounts": {
+      "g": 1,
+      "line": 4,
+      "rect": 8,
+      "svg": 1,
+      "text": 13
+     },
+     "components": {},
+     "texts": [
+      "5:\"e\"",
+      "bh=3",
+      "bh ⚠",
+      "2:\"b\"",
+      "bh=0",
+      "1:\"a\"",
+      "bh=0",
+      "red-red ⚠",
+      "8:\"h\"",
+      "bh=2",
+      "bh ⚠",
+      "9:\"i\"",
+      "bh=1",
+      "■ red",
+      "■ black",
+      "■ violation",
+      "⚠ r (bh), r.0.0 (red-red), r.1 (bh)",
+      "tree: 5 nodes, depth 3"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "61bb6c6b9221ac68a00a187c63c4122009d4105eac9374d4e5fcf56e6ddf767f"
+    }
+   ]
+  },
+  {
+   "line": 40,
+   "character": 0,
+   "command": "#tree_evolve",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 91,
+       "line": 41
+      },
+      "start": {
+       "character": 0,
+       "line": 40
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "step 0: init",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 35,
+      "g": 6,
+      "line": 10,
+      "rect": 16,
+      "span": 9,
+      "svg": 6,
+      "text": 40
+     },
+     "svgTagCounts": {
+      "g": 6,
+      "line": 10,
+      "rect": 16,
+      "svg": 6,
+      "text": 40
+     },
+     "components": {},
+     "texts": [
+      "step 0: init",
+      "(empty)",
+      "tree: 1 nodes, depth 1",
+      "step 1: (·.insert 1 \"a\") (+1 new, −1 gone)",
+      "1:\"a\"",
+      "bh=0",
+      "new",
+      "■ red",
+      "invariants ok",
+      "tree: 1 nodes, depth 1",
+      "step 2: (·.insert 2 \"b\") (+1 new)",
+      "1:\"a\"",
+      "bh=1",
+      "2:\"b\"",
+      "bh=0",
+      "new",
+      "■ red",
+      "■ black",
+      "invariants ok",
+      "tree: 2 nodes, depth 2",
+      "step 3: (·.insert 3 \"c\") (+3 new, −2 gone)",
+      "2:\"b\"",
+      "bh=1",
+      "new",
+      "1:\"a\"",
+      "bh=1",
+      "new",
+      "3:\"c\"",
+      "bh=1",
+      "new",
+      "■ red",
+      "■ black",
+      "invariants ok",
+      "tree: 3 nodes, depth 2",
+      "step 4: (·.insert 4 \"d\") (+1 new)",
+      "2:\"b\"",
+      "bh=2",
+      "1:\"a\"",
+      "bh=1",
+      "3:\"c\"",
+      "bh=1",
+      "4:\"d\"",
+      "bh=0",
+      "new",
+      "■ red",
+      "■ black",
+      "invariants ok",
+      "tree: 4 nodes, depth 3",
+      "step 5: (·.insert 5 \"e\") (+3 new, −2 gone)",
+      "2:\"b\"",
+      "bh=2",
+      "1:\"a\"",
+      "bh=1",
+      "4:\"d\"",
+      "bh=1",
+      "new",
+      "3:\"c\"",
+      "bh=1",
+      "new",
+      "5:\"e\"",
+      "bh=1",
+      "new",
+      "■ red",
+      "■ black",
+      "invariants ok",
+      "tree: 5 nodes, depth 3"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "decaac226e25963a0662da787d98e8772c794fe6aa76964ad5c600dac636904f"
+    }
+   ]
+  },
+  {
+   "line": 45,
+   "character": 0,
+   "command": "#html renderForest",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 66,
+       "line": 45
+      },
+      "start": {
+       "character": 0,
+       "line": 45
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "•",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "g": 6,
+      "line": 18,
+      "rect": 23,
+      "svg": 1,
+      "text": 23
+     },
+     "svgTagCounts": {
+      "g": 6,
+      "line": 18,
+      "rect": 23,
+      "svg": 1,
+      "text": 23
+     },
+     "components": {},
+     "texts": [
+      "•",
+      "∅",
+      "•",
+      "∅",
+      "•",
+      "•",
+      "∅",
+      "•",
+      "•",
+      "∅",
+      "•",
+      "•",
+      "•",
+      "•",
+      "•",
+      "∅",
+      "•",
+      "∅",
+      "•",
+      "•",
+      "•",
+      "∅",
+      "∅"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "2eddb62d53dddfda0cf676ddf8900cf25c4f72ac9fbf668558057aabef1fb144"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 16 (#tree_scope [10, 20, 30]): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 16: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26 (#tree_scope sample): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26: text \"mul\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 26: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31 (#tree_scope rbSample): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: text \"invariants ok\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 31: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 37 (#tree_scope brokenRB): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 37: text \"red-red\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 37: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40 (#tree_evolve): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 40: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 45 (#html renderForest): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 45: panel title HTML Display"
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 2549
+}

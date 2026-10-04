@@ -1,0 +1,2455 @@
+{
+ "package": "graph-scope",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:57:52.523Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import GraphScope"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "fc68ee30a02b4ade3abc20902503e711d8880fca2a1ba6cd80c0b5060e6ec6c5",
+ "documentSha256": "fc68ee30a02b4ade3abc20902503e711d8880fca2a1ba6cd80c0b5060e6ec6c5",
+ "elaborationMs": 4153,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 19,
+   "character": 0,
+   "command": "#graph_scope (cycleGraph 5)",
+   "panels": [
+    {
+     "id": "GraphScope.GraphScopePanel",
+     "kind": "rpc",
+     "method": "GraphScope.GraphScopePanel.rpc",
+     "range": {
+      "end": {
+       "character": 27,
+       "line": 19
+      },
+      "start": {
+       "character": 0,
+       "line": 19
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3846,
+      "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
+      "importsInfoview": true
+     },
+     "rpcMs": 11,
+     "error": null,
+     "tagCounts": {
+      "circle": 5,
+      "div": 7,
+      "g": 5,
+      "line": 5,
+      "svg": 1,
+      "text": 5
+     },
+     "svgTagCounts": {
+      "circle": 5,
+      "g": 5,
+      "line": 5,
+      "svg": 1,
+      "text": 5
+     },
+     "components": {
+      "MakeEditLink": 11
+     },
+     "texts": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "graph: 5 vertices, 5 edges",
+      "degrees: 2 2 2 2 2 (min 2, max 2)",
+      "components: 1 (connected)",
+      "bipartite: no (odd cycle: 2-1-0-4-3)",
+      "click an edge, a vertex or the components line to insert a verified example after the command"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "components: 1 (connected)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 5)).Adj (0) (1) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (0) (1) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 20
+        },
+        "start": {
+         "character": 51,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 5)).Adj (0) (4) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (0) (4) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 20
+        },
+        "start": {
+         "character": 51,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 5)).Adj (1) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (1) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 20
+        },
+        "start": {
+         "character": 51,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 5)).Adj (2) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (2) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 20
+        },
+        "start": {
+         "character": 51,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 5)).Adj (3) (4) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Adj (3) (4) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 20
+        },
+        "start": {
+         "character": 51,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0",
+       "title": "insert: example : ((cycleGraph 5)).degree (0) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (0) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 20
+        },
+        "start": {
+         "character": 54,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1",
+       "title": "insert: example : ((cycleGraph 5)).degree (1) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (1) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 20
+        },
+        "start": {
+         "character": 54,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2",
+       "title": "insert: example : ((cycleGraph 5)).degree (2) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (2) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 20
+        },
+        "start": {
+         "character": 54,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "3",
+       "title": "insert: example : ((cycleGraph 5)).degree (3) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (3) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 20
+        },
+        "start": {
+         "character": 54,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "4",
+       "title": "insert: example : ((cycleGraph 5)).degree (4) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).degree (4) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 20
+        },
+        "start": {
+         "character": 54,
+         "line": 20
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "components: 1 (connected)",
+       "title": "insert: example : ((cycleGraph 5)).Connected := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 27,
+          "line": 19
+         },
+         "start": {
+          "character": 27,
+          "line": 19
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 5)).Connected := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 20
+        },
+        "start": {
+         "character": 49,
+         "line": 20
+        }
+       }
+      }
+     ],
+     "htmlSha256": "a29906eb7635363f0bb2e5e794a29f644a6034ccc8a4298ea233c07b97453c9d"
+    }
+   ]
+  },
+  {
+   "line": 22,
+   "character": 0,
+   "command": "#graph_scope (completeGraph (Fin 4))",
+   "panels": [
+    {
+     "id": "GraphScope.GraphScopePanel",
+     "kind": "rpc",
+     "method": "GraphScope.GraphScopePanel.rpc",
+     "range": {
+      "end": {
+       "character": 36,
+       "line": 22
+      },
+      "start": {
+       "character": 0,
+       "line": 22
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3846,
+      "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
+      "importsInfoview": true
+     },
+     "rpcMs": 7,
+     "error": null,
+     "tagCounts": {
+      "circle": 4,
+      "div": 7,
+      "g": 4,
+      "line": 6,
+      "svg": 1,
+      "text": 4
+     },
+     "svgTagCounts": {
+      "circle": 4,
+      "g": 4,
+      "line": 6,
+      "svg": 1,
+      "text": 4
+     },
+     "components": {
+      "MakeEditLink": 11
+     },
+     "texts": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "graph: 4 vertices, 6 edges",
+      "degrees: 3 3 3 3 (min 3, max 3)",
+      "components: 1 (connected)",
+      "bipartite: no (odd cycle: 1-0-2)",
+      "click an edge, a vertex or the components line to insert a verified example after the command"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "0",
+      "1",
+      "2",
+      "3",
+      "components: 1 (connected)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (1) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (1) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (1) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (1) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (1) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (1) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((completeGraph (Fin 4))).Adj (2) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Adj (2) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 60,
+         "line": 23
+        },
+        "start": {
+         "character": 60,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0",
+       "title": "insert: example : ((completeGraph (Fin 4))).degree (0) = 3 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).degree (0) = 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 63,
+         "line": 23
+        },
+        "start": {
+         "character": 63,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1",
+       "title": "insert: example : ((completeGraph (Fin 4))).degree (1) = 3 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).degree (1) = 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 63,
+         "line": 23
+        },
+        "start": {
+         "character": 63,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2",
+       "title": "insert: example : ((completeGraph (Fin 4))).degree (2) = 3 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).degree (2) = 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 63,
+         "line": 23
+        },
+        "start": {
+         "character": 63,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "3",
+       "title": "insert: example : ((completeGraph (Fin 4))).degree (3) = 3 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).degree (3) = 3 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 63,
+         "line": 23
+        },
+        "start": {
+         "character": 63,
+         "line": 23
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "components: 1 (connected)",
+       "title": "insert: example : ((completeGraph (Fin 4))).Connected := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 36,
+          "line": 22
+         },
+         "start": {
+          "character": 36,
+          "line": 22
+         }
+        },
+        "newText": "\nexample : ((completeGraph (Fin 4))).Connected := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 58,
+         "line": 23
+        },
+        "start": {
+         "character": 58,
+         "line": 23
+        }
+       }
+      }
+     ],
+     "htmlSha256": "e7b1849c7b001ba1fa46e010d49bd1242fc0ab7afe3f12d03d5625be3696003d"
+    }
+   ]
+  },
+  {
+   "line": 29,
+   "character": 0,
+   "command": "#graph_scope twoTriangles",
+   "panels": [
+    {
+     "id": "GraphScope.GraphScopePanel",
+     "kind": "rpc",
+     "method": "GraphScope.GraphScopePanel.rpc",
+     "range": {
+      "end": {
+       "character": 25,
+       "line": 29
+      },
+      "start": {
+       "character": 0,
+       "line": 29
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3846,
+      "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
+      "importsInfoview": true
+     },
+     "rpcMs": 3,
+     "error": null,
+     "tagCounts": {
+      "circle": 6,
+      "div": 7,
+      "g": 6,
+      "line": 6,
+      "svg": 1,
+      "text": 6
+     },
+     "svgTagCounts": {
+      "circle": 6,
+      "g": 6,
+      "line": 6,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {
+      "MakeEditLink": 13
+     },
+     "texts": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "graph: 6 vertices, 6 edges",
+      "degrees: 2 2 2 2 2 2 (min 2, max 2)",
+      "components: 2 (disconnected)",
+      "bipartite: no (odd cycle: 1-0-2)",
+      "click an edge, a vertex or the components line to insert a verified example after the command"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "components: 2 (disconnected)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (0) (1) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (0) (1) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (0) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (0) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (1) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (1) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (3) (4) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (3) (4) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (3) (5) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (3) (5) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : (twoTriangles).Adj (4) (5) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).Adj (4) (5) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0",
+       "title": "insert: example : (twoTriangles).degree (0) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (0) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1",
+       "title": "insert: example : (twoTriangles).degree (1) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (1) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2",
+       "title": "insert: example : (twoTriangles).degree (2) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (2) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "3",
+       "title": "insert: example : (twoTriangles).degree (3) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (3) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "4",
+       "title": "insert: example : (twoTriangles).degree (4) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (4) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "5",
+       "title": "insert: example : (twoTriangles).degree (5) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : (twoTriangles).degree (5) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 52,
+         "line": 30
+        },
+        "start": {
+         "character": 52,
+         "line": 30
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "components: 2 (disconnected)",
+       "title": "insert: example : ¬ (twoTriangles).Connected := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 25,
+          "line": 29
+         },
+         "start": {
+          "character": 25,
+          "line": 29
+         }
+        },
+        "newText": "\nexample : ¬ (twoTriangles).Connected := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 30
+        },
+        "start": {
+         "character": 49,
+         "line": 30
+        }
+       }
+      }
+     ],
+     "htmlSha256": "d6e004e696751a29722ea70eba6bcd0ee4d2ec5dfa47c84099b98f344aba51ce"
+    }
+   ]
+  },
+  {
+   "line": 32,
+   "character": 0,
+   "command": "#graph_scope (pathGraph 5) walk",
+   "panels": [
+    {
+     "id": "GraphScope.GraphScopePanel",
+     "kind": "rpc",
+     "method": "GraphScope.GraphScopePanel.rpc",
+     "range": {
+      "end": {
+       "character": 58,
+       "line": 32
+      },
+      "start": {
+       "character": 0,
+       "line": 32
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "1",
+     "js": {
+      "bytes": 3846,
+      "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
+      "importsInfoview": true
+     },
+     "rpcMs": 5,
+     "error": null,
+     "tagCounts": {
+      "circle": 7,
+      "div": 9,
+      "g": 5,
+      "line": 4,
+      "svg": 1,
+      "text": 7
+     },
+     "svgTagCounts": {
+      "circle": 7,
+      "g": 5,
+      "line": 4,
+      "svg": 1,
+      "text": 7
+     },
+     "components": {
+      "MakeEditLink": 10
+     },
+     "texts": [
+      "1",
+      "2",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "graph: 5 vertices, 4 edges",
+      "degrees: 1 2 2 2 1 (min 1, max 2)",
+      "components: 1 (connected)",
+      "bipartite: yes (parts: {0, 2, 4} / {1, 3})",
+      "walk: 1 → 2 → 3 (2 steps)",
+      "highlight: 0, 4",
+      "click an edge, a vertex or the components line to insert a verified example after the command"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "",
+      "",
+      "",
+      "",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "components: 1 (connected)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((pathGraph 5)).Adj (0) (1) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).Adj (0) (1) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 50,
+         "line": 33
+        },
+        "start": {
+         "character": 50,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((pathGraph 5)).Adj (1) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).Adj (1) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 50,
+         "line": 33
+        },
+        "start": {
+         "character": 50,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((pathGraph 5)).Adj (2) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).Adj (2) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 50,
+         "line": 33
+        },
+        "start": {
+         "character": 50,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((pathGraph 5)).Adj (3) (4) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).Adj (3) (4) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 50,
+         "line": 33
+        },
+        "start": {
+         "character": 50,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0",
+       "title": "insert: example : ((pathGraph 5)).degree (0) = 1 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).degree (0) = 1 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 33
+        },
+        "start": {
+         "character": 53,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1",
+       "title": "insert: example : ((pathGraph 5)).degree (1) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).degree (1) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 33
+        },
+        "start": {
+         "character": 53,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2",
+       "title": "insert: example : ((pathGraph 5)).degree (2) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).degree (2) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 33
+        },
+        "start": {
+         "character": 53,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "3",
+       "title": "insert: example : ((pathGraph 5)).degree (3) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).degree (3) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 33
+        },
+        "start": {
+         "character": 53,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "4",
+       "title": "insert: example : ((pathGraph 5)).degree (4) = 1 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).degree (4) = 1 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 53,
+         "line": 33
+        },
+        "start": {
+         "character": 53,
+         "line": 33
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "components: 1 (connected)",
+       "title": "insert: example : ((pathGraph 5)).Connected := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 58,
+          "line": 32
+         },
+         "start": {
+          "character": 58,
+          "line": 32
+         }
+        },
+        "newText": "\nexample : ((pathGraph 5)).Connected := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 48,
+         "line": 33
+        },
+        "start": {
+         "character": 48,
+         "line": 33
+        }
+       }
+      }
+     ],
+     "htmlSha256": "1f18003a8d6526b180223999298c65b61b40767967c53c20020f9480a7a98d31"
+    }
+   ]
+  },
+  {
+   "line": 35,
+   "character": 0,
+   "command": "#graph_scope (cycleGraph 6) layout layered",
+   "panels": [
+    {
+     "id": "GraphScope.GraphScopePanel",
+     "kind": "rpc",
+     "method": "GraphScope.GraphScopePanel.rpc",
+     "range": {
+      "end": {
+       "character": 42,
+       "line": 35
+      },
+      "start": {
+       "character": 0,
+       "line": 35
+      }
+     },
+     "name": null,
+     "panelTitle": null,
+     "firstText": "0",
+     "js": {
+      "bytes": 3846,
+      "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
+      "importsInfoview": true
+     },
+     "rpcMs": 5,
+     "error": null,
+     "tagCounts": {
+      "circle": 6,
+      "div": 7,
+      "g": 6,
+      "line": 6,
+      "svg": 1,
+      "text": 6
+     },
+     "svgTagCounts": {
+      "circle": 6,
+      "g": 6,
+      "line": 6,
+      "svg": 1,
+      "text": 6
+     },
+     "components": {
+      "MakeEditLink": 13
+     },
+     "texts": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "graph: 6 vertices, 6 edges",
+      "degrees: 2 2 2 2 2 2 (min 2, max 2)",
+      "components: 1 (connected)",
+      "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})",
+      "click an edge, a vertex or the components line to insert a verified example after the command"
+     ],
+     "codeTexts": [],
+     "linkTexts": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "components: 1 (connected)"
+     ],
+     "links": [
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (0) (1) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (0) (1) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (0) (5) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (0) (5) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (1) (2) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (1) (2) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (2) (3) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (2) (3) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (3) (4) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (3) (4) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "",
+       "title": "insert: example : ((cycleGraph 6)).Adj (4) (5) := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Adj (4) (5) := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 51,
+         "line": 36
+        },
+        "start": {
+         "character": 51,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "0",
+       "title": "insert: example : ((cycleGraph 6)).degree (0) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (0) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "1",
+       "title": "insert: example : ((cycleGraph 6)).degree (1) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (1) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "2",
+       "title": "insert: example : ((cycleGraph 6)).degree (2) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (2) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "3",
+       "title": "insert: example : ((cycleGraph 6)).degree (3) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (3) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "4",
+       "title": "insert: example : ((cycleGraph 6)).degree (4) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (4) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "5",
+       "title": "insert: example : ((cycleGraph 6)).degree (5) = 2 := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).degree (5) = 2 := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 54,
+         "line": 36
+        },
+        "start": {
+         "character": 54,
+         "line": 36
+        }
+       }
+      },
+      {
+       "kind": "makeEditLink",
+       "linkText": "components: 1 (connected)",
+       "title": "insert: example : ((cycleGraph 6)).Connected := by decide",
+       "edit": {
+        "range": {
+         "end": {
+          "character": 42,
+          "line": 35
+         },
+         "start": {
+          "character": 42,
+          "line": 35
+         }
+        },
+        "newText": "\nexample : ((cycleGraph 6)).Connected := by decide"
+       },
+       "editCount": 1,
+       "documentVersion": 1,
+       "newSelection": {
+        "end": {
+         "character": 49,
+         "line": 36
+        },
+        "start": {
+         "character": 49,
+         "line": 36
+        }
+       }
+      }
+     ],
+     "htmlSha256": "133c2394ede1e9ad7629a8c362b51256f52cec41ce48214dc06db9a4a7e01e74"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [
+  {
+   "cursorLine": 19,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "linkTitle": "insert: example : ((cycleGraph 5)).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (0) (1) := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "editedSha256": "d812ffb09c21ed201219df1b6e40bf58eb758d77f03e08a5f2b71028da8044e5",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click1.lean",
+   "diagnosticsVersion": 2,
+   "reElaborationMs": 508,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 19,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "linkTitle": "insert: example : ((cycleGraph 5)).degree (0) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (0) = 2 := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "editedSha256": "34924ce5c0fa9e2bf75142f2f604d7c2559b719cf36e9756946789c1b9f4ef2f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click2.lean",
+   "diagnosticsVersion": 4,
+   "reElaborationMs": 506,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 19,
+   "kind": "makeEditLink",
+   "linkText": "components: 1 (connected)",
+   "linkTitle": "insert: example : ((cycleGraph 5)).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Connected := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 20
+    },
+    "start": {
+     "character": 49,
+     "line": 20
+    }
+   },
+   "editedSha256": "8f08978f4c1565d7183191ddac9974e2b75bf417e407dd1bdfddf1ab187f0acf",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click3.lean",
+   "diagnosticsVersion": 6,
+   "reElaborationMs": 504,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  {
+   "cursorLine": 29,
+   "kind": "makeEditLink",
+   "linkText": "components: 2 (disconnected)",
+   "linkTitle": "insert: example : ¬ (twoTriangles).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : ¬ (twoTriangles).Connected := by decide"
+   },
+   "documentVersionInEdit": 1,
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "editedSha256": "4ecaafbd5123eda4ec1c558051fa59a997750e292bc07617ec816e0050a05685",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click4.lean",
+   "diagnosticsVersion": 8,
+   "reElaborationMs": 570,
+   "postClickDiagnostics": [],
+   "verdict": {
+    "ok": true,
+    "problems": []
+   }
+  }
+ ],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19 (#graph_scope (cycleGraph 5)): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: text \"bipartite: no (odd cycle: 2-1-0-4-3)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: text \"components: 1 (connected)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: link \"0\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: link \"components: 1 (connected)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: svg <circle> × 5"
+  },
+  {
+   "ok": true,
+   "what": "cursor 19: svg <line> × 5"
+  },
+  {
+   "ok": true,
+   "what": "cursor 22 (#graph_scope (completeGraph (Fin 4))): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29 (#graph_scope twoTriangles): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29: text \"components: 2 (disconnected)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 29: link \"components: 2 (disconnected)\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 32 (#graph_scope (pathGraph 5) walk): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 35 (#graph_scope (cycleGraph 6) layout layered): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @19: diagnostics are for the edited version 2 (got 2)"
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"0\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @19: diagnostics are for the edited version 4 (got 4)"
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"0\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"components: 1 (connected)\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @19: diagnostics are for the edited version 6 (got 6)"
+  },
+  {
+   "ok": true,
+   "what": "click @19 \"components: 1 (connected)\": post-click diagnostics \"clean\""
+  },
+  {
+   "ok": true,
+   "what": "click @29 \"components: 2 (disconnected)\": edit equals the declared expectedEdit"
+  },
+  {
+   "ok": true,
+   "what": "click @29: diagnostics are for the edited version 8 (got 8)"
+  },
+  {
+   "ok": true,
+   "what": "click @29 \"components: 2 (disconnected)\": post-click diagnostics \"clean\""
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 8404
+}

@@ -1,0 +1,74 @@
+{
+  "package": "tree-scope",
+  "title": "TreeScope",
+  "blurb": "Any concrete tree-shaped value drawn by reflection, or semantically with invariant checks (red–black, heaps); filmstrips of evolving trees.",
+  "header": [
+    "import Mathlib",
+    "import TreeScope"
+  ],
+  "cursors": [
+    {
+      "line": 16,
+      "character": 0,
+      "command": "#tree_scope [10, 20, 30]",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 26,
+      "character": 0,
+      "command": "#tree_scope sample",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "mul"
+        ]
+      }
+    },
+    {
+      "line": 31,
+      "character": 0,
+      "command": "#tree_scope rbSample",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "invariants ok"
+        ]
+      }
+    },
+    {
+      "line": 37,
+      "character": 0,
+      "command": "#tree_scope brokenRB",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "red-red"
+        ]
+      }
+    },
+    {
+      "line": 40,
+      "character": 0,
+      "command": "#tree_evolve",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 45,
+      "character": 0,
+      "command": "#html renderForest",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    }
+  ],
+  "clicks": [],
+  "dropped": [
+    "Option/Float/pair/`List.range 70` reflection demos and `(reflect := true)`",
+    "hand-annotated `TreeView`, `renderForest` grid, binomial heap + heap `#tree_evolve`, `BinaryTree` + order-check overlay, `Std.TreeMap`, the erase filmstrip",
+    "Catalan gallery n=4 (14 trees) shrunk to n=3 (5 trees); RB evolve 8 inserts → 5; rbSample 8 → 7 entries"
+  ]
+}

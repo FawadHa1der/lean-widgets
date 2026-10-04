@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "33b0967",
+  "buildId": "wasm64-3ab1c6a9da03bc29",
+  "registeredAt": "2026-10-04T00:45:00Z",
+  "label": "E: QED64 33b0967 (main, merge of fix/v2-reload-oom), D's runtime 0035b (kernel a8817d01f9) with the #55 worker: runtime lifetime locks (QED64's L9 V2 fix), the #54 boot card and in-chunk download progress",
+  "status": "active: served since 2026-10-04 (pin-e lane: interleaved storms on /showcase/#hasse-view E 0/20 vs C 0/20 headed, 0/8 vs 1/8 headless-shell, so not worse than C; #55 not confirmed because C was nearly clean too; gated while served, out/ux/pin-e/RESULTS.md); registered 2026-10-04 by the pinE lane on D's runtime and stores (CONTROLS PASS 11/11, stage 4 green)",
+  "qed64": {
+    "commit": "33b09679077b3fea245123e261a7f0942918469f",
+    "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "kernel": "a8817d01f97227b1b04cc7d661b9e396f6ca8f34"
+  },
+  "mainBundle": "/assets/index-DpYTUbic.js",
+  "consoleSites": {
+    "627": "d7af4642f8997e01eee224003800912bf17fd07e1022202313d40e6777277ad4"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035b/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The #52 worker plus HARDENING #55 (9c00688): Web Locks 'qed64-alive:<runtime>' / 'qed64-wanted:<runtime>' make a booting runtime wait while a stopping one still keeps more than 12 Workers alive. The #52 liveness (mailbox, kick, Lean-level probe, 'wedged' reboot, FileWorker exit hook) is unchanged. The gallery defers (its probe after 30 s)."
+  },
+  "knownLimitations": [],
+  "notes": "QED64 33b0967 = merge of fix/v2-reload-oom (9c00688 runtime lifetime locks, HARDENING #55) over 3e182ff (HARDENING #54 boot card: stays until ready on slow links, 'about 8-9 GB'), plus 5e94697/76be299 (download progress inside runtime chunks and core pack parts). Shell/worker/client only: the runtime, packs and stock snapshots are D's (3b42714 is the promote; public/{runtime/runtime-manifest,profiles/*,snapshots/index}.json have the same git blobs at both commits), so D's runtime stores ($W/runtimes/wasm64-3ab1c6a9da03bc29, out/runtimes/wasm64-3ab1c6a9da03bc29) serve E unchanged. Console notify site: line0 627 of the main bundle is the same notify code as D's, differing only by 15 consistent minifier identifier renames ($W/logs/pinE-notify-line.log). Cloned from QED64's own dist/ (rebuilt 2026-10-03 20:33 local, verified fresh: $W/logs/pinE-precond.log)."
+}

@@ -1,0 +1,189 @@
+{
+  "package": "interval-inspector",
+  "title": "Interval Inspector",
+  "blurb": "Interval goals drawn on a labeled number line, with lemma suggestions whose side conditions are checked ready/missing; click a suggestion to apply it.",
+  "header": [
+    "import Mathlib",
+    "import IntervalInspector"
+  ],
+  "cursors": [
+    {
+      "line": 17,
+      "character": 0,
+      "command": "#interval_inspect (Set.Ioc (1:ℝ) 2 ∪",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Set.Ioc_union_Ioc_eq_Ioc",
+          "1 ≤ 2 ✓ ready"
+        ]
+      }
+    },
+    {
+      "line": 20,
+      "character": 0,
+      "command": "#interval_inspect (Set.Icc (0:ℝ) 3 ⊆",
+      "expect": {
+        "panelTitle": "HTML Display"
+      }
+    },
+    {
+      "line": 23,
+      "character": 0,
+      "command": "#interval_inspect ((3:ℝ) ∈",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Set.mem_Icc"
+        ]
+      }
+    },
+    {
+      "line": 26,
+      "character": 0,
+      "command": "#interval_inspect (Set.Ioc (1:ℝ) 2).Nonempty",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "Nonempty"
+        ]
+      }
+    },
+    {
+      "line": 29,
+      "character": 0,
+      "command": "#interval_inspect (Set.Ico (0:ℕ) 2",
+      "expect": {
+        "panelTitle": "HTML Display",
+        "texts": [
+          "DenselyOrdered"
+        ]
+      }
+    },
+    {
+      "line": 40,
+      "character": 2,
+      "command": "interval_inspect?",
+      "expect": {
+        "texts": [
+          "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+          "a ≤ b ✓ ready",
+          "b ≤ c ✓ ready"
+        ],
+        "linkTexts": [
+          "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+        ]
+      }
+    },
+    {
+      "line": 45,
+      "character": 2,
+      "command": "interval_inspect?",
+      "expect": {
+        "texts": [
+          "from set-builder"
+        ],
+        "linkTexts": [
+          "exact Set.Ico_subset_Icc_self"
+        ]
+      }
+    },
+    {
+      "line": 51,
+      "character": 2,
+      "command": "interval_inspect?",
+      "expect": {
+        "texts": [
+          "x ∈ Ioo 0 2"
+        ],
+        "linkTexts": [
+          "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+        ]
+      }
+    }
+  ],
+  "selections": [
+    {
+      "line": 51,
+      "character": 2,
+      "command": "interval_inspect?",
+      "select": [
+        {
+          "goal": 0,
+          "hyp": "hx"
+        }
+      ],
+      "expect": {
+        "texts": [
+          "x ∈ Ioo 0 1",
+          "Set.mem_Ioo"
+        ],
+        "note": "it inspects the hypothesis hx instead of the goal x ∈ Ioo 0 2"
+      }
+    }
+  ],
+  "clicks": [
+    {
+      "cursorLine": 40,
+      "linkText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 19,
+            "line": 40
+          },
+          "start": {
+            "character": 2,
+            "line": 40
+          }
+        },
+        "newText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 45,
+      "linkText": "exact Set.Ico_subset_Icc_self",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 19,
+            "line": 45
+          },
+          "start": {
+            "character": 2,
+            "line": 45
+          }
+        },
+        "newText": "exact Set.Ico_subset_Icc_self"
+      },
+      "postClickDiagnostics": "clean"
+    },
+    {
+      "cursorLine": 51,
+      "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+      "kind": "makeEditLink",
+      "expectedEdit": {
+        "range": {
+          "end": {
+            "character": 19,
+            "line": 51
+          },
+          "start": {
+            "character": 2,
+            "line": 51
+          }
+        },
+        "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+      },
+      "postClickDiagnostics": "clean"
+    }
+  ],
+  "dropped": [
+    "all `(text := true)` `#guard_msgs` pins",
+    "7 of the 10 `interval_inspect?` proofs (membership/Ioo/ne_empty variants), the unknown-order and transitive-chaining demos, the section-variable demo",
+    "the ℕ `Iio 0` suppression demo and `Set.Icc 0 3 ⊆ Set.Ioo 1 2` theme demo"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "package": "hasse-refused",
+  "title": "E3 negative control: a widget package header with only init.snap loaded must be refused",
+  "headless": { "expectMode": "refused", "expectMissing": ["HasseView"] },
+  "header": ["import HasseView"],
+  "cursors": []
+}

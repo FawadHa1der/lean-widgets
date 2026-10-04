@@ -1,0 +1,498 @@
+{
+ "package": "chart-kit",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:50:12.397Z",
+ "generator": "lean/goldens/lsp-golden.mjs",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import ChartKit"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "bf34ce6416fa1c86372f6814ffeda4ad1ec8178df58b3fd7c124707a05c3afa2",
+ "documentSha256": "bf34ce6416fa1c86372f6814ffeda4ad1ec8178df58b3fd7c124707a05c3afa2",
+ "elaborationMs": 2633,
+ "documentDiagnostics": [],
+ "cursors": [
+  {
+   "line": 30,
+   "character": 0,
+   "command": "#chart diceChart",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 16,
+       "line": 30
+      },
+      "start": {
+       "character": 0,
+       "line": 30
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "2",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 1,
+      "line": 24,
+      "rect": 12,
+      "svg": 1,
+      "text": 15
+     },
+     "svgTagCounts": {
+      "line": 24,
+      "rect": 12,
+      "svg": 1,
+      "text": 15
+     },
+     "components": {},
+     "texts": [
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "12",
+      "0",
+      "0.05",
+      "0.1",
+      "0.15",
+      "0.2",
+      "sum",
+      "probability",
+      "Sum of two dice",
+      "P(sum)"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "78ce3d82738abd553086a8af592d60fb98e76740f9c0140ae4d02ab3535ae0f2"
+    }
+   ]
+  },
+  {
+   "line": 35,
+   "character": 0,
+   "command": "#chart cdfChart",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 15,
+       "line": 35
+      },
+      "start": {
+       "character": 0,
+       "line": 35
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "2",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 1,
+      "line": 26,
+      "polyline": 1,
+      "rect": 1,
+      "svg": 1,
+      "text": 16
+     },
+     "svgTagCounts": {
+      "line": 26,
+      "polyline": 1,
+      "rect": 1,
+      "svg": 1,
+      "text": 16
+     },
+     "components": {},
+     "texts": [
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "12",
+      "0",
+      "0.2",
+      "0.4",
+      "0.6",
+      "0.8",
+      "1",
+      "sum",
+      "P(sum <= s)",
+      "CDF of two dice",
+      "cdf"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "b18a6e340b18714a94fe1967cb280dd894e86be52bec9e1f7a1684d4ae1ecd14"
+    }
+   ]
+  },
+  {
+   "line": 38,
+   "character": 0,
+   "command": "#chart { title? := some \"n^2/10 vs 2^n/10\"",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 102,
+       "line": 43
+      },
+      "start": {
+       "character": 0,
+       "line": 38
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "0",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 1,
+      "line": 20,
+      "polyline": 2,
+      "rect": 2,
+      "svg": 1,
+      "text": 13
+     },
+     "svgTagCounts": {
+      "line": 20,
+      "polyline": 2,
+      "rect": 2,
+      "svg": 1,
+      "text": 13
+     },
+     "components": {},
+     "texts": [
+      "0",
+      "2",
+      "4",
+      "6",
+      "8",
+      "0",
+      "10",
+      "20",
+      "30",
+      "n",
+      "n^2/10 vs 2^n/10",
+      "n^2/10",
+      "2^n/10"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "3c6c731e3a403602a38327a475a40a96188196da10884e3119852b91da9dbbfe"
+    }
+   ]
+  },
+  {
+   "line": 46,
+   "character": 0,
+   "command": "#chart { title? := some \"n^2 mod 11\"",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 103,
+       "line": 49
+      },
+      "start": {
+       "character": 0,
+       "line": 46
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "0",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "circle": 11,
+      "div": 1,
+      "line": 26,
+      "svg": 1,
+      "text": 13
+     },
+     "svgTagCounts": {
+      "circle": 11,
+      "line": 26,
+      "svg": 1,
+      "text": 13
+     },
+     "components": {},
+     "texts": [
+      "0",
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "0",
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "n^2 mod 11"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "71556415a6ac37b139f96360adde1294424ede1d8169776e470e37683e9ca765"
+    }
+   ]
+  },
+  {
+   "line": 57,
+   "character": 0,
+   "command": "#chart weekChart",
+   "panels": [
+    {
+     "id": "ProofWidgets.HtmlDisplayPanel",
+     "kind": "static",
+     "method": null,
+     "range": {
+      "end": {
+       "character": 16,
+       "line": 57
+      },
+      "start": {
+       "character": 0,
+       "line": 57
+      }
+     },
+     "name": null,
+     "panelTitle": "HTML Display",
+     "firstText": "Mon",
+     "js": {
+      "bytes": 1256,
+      "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
+      "importsInfoview": true
+     },
+     "rpcMs": 0,
+     "error": null,
+     "tagCounts": {
+      "div": 1,
+      "line": 24,
+      "rect": 5,
+      "svg": 1,
+      "text": 18
+     },
+     "svgTagCounts": {
+      "line": 24,
+      "rect": 5,
+      "svg": 1,
+      "text": 18
+     },
+     "components": {},
+     "texts": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "0",
+      "5",
+      "10",
+      "15",
+      "20",
+      "25",
+      "commits",
+      "12",
+      "17",
+      "8",
+      "21",
+      "5",
+      "Commits per weekday"
+     ],
+     "codeTexts": [],
+     "linkTexts": [],
+     "links": [],
+     "htmlSha256": "b69724e0d3880ae53960787d917a16247876a971ec73d0c1f180fd00fd7fd33e"
+    }
+   ]
+  }
+ ],
+ "selections": [],
+ "clicks": [],
+ "declaredChecks": [
+  {
+   "ok": true,
+   "what": "document elaborates with zero errors"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30 (#chart diceChart): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: text \"Sum of two dice\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: text \"probability\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: svg <rect> × 12"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: svg <line> × 24"
+  },
+  {
+   "ok": true,
+   "what": "cursor 30: svg <text> × 15"
+  },
+  {
+   "ok": true,
+   "what": "cursor 35 (#chart cdfChart): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 35: text \"CDF of two dice\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 35: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 38 (#chart { title? := some \"n^2/10 vs 2^n/10\"): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 38: text \"n^2/10 vs 2^n/10\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 38: text \"2^n/10\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 38: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 46 (#chart { title? := some \"n^2 mod 11\"): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 46: text \"n^2 mod 11\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 46: panel title HTML Display"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57 (#chart weekChart): ≥1 panel, every panel JS retrievable (+@leanprover/infoview) and every RPC answered"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Commits per weekday\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Mon\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Tue\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Wed\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Thu\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"Fri\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: text \"21\" present"
+  },
+  {
+   "ok": true,
+   "what": "cursor 57: panel title HTML Display"
+  }
+ ],
+ "hovers": [],
+ "codeActions": [],
+ "ok": true,
+ "failures": [],
+ "totalMs": 2690
+}

@@ -1,0 +1,26 @@
+# Fail any push or pull request that commits a machine-specific absolute path (a home directory, a temp or volume
+# path, an absolute symlink) into code or configuration. Historical run records are exempt by an explicit list in the
+# checker itself (qed64-showcase/scripts/check-portable.mjs).
+name: portability
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-portable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No machine paths in committed code or configuration
+        run: node qed64-showcase/scripts/check-portable.mjs
+      - name: Browser-lock FIFO and stale-takeover tests (scratch lock dir; no browser)
+        run: |
+          MIN_FREE_GB=0 bash qed64-showcase/tests/ux/bringup/lockfifo.sh
+          bash qed64-showcase/tests/ux/bringup/lockrace.sh

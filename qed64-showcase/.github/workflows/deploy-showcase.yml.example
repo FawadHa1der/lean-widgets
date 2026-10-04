@@ -1,0 +1,68 @@
+# TEMPLATE, not active (GitHub only runs .yml/.yaml in the REPOSITORY ROOT's .github/workflows/). To enable, copy it to
+# <repo>/.github/workflows/deploy-showcase.yml (this project is the repository's qed64-showcase/ since 2026-10-04). Modelled on
+# wasm64-lean4game/.github/workflows/deploy.yml: pushes redeploy the APP SHELL only (seconds, ~18 MB of static files);
+# the R2 artifacts (2.4 GB) are uploaded by hand with scripts/upload-artifacts.sh when the pin or the overlays change.
+#
+# THE CATCH (docs/DEPLOY-CLOUDFLARE.md, "CI"): the shell includes the PINNED QED64 dist from release/<pin id>/dist,
+# and release/ is gitignored, so a clean checkout cannot stage it, and the manifest's R*/G* gates need the
+# artifacts and the UX record, which only exist on the owner's machine. RECOMMENDED: deploy by hand from that machine
+# (scripts/deploy-app.sh, every gate runs), which is what the artifacts need anyway. This template implements the
+# other option: the owner publishes the pinned dist as a tarball, CI checks every file of it against QED64.lock.json
+# (scripts/stage-shell-from-tarball.mjs), runs the gallery gate G1 (scripts/check-gallery.mjs, the same gate the
+# manual path runs) and deploys it with the checkout's gallery, with the same `--message "pin … gallery … prefix …"`
+# as scripts/deploy-app.sh so `wrangler versions list` can tell versions apart for a rollback. Without the secrets it
+# only runs the worker tests and logs a skip. It cannot run G2 (the UX verdict) or the release-record check: a push
+# can only redeploy a shell whose artifacts a manual scripts/upload-artifacts.sh already published.
+#
+# Tarball (on the owner's machine; docs/DEPLOY-CLOUDFLARE.md section 9):
+#   ID=$(node scripts/lib/pins.mjs active); BID=$(node scripts/lib/pins.mjs active-bid)
+#   COPYFILE_DISABLE=1 tar --no-xattrs -C release/$ID -czf qed64-dist-$ID.tar.gz dist public/runtime/runtime-manifest.$BID.json
+#
+# Secrets (repository settings): CLOUDFLARE_API_TOKEN (Workers Scripts: Edit ONLY; no R2 permission),
+# CLOUDFLARE_ACCOUNT_ID, SHOWCASE_DIST_URL (where CI downloads qed64-dist-<pin id>.tar.gz, e.g. a GitHub release
+# asset of this repo). The tarball must match the lock of the commit being deployed; a re-pin needs a new tarball.
+name: deploy-showcase
+on:
+  push:
+    branches: [main]
+    paths: ['qed64-showcase/gallery/**', 'qed64-showcase/infra/**', 'qed64-showcase/wrangler.toml.example', 'qed64-showcase/QED64.lock.json', 'qed64-showcase/pins/**']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qed64-showcase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test infra/worker.test.mjs
+      - id: secrets
+        run: echo "present=${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.SHOWCASE_DIST_URL != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.secrets.outputs.present != 'true'
+        run: echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / SHOWCASE_DIST_URL not set — skipping deploy (deploy by hand with scripts/deploy-app.sh)"
+      - if: steps.secrets.outputs.present == 'true'
+        run: npm ci --prefix infra --no-audit --no-fund
+      - if: steps.secrets.outputs.present == 'true'
+        name: Stage the shell (pinned dist from the tarball, verified against QED64.lock.json + the checkout's gallery)
+        run: |
+          curl -fsSL "$SHOWCASE_DIST_URL" -o "$RUNNER_TEMP/qed64-dist.tar.gz"
+          node scripts/stage-shell-from-tarball.mjs "$RUNNER_TEMP/qed64-dist.tar.gz" --out out/deploy/assets --release-dir
+        env:
+          SHOWCASE_DIST_URL: ${{ secrets.SHOWCASE_DIST_URL }}
+      - if: steps.secrets.outputs.present == 'true'
+        name: Gallery gate G1 (the static gallery checks + sim-gallery; needs the release dir written above)
+        run: node scripts/check-gallery.mjs
+      - if: steps.secrets.outputs.present == 'true'
+        name: Deploy (bucket and prefix from infra/deploy.env, the same values the manual upload used)
+        run: |
+          node scripts/lib/wrangler-config.mjs write wrangler.toml --assets out/deploy/assets
+          BID=$(node -p 'require("./QED64.lock.json").qed64.buildId'); ID=$(node -p 'require("./QED64.lock.json").qed64.commit.slice(0, 7)')
+          GAL=$(node -p 'JSON.parse(require("child_process").execFileSync(process.execPath, ["scripts/lib/gallery-hash.mjs", "--json"])).contentSha256.slice(0, 16)')
+          PREFIX=$(node scripts/lib/deploy-env.mjs | sed -n 's/^R2_PREFIX=//p')
+          npx --prefix infra wrangler deploy --message "pin $ID ($BID) gallery $GAL prefix $PREFIX ci ${GITHUB_SHA::12}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
