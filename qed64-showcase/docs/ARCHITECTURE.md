@@ -44,8 +44,9 @@ at `/showcase/` with its same-origin bridge, the Cloudflare Worker, and the test
 
 * **Served pin.** The submodule is checked out at the active pin's commit; `scripts/lib/qed64-src.mjs` answers "where
   are QED64's sources at this pin". `showcase.sh pin use <id>` moves the submodule to the new pin's commit and refuses
-  if a tracked file in it is modified. Commit the new gitlink afterwards. The previous pin keeps its sources as a
-  worktree.
+  if a tracked file in it is modified. It then stages the switch: the lock link, `gallery/pin.json` and the gitlink,
+  `git add`ed together, so a commit records it and the index stays consistent. The previous pin keeps its sources as a
+  worktree. Rehearsed on a fresh clone (E → C → E, `$W/logs/r2/clone-spaced-pin-switch-2.log`).
 * **Staged pins.** These are git worktrees of the submodule's own repository (`git -C deps/qed64 worktree add --detach
   $W/qed64-pins/<id> <commit>`). If the commit is not present, it is fetched from the submodule's origin. No other QED64
   checkout on the machine is read or written. `node scripts/qed64-src.mjs ensure|check|dir [<id>|--all]`.

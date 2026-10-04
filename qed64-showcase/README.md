@@ -314,7 +314,9 @@ scripts/showcase.sh headless controls         # optional: the wasm controls on t
 scripts/showcase.sh gallery                   # then `ux` for a verdict on the new pin
 ```
 
-`pin use` refuses (rc 3) for an unregistered or incomplete pin, while this repo's `serve.mjs` (without `SHOWCASE_PIN`)
+`pin use` also moves the submodule `deps/qed64` to the pin's commit and stages the switch (the lock link,
+`gallery/pin.json`, the gitlink): commit them to record the served pin. It refuses (rc 3) for an unregistered or
+incomplete pin, while this repo's `serve.mjs` (without `SHOWCASE_PIN`)
 runs, during a bake, a headless run or a showcase browser run; an interrupted switch is reported by `pin current` and
 finished by re-running `pin use`. The switches A→C→A→C, C→B→C and C→D→C were rehearsed, and C→E is the current one
 (docs/REPIN-LOG.md). Each

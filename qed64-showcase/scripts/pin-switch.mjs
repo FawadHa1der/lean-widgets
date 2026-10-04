@@ -27,7 +27,9 @@
 //                                                    (--allow-incomplete only for bringing up a new runtime, whose stage1,
 //                                                    bakes and overlays are then made through the active links); the
 //                                                    submodule deps/qed64 has no modified tracked file (it is moved to the
-//                                                    pin's commit: its gitlink IS the served pin; commit it); no
+//                                                    pin's commit: its gitlink IS the served pin); the lock link,
+//                                                    gallery/pin.json and the gitlink are then STAGED together (commit
+//                                                    them to record the switch); no
 //                                                    serve.mjs of this repo that follows the active pin (it serves the
 //                                                    release it started with; servers started with SHOWCASE_PIN=<id> are
 //                                                    pinned explicitly and allowed), no bake, no headless run, no browser
@@ -343,6 +345,15 @@ if (cmd === 'list') {
   const bg = spawnSync(process.execPath, [path.join(SC, 'scripts', 'build-gallery.mjs')], { cwd: SC, encoding: 'utf8' });
   process.stdout.write(bg.stdout.split('\n').filter((l) => /^(pin|BUILD-GALLERY|wrote|FAIL)/.test(l)).map((l) => `  build-gallery: ${l}\n`).join(''));
   if (bg.status !== 0) { console.log(`FAIL build-gallery.mjs rc=${bg.status}: ${(bg.stderr || '').slice(0, 400)}`); process.exit(1); }
+  // the switch as the repository sees it: the lock link, gallery/pin.json and the submodule's gitlink are STAGED together
+  // (git add of exactly these three paths), so the index stays consistent (gitlink == submodule HEAD == lock; verify #8)
+  // and one commit records the switch. Nothing else in the index is touched.
+  const REPO_ROOT = path.resolve(SC, '..');
+  const staged = [path.join(SC, 'QED64.lock.json'), path.join(SC, 'gallery', 'pin.json'), SUBMODULE].map((p) => path.relative(REPO_ROOT, p));
+  const ga = spawnSync('git', ['-C', REPO_ROOT, 'add', '--', ...staged], { encoding: 'utf8' });
+  if (ga.status !== 0) { console.log(`FAIL git add ${staged.join(' ')}: ${(ga.stderr || '').trim()}`); process.exit(1); }
+  const pend = (spawnSync('git', ['-C', REPO_ROOT, 'diff', '--cached', '--name-only', '--', ...staged], { encoding: 'utf8' }).stdout || '').trim();
+  console.log(pend ? `  staged the switch (${pend.split('\n').join(', ')}): commit it to record pin ${to} as the served pin` : '  the committed state already serves this pin (nothing staged)');
   journal.state = 'done'; journal.done = new Date().toISOString();
   fs.writeFileSync(jf, JSON.stringify(journal, null, 2) + '\n');
   fs.appendFileSync(path.join(SC, 'out', 'pins', 'history.jsonl'), JSON.stringify(journal) + '\n');
