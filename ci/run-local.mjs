@@ -226,9 +226,8 @@ async function emulate(step, w, js) {
     case 'actions/checkout': {
       if (withs.submodules !== 'recursive') { say(`REFUSED: actions/checkout without 'submodules: recursive' (every checkout in this repository must fetch QED64, the submodule qed64-showcase/deps/qed64)`); return 1; }
       if (fs.existsSync(w.ws) && fs.readdirSync(w.ws).length) { say(`REFUSED: ${w.ws} is not empty`); return 1; }
-      fs.mkdirSync(path.dirname(w.ws), { recursive: true });
       say(`checkout (emulated): git clone ${REPO} -> ${w.ws}, detached at ${SHA.slice(0, 12)}; submodules: recursive`);
-      const rc1 = await runProcess('git', ['clone', '--no-checkout', '--quiet', REPO, w.ws], { cwd: path.dirname(w.ws), env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
+      const rc1 = await runProcess('git', ['clone', '--no-checkout', '--quiet', REPO, '.'], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
       if (rc1) return rc1;
       const rc2 = await runProcess('git', ['-c', 'advice.detachedHead=false', 'checkout', '--quiet', SHA], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
       if (rc2) return rc2;
@@ -316,7 +315,7 @@ async function runInstance(id, matrix) {
   const dir = path.join(OUT, name.replace(/[^A-Za-z0-9._-]+/g, '_'));
   const ws = path.join(dir, 'lean-widgets');   // as on GitHub: <runner work dir>/lean-widgets/lean-widgets
   const temp = path.join(dir, '_temp'); const logs = path.join(dir, 'logs');
-  for (const d of [temp, logs]) fs.mkdirSync(d, { recursive: true });
+  for (const d of [temp, logs, ws]) fs.mkdirSync(d, { recursive: true });   // GitHub creates the (empty) workspace
   const js = { name, job: id, matrix, result: 'success', steps: [], deviations: [], dir: path.relative(OUT, dir) };
   const files = { GITHUB_OUTPUT: 'output', GITHUB_ENV: 'env', GITHUB_PATH: 'path', GITHUB_STEP_SUMMARY: 'summary.md' };
   const baseEnv = Object.fromEntries(KEEP_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
