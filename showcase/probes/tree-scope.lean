@@ -9,12 +9,12 @@ panels, the forest grid, the Catalan gallery, the two-frame diff filmstrip,
 and the real 4-step RBMap evolution (elaborated through the same
 `evolveFrames` pipeline the `#tree_evolve` command uses, so the rotation at
 step 3 carries its genuine diff badges) — serialized to
-`../showcase/dumps/tree-scope.json` for the showcase site's React
+`../../showcase/dumps/tree-scope.json` for the showcase site's React
 verification harness.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/tree-scope && lake env lean "../showcase/probes/tree-scope.lean"
+    cd packages/tree-scope && lake env lean "../../showcase/probes/tree-scope.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`TreeScopeTests/RenderTests.lean`, `CatalanTests.lean`, `EvolveTests.lean`):
@@ -90,7 +90,7 @@ elab "#tree_scope_probe_dump " t:term:max "[" ops:term,* "]" : command => do
       (renderForest (catalanGallery 4) (maxRowWidth := 900)),
     probeEntry "filmstrip-two-frame-strip" (renderFilmstrip strip),
     probeEntry "filmstrip-rbmap-evolution-4-steps" (renderFilmstrip frames)]
-  IO.FS.writeFile "../showcase/dumps/tree-scope.json"
+  IO.FS.writeFile "../../showcase/dumps/tree-scope.json"
     (probeDump "tree-scope" entries).pretty
 
 #tree_scope_probe_dump (Lean.RBMap.empty : Lean.RBMap Nat String compare) [

@@ -10,13 +10,13 @@ over the demo distributions (re-defined here at the root namespace so
 suggestion texts read `unfold die` exactly as in a user file), with the same
 suggestion/filmstrip assembly the command elaborators perform, plus the
 `badModel` warnings panel and the non-unique identity chain from the test
-fixtures — serialized to `../showcase/dumps/dist-lens.json` for the showcase
+fixtures — serialized to `../../showcase/dumps/dist-lens.json` for the showcase
 site's React verification harness.  Extraction runs in `TermElabM` inside
 `#eval`.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/dist-lens && lake env lean "../showcase/probes/dist-lens.lean"
+    cd packages/dist-lens && lake env lean "../../showcase/probes/dist-lens.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`DistLensTests/ContractTests.lean`): the entries dumped here are the
@@ -143,5 +143,5 @@ private def chainEntry (name srcTxt : String) (t : Syntax.Term)
   -- A violating model still renders (warnings shown) — the test fixture.
   entries := entries.push
     (probeEntry "bad_model_warnings_panel" (renderDistPanel badModel))
-  IO.FS.writeFile "../showcase/dumps/dist-lens.json"
+  IO.FS.writeFile "../../showcase/dumps/dist-lens.json"
     (probeDump "dist-lens" entries).pretty

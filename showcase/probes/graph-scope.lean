@@ -9,12 +9,12 @@ attaches — plain panels across every rendering mode/overlay/corner case, plus
 the two interactive `MakeEditLink` panels (`path3Panel`, `gateFailPanel`: the
 real link renderer over the synthetic `testDocMeta` document, exactly the
 `MakeEditLinkProps.ofReplaceRange` payloads a click uses) — serialized to
-`../showcase/dumps/graph-scope.json` for the showcase site's React
+`../../showcase/dumps/graph-scope.json` for the showcase site's React
 verification harness.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/graph-scope && lake env lean "../showcase/probes/graph-scope.lean"
+    cd packages/graph-scope && lake env lean "../../showcase/probes/graph-scope.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`GraphScopeTests/ContractTests.lean` for the display panels,
@@ -72,5 +72,5 @@ private def probeDump (pkg : String) (entries : Array Json) : Json :=
     -- synthetic test document — the fixtures pinned by InsertTests).
     probeEntry "interactive_path3_links" path3Panel,
     probeEntry "interactive_gate_fail" gateFailPanel]
-  IO.FS.writeFile "../showcase/dumps/graph-scope.json"
+  IO.FS.writeFile "../../showcase/dumps/graph-scope.json"
     (probeDump "graph-scope" entries).pretty

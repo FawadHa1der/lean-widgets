@@ -5,12 +5,12 @@ import ChartKit
 
 Dumps the exact top-level panel `Html` trees the `#chart` command attaches for
 the six shipped demo charts (`renderChart` over `ChartKit.Demo`), serialized to
-`../showcase/dumps/chart-kit.json` for the showcase site's React verification
+`../../showcase/dumps/chart-kit.json` for the showcase site's React verification
 harness.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/chart-kit && lake env lean "../showcase/probes/chart-kit.lean"
+    cd packages/chart-kit && lake env lean "../../showcase/probes/chart-kit.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`ChartKitTests/ContractTests.lean`): the entries dumped here are the demo
@@ -64,5 +64,5 @@ private def chartHtml (name : String) (s : ChartSpec) : IO Html :=
   let mut entries : Array Json := #[]
   for (name, spec) in specs do
     entries := entries.push (probeEntry name (← chartHtml name spec))
-  IO.FS.writeFile "../showcase/dumps/chart-kit.json"
+  IO.FS.writeFile "../../showcase/dumps/chart-kit.json"
     (probeDump "chart-kit" entries).pretty

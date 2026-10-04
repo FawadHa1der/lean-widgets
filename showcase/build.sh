@@ -9,11 +9,11 @@ if [ "${1:-}" != "--no-dump" ] && [ -n "$(ls probes/*.lean 2>/dev/null)" ]; then
   echo "── regenerating panel dumps from probes ──"
   for probe in probes/*.lean; do
     pkg=$(basename "$probe" .lean)
-    if [ -d "../$pkg" ]; then
+    if [ -d "../packages/$pkg" ]; then
       echo "  $pkg"
-      (cd "../$pkg" && lake env lean "../showcase/$probe")
+      (cd "../packages/$pkg" && lake env lean "../../showcase/$probe")
     else
-      echo "  skipping $probe (no ../$pkg)"; 
+      echo "  skipping $probe (no ../packages/$pkg)"
     fi
   done
 else

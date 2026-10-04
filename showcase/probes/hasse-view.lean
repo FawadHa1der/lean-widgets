@@ -9,12 +9,12 @@ plain panels for every poset shape, overlay panels, validity-warning panels,
 plus the two interactive link panels (`renderPanelWith` over the `fin3Links` /
 `rejectedLinks` fixtures with the real `editLink` renderer and the synthetic
 `testDocMeta` document, exactly the `MakeEditLinkProps.ofReplaceRange` payloads
-a click uses) — serialized to `../showcase/dumps/hasse-view.json` for the
+a click uses) — serialized to `../../showcase/dumps/hasse-view.json` for the
 showcase site's React verification harness.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/hasse-view && lake env lean "../showcase/probes/hasse-view.lean"
+    cd packages/hasse-view && lake env lean "../../showcase/probes/hasse-view.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`HasseViewTests/ContractTests.lean`): the entries dumped here are the panels
@@ -73,5 +73,5 @@ private def probeDump (pkg : String) (entries : Array Json) : Json :=
     probeEntry "links-panel-rejected"
       (renderPanelWith (chainP 3) (links := rejectedLinks)
         (mkLink := editLink testDocMeta testInsertRange))]
-  IO.FS.writeFile "../showcase/dumps/hasse-view.json"
+  IO.FS.writeFile "../../showcase/dumps/hasse-view.json"
     (probeDump "hasse-view" entries).pretty

@@ -1,8 +1,9 @@
 #!/bin/bash
 # Build and test every widget package; print a summary table.
 # Usage: ./test-all.sh   (from anywhere; resolves its own directory)
+# The packages live under packages/<name>/ (each one a self-contained Lake project).
 set -u
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/packages"
 PKGS=(interval-inspector expr-xray simp-lens graph-scope tree-scope hasse-view dist-lens chart-kit lean-widget-kit)
 declare -a RESULTS
 FAIL=0

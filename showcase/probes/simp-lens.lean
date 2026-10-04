@@ -8,7 +8,7 @@ Dumps the exact top-level panel `Html` the `simp_lens` tactic saves —
 `renderPanel` (filmstrip + minimal call + exclusion previews + diagnostics),
 `renderPanelFallback` (the degraded heartbeat-budget panel), and
 `renderPanelAt` (per-location sections) — for the representative traced runs,
-serialized to `../showcase/dumps/simp-lens.json` for the showcase site's
+serialized to `../../showcase/dumps/simp-lens.json` for the showcase site's
 React verification harness.
 
 Each `#probe_dump_lens` / `#probe_dump_lens_at` command below parses its goal
@@ -19,7 +19,7 @@ regenerates the dump from scratch.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/simp-lens && lake env lean "../showcase/probes/simp-lens.lean"
+    cd packages/simp-lens && lake env lean "../../showcase/probes/simp-lens.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`SimpLensTests/ContractTests.lean`): the entries dumped here are the panels
@@ -56,7 +56,7 @@ private def probeEntry (name : String) (h : Html) : Json :=
 private def probeDump (pkg : String) (entries : Array Json) : Json :=
   Json.mkObj [("package", Json.str pkg), ("entries", Json.arr entries)]
 
-private def dumpPath : System.FilePath := "../showcase/dumps/simp-lens.json"
+private def dumpPath : System.FilePath := "../../showcase/dumps/simp-lens.json"
 
 /-- Append one entry to the dump file (read–modify–write, so the probe's
 commands can accumulate entries without cross-command state). -/

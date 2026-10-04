@@ -8,13 +8,13 @@ Dumps the exact top-level panel `Html` the `#xray` / `#xray_diff` commands
 attach (`xrayHtml`: all four preset trees + the `pp.explicit` sections;
 `xrayCompareHtml`: side-by-side trees with the ranked, defeq-annotated
 mismatch list) for the representative terms, serialized to
-`../showcase/dumps/expr-xray.json` for the showcase site's React verification
+`../../showcase/dumps/expr-xray.json` for the showcase site's React verification
 harness.  Elaboration runs in `TermElabM` inside `#eval`, mirroring the test
 suite.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/expr-xray && lake env lean "../showcase/probes/expr-xray.lean"
+    cd packages/expr-xray && lake env lean "../../showcase/probes/expr-xray.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`ExprXRayTests/RenderTests.lean`, "React style-contract check" section): the
@@ -75,5 +75,5 @@ private def probeDump (pkg : String) (entries : Array Json) : Json :=
   -- The empty-diff compare view (banner-less path).
   entries := entries.push
     (probeEntry "compare-no-differences" (← xrayCompareHtml e1 e1))
-  IO.FS.writeFile "../showcase/dumps/expr-xray.json"
+  IO.FS.writeFile "../../showcase/dumps/expr-xray.json"
     (probeDump "expr-xray" entries).pretty

@@ -1,6 +1,6 @@
 import IntervalInspector
 import IntervalInspectorTests.Helpers
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 
 /-!
 # Showcase probe: interval-inspector
@@ -9,13 +9,13 @@ Dumps the exact top-level panel `Html` the `#interval_inspect` command /
 `interval_inspect?` tactic build (`inspectorHtml … plainTactic` over the full
 `elabAnalysis` pipeline: recognition, instance availability, order graph,
 layout, suggestions) for six end-to-end statements over real types,
-serialized to `../showcase/dumps/interval-inspector.json` for the showcase
+serialized to `../../showcase/dumps/interval-inspector.json` for the showcase
 site's React verification harness.  Elaboration runs in `TermElabM` inside
 `#eval`, mirroring the test helper commands.
 
 Run from the package directory (exactly how `showcase/build.sh` invokes it):
 
-    cd widgets/interval-inspector && lake env lean "../showcase/probes/interval-inspector.lean"
+    cd packages/interval-inspector && lake env lean "../../showcase/probes/interval-inspector.lean"
 
 MUST stay in sync with the package's React-contract tests
 (`IntervalInspectorTests/ReactContractTests.lean`): the entries dumped here
@@ -80,5 +80,5 @@ private def panelEntry (name : String) (t : Syntax.Term) : TermElabM Json := do
   -- ℕ `Ioo = ∅`: discrete carrier, missing-condition badge.
   entries := entries.push (← panelEntry "nat_ioo_eq_empty_discrete"
     (← `(Set.Ioo (0:ℕ) 1 = ∅)))
-  IO.FS.writeFile "../showcase/dumps/interval-inspector.json"
+  IO.FS.writeFile "../../showcase/dumps/interval-inspector.json"
     (probeDump "interval-inspector" entries).pretty
