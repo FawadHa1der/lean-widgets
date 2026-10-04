@@ -1,0 +1,2662 @@
+{
+ "package": "graph-scope",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:56:02.815Z",
+ "generator": "lean/goldens/lsp-golden.mjs --click-all",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import GraphScope"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "fc68ee30a02b4ade3abc20902503e711d8880fca2a1ba6cd80c0b5060e6ec6c5",
+ "documentDiagnostics": [],
+ "probes": 255,
+ "panelsRendered": 5,
+ "links": [
+  {
+   "n": 1,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 5)).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (0) (1) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": 0,
+   "classification": "clean",
+   "diagnosticsVersion": 2,
+   "editedVersion": 2,
+   "reElaborationMs": 509,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d812ffb09c21ed201219df1b6e40bf58eb758d77f03e08a5f2b71028da8044e5",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link1.lean"
+  },
+  {
+   "n": 2,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 5)).Adj (0) (4) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (0) (4) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 3,
+   "editedVersion": 3,
+   "reElaborationMs": 508,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ce6869b4564682ff2049bdefff88b2b861d9a1f22c28995762daa4ce72fc5025",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link2.lean"
+  },
+  {
+   "n": 3,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 5)).Adj (1) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (1) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 4,
+   "editedVersion": 4,
+   "reElaborationMs": 511,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "809937196a5f8bbe951fd288c816d04af020cd1dfe56982c9a02a61344813e68",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link3.lean"
+  },
+  {
+   "n": 4,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 5)).Adj (2) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (2) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 5,
+   "editedVersion": 5,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ef010c9e288d7725e5823a1c78c72f4fd1ecc507e58c2ddac24cbfd7d7fe0b80",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link4.lean"
+  },
+  {
+   "n": 5,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 5)).Adj (3) (4) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Adj (3) (4) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 20
+    },
+    "start": {
+     "character": 51,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 6,
+   "editedVersion": 6,
+   "reElaborationMs": 506,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "0d24eb5ed28cc8542e29b33195dc240902f81d0e24b70d624a0c440747be8fbf",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link5.lean"
+  },
+  {
+   "n": 6,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "title": "insert: example : ((cycleGraph 5)).degree (0) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (0) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": 1,
+   "classification": "clean",
+   "diagnosticsVersion": 7,
+   "editedVersion": 7,
+   "reElaborationMs": 513,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "34924ce5c0fa9e2bf75142f2f604d7c2559b719cf36e9756946789c1b9f4ef2f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link6.lean"
+  },
+  {
+   "n": 7,
+   "kind": "makeEditLink",
+   "linkText": "1",
+   "title": "insert: example : ((cycleGraph 5)).degree (1) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (1) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 8,
+   "editedVersion": 8,
+   "reElaborationMs": 516,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "e1802adf85295d7bffbbc37543ad3d1d7fa89e85ea15f35f111291730a98285d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link7.lean"
+  },
+  {
+   "n": 8,
+   "kind": "makeEditLink",
+   "linkText": "2",
+   "title": "insert: example : ((cycleGraph 5)).degree (2) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (2) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 9,
+   "editedVersion": 9,
+   "reElaborationMs": 512,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "79d64855ab38ece7fa3d7e09f32b40066f48a5b62496aae052d0bef97b183e82",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link8.lean"
+  },
+  {
+   "n": 9,
+   "kind": "makeEditLink",
+   "linkText": "3",
+   "title": "insert: example : ((cycleGraph 5)).degree (3) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (3) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 10,
+   "editedVersion": 10,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b14abe7dcb1f8018c146c0f559951de50b2519dc2b04b4a7a92225aa536f1c76",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link9.lean"
+  },
+  {
+   "n": 10,
+   "kind": "makeEditLink",
+   "linkText": "4",
+   "title": "insert: example : ((cycleGraph 5)).degree (4) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).degree (4) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 20
+    },
+    "start": {
+     "character": 54,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 11,
+   "editedVersion": 11,
+   "reElaborationMs": 506,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "2d97e438a80ccf581b93a7db5559f1b58253f014e9f77cbe81c4635687117797",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link10.lean"
+  },
+  {
+   "n": 11,
+   "kind": "makeEditLink",
+   "linkText": "components: 1 (connected)",
+   "title": "insert: example : ((cycleGraph 5)).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 27,
+      "line": 19
+     },
+     "start": {
+      "character": 27,
+      "line": 19
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 5)).Connected := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 20
+    },
+    "start": {
+     "character": 49,
+     "line": 20
+    }
+   },
+   "foundAt": [
+    {
+     "line": 19,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": 2,
+   "classification": "clean",
+   "diagnosticsVersion": 12,
+   "editedVersion": 12,
+   "reElaborationMs": 506,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8f08978f4c1565d7183191ddac9974e2b75bf417e407dd1bdfddf1ab187f0acf",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link11.lean"
+  },
+  {
+   "n": 12,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (1) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 13,
+   "editedVersion": 13,
+   "reElaborationMs": 508,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "189104810bfc8be12cfaea9700382f5ab523d69f4181b987e316ebf20304b39e",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link12.lean"
+  },
+  {
+   "n": 13,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 14,
+   "editedVersion": 14,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8dcb3e339b66be0a2005328da8ab03d5786f435005e39ac218d69c40401aa693",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link13.lean"
+  },
+  {
+   "n": 14,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (0) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (0) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 15,
+   "editedVersion": 15,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "40f9026cc28fb397c4858d0eb1ee5b045e1ceb5bc6f33e0ddd373c5e575e9b43",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link14.lean"
+  },
+  {
+   "n": 15,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (1) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (1) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 16,
+   "editedVersion": 16,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "99b860eac33c52f0a5bc8502dffb2cfab98ce0f2a78ffc8c5f07c032f5ab3142",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link15.lean"
+  },
+  {
+   "n": 16,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (1) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (1) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 17,
+   "editedVersion": 17,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "84f5f595a8b93ae43d651cef52dd2c7df2cbb2d6277ec5cfbb62c7ce3bc2b4d9",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link16.lean"
+  },
+  {
+   "n": 17,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((completeGraph (Fin 4))).Adj (2) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Adj (2) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 60,
+     "line": 23
+    },
+    "start": {
+     "character": 60,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 18,
+   "editedVersion": 18,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "5b08439af51088730bd3127755b8689fcdc64a34a5bf4449472947026f4f8453",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link17.lean"
+  },
+  {
+   "n": 18,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "title": "insert: example : ((completeGraph (Fin 4))).degree (0) = 3 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).degree (0) = 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 63,
+     "line": 23
+    },
+    "start": {
+     "character": 63,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 19,
+   "editedVersion": 19,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "a64441f1955786111c4ce3b28499604a7dc410c19acf8c953ef4308694d5f02c",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link18.lean"
+  },
+  {
+   "n": 19,
+   "kind": "makeEditLink",
+   "linkText": "1",
+   "title": "insert: example : ((completeGraph (Fin 4))).degree (1) = 3 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).degree (1) = 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 63,
+     "line": 23
+    },
+    "start": {
+     "character": 63,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 20,
+   "editedVersion": 20,
+   "reElaborationMs": 516,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d7c5ebf2ba1df369e655a861e7e5b89b80bd003daa454448f44a98cb897bd99b",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link19.lean"
+  },
+  {
+   "n": 20,
+   "kind": "makeEditLink",
+   "linkText": "2",
+   "title": "insert: example : ((completeGraph (Fin 4))).degree (2) = 3 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).degree (2) = 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 63,
+     "line": 23
+    },
+    "start": {
+     "character": 63,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 21,
+   "editedVersion": 21,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c12d92aa3315691cac12bc1333612ddf060a6220e801bf1095b1cd0949183398",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link20.lean"
+  },
+  {
+   "n": 21,
+   "kind": "makeEditLink",
+   "linkText": "3",
+   "title": "insert: example : ((completeGraph (Fin 4))).degree (3) = 3 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).degree (3) = 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 63,
+     "line": 23
+    },
+    "start": {
+     "character": 63,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 22,
+   "editedVersion": 22,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "2e78f0f471286525239a24aceebcb48b69c8df3a73b8c4a854e77a40ca99be02",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link21.lean"
+  },
+  {
+   "n": 22,
+   "kind": "makeEditLink",
+   "linkText": "components: 1 (connected)",
+   "title": "insert: example : ((completeGraph (Fin 4))).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 36,
+      "line": 22
+     },
+     "start": {
+      "character": 36,
+      "line": 22
+     }
+    },
+    "newText": "\nexample : ((completeGraph (Fin 4))).Connected := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 58,
+     "line": 23
+    },
+    "start": {
+     "character": 58,
+     "line": 23
+    }
+   },
+   "foundAt": [
+    {
+     "line": 22,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 23,
+   "editedVersion": 23,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "2bba8c5a7af9ce4a049c13221720230225b9e2d69b2998c604bc9235e967043d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link22.lean"
+  },
+  {
+   "n": 23,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (0) (1) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 24,
+   "editedVersion": 24,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8a4085cf9e9c02f1bb66060a6f6bcf5f5eae7f065fd386c2d7fcba752a2fc047",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link23.lean"
+  },
+  {
+   "n": 24,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (0) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (0) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 25,
+   "editedVersion": 25,
+   "reElaborationMs": 512,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "fa8427d87c400f17453c9861b5464732fef28922691fe88eb6ad6c3adafedfbe",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link24.lean"
+  },
+  {
+   "n": 25,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (1) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (1) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 26,
+   "editedVersion": 26,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "f30f7754c4e121465955dc3bf7314517809194eceaffc35fb5da50a615256ad2",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link25.lean"
+  },
+  {
+   "n": 26,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (3) (4) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (3) (4) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 27,
+   "editedVersion": 27,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "dec21409bf49a0c528b1c6fbaa7b480996b123c8f2dff0dcc38bb7e0686869cf",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link26.lean"
+  },
+  {
+   "n": 27,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (3) (5) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (3) (5) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 28,
+   "editedVersion": 28,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "27f024bc01a6aa11db2ccd013363f548513bc5df478c4f509ac6ad460d48e832",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link27.lean"
+  },
+  {
+   "n": 28,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : (twoTriangles).Adj (4) (5) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).Adj (4) (5) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 29,
+   "editedVersion": 29,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "465b9301c8474496ef346b60a33f25a18c82c2e74470c9391e7e95b4a12b271e",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link28.lean"
+  },
+  {
+   "n": 29,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "title": "insert: example : (twoTriangles).degree (0) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (0) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 30,
+   "editedVersion": 30,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8ff5c56c0e31d9097518d3b2360f82c2e159bc210fa095d9148bf89091917c44",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link29.lean"
+  },
+  {
+   "n": 30,
+   "kind": "makeEditLink",
+   "linkText": "1",
+   "title": "insert: example : (twoTriangles).degree (1) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (1) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 31,
+   "editedVersion": 31,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d2e4dae15400db2b71c0cdfc938125fd89b6f99313ac7c903a3d374be77ff33a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link30.lean"
+  },
+  {
+   "n": 31,
+   "kind": "makeEditLink",
+   "linkText": "2",
+   "title": "insert: example : (twoTriangles).degree (2) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (2) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 32,
+   "editedVersion": 32,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "e5eeb13a36ced59ae608d4237fe2c8cbf1d5589d63af30dafb1ddda8f3430750",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link31.lean"
+  },
+  {
+   "n": 32,
+   "kind": "makeEditLink",
+   "linkText": "3",
+   "title": "insert: example : (twoTriangles).degree (3) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (3) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 33,
+   "editedVersion": 33,
+   "reElaborationMs": 506,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "3ec55f0d838fd78e36e3041bee10f93cf771277a917c15d20d834439035f1ce5",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link32.lean"
+  },
+  {
+   "n": 33,
+   "kind": "makeEditLink",
+   "linkText": "4",
+   "title": "insert: example : (twoTriangles).degree (4) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (4) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 34,
+   "editedVersion": 34,
+   "reElaborationMs": 513,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "fd072210e7c4073236ce1903c83ff26ee3cccddb53c9fac512d8c770ba6234c8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link33.lean"
+  },
+  {
+   "n": 34,
+   "kind": "makeEditLink",
+   "linkText": "5",
+   "title": "insert: example : (twoTriangles).degree (5) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : (twoTriangles).degree (5) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 52,
+     "line": 30
+    },
+    "start": {
+     "character": 52,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 35,
+   "editedVersion": 35,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d9e3011b82a589265f17f4ef3083bf8c1b9502cb1fc14f031980cac98fcef194",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link34.lean"
+  },
+  {
+   "n": 35,
+   "kind": "makeEditLink",
+   "linkText": "components: 2 (disconnected)",
+   "title": "insert: example : ¬ (twoTriangles).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 25,
+      "line": 29
+     },
+     "start": {
+      "character": 25,
+      "line": 29
+     }
+    },
+    "newText": "\nexample : ¬ (twoTriangles).Connected := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 30
+    },
+    "start": {
+     "character": 49,
+     "line": 30
+    }
+   },
+   "foundAt": [
+    {
+     "line": 29,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": 3,
+   "classification": "clean",
+   "diagnosticsVersion": 36,
+   "editedVersion": 36,
+   "reElaborationMs": 572,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "4ecaafbd5123eda4ec1c558051fa59a997750e292bc07617ec816e0050a05685",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link35.lean"
+  },
+  {
+   "n": 36,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((pathGraph 5)).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).Adj (0) (1) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 50,
+     "line": 33
+    },
+    "start": {
+     "character": 50,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 37,
+   "editedVersion": 37,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b616fdd59c317cd63fc42c07532d10f6f3733110bc8c9b29535aa7a239d24c1f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link36.lean"
+  },
+  {
+   "n": 37,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((pathGraph 5)).Adj (1) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).Adj (1) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 50,
+     "line": 33
+    },
+    "start": {
+     "character": 50,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 38,
+   "editedVersion": 38,
+   "reElaborationMs": 510,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "85263296345a3db893bdc08956614bbfe8a8e0e837c5887b01ef50ef5da404b8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link37.lean"
+  },
+  {
+   "n": 38,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((pathGraph 5)).Adj (2) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).Adj (2) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 50,
+     "line": 33
+    },
+    "start": {
+     "character": 50,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 39,
+   "editedVersion": 39,
+   "reElaborationMs": 513,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "6db37b3b731da6e36286837562e6becb2d605fe10bde87bdfb130611f209c4f7",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link38.lean"
+  },
+  {
+   "n": 39,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((pathGraph 5)).Adj (3) (4) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).Adj (3) (4) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 50,
+     "line": 33
+    },
+    "start": {
+     "character": 50,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 40,
+   "editedVersion": 40,
+   "reElaborationMs": 506,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8bd2c06506ef3391db7d4e5b24433a2e911888980e65eb56b275540d6379f9a8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link39.lean"
+  },
+  {
+   "n": 40,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "title": "insert: example : ((pathGraph 5)).degree (0) = 1 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).degree (0) = 1 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 33
+    },
+    "start": {
+     "character": 53,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 41,
+   "editedVersion": 41,
+   "reElaborationMs": 509,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "0331ea8caf28b7818aadad18028a73c607d91fa85e8d48f5dd036137232fdb0f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link40.lean"
+  },
+  {
+   "n": 41,
+   "kind": "makeEditLink",
+   "linkText": "1",
+   "title": "insert: example : ((pathGraph 5)).degree (1) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).degree (1) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 33
+    },
+    "start": {
+     "character": 53,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 42,
+   "editedVersion": 42,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ee1338a0badc3b4a2b1f9ae7c606aa54e221de8b6681c9020f781c1cadbc0804",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link41.lean"
+  },
+  {
+   "n": 42,
+   "kind": "makeEditLink",
+   "linkText": "2",
+   "title": "insert: example : ((pathGraph 5)).degree (2) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).degree (2) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 33
+    },
+    "start": {
+     "character": 53,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 43,
+   "editedVersion": 43,
+   "reElaborationMs": 513,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "bfbc306c107e5e80ea41cf29ced132136fc0eca4a346ac7f2e05e604ed13344e",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link42.lean"
+  },
+  {
+   "n": 43,
+   "kind": "makeEditLink",
+   "linkText": "3",
+   "title": "insert: example : ((pathGraph 5)).degree (3) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).degree (3) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 33
+    },
+    "start": {
+     "character": 53,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 44,
+   "editedVersion": 44,
+   "reElaborationMs": 505,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b15ed4f1b45336f6c6ee0760b8dc810a8ba14401af98433cef920d09791b6e7f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link43.lean"
+  },
+  {
+   "n": 44,
+   "kind": "makeEditLink",
+   "linkText": "4",
+   "title": "insert: example : ((pathGraph 5)).degree (4) = 1 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).degree (4) = 1 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 33
+    },
+    "start": {
+     "character": 53,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 45,
+   "editedVersion": 45,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "6d5d9cee000981054eef38284846c40291d518ce02c860b2684074bb9aa97ff4",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link44.lean"
+  },
+  {
+   "n": 45,
+   "kind": "makeEditLink",
+   "linkText": "components: 1 (connected)",
+   "title": "insert: example : ((pathGraph 5)).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 58,
+      "line": 32
+     },
+     "start": {
+      "character": 58,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((pathGraph 5)).Connected := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 48,
+     "line": 33
+    },
+    "start": {
+     "character": 48,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 46,
+   "editedVersion": 46,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "6210c22a7e61239be9b1a58fd612676e1f46863268e52d5d54ad0569f3e9a233",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link45.lean"
+  },
+  {
+   "n": 46,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (0) (1) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (0) (1) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 47,
+   "editedVersion": 47,
+   "reElaborationMs": 509,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "f90ef72b9d59886e0bd8a1afd7335ff3879b9147e1fe642272f4149b79e71f74",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link46.lean"
+  },
+  {
+   "n": 47,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (0) (5) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (0) (5) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 48,
+   "editedVersion": 48,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "bee703869b6dda8b2c3febe706fed334c7d9ecaacbefd3b9c3a2e038c57de200",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link47.lean"
+  },
+  {
+   "n": 48,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (1) (2) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (1) (2) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 49,
+   "editedVersion": 49,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "515d73afae79cefaa34b22fa58332e94adf574ce0b0a76aeb4ad33f7276e8a06",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link48.lean"
+  },
+  {
+   "n": 49,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (2) (3) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (2) (3) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 50,
+   "editedVersion": 50,
+   "reElaborationMs": 508,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "dea61403954a92aeb71f60dd4bbd698f4e45771be3b3ddb22b896462e9a5bb83",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link49.lean"
+  },
+  {
+   "n": 50,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (3) (4) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (3) (4) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 51,
+   "editedVersion": 51,
+   "reElaborationMs": 520,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "252e42ed4d4b5cd91773b35810f4929bde845b4c50bc34af2ff2ac2c14aed8d8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link50.lean"
+  },
+  {
+   "n": 51,
+   "kind": "makeEditLink",
+   "linkText": "",
+   "title": "insert: example : ((cycleGraph 6)).Adj (4) (5) := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Adj (4) (5) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 36
+    },
+    "start": {
+     "character": 51,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 52,
+   "editedVersion": 52,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "29ff9d96c84d4903c9ddff87b858d487fc5721eb382b2fc77ffe0caae92e3327",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link51.lean"
+  },
+  {
+   "n": 52,
+   "kind": "makeEditLink",
+   "linkText": "0",
+   "title": "insert: example : ((cycleGraph 6)).degree (0) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (0) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 53,
+   "editedVersion": 53,
+   "reElaborationMs": 504,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "a212288f378fd7c37d2ae98abe72e2fe80efbfce114266de0f14561c6e341e98",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link52.lean"
+  },
+  {
+   "n": 53,
+   "kind": "makeEditLink",
+   "linkText": "1",
+   "title": "insert: example : ((cycleGraph 6)).degree (1) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (1) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 54,
+   "editedVersion": 54,
+   "reElaborationMs": 511,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d9fa00d93dc49d0e45d70491a8fc76e4d2afd8a845a494193222a65e62147493",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link53.lean"
+  },
+  {
+   "n": 54,
+   "kind": "makeEditLink",
+   "linkText": "2",
+   "title": "insert: example : ((cycleGraph 6)).degree (2) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (2) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 55,
+   "editedVersion": 55,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "a9244cf4407ac510bf8a4fb0db9157242afaa6c58a8bd25b8df91705f70b5950",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link54.lean"
+  },
+  {
+   "n": 55,
+   "kind": "makeEditLink",
+   "linkText": "3",
+   "title": "insert: example : ((cycleGraph 6)).degree (3) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (3) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 56,
+   "editedVersion": 56,
+   "reElaborationMs": 507,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "92cc3755b47045beb1e0630aafea9d3f4efd6e42c13273ef87781da7059a1453",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link55.lean"
+  },
+  {
+   "n": 56,
+   "kind": "makeEditLink",
+   "linkText": "4",
+   "title": "insert: example : ((cycleGraph 6)).degree (4) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (4) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 57,
+   "editedVersion": 57,
+   "reElaborationMs": 514,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "18eb89737a0bc9ff11898472c80d804ecdaaedcb9b9839bee3c66963b7ae8d82",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link56.lean"
+  },
+  {
+   "n": 57,
+   "kind": "makeEditLink",
+   "linkText": "5",
+   "title": "insert: example : ((cycleGraph 6)).degree (5) = 2 := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).degree (5) = 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 54,
+     "line": 36
+    },
+    "start": {
+     "character": 54,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 58,
+   "editedVersion": 58,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d262b4cd391d2fcef9d451c15606247e445825d42548ccd6fefde6c777e3c22f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link57.lean"
+  },
+  {
+   "n": 58,
+   "kind": "makeEditLink",
+   "linkText": "components: 1 (connected)",
+   "title": "insert: example : ((cycleGraph 6)).Connected := by decide",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 42,
+      "line": 35
+     },
+     "start": {
+      "character": 42,
+      "line": 35
+     }
+    },
+    "newText": "\nexample : ((cycleGraph 6)).Connected := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 49,
+     "line": 36
+    },
+    "start": {
+     "character": 49,
+     "line": 36
+    }
+   },
+   "foundAt": [
+    {
+     "line": 35,
+     "character": 0,
+     "panel": "GraphScope.GraphScopePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 59,
+   "editedVersion": 59,
+   "reElaborationMs": 617,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "156fa6529f6d3eb03bf929c6f906f74686a95a0ebab0f39ab60b3421604c6228",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link58.lean"
+  }
+ ],
+ "counts": {
+  "clean": 58,
+  "total": 58,
+  "makeEditLink": 58,
+  "tryThis": 0,
+  "linkOccurrences": 58
+ },
+ "declaredClicksCovered": "4/4",
+ "ok": true,
+ "totalMs": 33176
+}

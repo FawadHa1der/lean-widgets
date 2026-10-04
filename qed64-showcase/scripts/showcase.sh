@@ -4,9 +4,18 @@
 #
 #   scripts/showcase.sh [--dry-run] <subcommand> [args]
 #
-#   pin [--yes]                 S0  vendor + release clone + lock from the pinned QED64 commit.
-#                                   Without --yes: read-only precondition report only (QED64 HEAD/clean
-#                                   vs the pinned commit), nothing written.
+#   bootstrap [--pin <id>] [--origin URL] [--qed64-origin URL] [--no-verify]
+#                                   FROM A CLONE: QED64's sources (the submodule deps/qed64, or the pin's
+#                                   worktree) → npm ci at the root if needed → the widget export → the
+#                                   page built from source (scripts/build-shell.mjs: byte-identical to the
+#                                   lock or nothing installed) → QED64's binaries and our overlays fetched
+#                                   from artifact origins, sha256-checked against the lock
+#                                   (scripts/fetch-artifacts.mjs) → the active pin's serve links → verify.
+#                                   Origins: --origin / ARTIFACT_ORIGIN (the showcase's own origin, serves
+#                                   both), --qed64-origin / QED64_ARTIFACT_ORIGIN (QED64's own files only).
+#   pin [--yes]                 S0  release clone + lock from a QED64 checkout with QED64's binaries
+#                                   built (QED64_REPO; registering a NEW pin). Without --yes: read-only
+#                                   precondition report only (QED64 HEAD/clean vs the pinned commit).
 #   verify [--deep] [--untouched NAME]
 #                                   S0.5 chain of trust (pin-qed64 verify), pin-constant consistency
 #                                   across scripts, stage1 buildId, overlay pairing (cheap; --deep also
@@ -67,6 +76,9 @@
 #
 # Locations (scripts/lib/env.sh; the gitignored .env.local, template .env.example): QED64_SHOWCASE_WORK ($W, the work
 #      dir), QED64_REPO ($Q), QED64_KERNEL_BUILD ($K); a subcommand that needs Q or K refuses with a clear error if unset.
+#      QED64's SOURCES are the submodule deps/qed64 (+ git worktrees $W/qed64-pins/<id> for staged pins), never Q.
+# Platform (scripts/lib/platform.sh): macOS and Linux. The memory probe is vm_stat / /proc/meminfo, clones are cp -c /
+#      cp --reflink=auto, and the idle-sleep guard (caffeinate) exists only on macOS.
 # Env: SHOWCASE_LANE (name written into lock/owner files; default "showcase.sh"), PORT (default 5190),
 #      LOCK_WAIT_S / COOLDOWN_WAIT_S (with-browser-lock.sh waits, default 3600 s each), MIN_BROWSER_GB (6),
 #      WITH_BROWSER_LOCK (the lock script — change only for tests), BROWSER_LOCK_DIR (where the host-wide lock lives,
@@ -88,6 +100,7 @@ SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 # SC, REPO_ROOT, WS, W (QED64_SHOWCASE_WORK), Q (QED64_REPO), K (QED64_KERNEL_BUILD), LOGS: scripts/lib/env.sh (reads the
 # gitignored .env.local; template .env.example). Q and K are required only by the subcommands that read them (need …).
 . "$SC/scripts/lib/env.sh"
+. "$SC/scripts/lib/platform.sh"   # PLATFORM, free_inactive_gib, clone_file/clone_tree, file_size, AWAKE (caffeinate -i on macOS)
 WBL="${WITH_BROWSER_LOCK:-$SC/scripts/with-browser-lock.sh}"
 LOCK="$(bash "$WBL" --print-lock)" || { echo "[showcase] ERROR: $WBL --print-lock failed" >&2; exit 1; }   # the file with-browser-lock.sh uses
 LANE="${SHOWCASE_LANE:-showcase.sh}"
@@ -119,9 +132,9 @@ REFUSE_RC=3   # cmd_inlock sets 77, so a preflight refusal inside the lock is di
 refuse() { printf '[showcase] REFUSED: %s\n' "$*" >&2; exit "$REFUSE_RC"; }
 usage() { sed -n '2,/^set -uo pipefail/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
 q() { printf '%q ' "$@"; }
-# AWAKE: prefix for long steps — a process-scoped `caffeinate -i` assertion (this host idles to sleep after
-# 1 min; an unattended UX run once slept 988 s mid-test, docs/UX-RESULTS.md). Empty with NO_CAFFEINATE=1.
-AWAKE=(); if command -v caffeinate >/dev/null 2>&1 && [ "${NO_CAFFEINATE:-0}" != 1 ]; then AWAKE=(caffeinate -i); fi
+# AWAKE (scripts/lib/platform.sh): prefix for long steps — on macOS a process-scoped `caffeinate -i` assertion (this
+# host idles to sleep after 1 min; an unattended UX run once slept 988 s mid-test, docs/UX-RESULTS.md); empty elsewhere
+# and with NO_CAFFEINATE=1.
 oneline() { printf '%s' "$1" | tr '\n' ' '; }   # pid lists on one line
 
 # step <name> <cmd…>: echo the command; in --dry-run stop there; else run it teeing into a log and
@@ -154,7 +167,7 @@ vstep() {
 }
 
 # ---------------------------------------------------------------- guards (read-only)
-free_gib() { vm_stat | awk '/page size of/ {ps=$8} /Pages free/ {f=$3} /Pages inactive/ {i=$3} END {gsub(/\./,"",f); gsub(/\./,"",i); printf "%d", (f+i)*ps/1073741824}'; }
+free_gib() { free_inactive_gib; }   # scripts/lib/platform.sh: macOS free+inactive (vm_stat), Linux MemAvailable
 bake_pids() { pgrep -f '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs' 2>/dev/null || true; }
 browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing' 2>/dev/null || true; }
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
@@ -256,16 +269,18 @@ server_is_showcase() {
   [ "$served" = "$mine" ] || { echo "it serves gallery ${served:0:16}…, not the local gallery/ ${mine:0:16}… (another GALLERY_DIR?)"; return 1; }
 }
 
+sha256sum_() { if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1"; else sha256sum "$1"; fi; }
 lock_buildid() { node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).qed64.buildId' "$SC/QED64.lock.json"; }
 
 # ---------------------------------------------------------------- subcommands
 # pin: the multiple-pin model (scripts/lib/pins.mjs; docs/REPIN-LOG.md "Multiple pins"). Pins are keyed by QED64 commit
-# (id = first 7 hex digits); one is active (the links QED64.lock.json, vendor/qed64, out/overlay/snapshots/widgets{7,8},
+# (id = first 7 hex digits); one is active (the links QED64.lock.json, out/overlay/snapshots/widgets{7,8},
 # out/headless, $W/stage1 …). Subcommands:
 #   pin list | current | check <id> [--full]     scripts/pin-switch.mjs (read-only)
 #   pin use <id> [--dry-run] [--no-deploy]        switch the active pin (scripts/pin-switch.mjs use: guards, atomic links,
 #                                                 gallery/pin.json, deploy inputs), then `pin current`
-#   pin clone <id> [--yes]                        S0 for a REGISTERED pin (pins/<id>/pin.json): without --yes only the S0.2
+#   pin clone <id> [--yes]                        S0 for a REGISTERED pin (pins/<id>/pin.json) from QED64_REPO (a checkout
+#                                                 with QED64's binaries built): without --yes only the S0.2
 #                                                 report (QED64 HEAD/clean vs the pin's commit); with --yes pin-qed64.mjs
 #                                                 pin --pin <id> + record-widgets-hash + verify (writes only pins/<id>/ and
 #                                                 release/<id>/; never switches)
@@ -300,7 +315,7 @@ cmd_pin_clone() {
   dirty="$(git --no-optional-locks -C "$Q" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
   say "pin $id = QED64 $qpin; QED64 HEAD=$head; uncommitted paths in QED64: $dirty"
   if [ "${1:-}" != --yes ]; then
-    if [ "$head" = "$qpin" ] && [ "$dirty" = 0 ]; then say "precondition S0.2 holds: 'showcase.sh pin clone $id --yes' would re-vendor and re-clone pins/$id and release/$id from $qpin"
+    if [ "$head" = "$qpin" ] && [ "$dirty" = 0 ]; then say "precondition S0.2 holds: 'showcase.sh pin clone $id --yes' would re-clone release/$id and rewrite pins/$id/QED64.lock.json from $qpin"
     else say "precondition S0.2 does NOT hold: 'pin clone $id --yes' would refuse (see the re-pin procedure in README.md)"; fi
     say "nothing written (pass --yes to run pin-qed64.mjs pin --pin $id + record-widgets-hash + verify)"
     return 0
@@ -310,6 +325,33 @@ cmd_pin_clone() {
   must pin node "$SC/scripts/pin-qed64.mjs" pin --pin "$id"
   must record-widgets-hash node "$SC/scripts/pin-qed64.mjs" record-widgets-hash --pin "$id"
   must verify node "$SC/scripts/pin-qed64.mjs" verify --pin "$id"
+}
+
+# bootstrap: a clone becomes a working showcase without QED64_REPO or the kernel build (docs/ARCHITECTURE.md). Every
+# step checks its own result against the committed lock; nothing is installed that does not match it.
+cmd_bootstrap() {
+  local id="" origin="${ARTIFACT_ORIGIN:-}" qorigin="${QED64_ARTIFACT_ORIGIN:-}" doverify=1
+  while [ $# -gt 0 ]; do case "$1" in
+    --pin) id="${2:?--pin <id>}"; shift 2 ;; --origin) origin="${2:?--origin <url>}"; shift 2 ;;
+    --qed64-origin) qorigin="${2:?--qed64-origin <url>}"; shift 2 ;; --no-verify) doverify=0; shift ;;
+    *) die "bootstrap: unknown arg $1 (--pin <id> --origin <url> --qed64-origin <url> --no-verify)" ;; esac; done
+  local act; act="$(node "$SC/scripts/lib/pins.mjs" active)" || die "no active pin (QED64.lock.json)"
+  [ -n "$id" ] || id="$act"
+  say "bootstrap pin $id (active: $act); origins: showcase ${origin:-none}, qed64 ${qorigin:-none}"
+  must sources node "$SC/scripts/qed64-src.mjs" ensure "$id"
+  if [ ! -d "$SC/node_modules/@playwright/test" ]; then must npm-ci bash -c "cd \"\$1\" && npm ci --no-audit --no-fund" _ "$SC"; else say "node_modules present (npm ci skipped)"; fi
+  local wc; wc="$(node -p 'require(process.argv[1]).WIDGETS_COMMIT' "$SC/pins/$id/QED64.lock.json")"
+  if node "$SC/scripts/export-widgets.mjs" --commit "$wc" --check >/dev/null 2>&1; then say "widget export \$W/widgets-src == git archive ${wc:0:12} packages/ (the lock's WIDGETS_COMMIT)"
+  else must export-widgets node "$SC/scripts/export-widgets.mjs" --commit "$wc"; fi
+  must shell node "$SC/scripts/build-shell.mjs" --pin "$id"
+  local fa=(node "$SC/scripts/fetch-artifacts.mjs" --pin "$id")
+  [ -n "$origin" ] && fa+=(--origin "$origin"); [ -n "$qorigin" ] && fa+=(--qed64-origin "$qorigin")
+  must artifacts "${fa[@]}"
+  if [ "$id" = "$act" ]; then
+    must links node "$SC/scripts/pin-switch.mjs" use "$id"
+  else say "pin $id is staged: its stores are ready; switch with: scripts/showcase.sh pin use $id"; fi
+  if [ "$doverify" = 1 ] && [ "$id" = "$act" ]; then cmd_verify || return 1; fi
+  [ "$DRY" = 1 ] || say "BOOTSTRAP OK: pin $id built from source + fetched artifacts, every file == pins/$id/QED64.lock.json"
 }
 
 # Pin constants (multiple pins): NO file under scripts/, tests/, gallery/ or infra/ may hardcode a pin. Every script and
@@ -333,7 +375,7 @@ console.log(`     active pin ${id} (runtime ${bid}); registered: ${P.listPins().
 const table = (str) => new Map(str.trim().split(/\s+/).map((e) => { const i = e.lastIndexOf(':'); return [e.slice(0, i), +e.slice(i + 1)]; }));
 const expected = table(pinSites), sentinels = table(sentSites);
 const EXT = /\.(mjs|cjs|js|sh|json|py|ts)$/;
-const SKIP = new Set(['node_modules', 'out', 'work', 'release', 'vendor', '__screenshots__']);
+const SKIP = new Set(['node_modules', 'out', 'work', 'release', 'vendor', 'deps', '__screenshots__']);
 const files = [];
 const walk = (rel) => {
   for (const e of fs.readdirSync(path.join(root, rel), { withFileTypes: true })) {
@@ -375,8 +417,11 @@ EOF
 }
 check_stage1() {
   local bid got; bid="$(lock_buildid)"
-  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin $W/stage1/bin)"; return 1; }
-  got="wasm64-$(shasum -a 256 "$W/stage1/bin/lean.wasm" | cut -c1-16)"
+  if [ "$(node "$SC/scripts/lib/pins.mjs" built 2>/dev/null)" = no ] && [ ! -e "$W/stage1" ]; then
+    echo "ABSENT $W/stage1: no build stores of runtime $bid in this checkout (it serves fetched artifacts; the runtime is checked by pin-verify #2/#3). Bakes and the headless verifiers need it: README \"Re-pin\" step 4"; return 0
+  fi
+  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (copy QED64's pipeline/toolchain/work/build/stage1/bin of the pinned runtime to $W/stage1/bin)"; return 1; }
+  got="wasm64-$(sha256sum_ "$W/stage1/bin/lean.wasm" | cut -c1-16)"
   if [ "$got" = "$bid" ]; then echo "OK   $W/stage1 buildId $got == lock"; else echo "FAIL $W/stage1 buildId $got != lock $bid"; return 1; fi
 }
 check_overlays_cheap() {   # [widgets7|widgets8 …] (default both)
@@ -410,15 +455,16 @@ cmd_verify() {
   local deep=0 untouched="" rc=0
   while [ $# -gt 0 ]; do case "$1" in --deep) deep=1; shift ;; --untouched) untouched="${2:?--untouched NAME}"; shift 2 ;; *) die "verify: unknown arg $1" ;; esac; done
   # the ACTIVE pin fully (S0.5 chain of trust: every release file's sha256, git anchors, #10 dist vs git), its links, and
-  # every STAGED pin cheaply (pin-switch.mjs check: descriptor == lock, release file set + sizes, main bundle, vendor
-  # file set, its runtime's stage1/raw/bakes/overlays); `pin check <id> --full` or `pin-qed64.mjs verify --pin <id>`
+  # every STAGED pin cheaply (pin-switch.mjs check: descriptor == lock, release file set + sizes, main bundle, QED64
+  # sources at its commit, its overlays == lock, its runtime's stage1/raw/bakes where built here; a staged pin this
+  # checkout never bootstrapped prints NOT MATERIALIZED); `pin check <id> --full` or `pin-qed64.mjs verify --pin <id>`
   # verifies a staged pin fully
   vstep pin-current node "$SC/scripts/pin-switch.mjs" current || rc=1
   vstep pin-verify node "$SC/scripts/pin-qed64.mjs" verify || rc=1
   local act sp; act="$(node "$SC/scripts/lib/pins.mjs" active 2>/dev/null)"
   for sp in $(node "$SC/scripts/lib/pins.mjs" list | cut -d' ' -f1); do
     [ "$sp" = "$act" ] && continue
-    vstep "pin-staged-$sp" node "$SC/scripts/pin-switch.mjs" check "$sp" || rc=1
+    vstep "pin-staged-$sp" node "$SC/scripts/pin-switch.mjs" check "$sp" --if-materialized || rc=1
   done
   if [ "$DRY" = 0 ] && grep -q '^DRIFT' "$LOGS/showcase-$LANE_TAG-verify-pin-verify.log" 2>/dev/null; then
     say "NOTE: pin-verify reports DRIFT in a rebuild-only input (served artifacts unaffected; 'native' refuses until re-pinned — README \"Re-pin\", Docker tag drift)"
@@ -733,6 +779,7 @@ fi
 
 case "$SUB" in
   pin) cmd_pin "$@" ;;
+  bootstrap) cmd_bootstrap "$@" ;;
   verify) cmd_verify "$@" ;;
   native) cmd_native "$@" ;;
   stage) cmd_stage "$@" ;;

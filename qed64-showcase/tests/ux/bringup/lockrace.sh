@@ -7,11 +7,15 @@
 set -u
 SC="$(cd "$(dirname "$0")/../../.." && pwd)"
 N="${N:-6}"; HOLD_S="${HOLD_S:-1}"
-T="$(mktemp -d "${TMPDIR:-/tmp}/lockrace.XXXXXX")"; mkdir -p "$T/scripts" "$T/out"
+T="$(mktemp -d "${TMPDIR:-/tmp}/lockrace.XXXXXX")"; mkdir -p "$T/scripts/lib" "$T/out"
 cp "${LOCK_SCRIPT:-$SC/scripts/with-browser-lock.sh}" "$T/scripts/with-browser-lock.sh"  # LOCK_SCRIPT: test another version
+cp "$SC/scripts/lib/platform.sh" "$T/scripts/lib/platform.sh"   # the wrapper's memory probe / caffeinate helpers
 J="$T/journal"; : > "$J"
 sh -c 'exit 0' & dead=$!; wait $dead   # a pid that is certainly gone
-export BROWSER_LOCK_DIR="$T/out" NO_CAFFEINATE=1
+# SKIP_COOLDOWN_FOR_TEST=1 (honoured only for a non-default lock): the race is about the lock, not the host; without it a
+# racer that wins while another session's chrome-headless-shell runs would sit in the cooldown and the others time out
+# (restructure audit a1, 2026-10-04)
+export BROWSER_LOCK_DIR="$T/out" NO_CAFFEINATE=1 SKIP_COOLDOWN_FOR_TEST=1
 LOCKF="$(bash "$T/scripts/with-browser-lock.sh" --print-lock)"
 echo "stale-lane $dead 2000-01-01T00:00:00Z" > "$LOCKF"
 now() { perl -MTime::HiRes=time -e 'printf "%.4f\n", time'; }

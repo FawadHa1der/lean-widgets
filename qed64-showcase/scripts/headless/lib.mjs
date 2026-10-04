@@ -7,10 +7,11 @@ import { execFileSync } from 'node:child_process';
 export const SC = path.resolve(import.meta.dirname, '..', '..');
 export const { W } = await import(path.join(SC, 'scripts/lib/env.mjs')); // the work dir (QED64_SHOWCASE_WORK)
 // the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin) and its stores: without SHOWCASE_PIN the
-// active links (vendor/qed64, QED64.lock.json, $W/stage1, out/headless), with it that pin's own store paths
+// active links (QED64.lock.json, $W/stage1, out/headless), with it that pin's own store paths; QED64's own modules
+// (artifact-paths, snapshot-probe, node-runner, lsp-frames) come from the pin's SOURCE dependency (submodule/worktree)
 const PINS = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 export const PIN = PINS.targetPinId();
-export const VENDOR = PINS.storePath('vendor');
+export const QED64_SRC = PINS.storePath('qed64');
 export const LOCK = JSON.parse(fs.readFileSync(PINS.storePath('lock'), 'utf8'));
 export const BID = LOCK.qed64.buildId; // the target pin's runtime
 if (BID !== PINS.targetBuildId()) throw new Error(`lock ${PINS.storePath('lock')} names ${BID}, the pin descriptor ${PINS.targetBuildId()}`);
@@ -34,9 +35,9 @@ export function parseArgs(argv, { flags = [], multi = [] } = {}) {
   return o;
 }
 
-/** buildId of a stage1-style artifact dir, via the vendored identity function. */
+/** buildId of a stage1-style artifact dir, via QED64's own identity function (pipeline/toolchain/artifact-paths.mjs). */
 export async function buildIdOf(dir) {
-  const { buildIdOfArtifact } = await import(path.join(VENDOR, 'pipeline/toolchain/artifact-paths.mjs'));
+  const { buildIdOfArtifact } = await import(path.join(QED64_SRC, 'pipeline/toolchain/artifact-paths.mjs'));
   return buildIdOfArtifact(dir);
 }
 
@@ -46,13 +47,8 @@ export async function requirePairedArtifact(dir) {
   return id;
 }
 
-/** free+inactive (+speculative) bytes from vm_stat. */
-export function freeInactiveBytes() {
-  const t = execFileSync('/usr/bin/vm_stat').toString();
-  const page = Number(/page size of (\d+) bytes/.exec(t)[1]);
-  const get = (k) => Number(new RegExp(`${k}:\\s+(\\d+)`).exec(t)?.[1] ?? 0);
-  return (get('Pages free') + get('Pages inactive') + get('Pages speculative')) * page;
-}
+/** free+inactive (+speculative) bytes (macOS vm_stat; Linux MemAvailable): scripts/lib/platform.mjs. */
+export const { reclaimableBytes: freeInactiveBytes } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 
 /** Real bake processes only: executable `node` (or /usr/bin/time wrapping it) whose argv runs
  * bake-snapshot.mjs. `pgrep -f bake-snapshot` alone also matches any shell/monitor whose

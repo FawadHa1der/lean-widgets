@@ -1,0 +1,305 @@
+{
+ "package": "simp-lens",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:52:13.314Z",
+ "generator": "lean/goldens/lsp-golden.mjs --click-all",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import SimpLens"
+  ],
+  "golden": "w7",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
+ "documentDiagnostics": [
+  {
+   "severity": "information",
+   "line": 15,
+   "character": 46,
+   "endLine": 15,
+   "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+  },
+  {
+   "severity": "information",
+   "line": 18,
+   "character": 72,
+   "endLine": 18,
+   "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+  },
+  {
+   "severity": "information",
+   "line": 23,
+   "character": 2,
+   "endLine": 23,
+   "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+  },
+  {
+   "severity": "information",
+   "line": 27,
+   "character": 2,
+   "endLine": 27,
+   "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+  },
+  {
+   "severity": "information",
+   "line": 31,
+   "character": 41,
+   "endLine": 31,
+   "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+  },
+  {
+   "severity": "information",
+   "line": 34,
+   "character": 56,
+   "endLine": 34,
+   "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+  }
+ ],
+ "probes": 305,
+ "panelsRendered": 6,
+ "links": [
+  {
+   "n": 1,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 55,
+      "line": 15
+     },
+     "start": {
+      "character": 46,
+      "line": 15
+     }
+    },
+    "newText": "simp only [add_zero, zero_add]"
+   },
+   "suggestion": "simp only [add_zero, zero_add]",
+   "foundAt": [
+    {
+     "line": 15,
+     "message": "Try this:\n  [apply] simp only [add_zero, zero_add]"
+    }
+   ],
+   "declaredClick": 0,
+   "classification": "clean",
+   "diagnosticsVersion": 2,
+   "editedVersion": 2,
+   "reElaborationMs": 515,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "32d3871f35c50c4865e65b4551bdabc066952a29315ea887c88b299527f19c6a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link1.lean"
+  },
+  {
+   "n": 2,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 81,
+      "line": 18
+     },
+     "start": {
+      "character": 72,
+      "line": 18
+     }
+    },
+    "newText": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]"
+   },
+   "suggestion": "simp only [List.append_nil,\n  List.map_id_fun, id_eq, List.map_nil]",
+   "foundAt": [
+    {
+     "line": 18,
+     "message": "Try this:\n  [apply] simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
+    }
+   ],
+   "declaredClick": 1,
+   "classification": "clean",
+   "diagnosticsVersion": 3,
+   "editedVersion": 3,
+   "reElaborationMs": 517,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "b77e54020e8b7df35334d4e17afc9862cc0f504b8a9ff3f3aea1188b7f60cdd8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link2.lean"
+  },
+  {
+   "n": 3,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 85,
+      "line": 23
+     },
+     "start": {
+      "character": 2,
+      "line": 23
+     }
+    },
+    "newText": "simp only [add_zero, List.append_nil, and_self]"
+   },
+   "suggestion": "simp only [add_zero, List.append_nil, and_self]",
+   "foundAt": [
+    {
+     "line": 23,
+     "message": "Try this:\n  [apply] simp only [add_zero, List.append_nil, and_self]"
+    }
+   ],
+   "declaredClick": 2,
+   "classification": "clean",
+   "diagnosticsVersion": 4,
+   "editedVersion": 4,
+   "reElaborationMs": 510,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "310716e229624898b045f5d38ef1504f4b7a127e8d0f8e921757bbfbcf40551b",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link3.lean"
+  },
+  {
+   "n": 4,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 18,
+      "line": 27
+     },
+     "start": {
+      "character": 2,
+      "line": 27
+     }
+    },
+    "newText": "simp only [add_zero] at h ⊢"
+   },
+   "suggestion": "simp only [add_zero] at h ⊢",
+   "foundAt": [
+    {
+     "line": 27,
+     "message": "Try this:\n  [apply] simp only [add_zero] at h ⊢"
+    }
+   ],
+   "declaredClick": 3,
+   "classification": "clean",
+   "diagnosticsVersion": 5,
+   "editedVersion": 5,
+   "reElaborationMs": 508,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "2ca0ff4530ce20bc2a2de145358dc4b327ea03618ee3ee907e2a4fdd7e087829",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link4.lean"
+  },
+  {
+   "n": 5,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 55,
+      "line": 31
+     },
+     "start": {
+      "character": 41,
+      "line": 31
+     }
+    },
+    "newText": "simp only [not_true_eq_false] at h"
+   },
+   "suggestion": "simp only [not_true_eq_false] at h",
+   "foundAt": [
+    {
+     "line": 31,
+     "message": "Try this:\n  [apply] simp only [not_true_eq_false] at h"
+    }
+   ],
+   "declaredClick": 4,
+   "classification": "clean",
+   "diagnosticsVersion": 6,
+   "editedVersion": 6,
+   "reElaborationMs": 510,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "764f50c9a71c6cd6db7e74733da37327b2cf13cfb7d3439951174e2a3f11f4fc",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link5.lean"
+  },
+  {
+   "n": 6,
+   "kind": "tryThis",
+   "linkText": "[apply]",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 75,
+      "line": 34
+     },
+     "start": {
+      "character": 56,
+      "line": 34
+     }
+    },
+    "newText": "simp only [↓reduceIte]"
+   },
+   "suggestion": "simp only [↓reduceIte]",
+   "foundAt": [
+    {
+     "line": 34,
+     "message": "Try this:\n  [apply] simp only [↓reduceIte]"
+    }
+   ],
+   "declaredClick": 5,
+   "classification": "clean",
+   "diagnosticsVersion": 7,
+   "editedVersion": 7,
+   "reElaborationMs": 519,
+   "errorsWarnings": [],
+   "infoCount": 5,
+   "editedSha256": "9b8e75dcb56851bf1bf6a48e290349476338f99a896417fd29750c4577375830",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset-clickall/Showcase.link6.lean"
+  }
+ ],
+ "counts": {
+  "clean": 6,
+  "total": 6,
+  "makeEditLink": 0,
+  "tryThis": 6,
+  "linkOccurrences": 6
+ },
+ "declaredClicksCovered": "6/6",
+ "ok": true,
+ "totalMs": 6385
+}

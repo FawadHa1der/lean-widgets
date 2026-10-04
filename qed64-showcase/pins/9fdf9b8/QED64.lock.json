@@ -1,36 +1,35 @@
 {
-  "schema": "qed64-showcase.lock/v1",
+  "schema": "qed64-showcase.lock/v2",
   "pinnedAt": "2026-10-01T20:35:30.680Z",
   "qed64": {
     "repo": "https://github.com/FawadHa1der/QED64",
-    "checkout": "${QED64_REPO}",
     "commit": "9fdf9b8581d3d4a71b8f79e45b1858dd906bcb85",
     "promote": "9fdf9b8581d3d4a71b8f79e45b1858dd906bcb85",
     "buildId": "wasm64-2c18773ecfba45bb",
     "kernel": "3ae65d36f96b2434881f27fffe9f03d608d974f0"
   },
-  "vendor": {
-    "dir": "vendor/qed64",
-    "paths": [
-      "pipeline/snapshot",
-      "pipeline/toolchain/artifact-paths.mjs",
-      "pipeline/artifacts/olean-imports.mjs",
-      "pipeline/artifacts/unpack.mjs",
-      "public/workers",
-      "frontend/src/qed64-boot.ts",
-      "frontend/src/resident-session.ts",
-      "frontend/src/lsp-relay.ts",
-      "src/install/profiles.ts",
-      "src/runtime/client.ts",
-      "src/runtime/snapshots.ts",
-      "frontend/package.json",
-      "frontend/package-lock.json",
-      "frontend/vite.config.ts",
-      "frontend/index.html"
+  "source": {
+    "kind": "git-submodule",
+    "path": "qed64-showcase/deps/qed64",
+    "url": "https://github.com/FawadHa1der/QED64.git",
+    "commit": "9fdf9b8581d3d4a71b8f79e45b1858dd906bcb85",
+    "staged": "a pin that is not the submodule's commit: git worktree of the submodule's repository at ${QED64_SHOWCASE_WORK}/qed64-pins/<id> (scripts/lib/qed64-src.mjs)"
+  },
+  "shell": {
+    "dir": "dist",
+    "build": "npm ci --prefix frontend && npm run build:site (QED64's own build, in the source checkout)",
+    "verify": "every built dist/ file byte-identical to release.files (sha256): the build is deterministic (docs/ARCHITECTURE.md \"Shell from source\")"
+  },
+  "artifacts": {
+    "fromGit": [
+      "public/runtime/runtime-manifest.json",
+      "public/profiles/index.json",
+      "public/profiles/lean-core.manifest.json",
+      "public/profiles/mathlib-essential.manifest.json",
+      "public/snapshots/index.json",
+      "public/runtime/runtime-manifest.wasm64-2c18773ecfba45bb copy of public/runtime/runtime-manifest.json (verify #2)"
     ],
-    "files": 26,
-    "pinFile": "QED64-PIN",
-    "pinSha256": "ce32f31a6117c86e2f0730f4063397d2d7b438105d9760a0d2605b430265b60a"
+    "fetched": "every other public/ file of release.files, by URL path (public/<p> is served at /<p>) from an artifact origin, sha256 == release.files (scripts/fetch-artifacts.mjs)"
   },
   "release": {
     "dir": "release/9fdf9b8",
@@ -677,5 +676,43 @@
       }
     ]
   },
-  "WIDGETS_COMMIT": "90e415ccf1cb68071b8ef56182c43036d8c5d7ce"
+  "WIDGETS_COMMIT": "90e415ccf1cb68071b8ef56182c43036d8c5d7ce",
+  "overlays": {
+    "widgets7": {
+      "dir": "out/runtimes/wasm64-2c18773ecfba45bb/overlay/widgets7",
+      "url": "/snapshots/widgets7/",
+      "files": {
+        "index.json": {
+          "bytes": 854,
+          "sha256": "eadb095d76d3060ceede809f8b9d004d71d96fd9b379714b08b2cebab764ed3d"
+        },
+        "init.7cf361eb941eda2c.snapz": {
+          "bytes": 32643664,
+          "sha256": "7cf361eb941eda2c36b4c1bb1ac358f59de5c250af58aa5937571c1cb289ab57"
+        },
+        "widgets.a0c16868a07dfd68.snapz": {
+          "bytes": 331578480,
+          "sha256": "a0c16868a07dfd68abc17f36dbbb120afca3eac3c71ea4cdc24699577153c02d"
+        }
+      }
+    },
+    "widgets8": {
+      "dir": "out/runtimes/wasm64-2c18773ecfba45bb/overlay/widgets8",
+      "url": "/snapshots/widgets8/",
+      "files": {
+        "index.json": {
+          "bytes": 874,
+          "sha256": "5d91f179061638703b3ea0450110f3bc05065bc8c4973a0ad9b7d1fd001c382a"
+        },
+        "init.7cf361eb941eda2c.snapz": {
+          "bytes": 32643664,
+          "sha256": "7cf361eb941eda2c36b4c1bb1ac358f59de5c250af58aa5937571c1cb289ab57"
+        },
+        "widgets.62e1f451c1940d1b.snapz": {
+          "bytes": 364676266,
+          "sha256": "62e1f451c1940d1b479d93b1a6b773be0118247e625db1758c8acb56046fa2a3"
+        }
+      }
+    }
+  }
 }

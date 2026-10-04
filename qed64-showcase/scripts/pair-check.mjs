@@ -4,7 +4,7 @@
 //   node scripts/pair-check.mjs <snapshot dir with index.json> [--raw name=/abs/out.snap ...] [--cmp name=/abs/raw.snap ...]
 //
 // Checks, each OK/FAIL (exit 1 on any FAIL):
-//   P1 buildIdOfArtifact(W/stage1) == BID (the vendored artifact-paths.mjs function the bake used)
+//   P1 buildIdOfArtifact(W/stage1) == BID (QED64's artifact-paths.mjs at the pin's commit, the function the bake used)
 //   P2 every index entry has runtime == BID
 //   P3 per entry: sha256(file) == digest, size == transfer, gunzip byte count == bytes
 //   --raw name=path   also writes that entry's inflated bytes to path (raw snapshot for the headless probes)
@@ -20,7 +20,7 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { W } = await import(path.join(SC, 'scripts/lib/env.mjs')); // the work dir (QED64_SHOWCASE_WORK)
 const { targetBuildId, storePath } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const BID = targetBuildId(); // the TARGET pin's runtime (SHOWCASE_PIN=<id>, else the active pin; scripts/lib/pins.mjs)
-const { buildIdOfArtifact } = await import(path.join(storePath('vendor'), 'pipeline/toolchain/artifact-paths.mjs'));
+const { buildIdOfArtifact } = await import(path.join(storePath('qed64'), 'pipeline/toolchain/artifact-paths.mjs'));
 
 const argv = process.argv.slice(2);
 const dir = argv[0];

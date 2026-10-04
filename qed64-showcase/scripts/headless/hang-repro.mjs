@@ -10,7 +10,7 @@
 //   2. Cursor on the link's #hasse line: the InfoView's requests (getWidgets, getInteractiveGoals,
 //      getInteractiveTermGoal, getInteractiveDiagnostics, getWidgetSource, the panel's own
 //      HasseView.HassePanel.rpc) + the editor's codeAction / documentHighlight;
-//   3. Click: full-text didChange with the link's edit (out/click-all/w8/hasse-view.json), the
+//   3. Click: full-text didChange with the link's edit (lean/expect/click-all/w8/hasse-view.json), the
 //      InfoView's re-requests for the new version, and (--cancel) a $/cancelRequest for every
 //      request still in flight, as the editor does for its own requests on an edit;
 //   4. Wait until $/lean/fileProgress drains at the new version.
@@ -79,7 +79,7 @@ log(`host: free+inactive ${free0.toFixed(1)} GB, browser lock absent; variant ${
 
 // ---------- inputs ----------
 const text = fs.readFileSync(path.join(SC, 'lean/examples/hasse-view.lean'), 'utf8');
-const clickAll = JSON.parse(fs.readFileSync(path.join(SC, 'out/click-all/w8/hasse-view.json'), 'utf8'));
+const clickAll = JSON.parse(fs.readFileSync(path.join(SC, 'lean/expect/click-all/w8/hasse-view.json'), 'utf8'));
 let links = clickAll.links;
 if (o.links) {
   const m = /^(\d+)(?:-(\d+))?$/.exec(o.links); const a = Number(m[1]), b = Number(m[2] ?? m[1]);

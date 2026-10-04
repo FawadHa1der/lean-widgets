@@ -1,30 +1,39 @@
 #!/usr/bin/env node
-// pin-qed64.mjs — QED64 as a pinned dependency (BUILD-PLAN §2 S0.2–S0.5). Node, no dependencies.
+// pin-qed64.mjs — QED64 as a pinned dependency (BUILD-PLAN §2 S0.2–S0.5; docs/ARCHITECTURE.md). Node, no dependencies.
 //
 // Multiple pins (docs/REPIN-LOG.md "Multiple pins"): every command acts on ONE registered pin, `--pin <id>` (default: the
 // active pin). Pins are keyed by QED64 COMMIT (id = its first 7 hex digits), because two commits can serve the same runtime
 // buildId with different shells/workers. A pin's identity — QED64 commit, promote, buildId, kernel — is its descriptor
-// pins/<id>/pin.json (scripts/lib/pins.mjs); its lock, QED64-PIN and vendored sources live beside it in pins/<id>/, its
-// release clone in release/<id>/. Nothing here switches the active pin (`showcase.sh pin use <id>`).
+// pins/<id>/pin.json (scripts/lib/pins.mjs); its lock lives beside it in pins/<id>/, its served files in release/<id>/.
+// QED64's SOURCES are never copied: they are the git submodule deps/qed64 (at the active pin's commit) or the pin's git
+// worktree (scripts/lib/qed64-src.mjs); every `git show` / `ls-tree` below reads that checkout.
+// Nothing here switches the active pin (`showcase.sh pin use <id>`).
 //
 //   node scripts/pin-qed64.mjs pin --pin <id>
-//                                       S0.2 precondition (QED64 HEAD == the descriptor's commit, clean), S0.3 vendor
-//                                       (git archive) -> pins/<id>/vendor-qed64, S0.4 release clone (cp -c per file)
-//                                       -> release/<id>, then write pins/<id>/QED64.lock.json + QED64-PIN; S0.2 is
-//                                       re-checked after the clone (HEAD unchanged, still clean, dist/ not rewritten)
+//                                       REGISTER a pin's lock from a QED64 checkout that has QED64's binaries built
+//                                       (QED64_REPO, read-only; e.g. the QED64 owner's checkout): S0.2 precondition
+//                                       (its HEAD == the descriptor's commit, clean), S0.4 release clone (copy-on-write
+//                                       per file) -> release/<id>, then write pins/<id>/QED64.lock.json (release file
+//                                       sha256s, git anchors from the source dependency, the overlays of the pin's
+//                                       runtime when they exist); S0.2 is re-checked after the clone. A cloner never
+//                                       needs this: `showcase.sh bootstrap` rebuilds release/<id> from source + fetches.
 //   node scripts/pin-qed64.mjs verify [--pin <id>] [--allow-skip] [--strict]
-//                                       S0.5 chain of trust; one "OK"/"FAIL" line per check;
-//                                       exit 1 on any FAIL. A check that cannot run (docker not
-//                                       reachable, Playwright not installed) is a FAIL unless
-//                                       --allow-skip is passed, in which case it prints SKIP.
-//                                       The Docker image behind qed64-toolchain:emsdk-6.0.5 (a tag QED64's
-//                                       own toolchain build rewrites) is a rebuild-only input: a mismatch
-//                                       prints DRIFT (not FAIL; `showcase.sh native` refuses on it) unless
-//                                       --strict.
+//                                       S0.5 chain of trust; one "OK"/"FAIL" line per check (N/A for a rebuild-only
+//                                       input this checkout does not have: the kernel build, a downloaded browser);
+//                                       exit 1 on any FAIL. A check that cannot run (docker not reachable, Playwright
+//                                       not installed) is a FAIL unless --allow-skip is passed, in which case it prints
+//                                       SKIP. Rebuild-only inputs that moved (the Docker image behind
+//                                       qed64-toolchain:emsdk-6.0.5, a tag QED64's own toolchain build rewrites; the
+//                                       Node version the bakes ran on) print DRIFT (not FAIL; `showcase.sh native`
+//                                       refuses on the image) unless --strict.
 //   node scripts/pin-qed64.mjs record-widgets-hash [--pin <id>]
 //                                       recompute WIDGETS_SOURCE_HASH over $W/widgets-src, require it
 //                                       to equal SOURCE-HASH.txt, check the export against its commit
 //                                       (SOURCE-COMMIT.txt), and write hash + WIDGETS_COMMIT into that pin's lock
+//   node scripts/pin-qed64.mjs record-overlays [--pin <id>]
+//                                       write the sha256/bytes of the pin's runtime overlays (out/runtimes/<bid>/overlay/
+//                                       widgets7|widgets8: index.json + both .snapz) into its lock (`overlays`), after
+//                                       the cheap pairing check; the lock is what bootstrap verifies fetched overlays by
 //
 // The widget sources: $W/widgets-src is a `git archive` of this repository's packages/ at WIDGETS_COMMIT
 // (scripts/export-widgets.mjs; scripts/lib/widgets-src.mjs). WIDGETS_SOURCE_HASH (amendment 1) = sha256 over the
@@ -33,11 +42,12 @@
 // SOURCE-HASH.txt line 1; verify recomputes it from the file contents AND re-derives every file's git blob id against
 // `git ls-tree -r WIDGETS_COMMIT packages/`.
 //
-// Locations (scripts/lib/env.mjs): QED64_REPO (the QED64 checkout, read-only), QED64_KERNEL_BUILD (the kernel build,
-// read-only), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as this machine's paths.
+// Locations (scripts/lib/env.mjs): QED64_REPO (only for `pin`), QED64_KERNEL_BUILD (the kernel build, read-only; `pin`
+// needs it, `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as
+// this machine's paths.
 //
-// Every operation on the QED64 tree is read-only: git rev-parse / status --no-optional-locks /
-// archive / show / ls-tree, and cp -c (APFS clonefile; new inodes, never hard links).
+// Every operation on a QED64 tree is read-only: git rev-parse / status / show / ls-tree (with --no-optional-locks on
+// QED64_REPO), and copy-on-write file clones (new inodes, never hard links).
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -48,10 +58,13 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { activePinId, pinDescriptor, repoPinDir, releaseDir, ID_RE } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
 const WSRC = await import(path.join(SC, 'scripts/lib/widgets-src.mjs'));
+const QSRC = await import(path.join(SC, 'scripts/lib/qed64-src.mjs'));
+const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const cmd0 = process.argv[2];
 let Q = '', K = '';
 try {
-  if (cmd0 === 'pin' || cmd0 === 'verify') { Q = ENV.need('QED64_REPO'); K = ENV.need('QED64_KERNEL_BUILD'); }
+  if (cmd0 === 'pin') { Q = ENV.need('QED64_REPO'); K = ENV.need('QED64_KERNEL_BUILD'); }
+  if (cmd0 === 'verify' && ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); // optional for verify: set -> checked, unset -> N/A
 } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
 const QED64_UPSTREAM = 'https://github.com/FawadHa1der/QED64';
 // --pin <id> (default: the active pin). Its descriptor names the QED64 commit (QPIN), the promote, the runtime buildId and
@@ -68,21 +81,17 @@ const KERNEL = DESC.qed64.kernel;
 const KERNEL_PIN_PATH = 'pipeline/toolchain/KERNEL-PIN';
 const R = releaseDir(ID);
 const STORE = repoPinDir(ID);
-const VENDOR = path.join(STORE, 'vendor-qed64');
 const LOCK = path.join(STORE, 'QED64.lock.json');
-const PIN = path.join(STORE, 'QED64-PIN');
+// QED64's sources at QPIN: the submodule or the pin's worktree (never QED64_REPO, never a copy)
+let SRC = '';
+if (['pin', 'verify'].includes(cmd0)) {
+  try { SRC = QSRC.requireSrc(QPIN, ID); } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
+}
 const DOCKER_IMAGE = ENV.DOCKER_IMAGE;
 const DOCKER_ID = '8b6698bbf474';
 const PLAYWRIGHT = '1.62.1';
 const BROWSER_REV = '1234';
 
-const VENDOR_PATHS = [
-  'pipeline/snapshot', 'pipeline/toolchain/artifact-paths.mjs', 'pipeline/artifacts/olean-imports.mjs',
-  'pipeline/artifacts/unpack.mjs', 'public/workers', 'frontend/src/qed64-boot.ts',
-  'frontend/src/resident-session.ts', 'frontend/src/lsp-relay.ts', 'src/install/profiles.ts',
-  'src/runtime/client.ts', 'src/runtime/snapshots.ts', 'frontend/package.json',
-  'frontend/package-lock.json', 'frontend/vite.config.ts', 'frontend/index.html',
-];
 // git-tracked JSON consumed from public/ (S0.5 #1)
 const TRACKED_JSON = [
   'public/runtime/runtime-manifest.json', 'public/profiles/index.json',
@@ -90,7 +99,28 @@ const TRACKED_JSON = [
   'public/snapshots/index.json',
 ];
 
-const git = (...a) => execFileSync('git', ['--no-optional-locks', '-C', Q, ...a], { maxBuffer: 1 << 30 });
+const LOCK_SCHEMA = 'qed64-showcase.lock/v2';
+// The dependency sections every lock carries (docs/ARCHITECTURE.md): how QED64's sources are consumed (a submodule /
+// worktree at the commit, never a copy), how the page shell is rebuilt from them, and which release files come from git
+// and which from an artifact origin.
+function lockDependencySections(commit) {
+  return {
+    source: {
+      kind: 'git-submodule', path: QSRC.SUBMODULE_REL, url: QSRC.UPSTREAM, commit,
+      staged: 'a pin that is not the submodule\'s commit: git worktree of the submodule\'s repository at ${QED64_SHOWCASE_WORK}/qed64-pins/<id> (scripts/lib/qed64-src.mjs)',
+    },
+    shell: {
+      dir: 'dist', build: 'npm ci --prefix frontend && npm run build:site (QED64\'s own build, in the source checkout)',
+      verify: 'every built dist/ file byte-identical to release.files (sha256): the build is deterministic (docs/ARCHITECTURE.md "Shell from source")',
+    },
+    artifacts: {
+      fromGit: [...TRACKED_JSON, `public/runtime/runtime-manifest.${BID} copy of public/runtime/runtime-manifest.json (verify #2)`],
+      fetched: 'every other public/ file of release.files, by URL path (public/<p> is served at /<p>) from an artifact origin, sha256 == release.files (scripts/fetch-artifacts.mjs)',
+    },
+  };
+}
+const git = (...a) => execFileSync('git', ['-C', SRC, ...a], { maxBuffer: 1 << 30 });              // the source dependency
+const gitQ = (...a) => execFileSync('git', ['--no-optional-locks', '-C', Q, ...a], { maxBuffer: 1 << 30 }); // QED64_REPO (pin)
 const sha256File = (p) => new Promise((res, rej) => {
   const h = createHash('sha256');
   fs.createReadStream(p, { highWaterMark: 8 << 20 }).on('data', (d) => h.update(d)).on('error', rej).on('end', () => res(h.digest('hex')));
@@ -135,8 +165,8 @@ function releaseSet() {
 
 async function pin() {
   // S0.2 precondition (read-only)
-  const head = git('rev-parse', 'HEAD').toString().trim();
-  const dirty = git('status', '--porcelain').toString();
+  const head = gitQ('rev-parse', 'HEAD').toString().trim();
+  const dirty = gitQ('status', '--porcelain').toString();
   if (head !== QPIN) throw new Error(`QED64 HEAD ${head} != QPIN ${QPIN}`);
   const kpin = kernelPinAt(QPIN);
   if (kpin !== KERNEL) throw new Error(`QED64 ${KERNEL_PIN_PATH} at QPIN names kernel ${kpin}, not KERNEL ${KERNEL}`);
@@ -148,23 +178,7 @@ async function pin() {
   const stamp0 = distStamp();
   console.log(`S0.2 OK  QED64 HEAD=${head} clean, serves ${qbid}`);
 
-  // S0.3 vendor via git archive (object store read only)
-  fs.rmSync(VENDOR, { recursive: true, force: true });
-  fs.mkdirSync(VENDOR, { recursive: true });
-  await new Promise((res, rej) => {
-    const ga = spawn('git', ['--no-optional-locks', '-C', Q, 'archive', QPIN, ...VENDOR_PATHS], { stdio: ['ignore', 'pipe', 'inherit'] });
-    const tar = spawn('tar', ['-x', '-C', VENDOR], { stdio: ['pipe', 'inherit', 'inherit'] });
-    ga.stdout.pipe(tar.stdin);
-    let n = 0; const done = (c, who) => { if (c !== 0) rej(new Error(`${who} exit ${c}`)); else if (++n === 2) res(); };
-    ga.on('close', (c) => done(c, 'git archive')); tar.on('close', (c) => done(c, 'tar'));
-  });
-  const vfiles = walk(VENDOR);
-  const pinLines = [];
-  for (const f of vfiles) pinLines.push(`${await sha256File(path.join(VENDOR, f))}  ${f}`);
-  fs.writeFileSync(PIN, `# QED64-PIN: sha256 of every file in vendor/qed64 (git archive ${QPIN})\n` + pinLines.join('\n') + '\n');
-  console.log(`S0.3 OK  vendored ${vfiles.length} files -> ${path.relative(SC, VENDOR)} (vendor/qed64 when this pin is active), ${path.relative(SC, PIN)} written`);
-
-  // S0.4 release clone (cp -c = clonefile per file; never a hard link)
+  // S0.4 release clone (copy-on-write clone per file: APFS clonefile / Linux reflink; never a hard link)
   const set = releaseSet();
   fs.rmSync(R, { recursive: true, force: true });
   const files = {};
@@ -172,13 +186,13 @@ async function pin() {
   for (const rel of set) {
     const src = path.join(Q, rel), dst = path.join(R, rel);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    execFileSync('cp', ['-c', src, dst]);
+    cloneFile(src, dst);
     const st = fs.statSync(dst);
     files[rel] = { bytes: st.size, sha256: await sha256File(dst) };
     bytes += st.size;
   }
   console.log(`S0.4 OK  cloned ${set.length} files (${(bytes / 1e9).toFixed(3)} GB logical) -> ${path.relative(SC, R)}`);
-  const head1 = git('rev-parse', 'HEAD').toString().trim(), dirty1 = git('status', '--porcelain').toString();
+  const head1 = gitQ('rev-parse', 'HEAD').toString().trim(), dirty1 = gitQ('status', '--porcelain').toString();
   if (head1 !== QPIN || dirty1.trim() || distStamp() !== stamp0) throw new Error(`QED64 changed during the clone (HEAD ${head1}, ${dirty1.trim() ? 'dirty' : 'clean'}, dist ${distStamp() === stamp0 ? 'same' : 'REWRITTEN'}): re-run pin`);
   console.log('S0.4 OK  QED64 HEAD, status and dist/ unchanged during the clone');
 
@@ -202,25 +216,28 @@ async function pin() {
   // preserve keys other stages own (e.g. WIDGETS_SOURCE_HASH from S0.1)
   let prev = {};
   try { prev = readJson(LOCK); } catch {}
-  const { schema: _s, qed64: _q, vendor: _v, release: _r, anchors: _a, toolchain: _t, pinnedAt: _p, ...keep } = prev;
+  const { schema: _s, qed64: _q, vendor: _v, source: _sr, shell: _sh, artifacts: _ar, release: _r, anchors: _a, toolchain: _t, pinnedAt: _p, ...keep } = prev;
   const anchors = {};
   for (const p of TRACKED_JSON) anchors[p] = { gitBlob: git('rev-parse', `${QPIN}:${p}`).toString().trim(), sha256: files[p].sha256 };
   const lock = {
-    schema: 'qed64-showcase.lock/v1',
+    schema: LOCK_SCHEMA,
     pinnedAt: new Date().toISOString(),
-    qed64: { repo: QED64_UPSTREAM, checkout: '${QED64_REPO}', commit: QPIN, promote: QPROMOTE, buildId: BID, kernel: KERNEL },
-    vendor: { dir: 'vendor/qed64', paths: VENDOR_PATHS, files: vfiles.length, pinFile: 'QED64-PIN', pinSha256: sha256Buf(fs.readFileSync(PIN)) },
+    qed64: { repo: QED64_UPSTREAM, commit: QPIN, promote: QPROMOTE, buildId: BID, kernel: KERNEL },
+    ...lockDependencySections(QPIN),
     release: { dir: path.relative(SC, R), files },
     anchors,
     toolchain,
     ...keep,
   };
   fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + '\n');
-  console.log(`PIN DONE  ${path.relative(SC, LOCK)} (${Object.keys(files).length} release files) + QED64-PIN (${vfiles.length} vendor files); activate with: scripts/showcase.sh pin use ${ID}`);
+  console.log(`PIN DONE  ${path.relative(SC, LOCK)} (${Object.keys(files).length} release files); record the overlays once built (pin-qed64.mjs record-overlays --pin ${ID}); activate with: scripts/showcase.sh pin use ${ID}`);
 }
 
 async function verify({ allowSkip = false, strictToolchain = false } = {}) {
-  let fails = 0, skips = 0, drifts = 0;
+  let fails = 0, skips = 0, drifts = 0, nas = 0;
+  // N/A: a rebuild-only input this checkout does not have (no kernel build, no downloaded browser). Printed, counted and
+  // named in the summary; never a reason to pass a check on the served files.
+  const na = (msg, why) => { nas++; console.log(`N/A  ${msg} — ${why}`); };
   const ok = (cond, msg, detail = '') => { console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${detail ? ' — ' + detail : ''}`); if (!cond) fails++; };
   // a check that could not run is a FAIL unless --allow-skip
   const skip = (msg) => { if (allowSkip) { skips++; console.log(`SKIP ${msg} (--allow-skip)`); } else { fails++; console.log(`FAIL ${msg} (check could not run; pass --allow-skip to tolerate)`); } };
@@ -230,7 +247,7 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   const drift = (cond, msg, detail = '') => {
     if (cond) return ok(true, msg, detail);
     if (strictToolchain) return ok(false, msg, detail);
-    drifts++; console.log(`DRIFT ${msg}${detail ? ' — ' + detail : ''} (rebuild-only input: affects 'showcase.sh native', which refuses; served artifacts unaffected; --strict makes this a FAIL)`);
+    drifts++; console.log(`DRIFT ${msg}${detail ? ' — ' + detail : ''} (rebuild-only input: served artifacts unaffected; 'showcase.sh native' refuses on the image; --strict makes this a FAIL)`);
   };
   const lock = readJson(LOCK);
   let act = null; try { act = activePinId(); } catch { /* no active pin yet */ }
@@ -309,38 +326,51 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   const ids = new Set();
   for (const f of have.filter((f) => /^dist\/assets\/.*\.js$/.test(f))) for (const m of fs.readFileSync(path.join(R, f), 'latin1').matchAll(/wasm64-[0-9a-f]{16}/g)) ids.add(m[0]);
   ok(ids.size === 1 && ids.has(BID), `#6 bundle buildIds in dist/assets/*.js == {${[...ids].join(',')}}`);
-  // 7. toolchain pins
+  // 7. toolchain pins. The native64 toolchain, its Docker image, Mathlib and ProofWidgets are REBUILD-ONLY inputs (the
+  // native widget oleans: `showcase.sh native`, `stage`); a checkout without QED64_KERNEL_BUILD cannot rebuild and does
+  // not need them to serve (the served files are checked by #1-#6, #10 and the overlays by #11), so they print N/A.
   const tc = lock.toolchain;
-  ok(fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim() === tc.native64.NATIVE_COMMIT, `#7 NATIVE-COMMIT == ${tc.native64.NATIVE_COMMIT.slice(0, 10)}`);
-  ok(fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim() === tc.native64.BUILT_COMMIT, `#7 BUILT-COMMIT == ${tc.native64.BUILT_COMMIT.slice(0, 10)}`);
-  for (const b of ['lean', 'lake']) ok(await sha256File(path.join(K, `native/stage1/bin/${b}`)) === tc.native64[`stage1/bin/${b}`], `#7 native/stage1/bin/${b} sha256 == lock`, tc.native64[`stage1/bin/${b}`].slice(0, 16));
-  // `docker image inspect <repo:tag>` intermittently answers "No such image" on this Docker Desktop
-  // (28.5.1) while `docker images` lists the tag and `docker run` resolves it; so resolve the tag
-  // through `docker image ls`, which is what run uses. Daemon unreachable -> skip(); tag absent -> FAIL.
-  let dls = null;
-  try { dls = execFileSync('docker', ['image', 'ls', '--no-trunc', '--format', '{{.Repository}}:{{.Tag}} {{.ID}}'], { stdio: ['ignore', 'pipe', 'ignore'], timeout: 20000 }).toString(); } catch {}
-  if (dls === null) skip(`#7 docker image ${DOCKER_IMAGE}: docker daemon not reachable`);
-  else {
-    const did = (dls.split('\n').find((l) => l.split(' ')[0] === DOCKER_IMAGE) || '').split(' ')[1] || '';
-    drift(did.replace(/^sha256:/, '').startsWith(tc.docker.id), `#7 docker ${DOCKER_IMAGE} id == ${tc.docker.id}`, did ? did.slice(0, 19) : 'tag not present');
+  if (!K) {
+    na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: QED64_KERNEL_BUILD is not set`,
+      'rebuild-only inputs of the native widget oleans (docs/BUILD-FROM-SOURCE.md); set it to check them');
+  } else {
+    ok(fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim() === tc.native64.NATIVE_COMMIT, `#7 NATIVE-COMMIT == ${tc.native64.NATIVE_COMMIT.slice(0, 10)}`);
+    ok(fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim() === tc.native64.BUILT_COMMIT, `#7 BUILT-COMMIT == ${tc.native64.BUILT_COMMIT.slice(0, 10)}`);
+    for (const b of ['lean', 'lake']) ok(await sha256File(path.join(K, `native/stage1/bin/${b}`)) === tc.native64[`stage1/bin/${b}`], `#7 native/stage1/bin/${b} sha256 == lock`, tc.native64[`stage1/bin/${b}`].slice(0, 16));
+    // `docker image inspect <repo:tag>` intermittently answers "No such image" on this Docker Desktop
+    // (28.5.1) while `docker images` lists the tag and `docker run` resolves it; so resolve the tag
+    // through `docker image ls`, which is what run uses. Daemon unreachable -> skip(); tag absent -> FAIL.
+    let dls = null;
+    try { dls = execFileSync('docker', ['image', 'ls', '--no-trunc', '--format', '{{.Repository}}:{{.Tag}} {{.ID}}'], { stdio: ['ignore', 'pipe', 'ignore'], timeout: 20000 }).toString(); } catch {}
+    if (dls === null) skip(`#7 docker image ${DOCKER_IMAGE}: docker daemon not reachable`);
+    else {
+      const did = (dls.split('\n').find((l) => l.split(' ')[0] === DOCKER_IMAGE) || '').split(' ')[1] || '';
+      const ids = [tc.docker.id, ...((tc.docker.equivalent || []).map((e) => e.id))];
+      const hit = ids.find((x) => did.replace(/^sha256:/, '').startsWith(x));
+      drift(!!hit, `#7 docker ${DOCKER_IMAGE} id == ${tc.docker.id}${ids.length > 1 ? ` or a recorded equivalent (${ids.slice(1).join(', ')})` : ''}`, did ? `${did.slice(0, 19)}${hit && hit !== tc.docker.id ? ' (recorded equivalent: same oleans, byte for byte)' : ''}` : 'tag not present');
+    }
+    ok(fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim() === tc.mathlib.commit, `#7 Mathlib commit == ${tc.mathlib.commit.slice(0, 7)}`);
+    const pw = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json')).packages.find((p) => p.name === 'proofwidgets');
+    ok(pw.rev === tc.mathlib.proofwidgets, `#7 ProofWidgets rev == ${tc.mathlib.proofwidgets.slice(0, 7)}`);
   }
-  ok(fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim() === tc.mathlib.commit, `#7 Mathlib commit == ${tc.mathlib.commit.slice(0, 7)}`);
-  const pw = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json')).packages.find((p) => p.name === 'proofwidgets');
-  ok(pw.rev === tc.mathlib.proofwidgets, `#7 ProofWidgets rev == ${tc.mathlib.proofwidgets.slice(0, 7)}`);
-  ok(process.version === tc.node, `#7 node ${process.version} == lock ${tc.node}`);
+  // The Node that ran the bakes and recorded the lock. A rebuild-only input: the served files are hash-checked, and the
+  // page shell builds byte-identically on other Node versions (docs/ARCHITECTURE.md "Shell from source").
+  drift(process.version === tc.node, `#7 node ${process.version} == lock ${tc.node}`, process.version === tc.node ? '' : 'the Node the bakes ran on');
   const pkg = (() => { try { return readJson(path.join(SC, 'package.json')); } catch { return null; } })();
   const pwPkg = (() => { try { return readJson(path.join(SC, 'node_modules/playwright-core/package.json')); } catch { return null; } })();
   const brw = (() => { try { return readJson(path.join(SC, 'node_modules/playwright-core/browsers.json')); } catch { return null; } })();
-  if (!pkg || !pwPkg || !brw) skip('#7 Playwright: package.json / node_modules not installed yet');
+  if (!pkg || !pwPkg || !brw) skip('#7 Playwright: package.json / node_modules not installed yet (npm ci)');
   else {
     ok(pkg.devDependencies?.['@playwright/test'] === tc.playwright.version && pwPkg.version === tc.playwright.version, `#7 @playwright/test exact ${pkg.devDependencies?.['@playwright/test']}, installed playwright-core ${pwPkg.version}`);
     const used = brw.browsers.filter((b) => b.name === 'chromium' || b.name === 'chromium-headless-shell');
     const revs = used.map((b) => `${b.name}@${b.revision}`);
+    ok(used.length === 2 && used.every((b) => b.revision === tc.playwright.browserRevision), `#7 browser revision ${tc.playwright.browserRevision} (${revs.join(', ')})`);
     const home = process.env.HOME;
     // Playwright's browser cache: PLAYWRIGHT_BROWSERS_PATH, else ~/Library/Caches/ms-playwright (macOS) / ~/.cache/ms-playwright (Linux)
     const roots = [process.env.PLAYWRIGHT_BROWSERS_PATH, path.join(home, 'Library/Caches/ms-playwright'), path.join(home, '.cache/ms-playwright')].filter(Boolean);
     const cached = roots.some((r) => fs.existsSync(path.join(r, `chromium_headless_shell-${tc.playwright.browserRevision}`)));
-    ok(used.length === 2 && used.every((b) => b.revision === tc.playwright.browserRevision) && cached, `#7 browser revision ${tc.playwright.browserRevision} (${revs.join(', ')}) and cached`);
+    if (cached) ok(true, `#7 browser revision ${tc.playwright.browserRevision} downloaded on this host`);
+    else na(`#7 browser revision ${tc.playwright.browserRevision} is not downloaded on this host`, 'only `showcase.sh ux` needs it: npx playwright install chromium chromium-headless-shell');
   }
   // WIDGETS_SOURCE_HASH: recomputed from the bytes of every file in $W/widgets-src; WIDGETS_COMMIT: the export is
   // exactly `git archive WIDGETS_COMMIT packages/` (file set + git blob ids re-derived from the bytes)
@@ -367,17 +397,13 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
       }
     }
   }
-  // 8. vendor re-hash against QED64-PIN, and blob ids against git ls-tree QPIN
-  const pinText = fs.readFileSync(PIN, 'utf8');
-  ok(sha256Buf(Buffer.from(pinText)) === lock.vendor.pinSha256, '#8 QED64-PIN sha256 == lock.vendor.pinSha256');
-  const pinMap = new Map(pinText.split('\n').filter((l) => l && !l.startsWith('#')).map((l) => { const [h, ...r] = l.split('  '); return [r.join('  '), h]; }));
-  const vfiles = walk(VENDOR);
-  let vbad = vfiles.filter((f) => !pinMap.has(f));
-  for (const [f, h] of pinMap) { if (!fs.existsSync(path.join(VENDOR, f)) || await sha256File(path.join(VENDOR, f)) !== h) vbad.push(f); }
-  ok(!vbad.length && vfiles.length === pinMap.size, `#8 ${path.relative(SC, VENDOR)} (${vfiles.length} files) re-hashes to QED64-PIN`, vbad.slice(0, 3).join(', '));
-  const tree = new Map(git('ls-tree', '-r', QPIN, '--', ...lock.vendor.paths).toString().trim().split('\n').map((l) => { const [meta, p] = l.split('\t'); return [p, meta.split(' ')[2]]; }));
-  let gbad = vfiles.filter((f) => tree.get(f) !== gitBlobId(fs.readFileSync(path.join(VENDOR, f))));
-  ok(!gbad.length && tree.size === vfiles.length, `#8 ${path.relative(SC, VENDOR)} git blob ids == git ls-tree ${QPIN.slice(0, 7)} (${tree.size} entries)`, gbad.slice(0, 3).join(', '));
+  // 8. QED64's sources: the source dependency (submodule or the pin's worktree) is exactly the pinned commit, with no
+  // tracked file modified; for the active pin, the submodule's gitlink == HEAD == the lock's commit. (Until 2026-10-04
+  // this was a vendored copy re-hashed against QED64-PIN; nothing of QED64 is copied any more.)
+  for (const r of QSRC.checkSrc(QPIN, ID, { active: ID === act })) ok(r.ok, `#8 ${r.msg}`);
+  ok(lock.source && lock.source.commit === QPIN && lock.source.path === QSRC.SUBMODULE_REL, `#8 lock source: ${lock.source && lock.source.kind} ${lock.source && lock.source.path} @ ${String(lock.source && lock.source.commit).slice(0, 12)} == QPIN`);
+  ok(!fs.existsSync(path.join(STORE, 'QED64-PIN')) && !fs.existsSync(path.join(STORE, 'vendor-qed64')) && !fs.existsSync(path.join(SC, 'vendor', 'qed64')),
+    '#8 no vendored copy of QED64 (pins/<id>/QED64-PIN, pins/<id>/vendor-qed64, vendor/qed64 absent)');
 
   // 10. dist/ copies of tracked files: Vite copies public/ into dist/ (public/workers/*.js -> dist/workers/*.js, the
   // infoview assets, …). dist/ itself is not tracked, so a stale or locally rebuilt dist would pass #6 (which only
@@ -388,8 +414,22 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   ok(dcopies.length > 0 && !dbad.length, `#10 the ${dcopies.length} dist/ copies of tracked public/ files == git show ${QPIN.slice(0, 7)}:public/<f> (incl. dist/workers/lean.worker.js)`, dbad.slice(0, 3).join(', '));
   ok(dcopies.includes('dist/workers/lean.worker.js'), '#10 dist/workers/lean.worker.js is among them');
 
-  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : ''].filter(Boolean).join('; ');
-  console.log(fails ? `VERIFY FAILED (${fails} FAIL${drifts ? `, ${drifts} DRIFT` : ''})` : (notes ? `VERIFY OK (${notes})` : 'VERIFY OK'));
+  // 11. the pin's runtime overlays (what /snapshots/widgets7|8/ serve) == the lock's `overlays` sha256/bytes
+  const ov = lock.overlays || {};
+  if (!Object.keys(ov).length) ok(false, '#11 lock records the overlays', 'missing (run: pin-qed64.mjs record-overlays)');
+  for (const [o, rec] of Object.entries(ov)) {
+    const d = path.join(SC, rec.dir);
+    const want = rec.files || {};
+    const have = fs.existsSync(d) ? walk(d) : [];
+    const missing = Object.keys(want).filter((f) => !have.includes(f)), extra = have.filter((f) => !(f in want));
+    const bad = [];
+    for (const f of Object.keys(want)) if (have.includes(f) && (fs.statSync(path.join(d, f)).size !== want[f].bytes || await sha256File(path.join(d, f)) !== want[f].sha256)) bad.push(f);
+    ok(have.length && !missing.length && !extra.length && !bad.length, `#11 overlay ${o}: ${rec.dir} == lock (${Object.keys(want).length} files, sha256 and size)`,
+      [!have.length && 'not present (scripts/showcase.sh bootstrap fetches it)', missing.length && `missing ${missing.slice(0, 3)}`, extra.length && `extra ${extra.slice(0, 3)}`, bad.length && `differ ${bad.slice(0, 3)}`].filter(Boolean).join('; '));
+  }
+
+  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : '', nas ? `${nas} N/A (rebuild-only input not on this host)` : ''].filter(Boolean).join('; ');
+  console.log(fails ? `VERIFY FAILED (${fails} FAIL${drifts ? `, ${drifts} DRIFT` : ''}${nas ? `, ${nas} N/A` : ''})` : (notes ? `VERIFY OK (${notes})` : 'VERIFY OK'));
   process.exit(fails ? 1 : 0);
 }
 
@@ -412,9 +452,40 @@ async function recordWidgetsHash() {
   console.log(`RECORDED WIDGETS_SOURCE_HASH ${hash} (${files} files) + WIDGETS_COMMIT ${commit} -> ${path.relative(SC, LOCK)}${prev ? ` (previous ${prev.hash.slice(0, 16)}… kept under WIDGETS_SOURCE.history)` : ''}`);
 }
 
+async function recordOverlays() {
+  const { OVERLAYS, outRtDir } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+  const lock = readJson(LOCK);
+  const overlays = {};
+  for (const o of OVERLAYS) {
+    const d = path.join(outRtDir(BID), 'overlay', o);
+    if (!fs.existsSync(path.join(d, 'index.json'))) { console.error(`FAIL ${path.relative(SC, d)}/index.json missing: build the overlays first (showcase.sh overlay)`); process.exit(1); }
+    const ix = readJson(path.join(d, 'index.json'));
+    const files = {};
+    for (const f of walk(d)) files[f] = { bytes: fs.statSync(path.join(d, f)).size, sha256: await sha256File(path.join(d, f)) };
+    // the cheap pairing rules (also showcase.sh check_overlays_cheap): this runtime, exactly {init, mathlib}, the index
+    // names exactly the files present, sizes == transfer, sha256 == digest
+    const names = ix.snapshots.map((x) => x.name).sort().join(',');
+    const errs = [];
+    if (names !== 'init,mathlib') errs.push(`entries ${names}`);
+    for (const e of ix.snapshots) {
+      const f = path.basename(e.url);
+      if (e.runtime !== BID) errs.push(`${e.name}.runtime ${e.runtime}`);
+      if (!files[f]) errs.push(`${f} missing`);
+      else if (files[f].bytes !== e.transfer || `sha256:${files[f].sha256}` !== e.digest) errs.push(`${f} != index (size/digest)`);
+    }
+    if (Object.keys(files).length !== ix.snapshots.length + 1) errs.push(`files ${Object.keys(files).join(',')}`);
+    if (errs.length) { console.error(`FAIL overlay ${o}: ${errs.join('; ')}`); process.exit(1); }
+    overlays[o] = { dir: path.relative(SC, d), url: `/snapshots/${o}/`, files };
+  }
+  lock.overlays = overlays;
+  fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + '\n');
+  console.log(`RECORDED overlays ${Object.entries(overlays).map(([o, r]) => `${o} (${Object.keys(r.files).length} files)`).join(', ')} -> ${path.relative(SC, LOCK)}`);
+}
+
 const cmd = process.argv[2];
 const allowSkip = process.argv.includes('--allow-skip');
 if (cmd === 'pin') await pin();
 else if (cmd === 'verify') await verify({ allowSkip, strictToolchain: process.argv.includes('--strict') });
 else if (cmd === 'record-widgets-hash') await recordWidgetsHash();
-else { console.error('usage: pin-qed64.mjs pin|verify [--allow-skip] [--strict]|record-widgets-hash  [--pin <id>]'); process.exit(2); }
+else if (cmd === 'record-overlays') await recordOverlays();
+else { console.error('usage: pin-qed64.mjs pin|verify [--allow-skip] [--strict]|record-widgets-hash|record-overlays  [--pin <id>]'); process.exit(2); }

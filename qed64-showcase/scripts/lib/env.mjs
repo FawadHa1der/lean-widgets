@@ -6,7 +6,7 @@
 //
 //   SC  qed64-showcase/        REPO_ROOT  SC/..        WS  REPO_ROOT/packages (the widget packages)
 //   W   QED64_SHOWCASE_WORK (default ~/.cache/lean-widgets/qed64-showcase-work)        LOGS  W/logs
-//   Q   QED64_REPO            K  QED64_KERNEL_BUILD     KR  QED64_KERNEL_SRC     LG  LEAN4GAME_DIR   (read-only inputs)
+//   Q   QED64_REPO (heavy path: pin, stage)   K  QED64_KERNEL_BUILD     KR  QED64_KERNEL_SRC     LG  LEAN4GAME_DIR   (read-only inputs)
 //   TC  LEAN_TOOLCHAIN_DIR (default ~/.elan/toolchains/leanprover--lean4---v4.34.0)
 //   DOCKER_IMAGE  QED64_TOOLCHAIN_IMAGE (default qed64-toolchain:emsdk-6.0.5)
 // The read-only inputs are '' when unset; need('QED64_REPO') returns the path or throws a clear error.
@@ -54,7 +54,7 @@ export const TC = process.env.LEAN_TOOLCHAIN_DIR || path.join(process.env.ELAN_H
 export const DOCKER_IMAGE = process.env.QED64_TOOLCHAIN_IMAGE || 'qed64-toolchain:emsdk-6.0.5';
 
 const HINTS = {
-  QED64_REPO: 'a QED64 checkout at the pinned commit (git clone https://github.com/FawadHa1der/QED64; built dist/ and public/ for pin/verify)',
+  QED64_REPO: "a QED64 checkout at the pinned commit with QED64's binaries built (only for pin and stage: the heavy path, docs/BUILD-FROM-SOURCE.md; QED64's sources are the submodule deps/qed64)",
   QED64_KERNEL_BUILD: 'the wasm64 kernel build dir (native/stage1, mathlib/, BUILT-COMMIT; built from https://github.com/FawadHa1der/lean4 branch qed64-wasm64)',
   QED64_KERNEL_SRC: 'the kernel source checkout (https://github.com/FawadHa1der/lean4, branch qed64-wasm64)',
   LEAN4GAME_DIR: 'a wasm64 lean4game checkout',

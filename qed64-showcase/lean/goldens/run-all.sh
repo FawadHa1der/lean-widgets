@@ -13,7 +13,7 @@
 #   4. every declared click's edited file through the superset CLI gate, per env
 #      (clean => rc 0, 0 warnings) and, for information, through the closure CLI gate
 #   5. click-all (lsp-golden.mjs --click-all) per env: EVERY rendered MakeEditLink / Try-this
-#      link applied to a fresh copy and re-elaborated -> 0 broken (out/click-all/[w8/]<pkg>.json)
+#      link applied to a fresh copy and re-elaborated -> 0 broken (lean/expect/click-all/[w8/]<pkg>.json)
 #   6. click-all CLI cross-check (primary env): every click-all edited file through the
 #      superset CLI gate must agree with the LSP classification
 #   7. LSP closure-mode run (sensitivity: does the package closure alone give the same panels?)

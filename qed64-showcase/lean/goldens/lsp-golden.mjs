@@ -36,7 +36,7 @@
 //   clean    = no error/warning after re-elaboration
 //   designed = matches a declared click whose postClickDiagnostics lists exactly them
 //   broken   = anything else.
-// Writes out/click-all/<pkg>.json; exit 1 iff any link is broken (or none found
+// Writes lean/expect/click-all/<pkg>.json; exit 1 iff any link is broken (or none found
 // where the goldens rendered some).
 //
 // Usage: node lsp-golden.mjs --pkg <pkg> [--mode superset|closure]
@@ -71,7 +71,7 @@ const PRIMARY_ENV = PKG === 'dist-lens' ? 'w8' : 'w7';
 const ENV = opt('--env', PRIMARY_ENV);
 if (!['w7', 'w8'].includes(ENV) || (PKG === 'dist-lens' && ENV !== 'w8')) { console.error(`bad --env ${ENV} for ${PKG}`); process.exit(2); }
 const ENV_SUB = ENV === PRIMARY_ENV ? '' : `${ENV}/`; // non-primary env outputs live in a subdirectory
-const OUT = opt('--out', CLICK_ALL ? path.join(SC, 'out/click-all', `${ENV_SUB}${PKG}${MODE === 'superset' ? '' : '.' + MODE}.json`)
+const OUT = opt('--out', CLICK_ALL ? path.join(SC, 'lean/expect/click-all', `${ENV_SUB}${PKG}${MODE === 'superset' ? '' : '.' + MODE}.json`)
   : MODE === 'superset' ? path.join(SC, 'lean/expect', `${ENV_SUB}${PKG}.json`)
   : path.join(W, 'goldens', `${PKG}.closure.json`));
 const HTML_OUT = MODE === 'superset'

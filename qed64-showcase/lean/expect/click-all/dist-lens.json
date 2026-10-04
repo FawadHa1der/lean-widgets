@@ -1,0 +1,997 @@
+{
+ "package": "dist-lens",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T04:04:15.942Z",
+ "generator": "lean/goldens/lsp-golden.mjs --click-all",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import DistLens"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
+ "documentDiagnostics": [],
+ "probes": 233,
+ "panelsRendered": 5,
+ "links": [
+  {
+   "n": 1,
+   "kind": "makeEditLink",
+   "linkText": "example : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 0 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": 0,
+   "classification": "clean",
+   "diagnosticsVersion": 2,
+   "editedVersion": 2,
+   "reElaborationMs": 523,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8329ae9d9deedad40863f6e3519957466183d63a9d0674a639a6c7e03f4cf1f8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link1.lean"
+  },
+  {
+   "n": 2,
+   "kind": "makeEditLink",
+   "linkText": "example : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 1 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 3,
+   "editedVersion": 3,
+   "reElaborationMs": 517,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "4592dcdbda5ec0403e6fed1a00ab4ef7398e9988e6891875e7417400afe0cd16",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link2.lean"
+  },
+  {
+   "n": 3,
+   "kind": "makeEditLink",
+   "linkText": "example : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 2 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 4,
+   "editedVersion": 4,
+   "reElaborationMs": 525,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "5462ff405149387f54769f8cffcd5771d228101d44918b6f980551c9c4e9c6a8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link3.lean"
+  },
+  {
+   "n": 4,
+   "kind": "makeEditLink",
+   "linkText": "example : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 3 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 5,
+   "editedVersion": 5,
+   "reElaborationMs": 525,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c28434f13a5616b4ba406f72832559de36a30df134084ee1a4ac98cab116777f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link4.lean"
+  },
+  {
+   "n": 5,
+   "kind": "makeEditLink",
+   "linkText": "example : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 4 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 6,
+   "editedVersion": 6,
+   "reElaborationMs": 520,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "724ad9e2b36809d761815446afd3a5ba944a32bbf2e0652eec53c9969e92885d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link5.lean"
+  },
+  {
+   "n": 6,
+   "kind": "makeEditLink",
+   "linkText": "example : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 9,
+      "line": 20
+     },
+     "start": {
+      "character": 9,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : die 5 = 1/6 := by unfold Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 65,
+     "line": 21
+    },
+    "start": {
+     "character": 65,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 7,
+   "editedVersion": 7,
+   "reElaborationMs": 527,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "9744904118db45e92904f7f5c82944de3960e3a4e258d261b39e896bf22a07b8",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link6.lean"
+  },
+  {
+   "n": 7,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 0 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 8,
+   "editedVersion": 8,
+   "reElaborationMs": 594,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "0eabe9a2791976f8bf65f7d04d0d16d8ba0198ec1966a5f90f7ace7d00ebc4c1",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link7.lean"
+  },
+  {
+   "n": 8,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 1 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 9,
+   "editedVersion": 9,
+   "reElaborationMs": 652,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "9f37484f50a04f32554249f109f63787854d6be51c341aa5f203e3017806bef2",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link8.lean"
+  },
+  {
+   "n": 9,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 2 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 10,
+   "editedVersion": 10,
+   "reElaborationMs": 693,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "de6a3c2b79fdb255a7a22976ca53b95c46ed2129b8252b5b8628fc0a6e776d5d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link9.lean"
+  },
+  {
+   "n": 10,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 3 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 95,
+     "line": 25
+    },
+    "start": {
+     "character": 95,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 11,
+   "editedVersion": 11,
+   "reElaborationMs": 776,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c6b23868971a4391eceeb28cc08b6bc154db51427bf16acfb65bd1d247e34cad",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link10.lean"
+  },
+  {
+   "n": 11,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 4 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 12,
+   "editedVersion": 12,
+   "reElaborationMs": 850,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c95c62a720d741ff19a8d962628ab5ec52188d59452484a69bc12c84325d5bf2",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link11.lean"
+  },
+  {
+   "n": 12,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 5 = 1/6 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 95,
+     "line": 25
+    },
+    "start": {
+     "character": 95,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": 1,
+   "classification": "clean",
+   "diagnosticsVersion": 13,
+   "editedVersion": 13,
+   "reElaborationMs": 942,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "71f574dd971a5d847bbe1e30cbec99b7ea7e37ee4394eec33f972bf4b01b13b0",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link12.lean"
+  },
+  {
+   "n": 13,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 6 = 5/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 14,
+   "editedVersion": 14,
+   "reElaborationMs": 904,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "e482325418bb1a32b972bb1c464d99b3adc8ea8c8064099440894f1c2eb27c35",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link13.lean"
+  },
+  {
+   "n": 14,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 7 = 1/9 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 95,
+     "line": 25
+    },
+    "start": {
+     "character": 95,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 15,
+   "editedVersion": 15,
+   "reElaborationMs": 811,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ac7bc08ab5e4894dc01e375455ea1cd8116e83c605c2157ee75ad86f33fadc58",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link14.lean"
+  },
+  {
+   "n": 15,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 8 = 1/12 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 16,
+   "editedVersion": 16,
+   "reElaborationMs": 741,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "f6233818a963a14b6acccfa7515c183a5e0769265d6a81557c109828c5672e9a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link15.lean"
+  },
+  {
+   "n": 16,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 9 = 1/18 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 96,
+     "line": 25
+    },
+    "start": {
+     "character": 96,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 17,
+   "editedVersion": 17,
+   "reElaborationMs": 689,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ab1cf51bb6194a89b09a19888fa139e9f4b96f336dd44f590ab5ebd1ed0fb18b",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link16.lean"
+  },
+  {
+   "n": 17,
+   "kind": "makeEditLink",
+   "linkText": "example : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 13,
+      "line": 24
+     },
+     "start": {
+      "character": 13,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : twoDice 10 = 1/36 := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 97,
+     "line": 25
+    },
+    "start": {
+     "character": 97,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "DistLens.DistPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 18,
+   "editedVersion": 18,
+   "reElaborationMs": 664,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "7989e0725d88f2d1ed46cfe1daa02a2d65f121451d5c1f8eafff7265da21fb71",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link17.lean"
+  },
+  {
+   "n": 18,
+   "kind": "makeEditLink",
+   "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 31
+     },
+     "start": {
+      "character": 14,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 151,
+     "line": 32
+    },
+    "start": {
+     "character": 151,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "DistLens.ChainPanel"
+    }
+   ],
+   "declaredClick": 2,
+   "classification": "clean",
+   "diagnosticsVersion": 19,
+   "editedVersion": 19,
+   "reElaborationMs": 683,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "627730e1615b54b96f8a3536162e8d3c41b7a608239dd5612566242543e2e1a1",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link18.lean"
+  },
+  {
+   "n": 19,
+   "kind": "makeEditLink",
+   "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 31
+     },
+     "start": {
+      "character": 14,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 151,
+     "line": 32
+    },
+    "start": {
+     "character": 151,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "DistLens.ChainPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 20,
+   "editedVersion": 20,
+   "reElaborationMs": 537,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b3d6f37c56445e07467ce8f35b4e0e7d8d88ec0032d9acaa0c488a5cedeb598f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link19.lean"
+  },
+  {
+   "n": 20,
+   "kind": "makeEditLink",
+   "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 31,
+      "line": 32
+     },
+     "start": {
+      "character": 31,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 0 = 2/3 := by unfold Showcase.DistLens.weather; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 151,
+     "line": 33
+    },
+    "start": {
+     "character": 151,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "DistLens.ChainPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 21,
+   "editedVersion": 21,
+   "reElaborationMs": 537,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "dd4b48396dc15f83178cd68202c0b9ac2bf20a823f10b8a8dc60aa7c09bbee28",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link20.lean"
+  },
+  {
+   "n": 21,
+   "kind": "makeEditLink",
+   "linkText": "example : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num",
+   "title": "insert this example",
+   "edit": {
+    "range": {
+     "end": {
+      "character": 31,
+      "line": 32
+     },
+     "start": {
+      "character": 31,
+      "line": 32
+     }
+    },
+    "newText": "\nexample : ((PMF.ofFintype ![2/3, 1/3] (by simp [Fin.sum_univ_succ]; ennreal_num)).bind weather) 1 = 1/3 := by unfold Showcase.DistLens.weather; pmf_num"
+   },
+   "newSelection": {
+    "end": {
+     "character": 151,
+     "line": 33
+    },
+    "start": {
+     "character": 151,
+     "line": 33
+    }
+   },
+   "foundAt": [
+    {
+     "line": 32,
+     "character": 0,
+     "panel": "DistLens.ChainPanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 22,
+   "editedVersion": 22,
+   "reElaborationMs": 537,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "9b3e9ef6f241fd5626e425a5fa36c12b6d5244fd0b423cdfefc6c6847cc59d7c",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link21.lean"
+  }
+ ],
+ "counts": {
+  "clean": 21,
+  "total": 21,
+  "makeEditLink": 21,
+  "tryThis": 0,
+  "linkOccurrences": 21
+ },
+ "declaredClicksCovered": "3/3",
+ "ok": true,
+ "totalMs": 16784
+}

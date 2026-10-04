@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CLI cross-check of the --click-all results: every edited file recorded in
-#   out/click-all/[<env>/]<pkg>.json   (links[].editedFile)
+#   lean/expect/click-all/[<env>/]<pkg>.json   (links[].editedFile)
 # is compiled with the superset CLI gate (native-gate.sh, plain `lean`, golden-env
 # LEAN_PATH) and must give rc 0 and 0 warnings when the LSP run classified it
 # `clean` (a `designed` link must give rc!=0 or warnings, i.e. agree with LSP).
@@ -14,7 +14,7 @@ pkg="$1"
 defenv=w7; [ "$pkg" = dist-lens ] && defenv=w8
 env="${GOLDEN_ENV:-$defenv}"
 sub=""; esuf=""; [ "$env" != "$defenv" ] && { sub="$env/"; esuf=".$env"; }
-J="$SC/out/click-all/$sub$pkg.json"
+J="$SC/lean/expect/click-all/$sub$pkg.json"
 [ -f "$J" ] || { echo "missing $J" >&2; exit 2; }
 TSV="$W/goldens/click-all-cli.$pkg$esuf.tsv"; : > "$TSV"
 export W G pkg env esuf

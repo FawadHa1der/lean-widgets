@@ -1,5 +1,6 @@
 /* qed64-showcase edge worker: the widget gallery + the PINNED QED64 page, on the showcase's OWN
- * origin. Same shape as QED64's infra/worker.js (@1859b83; unchanged at the 9fdf9b8 pin) and the lean4game precedent:
+ * origin. Same shape as QED64's infra/worker.js (whose cache rule it IMPORTS: ../deps/qed64/infra/worker.js, the
+ * submodule at the served pin; wrangler bundles it) and the lean4game precedent:
  *
  *   static assets (Workers assets, binding ASSETS; each file ≤ 25 MiB)
  *     /                  the pinned QED64 dist (release/<buildId>/dist), unmodified
@@ -34,15 +35,13 @@
  * chunks that were transformed (public/workers/lean.worker.js:594-596).
  */
 
-const ARTIFACT_PREFIXES = ["/runtime/", "/profiles/", "/snapshots/"];
+// QED64's cache rule, imported (not copied) from the served pin's QED64 sources: every manifest and index revalidates,
+// INCLUDING the per-build runtime-manifest.wasm64-<16hex>.json; digest- or size-named files never change under the same
+// name. Re-exported for infra/worker.test.mjs.
+import { isImmutable } from "../deps/qed64/infra/worker.js";
+export { isImmutable };
 
-export function isImmutable(pathname) {
-  // Verbatim QED64 rule: every manifest and index revalidates, INCLUDING the per-build
-  // runtime-manifest.wasm64-<16hex>.json (its name is sha256(lean.wasm) only, a relink of lean.js
-  // keeps the name); digest- or size-named files never change under the same name.
-  if (/\/runtime-manifest(\.[^/]*)?\.json$/.test(pathname) || /\/index\.json$/.test(pathname)) return false;
-  return /(\.part-\d+|\.snapz|\.chunk\.|[0-9a-f]{16,})/.test(pathname);
-}
+const ARTIFACT_PREFIXES = ["/runtime/", "/profiles/", "/snapshots/"];
 
 function withHeaders(response, pathname) {
   const headers = new Headers(response.headers);

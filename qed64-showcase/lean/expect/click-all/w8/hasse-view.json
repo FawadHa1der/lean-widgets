@@ -1,0 +1,2167 @@
+{
+ "package": "hasse-view",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T04:02:28.740Z",
+ "generator": "lean/goldens/lsp-golden.mjs --click-all",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import HasseView"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
+ "documentDiagnostics": [],
+ "probes": 248,
+ "panelsRendered": 5,
+ "links": [
+  {
+   "n": 1,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {0}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 18
+    },
+    "start": {
+     "character": 51,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": 0,
+   "classification": "clean",
+   "diagnosticsVersion": 2,
+   "editedVersion": 2,
+   "reElaborationMs": 558,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "67f4dd46b0222a9147d264f3eedcb468e6831cde321d38dbf4255c18c19c0f67",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link1.lean"
+  },
+  {
+   "n": 2,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 18
+    },
+    "start": {
+     "character": 51,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 3,
+   "editedVersion": 3,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b14d43ace7098977417a4ab0c13fd4b5bb7cfbb96bf715706073fdb41ea44101",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link2.lean"
+  },
+  {
+   "n": 3,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 18
+    },
+    "start": {
+     "character": 51,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 4,
+   "editedVersion": 4,
+   "reElaborationMs": 524,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "a39319fc7233d3ef1cabb3d0d59e69aeeb70b415fdda67025ac02857a65e8418",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link3.lean"
+  },
+  {
+   "n": 4,
+   "kind": "makeEditLink",
+   "linkText": "{0} ⋖ {0, 1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 5,
+   "editedVersion": 5,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "15505f040ecca0d6e2dee7852bc43f50878805532496ae7b119df403f49c4d09",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link4.lean"
+  },
+  {
+   "n": 5,
+   "kind": "makeEditLink",
+   "linkText": "{0} ⋖ {0, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 6,
+   "editedVersion": 6,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "547902833d485d505f4132239b57de015ba83a497c6d2e007b024cc97f949db6",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link5.lean"
+  },
+  {
+   "n": 6,
+   "kind": "makeEditLink",
+   "linkText": "{1} ⋖ {0, 1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 7,
+   "editedVersion": 7,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "709ec832bb9fb6f61bdf1f5af969768630522ead465271e134de32eca2612d11",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link6.lean"
+  },
+  {
+   "n": 7,
+   "kind": "makeEditLink",
+   "linkText": "{1} ⋖ {1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 8,
+   "editedVersion": 8,
+   "reElaborationMs": 528,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b76352cf23d3dd63da641114ca368ca3bcfaa3b8f718065223814000f4acbd7a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link7.lean"
+  },
+  {
+   "n": 8,
+   "kind": "makeEditLink",
+   "linkText": "{0, 1} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({0, 1} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 18
+    },
+    "start": {
+     "character": 62,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 9,
+   "editedVersion": 9,
+   "reElaborationMs": 528,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "3bc0ac4fd00a131c6c4fa10cad4a93556171e1aee54b4045760a3e7de9389f8e",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link8.lean"
+  },
+  {
+   "n": 9,
+   "kind": "makeEditLink",
+   "linkText": "{2} ⋖ {0, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 10,
+   "editedVersion": 10,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "1c2ed8c3bc42d8e39a10056c2b1cfa07d58f7265475d3688e970f0600a4edbfa",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link9.lean"
+  },
+  {
+   "n": 10,
+   "kind": "makeEditLink",
+   "linkText": "{2} ⋖ {1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 18
+    },
+    "start": {
+     "character": 56,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 11,
+   "editedVersion": 11,
+   "reElaborationMs": 526,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "34ee000d95695b6c522443896698db788a6ed77ecca49b0774654168afd1d585",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link10.lean"
+  },
+  {
+   "n": 11,
+   "kind": "makeEditLink",
+   "linkText": "{0, 2} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({0, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 18
+    },
+    "start": {
+     "character": 62,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 12,
+   "editedVersion": 12,
+   "reElaborationMs": 524,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c1332f09829b5e6034c930f2428dcf560b1810472cb97fd49379299bed00d715",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link11.lean"
+  },
+  {
+   "n": 12,
+   "kind": "makeEditLink",
+   "linkText": "{1, 2} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ({1, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 18
+    },
+    "start": {
+     "character": 62,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 13,
+   "editedVersion": 13,
+   "reElaborationMs": 520,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "6a80e80bcf0f91998d1e456e1c3303777a50611233882c889d1310743904e140",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link12.lean"
+  },
+  {
+   "n": 13,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, ∅ ≤ x",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 73,
+     "line": 18
+    },
+    "start": {
+     "character": 73,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": 1,
+   "classification": "clean",
+   "diagnosticsVersion": 14,
+   "editedVersion": 14,
+   "reElaborationMs": 528,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "89fd4edd78cc02d2f26b06a8a9456a02925e684cae29fb19ecafc1aa7b944ad6",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link13.lean"
+  },
+  {
+   "n": 14,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, x ≤ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 23,
+      "line": 17
+     },
+     "start": {
+      "character": 23,
+      "line": 17
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 81,
+     "line": 18
+    },
+    "start": {
+     "character": 81,
+     "line": 18
+    }
+   },
+   "foundAt": [
+    {
+     "line": 17,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": 2,
+   "classification": "clean",
+   "diagnosticsVersion": 15,
+   "editedVersion": 15,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "9052daeb559b613bbdfc4bbce0a525c216cdb1ac3ac28cc357fcb574780d8a2c",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link14.lean"
+  },
+  {
+   "n": 15,
+   "kind": "makeEditLink",
+   "linkText": "0 ⋖ 1",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 20
+     },
+     "start": {
+      "character": 14,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : (0 : (Fin 4)) ⋖ 1 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 40,
+     "line": 21
+    },
+    "start": {
+     "character": 40,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 16,
+   "editedVersion": 16,
+   "reElaborationMs": 561,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8e73a4e4c19c349c6c2ea8f9f5884b3dfcd31f41f2453fa850851cff0cd9e5d4",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link15.lean"
+  },
+  {
+   "n": 16,
+   "kind": "makeEditLink",
+   "linkText": "1 ⋖ 2",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 20
+     },
+     "start": {
+      "character": 14,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : (1 : (Fin 4)) ⋖ 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 40,
+     "line": 21
+    },
+    "start": {
+     "character": 40,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 17,
+   "editedVersion": 17,
+   "reElaborationMs": 727,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "0007ec932093efe0a065e2033d806d8fa304e9aea9b3d20b8c319331826de6ff",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link16.lean"
+  },
+  {
+   "n": 17,
+   "kind": "makeEditLink",
+   "linkText": "2 ⋖ 3",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 20
+     },
+     "start": {
+      "character": 14,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : (2 : (Fin 4)) ⋖ 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 40,
+     "line": 21
+    },
+    "start": {
+     "character": 40,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 18,
+   "editedVersion": 18,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "576ea374b5d541a05c956faaf322e681e5212ed097c354fbaf0365d6591987d7",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link17.lean"
+  },
+  {
+   "n": 18,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, 0 ≤ x",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 20
+     },
+     "start": {
+      "character": 14,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : ∀ x : (Fin 4), (0 : (Fin 4)) ≤ x := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 55,
+     "line": 21
+    },
+    "start": {
+     "character": 55,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 19,
+   "editedVersion": 19,
+   "reElaborationMs": 903,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "6d047f37a78a97773f77a0c3fbb1cd40eddc522c5edcaa7e5ca9d03032329f0d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link18.lean"
+  },
+  {
+   "n": 19,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, x ≤ 3",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 14,
+      "line": 20
+     },
+     "start": {
+      "character": 14,
+      "line": 20
+     }
+    },
+    "newText": "\nexample : ∀ x : (Fin 4), x ≤ (3 : (Fin 4)) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 55,
+     "line": 21
+    },
+    "start": {
+     "character": 55,
+     "line": 21
+    }
+   },
+   "foundAt": [
+    {
+     "line": 20,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 20,
+   "editedVersion": 20,
+   "reElaborationMs": 527,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "1b73b429b068221ba60e5f4a4ff5cadd7fd5084f316dead020ca64e1b5d7b7a2",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link19.lean"
+  },
+  {
+   "n": 20,
+   "kind": "makeEditLink",
+   "linkText": "(true, false) ⋖ (true, true)",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ((true, false) : (Bool × Bool)) ⋖ (true, true) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 69,
+     "line": 22
+    },
+    "start": {
+     "character": 69,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 21,
+   "editedVersion": 21,
+   "reElaborationMs": 783,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "2a8bccb978140ac256be46dc946456f6332ca955ff6f1f513702fe7fcad84076",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link20.lean"
+  },
+  {
+   "n": 21,
+   "kind": "makeEditLink",
+   "linkText": "(false, true) ⋖ (true, true)",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ((false, true) : (Bool × Bool)) ⋖ (true, true) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 69,
+     "line": 22
+    },
+    "start": {
+     "character": 69,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 22,
+   "editedVersion": 22,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "58c3df75631c2b458a702960c7c793b3a86baf1b3c39b6bf8d33c38e8f723496",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link21.lean"
+  },
+  {
+   "n": 22,
+   "kind": "makeEditLink",
+   "linkText": "(false, false) ⋖ (true, false)",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ((false, false) : (Bool × Bool)) ⋖ (true, false) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 71,
+     "line": 22
+    },
+    "start": {
+     "character": 71,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 23,
+   "editedVersion": 23,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "b98ae395b5887bf99c4050e3e75fad6e00855f1036166b92c0832c977d7eae65",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link22.lean"
+  },
+  {
+   "n": 23,
+   "kind": "makeEditLink",
+   "linkText": "(false, false) ⋖ (false, true)",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ((false, false) : (Bool × Bool)) ⋖ (false, true) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 71,
+     "line": 22
+    },
+    "start": {
+     "character": 71,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 24,
+   "editedVersion": 24,
+   "reElaborationMs": 531,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "5163945b6cb24771bd50bfa43bcae3bd0f49638e72baf8fc6460addd331a7fcf",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link23.lean"
+  },
+  {
+   "n": 24,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, (false, false) ≤ x",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ∀ x : (Bool × Bool), ((false, false) : (Bool × Bool)) ≤ x := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 80,
+     "line": 22
+    },
+    "start": {
+     "character": 80,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 25,
+   "editedVersion": 25,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "0d752d12fe2239af4248bad435270a15d82e97636f8ddfc23d3649f634db115d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link24.lean"
+  },
+  {
+   "n": 25,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, x ≤ (true, true)",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 20,
+      "line": 21
+     },
+     "start": {
+      "character": 20,
+      "line": 21
+     }
+    },
+    "newText": "\nexample : ∀ x : (Bool × Bool), x ≤ ((true, true) : (Bool × Bool)) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 78,
+     "line": 22
+    },
+    "start": {
+     "character": 78,
+     "line": 22
+    }
+   },
+   "foundAt": [
+    {
+     "line": 21,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 26,
+   "editedVersion": 26,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "148847a2bdd66c2e6f805eab4a8ec3031b123c347d8c65e7380af8db081c9405",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link25.lean"
+  },
+  {
+   "n": 26,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {0}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {0} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 25
+    },
+    "start": {
+     "character": 51,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 27,
+   "editedVersion": 27,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "19a2ebd1d730544e9bed68fe34569e05046f0346444bf4f072ab484745150512",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link26.lean"
+  },
+  {
+   "n": 27,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 25
+    },
+    "start": {
+     "character": 51,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 28,
+   "editedVersion": 28,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "c5b49e5c8b61bc50ee97ab5e04b6ba598cdd9a440eda0ae569d825dbb6591a94",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link27.lean"
+  },
+  {
+   "n": 28,
+   "kind": "makeEditLink",
+   "linkText": "∅ ⋖ {2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : (∅ : (Finset (Fin 3))) ⋖ {2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 51,
+     "line": 25
+    },
+    "start": {
+     "character": 51,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 29,
+   "editedVersion": 29,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "65f1ac771b5293d3323332c2cee9e454d1eb4fa708d574775c755a8283dd8f85",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link28.lean"
+  },
+  {
+   "n": 29,
+   "kind": "makeEditLink",
+   "linkText": "{0} ⋖ {0, 1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 30,
+   "editedVersion": 30,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "eec329eb397dcd488155f6601304c017ae1b001f6282419ce9df7176d968ca1f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link29.lean"
+  },
+  {
+   "n": 30,
+   "kind": "makeEditLink",
+   "linkText": "{0} ⋖ {0, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({0} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 31,
+   "editedVersion": 31,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "155aa200a6e46e7189ca1567080127e185f699ca238b4474b9a64fc988487eae",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link30.lean"
+  },
+  {
+   "n": 31,
+   "kind": "makeEditLink",
+   "linkText": "{1} ⋖ {0, 1}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {0, 1} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 32,
+   "editedVersion": 32,
+   "reElaborationMs": 521,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "e467fdff08c6367efcfd3b80617117f83218a305ce69e3b3bb67c942b71a17bb",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link31.lean"
+  },
+  {
+   "n": 32,
+   "kind": "makeEditLink",
+   "linkText": "{1} ⋖ {1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({1} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 33,
+   "editedVersion": 33,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "be9491ee46a2e798ca2a1130fdcd304b7cfbb31e2d60e9d5917859ae5af6b2dd",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link32.lean"
+  },
+  {
+   "n": 33,
+   "kind": "makeEditLink",
+   "linkText": "{0, 1} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({0, 1} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 25
+    },
+    "start": {
+     "character": 62,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 34,
+   "editedVersion": 34,
+   "reElaborationMs": 527,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "706f5343bb6611b75aa0aac9daffaa6869db5e739f07795547a0a79219600e73",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link33.lean"
+  },
+  {
+   "n": 34,
+   "kind": "makeEditLink",
+   "linkText": "{2} ⋖ {0, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {0, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 35,
+   "editedVersion": 35,
+   "reElaborationMs": 521,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "7705056d39795de76ab4b0101b003f017ca982e147695d75bb48e8f1d51cb4b7",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link34.lean"
+  },
+  {
+   "n": 35,
+   "kind": "makeEditLink",
+   "linkText": "{2} ⋖ {1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({2} : (Finset (Fin 3))) ⋖ {1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 56,
+     "line": 25
+    },
+    "start": {
+     "character": 56,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 36,
+   "editedVersion": 36,
+   "reElaborationMs": 527,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "ab22bc16c4a721f2806f0d6fe412f3ef3b9f4a6bd5ba1049a6bf56e3dfe82b3b",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link35.lean"
+  },
+  {
+   "n": 36,
+   "kind": "makeEditLink",
+   "linkText": "{0, 2} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({0, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 25
+    },
+    "start": {
+     "character": 62,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 37,
+   "editedVersion": 37,
+   "reElaborationMs": 522,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "2addaf8b1429d26a46cd886653101b47afc6e3d026097096891351251626f91a",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link36.lean"
+  },
+  {
+   "n": 37,
+   "kind": "makeEditLink",
+   "linkText": "{1, 2} ⋖ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ({1, 2} : (Finset (Fin 3))) ⋖ {0, 1, 2} := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 62,
+     "line": 25
+    },
+    "start": {
+     "character": 62,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 38,
+   "editedVersion": 38,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "59740586747385d67c060a8cdbeb870bc1151f467c83da37a0e096de59a17ec3",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link37.lean"
+  },
+  {
+   "n": 38,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, ∅ ≤ x",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), (∅ : (Finset (Fin 3))) ≤ x := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 73,
+     "line": 25
+    },
+    "start": {
+     "character": 73,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 39,
+   "editedVersion": 39,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "828c82d3bd5413c94f0c7035dc657e67b0318021446d7d33dce37b67dc49b9f0",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link38.lean"
+  },
+  {
+   "n": 39,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, x ≤ {0, 1, 2}",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 49,
+      "line": 24
+     },
+     "start": {
+      "character": 49,
+      "line": 24
+     }
+    },
+    "newText": "\nexample : ∀ x : (Finset (Fin 3)), x ≤ ({0, 1, 2} : (Finset (Fin 3))) := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 81,
+     "line": 25
+    },
+    "start": {
+     "character": 81,
+     "line": 25
+    }
+   },
+   "foundAt": [
+    {
+     "line": 24,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 40,
+   "editedVersion": 40,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "10dfbaefd95870e5be22d70a64ea7052383ca961b32544215f74112cf87d1d97",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link39.lean"
+  },
+  {
+   "n": 40,
+   "kind": "makeEditLink",
+   "linkText": "0 ⋖ 1",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (0 : Bowtie) ⋖ 1 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": 4,
+   "classification": "clean",
+   "diagnosticsVersion": 41,
+   "editedVersion": 41,
+   "reElaborationMs": 528,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "3a95db69b39cbf4fcf65e0cdfcc5f99382b4f11fd02bc357d121565fe4e8b893",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link40.lean"
+  },
+  {
+   "n": 41,
+   "kind": "makeEditLink",
+   "linkText": "0 ⋖ 2",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (0 : Bowtie) ⋖ 2 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 42,
+   "editedVersion": 42,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "073b9cc758c035ba6bd41f7c6e64df220ef94b24775502b6b7a9197b2031877c",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link41.lean"
+  },
+  {
+   "n": 42,
+   "kind": "makeEditLink",
+   "linkText": "1 ⋖ 3",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (1 : Bowtie) ⋖ 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 43,
+   "editedVersion": 43,
+   "reElaborationMs": 536,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "72ab305e27391e7c3d9f2b11c24ac47768441068842cdb4b321c1a1ffff85447",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link42.lean"
+  },
+  {
+   "n": 43,
+   "kind": "makeEditLink",
+   "linkText": "1 ⋖ 4",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (1 : Bowtie) ⋖ 4 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 44,
+   "editedVersion": 44,
+   "reElaborationMs": 529,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "df4b38ee10ff787c116ce7c3121fd7ce3bbcda4023652f1d4871c29df7723221",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link43.lean"
+  },
+  {
+   "n": 44,
+   "kind": "makeEditLink",
+   "linkText": "2 ⋖ 3",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (2 : Bowtie) ⋖ 3 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 45,
+   "editedVersion": 45,
+   "reElaborationMs": 530,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d785de2c4190d6701ca3a4264e6f449a6a7f3a1b3695cf2c808cc2e4d5dcb12f",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link44.lean"
+  },
+  {
+   "n": 45,
+   "kind": "makeEditLink",
+   "linkText": "2 ⋖ 4",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : (2 : Bowtie) ⋖ 4 := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 32
+    },
+    "start": {
+     "character": 39,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 46,
+   "editedVersion": 46,
+   "reElaborationMs": 536,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "42f65cd5f836940d96ac03a0c150a6f1fe6f1b896fea7d4a076f4a022229fb51",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link45.lean"
+  },
+  {
+   "n": 46,
+   "kind": "makeEditLink",
+   "linkText": "∀ x, 0 ≤ x",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ∀ x : Bowtie, (0 : Bowtie) ≤ x := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 53,
+     "line": 32
+    },
+    "start": {
+     "character": 53,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": null,
+   "classification": "clean",
+   "diagnosticsVersion": 47,
+   "editedVersion": 47,
+   "reElaborationMs": 528,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "37c5a061e8a22ba4b1b598c24d97fa0d2cffd09b838bf77f5f565d1c3345c6fc",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link46.lean"
+  },
+  {
+   "n": 47,
+   "kind": "makeEditLink",
+   "linkText": "no join of 1, 2",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 30,
+      "line": 31
+     },
+     "start": {
+      "character": 30,
+      "line": 31
+     }
+    },
+    "newText": "\nexample : ¬ ∃ m : Bowtie, ((1 : Bowtie) ≤ m ∧ (2 : Bowtie) ≤ m) ∧ ∀ u : Bowtie, ((1 : Bowtie) ≤ u ∧ (2 : Bowtie) ≤ u) → m ≤ u := by decide"
+   },
+   "newSelection": {
+    "end": {
+     "character": 138,
+     "line": 32
+    },
+    "start": {
+     "character": 138,
+     "line": 32
+    }
+   },
+   "foundAt": [
+    {
+     "line": 31,
+     "character": 0,
+     "panel": "HasseView.HassePanel"
+    }
+   ],
+   "declaredClick": 3,
+   "classification": "clean",
+   "diagnosticsVersion": 48,
+   "editedVersion": 48,
+   "reElaborationMs": 533,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "d10f11a680e5869c47f74789fbe42b783443519f07b3a3b3d143c2ba7a0732ef",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link47.lean"
+  }
+ ],
+ "counts": {
+  "clean": 47,
+  "total": 47,
+  "makeEditLink": 47,
+  "tryThis": 0,
+  "linkOccurrences": 47
+ },
+ "declaredClicksCovered": "5/5",
+ "ok": true,
+ "totalMs": 28474
+}

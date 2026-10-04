@@ -8,18 +8,26 @@
 //                                                    UX verdicts on its lock (out/ux/showcase-ux-runs.jsonl)
 //   node scripts/pin-switch.mjs current              the active pin and every active link (exit 1 if a link is missing,
 //                                                    is a real file/dir, or points into another pin's/runtime's store)
-//   node scripts/pin-switch.mjs check <id> [--full]  the CHEAP check of a pin's stores (what `showcase.sh verify` runs for
+//   node scripts/pin-switch.mjs check <id> [--full] [--if-materialized]
+//                                                    the CHEAP check of a pin's stores (what `showcase.sh verify` runs for
 //                                                    every staged pin): descriptor == lock; release/<id> file set and
 //                                                    sizes == lock; main bundle == descriptor; the console-allowlist site
-//                                                    line is the same notify code; vendor file set == QED64-PIN; the
-//                                                    runtime stores: stage1 buildId, raw and bake files, overlays paired
-//                                                    (index runtime, {init, mathlib}, sizes, init == the pin's stock init,
-//                                                    mathlib == this runtime's bake). --full adds the release and vendor
-//                                                    sha256s (pin-qed64.mjs verify --pin <id> does the whole chain)
+//                                                    line is the same notify code; QED64's sources (submodule or the
+//                                                    pin's worktree) at the commit, unmodified; the overlays == the lock's
+//                                                    sizes (paired: index runtime, {init, mathlib}, init == the pin's stock
+//                                                    init); the runtime's BUILD stores (stage1 buildId, raw and bake files,
+//                                                    mathlib == this runtime's bake) where this checkout built them, else
+//                                                    one ABSENT line (a checkout bootstrapped from fetched artifacts).
+//                                                    --full adds the release and overlay sha256s (pin-qed64.mjs verify
+//                                                    --pin <id> does the whole chain). --if-materialized: a registered pin
+//                                                    this checkout never bootstrapped (no release/<id>, no sources, no
+//                                                    stores) prints NOT MATERIALIZED and exits 0
 //   node scripts/pin-switch.mjs use <id> [--dry-run] [--allow-incomplete] [--no-deploy]
 //                                                    make <id> the active pin. Guards: registered; complete stores
 //                                                    (--allow-incomplete only for bringing up a new runtime, whose stage1,
-//                                                    bakes and overlays are then made through the active links); no
+//                                                    bakes and overlays are then made through the active links); the
+//                                                    submodule deps/qed64 has no modified tracked file (it is moved to the
+//                                                    pin's commit: its gitlink IS the served pin; commit it); no
 //                                                    serve.mjs of this repo that follows the active pin (it serves the
 //                                                    release it started with; servers started with SHOWCASE_PIN=<id> are
 //                                                    pinned explicitly and allowed), no bake, no headless run, no browser
@@ -35,7 +43,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SC, W, ID_RE, OVERLAYS, activeLinks, activePinId, listPins, pinDescriptor, lockOf, repoPinDir, releaseDir, outRtDir, wRtDir, mainBundle } from './lib/pins.mjs';
+import { SC, W, ID_RE, OVERLAYS, activeLinks, activePinId, listPins, pinDescriptor, lockOf, repoPinDir, releaseDir, outRtDir, wRtDir, mainBundle, hasBuildStores } from './lib/pins.mjs';
+import { SUBMODULE, SUBMODULE_REL, checkSrc, ensureSrc, srcDir, headOf, worktreeDir } from './lib/qed64-src.mjs';
 import { readRuns, whyNotVerdict, whyNotSignOff } from './lib/ux-record.mjs';
 import { browserLockFile } from './lib/browser-lock.mjs';
 
@@ -52,12 +61,14 @@ const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 
 /** The state of every active link for `id`: ok | missing | real (a file/dir where the link belongs) | other | dangling. */
 function linkStates(id) {
-  return activeLinks(id).map(([link, target, store, kind]) => {
+  const built = hasBuildStores(pinDescriptor(id).buildId);
+  return activeLinks(id).map(([link, target, store, kind, cls]) => {
     let state, now = null;
-    if (!lexists(link)) state = 'missing';
+    if (cls === 'build' && !built && !lexists(link)) state = 'absent'; // a checkout bootstrapped from fetched artifacts
+    else if (!lexists(link)) state = 'missing';
     else if (!isLink(link)) state = 'real';
     else { now = fs.readlinkSync(link); state = now === target ? (exists(store) ? 'ok' : 'dangling') : 'other'; }
-    return { link, target, store, kind, state, now };
+    return { link, target, store, kind, cls, state, now };
   });
 }
 
@@ -74,6 +85,7 @@ function allowlistLineSites() {
 function checkPin(id, { full = false } = {}) {
   const out = [];
   const ok = (c, msg, d = '') => out.push({ ok: !!c, msg: `${msg}${d ? ' — ' + d : ''}` });
+  const absent = (msg, why) => out.push({ ok: true, absent: true, msg: `${msg} — ${why}` });
   let desc = null, lock = null;
   try { desc = pinDescriptor(id); ok(true, `pins/${id}/pin.json: ${desc.label}`); } catch (e) { ok(false, e.message); return out; }
   try { lock = lockOf(id); } catch (e) { ok(false, `pins/${id}/QED64.lock.json: ${e.message}`); return out; }
@@ -100,15 +112,15 @@ function checkPin(id, { full = false } = {}) {
     ok(line != null && line.includes('notify({severity:') && sha(line) === desc.consoleSites?.[String(s.line0)],
       `console-allowlist site line ${s.line0} of ${mb} is the recorded notify line`, line == null ? 'no such line' : `sha256 ${sha(line).slice(0, 12)} vs descriptor ${String(desc.consoleSites?.[String(s.line0)]).slice(0, 12)}`);
   }
-  // vendor: the file set QED64-PIN lists (full: sha256)
-  const pinText = exists(path.join(repoPinDir(id), 'QED64-PIN')) ? fs.readFileSync(path.join(repoPinDir(id), 'QED64-PIN'), 'utf8') : '';
-  const pinFiles = pinText.split('\n').filter((l) => l && !l.startsWith('#')).map((l) => { const [h, ...r] = l.split('  '); return [r.join('  '), h]; });
-  const V = path.join(repoPinDir(id), 'vendor-qed64');
-  const vbad = pinFiles.filter(([f, h]) => !exists(path.join(V, f)) || (full && sha256File(path.join(V, f)) !== h)).map(([f]) => f);
-  ok(pinFiles.length > 0 && !vbad.length && sha(pinText) === (lock.vendor || {}).pinSha256,
-    `pins/${id}/vendor-qed64: the ${pinFiles.length} files QED64-PIN lists${full ? ' (sha256 ==)' : ''}; QED64-PIN sha256 == lock`, vbad.slice(0, 3).join(', '));
-  // per-runtime $W store: stage1 identity (wasm64-sha256(lean.wasm)[0:16]), raw regions, bakes
+  // QED64's sources (not copied: the submodule at the active pin's commit, or the pin's git worktree)
+  for (const r of checkSrc(desc.qed64.commit, id, { active: activeOrNull() === id })) ok(r.ok, r.msg);
+  // per-runtime BUILD stores ($W/runtimes/<bid>: stage1, raw regions, bakes; out/runtimes/<bid>/headless): checked where this
+  // checkout built them; a checkout bootstrapped from fetched artifacts has none (one ABSENT line, not a FAIL: what it
+  // serves is checked against the lock's sha256s/sizes below and by pin-qed64.mjs verify)
   const WR = wRtDir(bid);
+  const built = hasBuildStores(bid);
+  if (!built) absent(`build stores of runtime ${bid} ($W/runtimes/${bid}, out/runtimes/${bid}/headless) are not in this checkout`, 'it serves fetched artifacts (showcase.sh bootstrap); showcase.sh native/stage/bake/overlay/headless build them');
+  else {
   const s1 = path.join(WR, 'stage1', 'bin', 'lean.wasm');
   const s1id = exists(s1) ? `wasm64-${sha256File(s1).slice(0, 16)}` : 'missing';
   ok(s1id === bid, `$W/runtimes/${bid}/stage1 buildId == ${bid}`, s1id);
@@ -119,6 +131,7 @@ function checkPin(id, { full = false } = {}) {
   for (const n of [7, 8]) {
     const f = path.join(WR, `raw/widgets${n}.snap`), g = path.join(WR, `bake-work-w${n}/widgets.snap`);
     if (exists(f) && exists(g)) ok(fs.statSync(f).size === fs.statSync(g).size, `raw/widgets${n}.snap size == bake-work-w${n}/widgets.snap`, `${fs.statSync(f).size} B`);
+  }
   }
   // overlays (per runtime): paired with this runtime, exactly {init, mathlib}, sizes == transfer, init == THIS pin's stock
   // init entry (same digest), mathlib == this runtime's bake (bake-out widgets entry: same digest)
@@ -143,9 +156,17 @@ function checkPin(id, { full = false } = {}) {
       const m = j.snapshots.find((s) => s.name === 'mathlib');
       if (!w || !m || w.digest !== m.digest) errs.push('mathlib digest != bake-out widgets digest');
     }
-    ok(!errs.length, `out/runtimes/${bid}/overlay/${o}: runtime == ${bid}, {init, mathlib}, sizes == transfer, init == this pin's stock init, mathlib == this runtime's bake`, errs.join('; '));
+    // == the lock's record of this overlay (sizes; --full: sha256): what bootstrap fetched or this checkout built
+    const lo = lock.overlays && lock.overlays[o];
+    if (!lo) errs.push(`pins/${id}/QED64.lock.json records no overlay ${o}`);
+    else {
+      const have = fs.readdirSync(d).sort().join(','), want = Object.keys(lo.files).sort().join(',');
+      if (have !== want) errs.push(`files ${have} != lock ${want}`);
+      for (const [f, m] of Object.entries(lo.files)) if (exists(path.join(d, f)) && (fs.statSync(path.join(d, f)).size !== m.bytes || (full && sha256File(path.join(d, f)) !== m.sha256))) errs.push(`${f} != lock`);
+    }
+    ok(!errs.length, `out/runtimes/${bid}/overlay/${o}: runtime == ${bid}, {init, mathlib}, sizes == transfer, init == this pin's stock init, files == lock${full ? ' (sha256)' : ' (sizes)'}${built ? ", mathlib == this runtime's bake" : ''}`, errs.join('; '));
   }
-  ok(exists(path.join(outRtDir(bid), 'headless')), `out/runtimes/${bid}/headless exists`);
+  if (built) ok(exists(path.join(outRtDir(bid), 'headless')), `out/runtimes/${bid}/headless exists`);
   // audit: the overlays' runtime == this pin's LOCK runtime (not only the descriptor's); for the active pin also the
   // overlay links (what is served) against the active lock
   for (const o of OVERLAYS) {
@@ -202,7 +223,9 @@ function ourFollowingServers() {
   return mine;
 }
 const busy = (re) => { try { return execFileSync('pgrep', ['-fl', re]).toString().trim(); } catch { return ''; } };
-function printChecks(rows) { for (const r of rows) console.log(`${r.ok ? 'OK  ' : 'FAIL'} ${r.msg}`); return rows.every((r) => r.ok); }
+function printChecks(rows) { for (const r of rows) console.log(`${r.absent ? 'ABSENT' : r.ok ? 'OK  ' : 'FAIL'} ${r.msg}`); return rows.every((r) => r.ok); }
+/** Has this checkout materialized pin `id` at all (its release dir, its sources, or its runtime's stores)? */
+const materialized = (id) => { const d = pinDescriptor(id); return exists(releaseDir(id)) || headOf(srcDir(d.qed64.commit, id)) === d.qed64.commit || hasBuildStores(d.buildId) || exists(path.join(outRtDir(d.buildId), 'overlay')); };
 const activeOrNull = () => { try { return activePinId(); } catch { return null; } };
 
 if (cmd === 'list') {
@@ -227,19 +250,28 @@ if (cmd === 'list') {
   const jr = exists(j) ? readJson(j) : null;
   const st = linkStates(id);
   console.log(`active pin ${id} (QED64 ${desc.qed64.commit.slice(0, 12)}, runtime ${desc.buildId}): ${desc.label}`);
-  for (const s of st) console.log(`${s.state === 'ok' ? 'OK  ' : 'FAIL'} ${rel(s.link)} -> ${s.now ?? '(none)'}${s.state === 'ok' ? '' : ` [${s.state}; want ${s.target}]`}`);
+  for (const s of st) {
+    if (s.state === 'absent') { console.log(`ABSENT ${rel(s.link)} — build store of runtime ${desc.buildId}, not in this checkout (it serves fetched artifacts)`); continue; }
+    console.log(`${s.state === 'ok' ? 'OK  ' : 'FAIL'} ${rel(s.link)} -> ${s.now ?? '(none)'}${s.state === 'ok' ? '' : ` [${s.state}; want ${s.target}]`}`);
+  }
+  const src = checkSrc(desc.qed64.commit, id, { active: true });
   let gp = null; try { gp = readJson(path.join(SC, 'gallery', 'pin.json')); } catch { /* none */ }
   const gpOk = gp && gp.pin === id && gp.buildId === desc.buildId && gp.lockSha256 === sha(fs.readFileSync(path.join(SC, 'QED64.lock.json')));
   console.log(`${gpOk ? 'OK  ' : 'FAIL'} gallery/pin.json pin ${gp && gp.pin}, buildId ${gp && gp.buildId} and lockSha256 == the active lock${gpOk ? '' : ' (run: node scripts/build-gallery.mjs)'}`);
   const ovl = overlayLinksMatchLock();
   const ovlOk = printChecks(ovl);
   if (jr && jr.state !== 'done') console.log(`FAIL an interrupted switch ${jr.from} -> ${jr.to} (${jr.started}); re-run: scripts/showcase.sh pin use ${jr.to}`);
-  const good = st.every((s) => s.state === 'ok') && gpOk && ovlOk && !(jr && jr.state !== 'done');
+  const srcOk = printChecks(src);
+  const good = st.every((s) => s.state === 'ok' || s.state === 'absent') && gpOk && ovlOk && srcOk && !(jr && jr.state !== 'done');
   console.log(good ? `PIN CURRENT OK ${id}` : `PIN CURRENT FAILED ${id}`);
   process.exit(good ? 0 : 1);
 } else if (cmd === 'check') {
   const id = argv[1];
   if (!ID_RE.test(id || '')) { console.error('usage: pin-switch.mjs check <pin id: 7-hex QED64 commit> [--full]'); process.exit(2); }
+  if (flag('--if-materialized') && !materialized(id)) {
+    console.log(`NOT MATERIALIZED ${id}: registered (pins/${id}/), but this checkout has no release/${id}, no QED64 sources at its commit and no stores of its runtime; bootstrap it with: scripts/showcase.sh bootstrap --pin ${id}`);
+    process.exit(0);
+  }
   const good = printChecks(checkPin(id, { full: flag('--full') }));
   console.log(good ? `PIN CHECK OK ${id}${flag('--full') ? ' (full)' : ' (cheap)'}` : `PIN CHECK FAILED ${id}`);
   process.exit(good ? 0 : 1);
@@ -264,7 +296,10 @@ if (cmd === 'list') {
   const bl = browserLockFile();
   // showcase.sh ux locks as '<lane>-ux', npm run test:ux as 'ux-suite'
   if (exists(bl) && /^(\S*-)?(ux|ux-suite)\s/.test(fs.readFileSync(bl, 'utf8'))) refuse(`a showcase browser run holds the browser lock (${fs.readFileSync(bl, 'utf8').trim()}): it tests the active pin`);
-  const plan = linkStates(to);
+  // the submodule IS the served pin's source: it moves to the new pin's commit, which needs its tracked files unmodified
+  const subMod = headOf(SUBMODULE) ? execFileSync('git', ['-C', SUBMODULE, 'status', '--porcelain', '--untracked-files=no']).toString().trim() : 'not initialized';
+  if (subMod) refuse(`the submodule ${SUBMODULE_REL} ${subMod === 'not initialized' ? 'is not initialized (git submodule update --init)' : `has modified tracked files:\n${subMod}`}`);
+  const plan = linkStates(to).filter((s) => s.state !== 'absent');
   for (const s of plan) if (s.state === 'real') refuse(`${rel(s.link)} is a real ${fs.lstatSync(s.link).isDirectory() ? 'directory' : 'file'}, not a pin link: move it into a pin's store first (docs/REPIN-LOG.md "Multiple pins")`);
   console.log(`pin use ${to}: from ${from || '(none)'}; ${plan.filter((s) => s.state === 'ok').length}/${plan.length} links already point at it`);
   for (const s of plan) if (s.state !== 'ok') console.log(`  ${dry ? 'would link' : 'link'} ${rel(s.link)} -> ${s.target}`);
@@ -288,6 +323,17 @@ if (cmd === 'list') {
   // audit: what is now served (the overlay links) is paired with the runtime the new active lock names
   const ovl = overlayLinksMatchLock();
   if (!printChecks(ovl) && !flag('--allow-incomplete')) { console.log(`FAIL pin use ${to}: the active overlay links' runtime != the active lock's (journal left at 'switching'; fix the stores, then re-run pin use)`); process.exit(1); }
+  // QED64's sources: the submodule moves to the new active pin's commit (its gitlink is the served pin's source pin), and
+  // the previous pin keeps its sources as a worktree. Build outputs QED64 ignores (dist/, node_modules/) are left as they
+  // are; release/<id>/dist is what is served, and it is checked against the lock.
+  const toCommit = pinDescriptor(to).qed64.commit;
+  if (headOf(SUBMODULE) !== toCommit) {
+    if (exists(worktreeDir(to)) && headOf(worktreeDir(to)) === toCommit) console.log(`  the pin's worktree ${rel(worktreeDir(to))} stays (git allows a detached commit in two worktrees)`);
+    try { execFileSync('git', ['-C', SUBMODULE, 'cat-file', '-e', `${toCommit}^{commit}`]); } catch { execFileSync('git', ['-C', SUBMODULE, 'fetch', '--quiet', 'origin', toCommit], { stdio: 'inherit' }); }
+    execFileSync('git', ['-C', SUBMODULE, 'checkout', '--quiet', '--detach', toCommit], { stdio: 'inherit' });
+    console.log(`  submodule ${SUBMODULE_REL} -> ${toCommit.slice(0, 12)}: commit the gitlink (git add ${SUBMODULE_REL})`);
+  }
+  if (from && from !== to) { try { ensureSrc(pinDescriptor(from).qed64.commit, from, (m) => console.log(`  ${m}`)); } catch (e) { console.log(`WARN sources of the previous pin ${from}: ${e.message}`); } }
   // gallery/pin.json (the gallery's runtime pairing) from the new lock
   const bg = spawnSync(process.execPath, [path.join(SC, 'scripts', 'build-gallery.mjs')], { cwd: SC, encoding: 'utf8' });
   process.stdout.write(bg.stdout.split('\n').filter((l) => /^(pin|BUILD-GALLERY|wrote|FAIL)/.test(l)).map((l) => `  build-gallery: ${l}\n`).join(''));

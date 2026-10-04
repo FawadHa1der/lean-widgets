@@ -7,20 +7,15 @@ import { chromium } from 'playwright';
 
 export const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
-export const Q = ENV.Q; // QED64_REPO (x1 needs it: ENV.need('QED64_REPO'))
 export const BID = JSON.parse(fs.readFileSync(path.join(SC, 'QED64.lock.json'), 'utf8')).qed64.buildId; // the active pin's runtime
 export const ORIGIN = process.env.ORIGIN || 'http://localhost:5190';
 export const OUT = path.join(SC, 'out', 'experiments');
 export const LOGS = ENV.LOGS;
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** free + inactive + speculative bytes (vm_stat), as QED64's harness.mjs reclaimableBytes(). */
-export function reclaimableBytes() {
-  const vm = spawnSync('vm_stat', { encoding: 'utf8' }).stdout || '';
-  const page = Number((/page size of (\d+)/.exec(vm) || [])[1] || 16384);
-  const n = (l) => Number((new RegExp(`${l}:\\s+(\\d+)`).exec(vm) || [])[1] || 0);
-  return (n('Pages free') + n('Pages inactive') + n('Pages speculative')) * page;
-}
+/** free + inactive + speculative bytes (macOS vm_stat; Linux MemAvailable): scripts/lib/platform.mjs, the same measure
+ *  as QED64's harness.mjs reclaimableBytes(). */
+export const { reclaimableBytes } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 export function strays() {
   return (spawnSync('pgrep', ['-fl', 'chrome-headless-shell'], { encoding: 'utf8' }).stdout || '').trim();
 }

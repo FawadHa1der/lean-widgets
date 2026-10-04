@@ -6,7 +6,7 @@
 // (plan C2), so the example's import lines are replaced by the BAKE-KEY file's
 // imports. Nothing else is stripped or changed (the replacement sits where the
 // first import line was; diagnostics are mapped back to the example's lines).
-// Then the vendored snapshot-probe runs with --via-mem (the browser worker's
+// Then QED64's snapshot-probe (the pin's source dependency) runs with --via-mem (the browser worker's
 // _lean_wasm_load_snapshot_mem path) and --dump-messages, and its PASS/FAIL,
 // the key the snapshot seeded, the compile time, and every message are parsed.
 //
@@ -28,7 +28,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import {
-  SC, W, VENDOR, BID, OUT_HEADLESS, DEFAULT_ARTIFACT, parseArgs, requirePairedArtifact, memoryGuard, acquireLock,
+  SC, W, QED64_SRC, BID, OUT_HEADLESS, DEFAULT_ARTIFACT, parseArgs, requirePairedArtifact, memoryGuard, acquireLock,
   headerImports, IMPORT_RE, sha256, table, checkSnapProvenance,
 } from './lib.mjs';
 
@@ -89,14 +89,14 @@ if (!prov.ok && !prov.allowedUnpaired) {
   console.log(`E1 FAIL ${name}.${snapset} (raw snapshot provenance; probe not run) -> ${out}`); process.exit(1);
 }
 
-// ---- run the vendored snapshot-probe ----------------------------------------------
+// ---- run QED64's snapshot-probe --------------------------------------------------
 try {
   await requirePairedArtifact(artifact);
   memoryGuard(Number(o['min-free-gb'] ?? 12), WHO);
   acquireLock(`${WHO} ${name}.${snapset}`);
 } catch (e) { console.error(`${WHO}: ${e.message}`); process.exit(2); }
 
-const probe = path.join(VENDOR, 'pipeline/snapshot/snapshot-probe.mjs');
+const probe = path.join(QED64_SRC, 'pipeline/snapshot/snapshot-probe.mjs');
 const args = ['-l', process.execPath, '--stack-size=8192', probe, '--via-mem', '--artifact', artifact, '--lib', lib,
   '--snap', snap, '--probe-file', exactFile, '--budget-ms', String(budgetMs), '--dump-messages'];
 console.log(`[${WHO}] ${name} on ${snapset}: header ${JSON.stringify(hdr.modules)} -> ${JSON.stringify(keyLines)}`);

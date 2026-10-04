@@ -11,7 +11,7 @@
 //       Dry run: regenerate in memory with the options recorded in manifest.json, require it to be
 //       byte-identical to the written one (every file re-hashed), and re-run every invariant. Uploads nothing.
 //   node scripts/deploy-manifest.mjs --stage-assets [--out out/deploy]
-//       Clone (cp -c) exactly the manifest's asset files into <out>/assets — the directory wrangler deploys —
+//       Clone (copy-on-write where the file system can: scripts/lib/platform.mjs cloneFile) exactly the manifest's asset files into <out>/assets — the directory wrangler deploys —
 //       and verify every staged file's sha256 against the manifest.
 //   node scripts/deploy-manifest.mjs --commands [--out out/deploy] [--bucket <bucket>] [--remote <rclone remote>]
 //       Print the upload and deploy commands for the owner, in order. Prints only; runs nothing. Bucket and remote
@@ -53,7 +53,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { cloneFile } from './lib/platform.mjs';
 import { galleryContentHash, isShippedGalleryFile } from './lib/gallery-hash.mjs';
 import { verdictFor, laterFailures, readRuns } from './lib/ux-record.mjs';
 import { loadDeployEnv, checkSharedBucket } from './lib/deploy-env.mjs';
@@ -128,9 +129,16 @@ function contentTypeProblem(url, ct) {
   if (/(\.snapz|\.part-\d+|\.wasm|\.gz)$/.test(p) && (!ct || /text\/html|json/.test(ct))) return `content-type ${ct} (binary artifact must not be HTML/JSON)`;
   return null;
 }
-function isImmutable(pathname) { // verbatim QED64 infra/worker.js (and infra/worker.js here)
-  if (/\/runtime-manifest(\.[^/]*)?\.json$/.test(pathname) || /\/index\.json$/.test(pathname)) return false;
-  return /(\.part-\d+|\.snapz|\.chunk\.|[0-9a-f]{16,})/.test(pathname);
+// QED64's cache rule, not a copy: imported from infra/worker.js of the active pin's QED64 sources (the submodule
+// deps/qed64; scripts/lib/qed64-src.mjs). If the sources are not checked out, every use fails with the reason.
+let qedIsImmutable = null, qedSrcError = null;
+try {
+  const PINS = await import('./lib/pins.mjs');
+  ({ isImmutable: qedIsImmutable } = await import(pathToFileURL(path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'infra', 'worker.js')).href));
+} catch (e) { qedSrcError = e; }
+function isImmutable(pathname) {
+  if (!qedIsImmutable) throw new Error(`QED64's isImmutable (deps/qed64/infra/worker.js) is not available: ${qedSrcError && qedSrcError.message}`);
+  return qedIsImmutable(pathname);
 }
 
 // ------------------------------------------------------------------------------------------ build
@@ -334,7 +342,7 @@ if (MODE === 'stage') {
   fs.rmSync(dst, { recursive: true, force: true });
   for (const a of m.assets) {
     const to = path.join(dst, a.path); fs.mkdirSync(path.dirname(to), { recursive: true });
-    execFileSync('cp', ['-c', path.join(SC, a.src), to]);
+    cloneFile(path.join(SC, a.src), to);
   }
   const staged = walk(dst).map((f) => path.relative(dst, f)).sort();
   ok(JSON.stringify(staged) === JSON.stringify(m.assets.map((a) => a.path).sort()), `S1 ${rel(dst)} holds exactly the manifest's ${m.assets.length} assets`);

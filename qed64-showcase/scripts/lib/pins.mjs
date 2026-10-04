@@ -3,25 +3,28 @@
 //
 // A PIN is keyed by its QED64 COMMIT (the first 7 hex digits, e.g. 1859b83), not by its runtime buildId: two pins can
 // serve the same runtime with different shells and workers (1859b83 and 5ac5d00 both serve the kernel-0034 runtime, with
-// different dist/ and public/workers/). Everything that depends on the shell or the vendored sources is per PIN;
+// different dist/ and public/workers/). Everything that depends on the shell or on QED64's sources is per PIN;
 // everything that depends only on the runtime (the binary pairing of snapshot regions to lean.wasm) is per RUNTIME and
 // shared by every pin of that runtime:
 //
 //   per pin      pins/<id>/            pin.json (the descriptor: commit, promote, kernel, buildId, served base trees,
-//                                      whether the page has QED64's built-in liveness, the expected main bundle),
-//                                      QED64.lock.json, QED64-PIN, vendor-qed64/ (git archive of the pinned sources)
-//                release/<id>/         the verified clone of QED64's dist/ + public/ at that commit
+//                                      whether the page has QED64's built-in liveness, the expected main bundle) and
+//                                      QED64.lock.json (the commit + the sha256 of every served file and overlay)
+//                QED64's sources       NOT copied: the git submodule deps/qed64 at the active pin's commit, or the pin's
+//                                      git worktree $W/qed64-pins/<id> (scripts/lib/qed64-src.mjs; storePath('qed64'))
+//                release/<id>/         dist/ (QED64's page built from those sources) + public/ (the content-addressed
+//                                      runtime, packs and stock snapshots), each file's sha256 == the lock
 //   per runtime  out/runtimes/<bid>/   overlay/widgets7, overlay/widgets8 (the paired snapshot regions), headless/ (the
-//                                      wasm verifiers' results: their inputs are the runtime, the raw regions and bakes,
-//                                      and the vendored pipeline/snapshot probes, which are checked identical per runtime)
+//                                      wasm verifiers' results)
 //                $W/runtimes/<bid>/    stage1/ (the runtime artifact), raw/, bake-out-w7|w8/, bake-work-w7|w8/,
 //                                      BAKE-KEY-w7|w8.txt, bake-logs/ (the bake logs judge-bake.mjs reads)
 //
 // The ACTIVE pin is materialized by symlinks, switched by `scripts/showcase.sh pin use <id>` (scripts/pin-switch.mjs):
-//   QED64.lock.json -> pins/<id>/QED64.lock.json      QED64-PIN -> pins/<id>/QED64-PIN
-//   vendor/qed64 -> ../pins/<id>/vendor-qed64          out/headless -> runtimes/<bid>/headless
-//   out/overlay/snapshots/widgets{7,8} -> ../../runtimes/<bid>/overlay/widgets{7,8}
-//   $W/{stage1,raw,bake-out-w7,bake-out-w8,bake-work-w7,bake-work-w8,BAKE-KEY-w7.txt,BAKE-KEY-w8.txt,bake-logs} -> runtimes/<bid>/…
+//   SERVE links (always):   QED64.lock.json -> pins/<id>/QED64.lock.json
+//                           out/overlay/snapshots/widgets{7,8} -> ../../runtimes/<bid>/overlay/widgets{7,8}
+//   BUILD links (where this checkout BUILT the runtime's stores; a checkout bootstrapped from fetched artifacts has none):
+//                           out/headless -> runtimes/<bid>/headless
+//                           $W/{stage1,raw,bake-out-w7,bake-out-w8,bake-work-w7,bake-work-w8,BAKE-KEY-w7.txt,BAKE-KEY-w8.txt,bake-logs} -> runtimes/<bid>/…
 // and gallery/pin.json is regenerated from the active lock (scripts/build-gallery.mjs). So every existing path keeps
 // working and always names the active pin; the active lock (its qed64.commit) is the single source of truth.
 import fs from 'node:fs';
@@ -29,6 +32,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { W, expandPath } from './env.mjs';
+import { requireSrc } from './qed64-src.mjs';
 
 export const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export { W };
@@ -65,19 +69,23 @@ export function pinDescriptor(id = activePinId()) {
 }
 export function lockOf(id) { return readJson(path.join(repoPinDir(id), 'QED64.lock.json')); }
 
-/** The active links for pin `id`: [link path, target RELATIVE to the link's directory, absolute store path, kind]. */
+/** The active links for pin `id`: [link path, target RELATIVE to the link's directory, absolute store path, kind, cls].
+ *  cls 'serve': needed to serve the pin (always present once a pin is in use); 'build': the runtime's build stores, which
+ *  exist only in a checkout that built them (native/stage/bake/overlay/headless), never in one bootstrapped from fetched
+ *  artifacts. */
 export function activeLinks(id) {
   const bid = pinDescriptor(id).buildId;
   const L = [
-    [path.join(SC, 'QED64.lock.json'), path.join('pins', id, 'QED64.lock.json'), path.join(repoPinDir(id), 'QED64.lock.json'), 'file'],
-    [path.join(SC, 'QED64-PIN'), path.join('pins', id, 'QED64-PIN'), path.join(repoPinDir(id), 'QED64-PIN'), 'file'],
-    [path.join(SC, 'vendor', 'qed64'), path.join('..', 'pins', id, 'vendor-qed64'), path.join(repoPinDir(id), 'vendor-qed64'), 'dir'],
-    [path.join(SC, 'out', 'headless'), path.join('runtimes', bid, 'headless'), path.join(outRtDir(bid), 'headless'), 'dir'],
+    [path.join(SC, 'QED64.lock.json'), path.join('pins', id, 'QED64.lock.json'), path.join(repoPinDir(id), 'QED64.lock.json'), 'file', 'serve'],
+    [path.join(SC, 'out', 'headless'), path.join('runtimes', bid, 'headless'), path.join(outRtDir(bid), 'headless'), 'dir', 'build'],
   ];
-  for (const o of OVERLAYS) L.push([path.join(SC, 'out', 'overlay', 'snapshots', o), path.join('..', '..', 'runtimes', bid, 'overlay', o), path.join(outRtDir(bid), 'overlay', o), 'dir']);
-  for (const e of W_ENTRIES) L.push([path.join(W, e), path.join('runtimes', bid, e), path.join(wRtDir(bid), e), e.endsWith('.txt') ? 'file' : 'dir']);
+  for (const o of OVERLAYS) L.push([path.join(SC, 'out', 'overlay', 'snapshots', o), path.join('..', '..', 'runtimes', bid, 'overlay', o), path.join(outRtDir(bid), 'overlay', o), 'dir', 'serve']);
+  for (const e of W_ENTRIES) L.push([path.join(W, e), path.join('runtimes', bid, e), path.join(wRtDir(bid), e), e.endsWith('.txt') ? 'file' : 'dir', 'build']);
   return L;
 }
+/** Does this checkout hold BUILD stores for runtime `bid` ($W/runtimes/<bid>/ or out/runtimes/<bid>/headless)? A checkout
+ *  bootstrapped from fetched artifacts has neither; then the build-store checks report ABSENT instead of FAIL. */
+export const hasBuildStores = (bid) => fs.existsSync(wRtDir(bid)) || fs.existsSync(path.join(outRtDir(bid), 'headless'));
 
 /** The active lock (QED64.lock.json, a link into pins/<id>/). */
 export function activeLock() { return readJson(path.join(SC, 'QED64.lock.json')); }
@@ -98,15 +106,16 @@ export const targetBuildId = () => pinDescriptor(targetPinId()).buildId;
 /** true when SHOWCASE_PIN names a pin (then stores are addressed directly, never through the active links) */
 export const targetIsExplicit = () => !!process.env[TARGET_ENV];
 /** A store of the target pin. Per runtime: the W_ENTRIES ('stage1', 'raw', 'bake-out-w7', …, 'bake-logs'), 'headless'
- *  and 'overlay/widgets7|widgets8'; per pin: 'vendor' (vendor-qed64), 'lock' (QED64.lock.json), 'QED64-PIN'.
- *  Without SHOWCASE_PIN: the active link path (vendor/qed64, $W/stage1, out/headless, out/overlay/snapshots/widgets8 …);
+ *  and 'overlay/widgets7|widgets8'; per pin: 'qed64' (QED64's sources at the pin's commit: the submodule deps/qed64 or
+ *  the pin's worktree, scripts/lib/qed64-src.mjs; throws with a hint when not checked out) and 'lock' (QED64.lock.json).
+ *  Without SHOWCASE_PIN: the active link path ($W/stage1, out/headless, out/overlay/snapshots/widgets8 …);
  *  with it: the store path itself. `real: true` resolves links (the store path; for tools that delete-and-recreate). */
 export function storePath(entry, { id = targetPinId(), real = false } = {}) {
   const viaLink = !targetIsExplicit() && !real;
-  const bid = pinDescriptor(id).buildId;
-  const pinStore = { vendor: ['vendor-qed64', path.join(SC, 'vendor', 'qed64')], lock: ['QED64.lock.json', path.join(SC, 'QED64.lock.json')],
-    'QED64-PIN': ['QED64-PIN', path.join(SC, 'QED64-PIN')] };
-  if (entry in pinStore) return viaLink ? pinStore[entry][1] : path.join(repoPinDir(id), pinStore[entry][0]);
+  const desc = pinDescriptor(id);
+  const bid = desc.buildId;
+  if (entry === 'qed64') return requireSrc(desc.qed64.commit, id);
+  if (entry === 'lock') return viaLink ? path.join(SC, 'QED64.lock.json') : path.join(repoPinDir(id), 'QED64.lock.json');
   if (W_ENTRIES.includes(entry)) return viaLink ? path.join(W, entry) : path.join(wRtDir(bid), entry);
   if (entry === 'headless') return viaLink ? path.join(SC, 'out', 'headless') : path.join(outRtDir(bid), 'headless');
   const m = /^overlay\/(widgets[78])$/.exec(entry);
@@ -168,6 +177,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       console.log(typeof v === 'object' ? JSON.stringify(v) : (typeof v === 'string' ? expandPath(v) : v));
     } else if (cmd === 'main-bundle') console.log(mainBundle(id()));
     else if (cmd === 'list') for (const p of listPins()) console.log(`${p.id} ${p.buildId}`);
-    else { console.error('usage: pins.mjs active | active-bid | target | target-bid | store <entry> [--real] | release [id] | field <path> [id] | main-bundle [id] | list'); process.exit(2); }
+    else if (cmd === 'built') { const bid = pinDescriptor(id()).buildId; console.log(hasBuildStores(bid) ? 'yes' : 'no'); } // built [id]: build stores here?
+    else { console.error('usage: pins.mjs active | active-bid | target | target-bid | store <entry> [--real] | release [id] | field <path> [id] | main-bundle [id] | list | built [id]'); process.exit(2); }
   } catch (e) { console.error(`pins.mjs ${cmd}: ${e.message}`); process.exit(1); }
 }

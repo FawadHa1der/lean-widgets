@@ -7,7 +7,7 @@
 //        [--essential K/mathlib/essential-modules.txt] [--base-n 5004] [--report <json>] [--force]
 //
 // 1. APFS-clone the base tree (`cp -cR`; new inodes, never hard links) to --into.
-// 2. Walk the import closure of --roots (plus the import lines of --root-headers) with the vendored
+// 2. Walk the import closure of --roots (plus the import lines of --root-headers) with QED64's
 //    olean-imports.mjs reader; a module is read from the tree if present, else from its source:
 //      widget libs (ChartKit … DistLens, LeanWidgetKit) and Mathlib  W/mathlib4/.lake/build/lib/lean
 //      Batteries/ProofWidgets/Aesop/Qq/…                             W/mathlib4/.lake/packages/<p>/.lake/build/lib/lean
@@ -26,18 +26,19 @@
 //      different bytes: STOP.
 //   G3 delta ∩ essential-modules.txt = ∅ (and own ∩ essential = ∅)
 //   G4 closure completeness inside the staged tree alone (every import resolves to <tree>/<M>.olean)
-//   G5 vendored `olean-imports.mjs --audit <tree>`: no `import all` edge outside Init/Std/Lean/Lake that
+//   G5 QED64's `olean-imports.mjs --audit <tree>`: no `import all` edge outside Init/Std/Lean/Lake that
 //      the base tree does not already have
 //   G6 EXPECTED-N = base-n + |delta| + |own| == |closure|; written to <into>.EXPECTED-N
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cloneTree } from './lib/platform.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-// the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): its vendored olean reader and served trees
+// the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): QED64's olean reader at its commit (source dependency) and served trees
 const PINS = await import(path.join(SC, 'scripts/lib/pins.mjs'));
-const OLEAN_IMPORTS = path.join(PINS.storePath('vendor'), 'pipeline/artifacts/olean-imports.mjs');
+const OLEAN_IMPORTS = path.join(PINS.storePath('qed64'), 'pipeline/artifacts/olean-imports.mjs');
 const { oleanImportEntries } = await import(OLEAN_IMPORTS);
 const { oleanExtEntryCounts } = await import(path.join(SC, 'scripts/lib/olean-entries.mjs'));
 
@@ -102,7 +103,7 @@ if (fs.existsSync(opt.into)) {
   fs.rmSync(opt.into, { recursive: true, force: true });
 }
 fs.mkdirSync(path.dirname(opt.into), { recursive: true });
-execFileSync('cp', ['-cR', opt.base, opt.into]);
+cloneTree(opt.base, opt.into); // cp -cR on macOS, cp -R --reflink=auto on Linux (scripts/lib/platform.mjs)
 const baseInventory = new Set();
 (function walk(dir, prefix) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -243,7 +244,7 @@ if (opt.mode === 'slim') {
   gate(!priv, 'slim tree holds no *.olean.private');
 }
 
-// ---- G5 import-all audit (vendored CLI) ----
+// ---- G5 import-all audit (QED64's CLI at the pin's commit) ----
 // Watchdog (300 s, one retry): on 2026-10-01 (re-pin lane) an audit of tree-slim-w8 finished its work and then never exited;
 // `sample` showed node::Environment::Exit -> pthread_join on a V8 ConcurrentBaselineCompiler thread parked in
 // __psynch_cvwait (logs/repin-stage-w8-audit-hang.sample.txt): the Node v26 exit deadlock README.md describes for verify's

@@ -21,10 +21,12 @@
 # live ticket; tickets of dead processes are ignored and removed. So waiters are served in arrival order whatever
 # path they invoked the script by. FAIR=0 disables the queue (take the lock as soon as it is free).
 #
-# Before running <cmd> it also requires >= MIN_FREE_GB (default 6) free+inactive+speculative memory (vm_stat) and no
-# chrome-headless-shell, waiting up to COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out,
+# Before running <cmd> it also requires >= MIN_FREE_GB (default 6) reclaimable memory (scripts/lib/platform.sh: macOS
+# free+inactive+speculative pages from vm_stat, Linux MemAvailable) and no chrome-headless-shell, waiting up to
+# COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out,
 # 76 cooldown refused, 2 usage; otherwise the command's own exit code.
 set -u
+. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # reclaimable_gib, AWAKE (caffeinate -i on macOS only)
 DEFAULT_DIR="$HOME/.cache/host-browser-lock"
 LOCK_DIR="${BROWSER_LOCK_DIR:-$DEFAULT_DIR}"
 LOCK="${BROWSER_LOCK_FILE:-$LOCK_DIR/browser.lock}"
@@ -37,10 +39,7 @@ WAIT_S="${LOCK_WAIT_S:-3600}"
 MIN_FREE_GB="${MIN_FREE_GB:-6}"
 mkdir -p "$(dirname "$LOCK")" "$QUEUE" || { echo "browser-lock: cannot create $(dirname "$LOCK")" >&2; exit 2; }
 
-reclaimable_gb() {
-  vm_stat | awk '/page size of/ {ps=$8} /Pages free/ {f=$3} /Pages inactive/ {i=$3} /Pages speculative/ {s=$3}
-    END {gsub(/\./,"",f); gsub(/\./,"",i); gsub(/\./,"",s); printf "%.1f", (f+i+s)*ps/1073741824}'
-}
+reclaimable_gb() { reclaimable_gib 1; }
 pstart() { ps -o lstart= -p "$1" 2>/dev/null | sed 's/  */ /g; s/^ //; s/ $//'; }
 
 # ---- FIFO ticket -----------------------------------------------------------------------------------------------
@@ -129,10 +128,11 @@ done
 export HOST_BROWSER_LOCK_FILE="$LOCK"
 # Keep the host awake while the browser runs: a headless Chrome holds no idle-sleep assertion, and an idle Mac once
 # slept 988 s in the middle of a UX run, freezing the browser and the test clock. caffeinate -i only holds a
-# process-scoped PreventUserIdleSystemSleep assertion for the command's lifetime; it changes no system setting.
-if command -v caffeinate >/dev/null 2>&1 && [ "${NO_CAFFEINATE:-0}" != 1 ]; then
-  echo "browser-lock: running under caffeinate -i (no idle sleep while the browser runs)"
-  caffeinate -i "$@"
+# process-scoped PreventUserIdleSystemSleep assertion for the command's lifetime; it changes no system setting. AWAKE
+# (scripts/lib/platform.sh) is (caffeinate -i) on macOS and empty elsewhere (and with NO_CAFFEINATE=1).
+if [ ${#AWAKE[@]} -gt 0 ]; then
+  echo "browser-lock: running under ${AWAKE[*]} (no idle sleep while the browser runs)"
+  "${AWAKE[@]}" "$@"
 else
   "$@"
 fi

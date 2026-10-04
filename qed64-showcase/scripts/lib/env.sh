@@ -10,7 +10,7 @@
 #   W           $QED64_SHOWCASE_WORK, default ~/.cache/lean-widgets/qed64-showcase-work (heavy work dir: clones, trees,
 #               bakes, raw snapshots, logs; must not contain spaces)
 #   LOGS        $W/logs
-#   Q           $QED64_REPO           a QED64 checkout (read-only input: pin, verify, stage, overlay preflight)
+#   Q           $QED64_REPO           a QED64 checkout with its binaries built (read-only input: pin, stage only)
 #   K           $QED64_KERNEL_BUILD   the wasm64 kernel build dir (read-only input: native/, mathlib/, BUILT-COMMIT)
 #   KR          $QED64_KERNEL_SRC     the kernel source checkout (read-only; only assert-untouched watches it)
 #   LG          $LEAN4GAME_DIR        a wasm64 lean4game checkout (read-only; only assert-untouched watches it)
@@ -46,7 +46,7 @@ QED64_TOOLCHAIN_IMAGE="${QED64_TOOLCHAIN_IMAGE:-qed64-toolchain:emsdk-6.0.5}"
 
 __env_hint() {
   case "$1" in
-    QED64_REPO) echo "a QED64 checkout at the pinned commit (git clone https://github.com/FawadHa1der/QED64; built dist/ and public/ for pin/verify)" ;;
+    QED64_REPO) echo "a QED64 checkout at the pinned commit with QED64's binaries built (only for pin and stage: the heavy path, docs/BUILD-FROM-SOURCE.md; QED64's sources are the submodule deps/qed64)" ;;
     QED64_KERNEL_BUILD) echo "the wasm64 kernel build dir (native/stage1, mathlib/, BUILT-COMMIT; built from https://github.com/FawadHa1der/lean4 branch qed64-wasm64)" ;;
     QED64_KERNEL_SRC) echo "the kernel source checkout (https://github.com/FawadHa1der/lean4, branch qed64-wasm64)" ;;
     LEAN4GAME_DIR) echo "a wasm64 lean4game checkout" ;;

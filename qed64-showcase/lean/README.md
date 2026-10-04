@@ -12,7 +12,7 @@ expect/<pkg>.json        the frozen golden in the package's PRIMARY env: what th
 expect/w8/<pkg>.json     the same golden in env w8, for the 7 phase-1 packages (the phase-2 bake serves all eight)
 expect/html/[w8/]<pkg>.json  the full RPC-encoded Html of every panel (refs normalized; for React-contract checks)
 goldens/                 the generator and gates (see "How the goldens were produced")
-../out/click-all/[w8/]<pkg>.json  every rendered link clicked on a fresh copy (see "Click-all")
+../lean/expect/click-all/[w8/]<pkg>.json  every rendered link clicked on a fresh copy (see "Click-all")
 ```
 
 Packages: `chart-kit`, `expr-xray`, `simp-lens`, `interval-inspector`, `graph-scope`,
@@ -198,9 +198,9 @@ in the browser) and the post-click diagnostics must match.
   sends it as a full-text `didChange`, waits for that version's diagnostics, and
   classifies: `clean` (no error/warning), `designed` (a declared click whose
   `postClickDiagnostics` lists exactly those messages), `broken` (anything else).
-  Writes `out/click-all/[w8/]<pkg>.json` (every link: kind, text/title, edit,
+  Writes `lean/expect/click-all/[w8/]<pkg>.json` (every link: kind, text/title, edit,
   where it was rendered, classification, the errors/warnings, edited file);
-  `summary.mjs` writes `out/click-all/summary.json`.
+  `summary.mjs` writes `lean/expect/click-all/summary.json`.
 * **`summary.mjs`** prints the per-package table; **`crosscheck.mjs`** compares
   goldens with the widget suite's own probe dumps (`widgets-v4.34/showcase/dumps`).
 
@@ -235,7 +235,7 @@ the hasse-view dump labels the cube's elements by index, the live panel by their
 lean/goldens/golden-env.sh build          # once (≈30 s; writes $W/golden-env)
 lean/goldens/run-all.sh [pkg …]           # ≈ 2–4 min per package (both envs + click-all)
 node lean/goldens/lsp-golden.mjs --pkg <pkg> --click-all [--env w8]   # one click-all run
-node lean/goldens/summary.mjs             # tables + out/click-all/summary.json
+node lean/goldens/summary.mjs             # tables + lean/expect/click-all/summary.json
 node lean/goldens/crosscheck.mjs
 ```
 Editing an example: run `python3 lean/goldens/mkspec.py relocate examples/<pkg>.json examples/<pkg>.lean`

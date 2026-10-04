@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # E2 (BUILD-PLAN §6): every package's Demo.lean, verbatim, compiled by the pinned wasm runtime
-# (vendored supervised-run.mjs -> node-runner.mjs) against $W/tree-fat. Serial.
+# (QED64's supervised-run.mjs -> node-runner.mjs, from the pin's source dependency) against $W/tree-fat. Serial.
 #
 #   scripts/headless/run-e2.sh [pkg …]
 #
@@ -13,9 +13,9 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 . "$HERE/../lib/env.sh"   # W: scripts/lib/env.sh
-# the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): its vendored runner and runtime stage1
+# the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): QED64's runner at its commit and its stage1
 P="$ROOT/scripts/lib/pins.mjs"
-SR="$(node "$P" store vendor)/pipeline/snapshot/supervised-run.mjs"
+SR="$(node "$P" store qed64)/pipeline/snapshot/supervised-run.mjs" || exit 2
 ART="$(cd "$(node "$P" store stage1)" && pwd -P)" || exit 2
 BIDT="$(node "$P" target-bid)" || exit 2
 echo "E2 on pin $(node "$P" target) ($BIDT): artifact $ART"

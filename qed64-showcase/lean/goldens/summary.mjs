@@ -2,8 +2,8 @@
 // Summary table over lean/expect/<pkg>.json (superset goldens, primary env), the
 // closure-mode sensitivity runs in $W/goldens/<pkg>.closure.json, the w8 goldens of
 // the phase-1 packages (lean/expect/w8/<pkg>.json, compared with w7 on the
-// env-independent signature) and the click-all runs (out/click-all/[w8/]<pkg>.json,
-// summarised into out/click-all/summary.json).
+// env-independent signature) and the click-all runs (lean/expect/click-all/[w8/]<pkg>.json,
+// summarised into lean/expect/click-all/summary.json).
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -70,7 +70,7 @@ for (const r of envCmp) console.log(`| ${r.pkg} | ${r.w7ok} | ${r.w8ok} | ${r.id
 const ca = [];
 for (const p of PKGS) for (const env of (p === 'dist-lens' ? ['w8'] : ['w7', 'w8'])) {
   const prim = p === 'dist-lens' ? 'w8' : 'w7';
-  const f = path.join(SC, 'out/click-all', env === prim ? '' : env, `${p}.json`);
+  const f = path.join(SC, 'lean/expect/click-all', env === prim ? '' : env, `${p}.json`);
   if (!fs.existsSync(f)) { ca.push({ pkg: p, env, missing: true }); continue; }
   const c = JSON.parse(fs.readFileSync(f, 'utf8'));
   let cli = null;
@@ -97,6 +97,6 @@ const caSummary = { generatedAt: new Date().toISOString(), generator: 'lean/gold
   allEnvRuns: { runs: ca.filter((r) => !r.missing).length, missing: ca.filter((r) => r.missing).length, broken: sum(ca.filter((r) => !r.missing), 'broken') },
   gate: ca.every((r) => !r.missing && r.ok && r.broken === 0 && (!r.cli || r.cli.agree === r.cli.compiled)) ? 'PASS' : 'FAIL',
   rows: ca, envComparison: envCmp };
-fs.mkdirSync(path.join(SC, 'out/click-all'), { recursive: true });
-fs.writeFileSync(path.join(SC, 'out/click-all/summary.json'), JSON.stringify(caSummary, null, 1) + '\n');
+fs.mkdirSync(path.join(SC, 'lean/expect/click-all'), { recursive: true });
+fs.writeFileSync(path.join(SC, 'lean/expect/click-all/summary.json'), JSON.stringify(caSummary, null, 1) + '\n');
 console.log(`\nCLICK-ALL GATE: ${caSummary.gate} — primary env: ${caSummary.primary.links} links (${caSummary.primary.makeEditLink} MakeEditLink + ${caSummary.primary.tryThis} Try-this; ${caSummary.primary.occurrences} rendered occurrences): clean ${caSummary.primary.clean}, designed ${caSummary.primary.designed}, broken ${caSummary.primary.broken}; all ${caSummary.allEnvRuns.runs} env runs: broken ${caSummary.allEnvRuns.broken}, missing ${caSummary.allEnvRuns.missing}`);

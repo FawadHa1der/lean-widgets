@@ -1,0 +1,3 @@
+[submodule "qed64"]
+	path = qed64-showcase/deps/qed64
+	url = https://github.com/FawadHa1der/QED64.git

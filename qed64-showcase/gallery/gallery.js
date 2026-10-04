@@ -124,7 +124,7 @@ const LIFE_LOOKBACK_MS = PROBE_MISSES * PROBE_TIMEOUT_MS; // 10 s at the default
 // command), not "stopped making progress"; it re-words itself if that changes while it is up. Same buttons either way.
 const ALIVE_RECENT_MS = 4 * PROBE_TIMEOUT_MS; // 20 s at the defaults (scales with ?probeTimeout in tests)
 const QED64_LIVE_KEYS = ['probes', 'answered', 'stalls', 'resumed', 'rescues'];
-/** A frame QED64's JS layer made itself, not the Lean FileWorker (vendor/qed64 at the pin): the front door's
+/** A frame QED64's JS layer made itself, not the Lean FileWorker (deps/qed64 at the pin): the front door's
  *  ContentModified (-32801) replies to completions it fails fast (lsp-front-door.js:288), the relay's -32603 halted
  *  replies (lsp-relay.ts:112) and failInFlight's -32603 / -32900 replies (lsp-relay.ts:212) — all error replies whose
  *  message starts 'QED64:' — and the relay's halted note (a publishDiagnostics whose every diagnostic has source 'QED64',

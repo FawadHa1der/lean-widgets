@@ -9,7 +9,8 @@
 //   3. /runtime/ /profiles/ /snapshots/ -> $R/public/...
 //   4. everything else           -> $R/dist/...                         (/ -> index.html)
 // Every response: COOP same-origin, COEP require-corp, CORP same-origin; Content-Length; no
-// Content-Encoding; Cache-Control mirroring infra/worker.js isImmutable(). HEAD answered; missing
+// Content-Encoding; Cache-Control by QED64's own isImmutable() (imported from infra/worker.js of the served pin's
+// QED64 sources: the submodule deps/qed64 or the pin's worktree; scripts/lib/qed64-src.mjs). HEAD answered; missing
 // files are 404 (never an SPA fallback). ETag + If-None-Match -> 304 (revalidation, like production).
 //
 // The pin (scripts/lib/pins.mjs; pins are keyed by QED64 commit) is fixed when the server starts: the active pin, or
@@ -24,10 +25,10 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { activePinId, pinDescriptor, releaseOf, outRtDir, OVERLAYS: PIN_OVERLAYS } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { activePinId, pinDescriptor, releaseOf, outRtDir, storePath, OVERLAYS: PIN_OVERLAYS } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const PIN = process.env.SHOWCASE_PIN || activePinId();
 const BID = pinDescriptor(PIN).buildId;
 const R = releaseOf(PIN);
@@ -51,11 +52,8 @@ function mimeOf(p) {
   if (/\.part-\d+$/.test(p)) return 'application/octet-stream';
   return MIME[path.extname(p).toLowerCase()] || 'application/octet-stream';
 }
-// verbatim from infra/worker.js isImmutable (QED64 @1859b83; unchanged at the 9fdf9b8 pin)
-function isImmutable(pathname) {
-  if (/\/runtime-manifest(\.[^/]*)?\.json$/.test(pathname) || /\/index\.json$/.test(pathname)) return false;
-  return /(\.part-\d+|\.snapz|\.chunk\.|[0-9a-f]{16,})/.test(pathname);
-}
+// QED64's cache rule, not a copy: imported from the served pin's QED64 sources (infra/worker.js exports isImmutable)
+const { isImmutable } = await import(pathToFileURL(path.join(storePath('qed64', { id: PIN }), 'infra', 'worker.js')).href);
 
 let chaos = null;
 if (process.env.CHAOS) {

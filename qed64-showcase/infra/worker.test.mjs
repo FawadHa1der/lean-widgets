@@ -1,8 +1,8 @@
 /* infra/worker.js against fake ASSETS / R2 bindings: `node --test infra/worker.test.mjs`.
  * Pattern from the lean4game precedent (wasm64-lean4game/infra/worker.test.mjs). No network, no account.
  *
- * Covers: COOP/COEP/CORP on every response; the cache rule equals QED64's isImmutable (checked
- * against the copy in scripts/serve.mjs, which is verbatim from QED64 infra/worker.js @1859b83, unchanged at 9fdf9b8);
+ * Covers: COOP/COEP/CORP on every response; the cache rule IS QED64's isImmutable (imported from the submodule
+ * deps/qed64/infra/worker.js; serve.mjs, deploy-manifest.mjs and worker.js keep no copy of its regexes);
  * artifact routing with and without R2_PREFIX; HEAD with an explicit Content-Length (the gallery's
  * preflight needs content-length == transfer); 404 for missing objects (never a fallback page);
  * path traversal refused; non-GET/HEAD refused on artifacts; assets pass through; ROOT_REDIRECT
@@ -91,10 +91,11 @@ const isolation = (r) => {
   assert.equal(r.headers.get("cross-origin-resource-policy"), "same-origin");
 };
 
-test("isImmutable equals QED64's rule (copy in scripts/serve.mjs, verbatim from QED64 infra/worker.js)", async () => {
-  const src = fs.readFileSync(path.join(SC, "scripts/serve.mjs"), "utf8");
-  const body = /function isImmutable\(pathname\) \{([\s\S]*?)\n\}/.exec(src)[1];
-  const qed64 = new Function("pathname", body);
+test("isImmutable IS QED64's rule (imported from the submodule's infra/worker.js, not a copy)", async () => {
+  const { isImmutable: qed64 } = await import(new URL("../deps/qed64/infra/worker.js", import.meta.url).href);
+  assert.equal(isImmutable, qed64, "infra/worker.js re-exports QED64's function object");
+  for (const f of ["scripts/serve.mjs", "scripts/deploy-manifest.mjs", "infra/worker.js"])
+    assert.ok(!fs.readFileSync(path.join(SC, f), "utf8").includes("\\.chunk\\.|[0-9a-f]{16,}"), `${f} has no local copy of QED64's rule`);
   const paths = ["/snapshots/index.json", "/snapshots/widgets8/index.json", SNAPZ, "/runtime/runtime-manifest.json",
     "/" + RTM, "/runtime/chunks/lean.wasm.0123456789abcdef0123.part-003",
     "/profiles/index.json", "/profiles/lean-core.manifest.json", "/profiles/lean-core.pack.gzip.1016929d99bb0ba0e148.part-007",

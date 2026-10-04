@@ -208,7 +208,7 @@ const L = await import(pathToFileURL(path.join(G, 'lib.js')).href);
   okTry(() => L.parseHash('', ids).bad === null && L.parseHash('', ids).id === null, 'parseHash: empty hash -> no id, no notice');
   ok(L.memPlaceholder(3).split('\n').every((l) => !/^\s*import\s/.test(l)) && L.memPlaceholder(3).startsWith(L.MEM_PLACEHOLDER_PREFIX), 'mem placeholder has no import lines (boots [init] at 256 MiB)');
   { // checkCapabilities (the card before anything boots); the probe module is QED64's own (lean.worker.js MEMORY64_PROBE)
-    const worker = read(path.join(SC, 'vendor', 'qed64', 'public', 'workers', 'lean.worker.js'));
+    const worker = read(path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'public', 'workers', 'lean.worker.js')) // the source dependency at the active pin;
     const wp = /const MEMORY64_PROBE = new Uint8Array\(\[([\s\S]*?)\]\)/.exec(worker);
     const wbytes = wp ? wp[1].replace(/\/\/[^\n]*/g, '').split(',').map((x) => x.trim()).filter(Boolean).map(Number) : null;
     ok(wbytes && wbytes.join() === L.MEMORY64_PROBE.join() && WebAssembly.validate(new Uint8Array(L.MEMORY64_PROBE)),

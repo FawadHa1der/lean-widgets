@@ -9,7 +9,8 @@
 //            which the page re-roots to /snapshots/widgets7/… (qed64-boot.ts:96-106)
 // The stock page only loads the names init and mathlib (resident-session.ts:85,127; main.ts:361,386);
 // its OPFS key becomes mathlib.<d16> and never collides with the stock mathlib.bf13acc4… key.
-// Both .snapz files are APFS clones (cp -c) of the bake output, beside the index.
+// Both .snapz files are copy-on-write clones (scripts/lib/platform.mjs cloneFile: APFS clonefile / reflink) of the
+// bake output, beside the index.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { targetPinId, targetBuildId, storePath } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const tag = process.argv[2];
 if (!['w7', 'w8'].includes(tag)) { console.error('usage: make-overlay.mjs w7|w8'); process.exit(2); }
 // the TARGET pin's runtime stores (SHOWCASE_PIN=<id>, else the active pin). The destination is the REAL store dir
@@ -31,7 +33,7 @@ const wg = idx.snapshots.find((s) => s.name === 'widgets');
 if (!init || !wg || idx.snapshots.length !== 2) { console.error(`bake-out index must hold exactly init + widgets: ${idx.snapshots.map((s) => s.name)}`); process.exit(1); }
 fs.rmSync(dst, { recursive: true, force: true });
 fs.mkdirSync(dst, { recursive: true });
-for (const e of [init, wg]) execFileSync('cp', ['-c', path.join(src, path.basename(e.url)), path.join(dst, path.basename(e.url))]);
+for (const e of [init, wg]) cloneFile(path.join(src, path.basename(e.url)), path.join(dst, path.basename(e.url)));
 const out = { schema: 'qed64.snapshot-index/v1', snapshots: [init, { ...wg, name: 'mathlib' }] };
 fs.writeFileSync(path.join(dst, 'index.json'), JSON.stringify(out, null, 2));
 for (const f of fs.readdirSync(dst)) {

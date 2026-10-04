@@ -1,5 +1,5 @@
-// C20 (new): the in-browser twin of out/click-all. EVERY link the InfoView renders in the eight examples (135 distinct
-// links: 129 MakeEditLink + 6 Try this, out/click-all/w8/<pkg>.json and out/click-all/dist-lens.json, the widgets8
+// C20 (new): the in-browser twin of lean/expect/click-all. EVERY link the InfoView renders in the eight examples (135 distinct
+// links: 129 MakeEditLink + 6 Try this, lean/expect/click-all/w8/<pkg>.json and lean/expect/click-all/dist-lens.json, the widgets8
 // environment the gallery serves) is clicked with the real mouse in the real InfoView, each from a freshly reset
 // example (the gallery's Reset button). For each link: the panel it lives in equals its golden first (so the link
 // exists where the native run found it), the post-click document equals the native click-all edit (applyEdit of the

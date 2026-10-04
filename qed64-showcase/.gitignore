@@ -12,7 +12,7 @@ playwright-report/
 /app/dist/
 /wrangler.toml
 /.wrangler/
-# QED64 sources at each pin's commit: fetched and hash-verified against the committed pins/<id>/QED64-PIN
-# (node scripts/fetch-vendor.mjs), never committed
+# QED64's sources are the git submodule deps/qed64 (see .gitmodules at the repository root), never a copy here.
+# Leftovers of the pre-submodule layout, should a moved-aside copy come back:
 /pins/*/vendor-qed64/
 /pins/*/vendor-qed64.*

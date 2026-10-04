@@ -1,0 +1,198 @@
+{
+ "package": "interval-inspector",
+ "mode": "superset",
+ "generatedAt": "2026-10-01T03:54:36.438Z",
+ "generator": "lean/goldens/lsp-golden.mjs --click-all",
+ "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "environment": {
+  "header": [
+   "import Mathlib",
+   "import IntervalInspector"
+  ],
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "leanPath": [
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+  ]
+ },
+ "exampleSha256": "b75fe0949abeee3e3e000cdb7b35056118d8aea259a98453b543fb133bf97083",
+ "documentDiagnostics": [],
+ "probes": 425,
+ "panelsRendered": 9,
+ "links": [
+  {
+   "n": 1,
+   "kind": "makeEditLink",
+   "linkText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 40
+     },
+     "start": {
+      "character": 2,
+      "line": 40
+     }
+    },
+    "newText": "refine Set.Ioc_union_Ioc_eq_Ioc ?_ ?_"
+   },
+   "newSelection": {
+    "end": {
+     "character": 39,
+     "line": 40
+    },
+    "start": {
+     "character": 39,
+     "line": 40
+    }
+   },
+   "foundAt": [
+    {
+     "line": 40,
+     "character": 2,
+     "panel": "IntervalInspector.IntervalInspectorPanel"
+    }
+   ],
+   "declaredClick": 0,
+   "classification": "clean",
+   "diagnosticsVersion": 2,
+   "editedVersion": 2,
+   "reElaborationMs": 508,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "8c79f8d984eefa2a83ddabc873e216f0d174c17273bf2a56d29b500c7230f4ef",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset-w8-clickall/Showcase.link1.lean"
+  },
+  {
+   "n": 2,
+   "kind": "makeEditLink",
+   "linkText": "exact Set.Ico_subset_Icc_self",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 45
+     },
+     "start": {
+      "character": 2,
+      "line": 45
+     }
+    },
+    "newText": "exact Set.Ico_subset_Icc_self"
+   },
+   "newSelection": {
+    "end": {
+     "character": 31,
+     "line": 45
+    },
+    "start": {
+     "character": 31,
+     "line": 45
+    }
+   },
+   "foundAt": [
+    {
+     "line": 45,
+     "character": 2,
+     "panel": "IntervalInspector.IntervalInspectorPanel"
+    }
+   ],
+   "declaredClick": 1,
+   "classification": "clean",
+   "diagnosticsVersion": 3,
+   "editedVersion": 3,
+   "reElaborationMs": 523,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "e527b5bff2d8bf7fe79a2aaaf1f96bedd8c350f0751f909291ba9c96ad4d519d",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset-w8-clickall/Showcase.link2.lean"
+  },
+  {
+   "n": 3,
+   "kind": "makeEditLink",
+   "linkText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩",
+   "title": null,
+   "edit": {
+    "range": {
+     "end": {
+      "character": 19,
+      "line": 51
+     },
+     "start": {
+      "character": 2,
+      "line": 51
+     }
+    },
+    "newText": "refine Set.mem_Ioo.mpr ⟨?_, ?_⟩"
+   },
+   "newSelection": {
+    "end": {
+     "character": 33,
+     "line": 51
+    },
+    "start": {
+     "character": 33,
+     "line": 51
+    }
+   },
+   "foundAt": [
+    {
+     "line": 51,
+     "character": 2,
+     "panel": "IntervalInspector.IntervalInspectorPanel"
+    },
+    {
+     "line": 51,
+     "character": 2,
+     "panel": "IntervalInspector.IntervalInspectorPanel",
+     "selection": [
+      {
+       "goal": 0,
+       "hyp": "hx"
+      }
+     ]
+    }
+   ],
+   "declaredClick": 2,
+   "classification": "clean",
+   "diagnosticsVersion": 4,
+   "editedVersion": 4,
+   "reElaborationMs": 509,
+   "errorsWarnings": [],
+   "infoCount": 0,
+   "editedSha256": "4f3485416954cba7cf3d5de8a0c655388dd493baa7d90aa0280ef19e56b357f9",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/interval-inspector-superset-w8-clickall/Showcase.link3.lean"
+  }
+ ],
+ "counts": {
+  "clean": 3,
+  "total": 3,
+  "makeEditLink": 3,
+  "tryThis": 0,
+  "linkOccurrences": 4
+ },
+ "declaredClicksCovered": "3/3",
+ "ok": true,
+ "totalMs": 5134
+}

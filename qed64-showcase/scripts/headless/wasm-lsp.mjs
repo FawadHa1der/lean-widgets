@@ -7,7 +7,7 @@
 //   close()
 //
 // WasmLsp boots the pinned QED64 runtime (stage1 lean.js/lean.wasm) IN THIS
-// Node process exactly like the vendored resident-probe.mjs /
+// Node process exactly like QED64's resident-probe.mjs /
 // header-switch-probe.mjs and the browser worker (public/workers/lean.worker.js):
 //   own shared Memory64 (browser policy: 2 GiB initial when an umbrella region
 //   is loaded, else 256 MiB; 6 GiB maximum) -> full Lean init ->
@@ -26,7 +26,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
-import { VENDOR } from './lib.mjs';
+import { QED64_SRC } from './lib.mjs';
 
 // JSON with lossless UInt64 (sessionId, javascriptHash)
 export const parseJson = (s) => JSON.parse(s, (k, v, ctx) =>
@@ -78,7 +78,7 @@ class ClientBase {
 export class WasmLsp extends ClientBase {
   /** opts: {artifact, lib, snaps: [paths], initialBytes?, maximumBytes?, log, wasmLog (file)} */
   static async boot(opts) {
-    await import(pathToFileURL(path.join(VENDOR, 'public/workers/lsp-frames.js')).href); // globalThis.Qed64LspFrames
+    await import(pathToFileURL(path.join(QED64_SRC, 'public/workers/lsp-frames.js')).href); // globalThis.Qed64LspFrames
     const c = new WasmLsp(opts.log);
     await c.#boot(opts);
     return c;

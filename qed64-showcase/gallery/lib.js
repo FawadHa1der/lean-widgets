@@ -3,7 +3,7 @@
 // browser and by scripts/check-gallery.mjs in Node (with a real or mocked fetch), so the preflight
 // that guards navigation is the same code the static gate exercises.
 //
-// Facts this mirrors (QED64 @9fdf9b8, vendored under vendor/qed64; qed64-boot.ts and resident-session.ts are unchanged since 1859b83):
+// Facts this mirrors (QED64 @9fdf9b8, read from the submodule deps/qed64; qed64-boot.ts and resident-session.ts are unchanged since 1859b83):
 //   * ?snapshots=<dir> fetches /<dir>/index.json and re-roots every entry url that starts with
 //     /snapshots/ to /<dir>/ (frontend/src/qed64-boot.ts:96-106). A failed or malformed override index
 //     fails SILENTLY in the page and only surfaces later as "snapshot 'init' failed to load"

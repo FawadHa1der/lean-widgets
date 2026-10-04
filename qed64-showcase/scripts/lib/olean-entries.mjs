@@ -1,5 +1,5 @@
 // olean-entries.mjs — read ModuleData.entries (env-extension entry counts) from a 64-bit .olean region.
-// Same layout reader as vendor/qed64/pipeline/artifacts/olean-imports.mjs; ModuleData object fields are
+// Same layout reader as QED64's pipeline/artifacts/olean-imports.mjs (deps/qed64); ModuleData object fields are
 // imports(0) constNames(1) constants(2) extraConstNames(3) entries(4); entries : Array (Name × Array Entry).
 // Used to confirm where a module's IR lives: a legacy (non-`module`) file keeps its IR decls in the
 // main .olean (Lean.IR.declMapExt has entries), a module-system file moves them to <M>.ir.

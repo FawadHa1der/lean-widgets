@@ -1,0 +1,352 @@
+{
+ "generatedAt": "2026-10-01T04:05:17.084Z",
+ "generator": "lean/goldens/summary.mjs",
+ "primary": {
+  "packages": 8,
+  "links": 135,
+  "makeEditLink": 129,
+  "tryThis": 6,
+  "occurrences": 136,
+  "clean": 135,
+  "designed": 0,
+  "broken": 0
+ },
+ "allEnvRuns": {
+  "runs": 15,
+  "missing": 0,
+  "broken": 0
+ },
+ "gate": "PASS",
+ "rows": [
+  {
+   "pkg": "chart-kit",
+   "env": "w7",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 489,
+   "declaredClicksCovered": "0/0",
+   "cli": {
+    "compiled": 0,
+    "agree": 0
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "chart-kit",
+   "env": "w8",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 489,
+   "declaredClicksCovered": "0/0",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "expr-xray",
+   "env": "w7",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 8,
+   "probes": 285,
+   "declaredClicksCovered": "0/0",
+   "cli": {
+    "compiled": 0,
+    "agree": 0
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "expr-xray",
+   "env": "w8",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 8,
+   "probes": 285,
+   "declaredClicksCovered": "0/0",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "simp-lens",
+   "env": "w7",
+   "ok": true,
+   "links": 6,
+   "makeEditLink": 0,
+   "tryThis": 6,
+   "occurrences": 6,
+   "clean": 6,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 6,
+   "probes": 305,
+   "declaredClicksCovered": "6/6",
+   "cli": {
+    "compiled": 6,
+    "agree": 6
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "simp-lens",
+   "env": "w8",
+   "ok": true,
+   "links": 6,
+   "makeEditLink": 0,
+   "tryThis": 6,
+   "occurrences": 6,
+   "clean": 6,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 6,
+   "probes": 305,
+   "declaredClicksCovered": "6/6",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "interval-inspector",
+   "env": "w7",
+   "ok": true,
+   "links": 3,
+   "makeEditLink": 3,
+   "tryThis": 0,
+   "occurrences": 4,
+   "clean": 3,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 9,
+   "probes": 425,
+   "declaredClicksCovered": "3/3",
+   "cli": {
+    "compiled": 3,
+    "agree": 3
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "interval-inspector",
+   "env": "w8",
+   "ok": true,
+   "links": 3,
+   "makeEditLink": 3,
+   "tryThis": 0,
+   "occurrences": 4,
+   "clean": 3,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 9,
+   "probes": 425,
+   "declaredClicksCovered": "3/3",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "graph-scope",
+   "env": "w7",
+   "ok": true,
+   "links": 58,
+   "makeEditLink": 58,
+   "tryThis": 0,
+   "occurrences": 58,
+   "clean": 58,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 255,
+   "declaredClicksCovered": "4/4",
+   "cli": {
+    "compiled": 58,
+    "agree": 58
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "graph-scope",
+   "env": "w8",
+   "ok": true,
+   "links": 58,
+   "makeEditLink": 58,
+   "tryThis": 0,
+   "occurrences": 58,
+   "clean": 58,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 255,
+   "declaredClicksCovered": "4/4",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "tree-scope",
+   "env": "w7",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 6,
+   "probes": 340,
+   "declaredClicksCovered": "0/0",
+   "cli": {
+    "compiled": 0,
+    "agree": 0
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "tree-scope",
+   "env": "w8",
+   "ok": true,
+   "links": 0,
+   "makeEditLink": 0,
+   "tryThis": 0,
+   "occurrences": 0,
+   "clean": 0,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 6,
+   "probes": 340,
+   "declaredClicksCovered": "0/0",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "hasse-view",
+   "env": "w7",
+   "ok": true,
+   "links": 47,
+   "makeEditLink": 47,
+   "tryThis": 0,
+   "occurrences": 47,
+   "clean": 47,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 248,
+   "declaredClicksCovered": "5/5",
+   "cli": {
+    "compiled": 47,
+    "agree": 47
+   },
+   "brokenLinks": []
+  },
+  {
+   "pkg": "hasse-view",
+   "env": "w8",
+   "ok": true,
+   "links": 47,
+   "makeEditLink": 47,
+   "tryThis": 0,
+   "occurrences": 47,
+   "clean": 47,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 248,
+   "declaredClicksCovered": "5/5",
+   "cli": null,
+   "brokenLinks": []
+  },
+  {
+   "pkg": "dist-lens",
+   "env": "w8",
+   "ok": true,
+   "links": 21,
+   "makeEditLink": 21,
+   "tryThis": 0,
+   "occurrences": 21,
+   "clean": 21,
+   "designed": 0,
+   "broken": 0,
+   "panelsRendered": 5,
+   "probes": 233,
+   "declaredClicksCovered": "3/3",
+   "cli": {
+    "compiled": 21,
+    "agree": 21
+   },
+   "brokenLinks": []
+  }
+ ],
+ "envComparison": [
+  {
+   "pkg": "chart-kit",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 0
+  },
+  {
+   "pkg": "expr-xray",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 0
+  },
+  {
+   "pkg": "simp-lens",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 0
+  },
+  {
+   "pkg": "interval-inspector",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 3
+  },
+  {
+   "pkg": "graph-scope",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 5
+  },
+  {
+   "pkg": "tree-scope",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 0
+  },
+  {
+   "pkg": "hasse-view",
+   "w7ok": true,
+   "w8ok": true,
+   "identicalSignature": true,
+   "htmlShaDiffer": 5
+  }
+ ]
+}

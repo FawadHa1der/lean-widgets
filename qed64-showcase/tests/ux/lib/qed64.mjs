@@ -68,8 +68,8 @@ export const SPECS = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readF
 /** The golden of the widgets8 environment the gallery serves: w8 for phase 1, the only (w8) golden for dist-lens. */
 export const goldenPath = (id) => (fs.existsSync(path.join(SC, 'lean/expect/w8', `${id}.json`)) ? path.join(SC, 'lean/expect/w8', `${id}.json`) : path.join(SC, 'lean/expect', `${id}.json`));
 export const GOLDENS = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readFileSync(goldenPath(id), 'utf8'))]));
-/** out/click-all: the native click-all of the same environment (w8). */
-export const clickAllPath = (id) => (fs.existsSync(path.join(SC, 'out/click-all/w8', `${id}.json`)) ? path.join(SC, 'out/click-all/w8', `${id}.json`) : path.join(SC, 'out/click-all', `${id}.json`));
+/** lean/expect/click-all: the native click-all of the same environment (w8). */
+export const clickAllPath = (id) => (fs.existsSync(path.join(SC, 'lean/expect/click-all/w8', `${id}.json`)) ? path.join(SC, 'lean/expect/click-all/w8', `${id}.json`) : path.join(SC, 'lean/expect/click-all', `${id}.json`));
 export const CLICKALL = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readFileSync(clickAllPath(id), 'utf8'))]));
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -81,12 +81,8 @@ export function lockHeld() {
   if (!fs.existsSync(p)) throw new Error(`run the UX suite through scripts/with-browser-lock.sh (npm run test:ux): the host browser lock ${p} is absent`);
   return fs.readFileSync(p, 'utf8').trim();
 }
-export function reclaimableGiB() {
-  const out = spawnSync('vm_stat', { encoding: 'utf8' }).stdout || '';
-  const num = (re) => { const m = re.exec(out); return m ? Number(m[1].replace(/\./g, '')) : 0; };
-  const ps = num(/page size of (\d+)/);
-  return ((num(/Pages free:\s+(\d+)/) + num(/Pages inactive:\s+(\d+)/) + num(/Pages speculative:\s+(\d+)/)) * ps) / 1073741824;
-}
+const PLATFORM = await import('../../../scripts/lib/platform.mjs'); // vm_stat on macOS, MemAvailable on Linux
+export function reclaimableGiB() { return PLATFORM.reclaimableBytes() / 1073741824; }
 export function strayChrome() {
   return (spawnSync('pgrep', ['-fl', 'chrome-headless-shell'], { encoding: 'utf8' }).stdout || '').trim();
 }

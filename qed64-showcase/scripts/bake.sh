@@ -4,8 +4,9 @@
 #   scripts/bake.sh w7 [--reserve BYTES]     QED64.Essential + 7 roots   -> work/bake-out-w7, work/bake-work-w7
 #   scripts/bake.sh w8 [--reserve BYTES]     ... + DistLens              -> work/bake-out-w8, work/bake-work-w8
 #
-# Runs the VENDORED bake-snapshot.mjs (never QED64's own copy) with absolute --artifact/--lib/--work/--out
-# under W (no write can land in the QED64 tree). Steps:
+# Runs QED64's bake-snapshot.mjs from the pin's SOURCE dependency (the submodule deps/qed64 at the pin's commit, or
+# the pin's worktree: scripts/lib/qed64-src.mjs; never another QED64 checkout) with absolute
+# --artifact/--lib/--work/--out under W (no write can land in a QED64 tree). Steps:
 #   0. refuse if another bake runs (pgrep bake-snapshot), a browser runs (chrome-headless-shell /
 #      Chrome for Testing), a Docker container runs, or free+inactive memory < MIN_FREE_GB (vm_stat)
 #   1. C3 seed: out dir = clone of the served init .snapz + index.json holding the init entry verbatim
@@ -42,7 +43,7 @@ LIB="$W/tree-slim-$tag"; WORK="$(real "$(store "bake-work-$tag")")"; OUT="$(real
 # the bake log, metrics and RSS samples belong to the runtime they bake against ($W/bake-logs is a pin link into
 # $W/runtimes/<buildId>/bake-logs; judge-bake.mjs reads them there)
 BL="$(real "$(store bake-logs)")"
-KEYF="$(store "BAKE-KEY-$tag.txt")"; VENDOR="$(store vendor)"
+KEYF="$(store "BAKE-KEY-$tag.txt")"; QSRC="$(store qed64)" || exit 2
 echo "target pin $(node "$P" target) runtime $BID${SHOWCASE_PIN:+ (SHOWCASE_PIN: its own stores, not the active links)}: art $ART, out $OUT, work $WORK, logs $BL"
 LOG="$BL/bake-widgets$n.log"; MET="$BL/bake-widgets$n.metrics.json"; RSSLOG="$BL/bake-widgets$n.rss.tsv"
 mkdir -p "$W/logs"
@@ -86,7 +87,7 @@ run_bake() {
   local reserve="$1"
   echo "=== bake $tag reserve=$reserve lib=$LIB work=$WORK out=$OUT $(date -u +%FT%TZ)" >> "$LOG"
   local t0; t0=$(date +%s)
-  ( cd "$W" && QED64_ALLOW_LEGACY_IMPORTS=1 /usr/bin/time -l node --stack-size=8192 "$VENDOR/pipeline/snapshot/bake-snapshot.mjs" \
+  ( cd "$W" && QED64_ALLOW_LEGACY_IMPORTS=1 /usr/bin/time -l node --stack-size=8192 "$QSRC/pipeline/snapshot/bake-snapshot.mjs" \
       --name widgets --artifact "$ART" --lib "$LIB" --reserve "$reserve" \
       --work "$WORK" --out "$OUT" --probe "$PROBE" ) >> "$LOG" 2>&1 &
   local bpid=$!
