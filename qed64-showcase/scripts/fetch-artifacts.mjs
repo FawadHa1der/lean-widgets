@@ -20,12 +20,14 @@
 //   Plain HTTP(S) GETs from Node: CORP/COEP apply to browsers, not to this client.
 //
 //   node scripts/fetch-artifacts.mjs [--pin <id>] [--origin <url>] [--qed64-origin <url>] [--only public|overlays]
-//                                    [--jobs 4] [--check] [--remote-check]
+//                                    [--jobs 4] [--check] [--remote-check] [--git-only]
 //     default        install what is missing or wrong; resumable: a complete file whose size and sha256 match the lock
 //                    is kept; an interrupted download continues from <file>.partial with a Range request when the
 //                    origin answers 206 (else it restarts that file); a finished download whose sha256 differs from the
 //                    lock is moved to <file>.rejected-<time> (never installed, never deleted) and the run fails.
 //     --check        write nothing: exit 0 iff every file of the pin is present with the lock's size and sha256
+//     --git-only     install only the files that come from QED64's git (the tracked manifests and indexes); no network,
+//                    no origin (CI: the gallery data and gates need the runtime manifest, not the binaries)
 //     --remote-check write nothing: HEAD every file to be fetched on the origins (or GET it and read only the headers,
 //                    when the origin's HEAD has no Content-Length) and compare Content-Length with the lock
 // Exit: 0 ok · 1 a file failed (missing on every origin, a sha256 mismatch, an HTTP error) · 2 usage/setup.
@@ -46,7 +48,7 @@ function usage(why) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1).filter((l) => l.startsWith('//')).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(2);
 }
-const KNOWN = ['--pin', '--origin', '--qed64-origin', '--only', '--jobs', '--check', '--remote-check', '--help'];
+const KNOWN = ['--pin', '--origin', '--qed64-origin', '--only', '--jobs', '--check', '--remote-check', '--git-only', '--help'];
 for (const a of argv) if (a.startsWith('--') && !KNOWN.includes(a)) usage(`unknown argument ${a}`);
 if (argv.includes('--help')) usage();
 const ID = val('--pin', PINS.targetPinId());
@@ -90,6 +92,7 @@ if (ONLY !== 'public') {
     for (const [f, m] of Object.entries(rec.files)) plan.push({ dest: path.join(SC, rec.dir, f), rel: `${rec.dir}/${f}`, url: `/snapshots/${o}/${f}`, bytes: m.bytes, sha256: m.sha256, from: 'origin', kind: 'overlay' });
   }
 }
+if (argv.includes('--git-only')) { if (ONLY === 'overlays') usage('--git-only installs public/ manifests; not with --only overlays'); plan.splice(0, plan.length, ...plan.filter((x) => x.from !== 'origin')); }
 const origins = (it) => (it.kind === 'overlay' ? [ORIGIN] : [ORIGIN, QORIGIN]).filter(Boolean);
 
 async function have(it) {

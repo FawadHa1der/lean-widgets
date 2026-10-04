@@ -10,7 +10,7 @@ and docs/HISTORY.md.
 * `scripts/showcase.sh gallery`: the gate, the current gallery content sha256, and `UX CURRENT …` (the newest verdict on
   exactly this gallery + lock + overlays, plus a headed sign-off if there is one) or `UX STALE`;
 * `node scripts/deploy-manifest.mjs --check`: the `G2 UX:` line a deploy relies on;
-* `scripts/showcase.sh verify`: pins, stores and the Docker `DRIFT` (§1).
+* `scripts/showcase.sh verify`: pins, sources, stores (the Docker drift of §1 is resolved).
 
 *History (dated, not current state).* At the end of the final docs lane (2026-10-03 ~03:50Z) pin C `5ac5d00` was
 served on gallery `921b0b6a…` with verdict runs on it, no headed sign-off on it, `verify` OK with 1 Docker `DRIFT`, and
@@ -29,22 +29,14 @@ rehearsal; `out/ux/pin-e/RESULTS.md`). §2 and §4 say what is still needed.
 the extra V2 on the visitor's path comes mainly from running the stock page in a same-origin iframe at all). QED64's
 HARDENING #55 is in the served E. Our storms on E are consistent with it but do not confirm it (§2).
 
-## 1. Decide about the Docker image drift (owner)
+## 1. Docker image drift: resolved (2026-10-04, R2 lane)
 
-`showcase.sh verify` prints one `DRIFT`. The lock records image `8b6698bbf474` for `qed64-toolchain:emsdk-6.0.5`, and
-that is the image that built the native oleans. The tag now points at `sha256:8228ea564e7b`
-(`$W/logs/finaldocs-verify.log`). QED64's own `pipeline/toolchain/build.sh` re-tags this image, and the old image is
-gone.
-
-The served artifacts do not depend on the image, because they are verified by hash. The drift matters only for a native
-rebuild, and `showcase.sh native` refuses to run until it is resolved. There are two ways to resolve it (README.md
-"Docker tag drift" has the commands):
-
-* **Accept the current image.** Set `DOCKER_ID`, run `pin --yes`, then `native all` and everything after it: stage,
-  bake, overlay, headless, gallery and two `ux` runs.
-* **Restore the intended image.** Rebuild or re-tag it yourself. QED64's tree is read-only for this project.
-
-Leaving it as it is costs nothing until widget sources or the toolchain change (see §3).
+The tag `qed64-toolchain:emsdk-6.0.5` now names `8228ea564e7b`, while the lock recorded `8b6698bbf474`, the image that
+built the native oleans. The R2 lane rebuilt all 512 native modules in the current image in a scratch copy of the
+Mathlib tree. All 7,616 output files are byte-identical to the originals, so every lock now records `8228ea564e7b`
+under `toolchain.docker.equivalent`, `verify` prints no DRIFT, and `showcase.sh native` accepts the image
+(docs/BUILD-FROM-SOURCE.md "Docker image drift", docs/REPIN-LOG.md R2 entry). If the tag moves again, the same
+experiment decides it.
 
 ## 2. Confirm QED64's #55 on our side, in a high-rate window (optional)
 

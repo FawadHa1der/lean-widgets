@@ -36,6 +36,8 @@ jobs:
         run: node scripts/qed64-src.mjs check
       - name: QED64's page built from source, byte-identical to the lock (every dist/ file's sha256)
         run: node scripts/build-shell.mjs
+      - name: QED64's tracked manifests from git (no network; the gallery data reads the runtime manifest)
+        run: node scripts/fetch-artifacts.mjs --git-only
       - name: Widget sources export (git archive of packages/ at the lock's WIDGETS_COMMIT)
         run: node scripts/export-widgets.mjs --commit "$(node -p 'require("./QED64.lock.json").WIDGETS_COMMIT')"
       - name: Deploy Worker tests (QED64's isImmutable imported from the submodule)
