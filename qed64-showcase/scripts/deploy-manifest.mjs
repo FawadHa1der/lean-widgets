@@ -544,8 +544,18 @@ if (MODE === 'smoke') {
     if (h.get('cross-origin-opener-policy') !== 'same-origin' || h.get('cross-origin-embedder-policy') !== 'require-corp' || h.get('cross-origin-resource-policy') !== 'same-origin') errs.push('isolation headers');
     const wantCc = isImmutable(t.url.split('?')[0]) ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate';
     if (h.get('cache-control') !== wantCc) errs.push(`cache-control ${h.get('cache-control')}`);
-    if (Number(h.get('content-length')) !== t.size) errs.push(`content-length ${h.get('content-length')} != ${t.size}`);
-    if (t.artifact && h.get('content-encoding')) errs.push(`content-encoding ${h.get('content-encoding')}`);
+    // Artifacts must arrive byte-exact: content-length == size and no content-encoding (QED64's worker and the
+    // gallery refuse transformed chunks). A page asset (HTML/JS/CSS) is compressed by the edge (Cloudflare serves
+    // `content-encoding: br` and omits content-length on HEAD even for accept-encoding: identity): for those, GET it
+    // and compare the decoded body's length with the asset's size instead.
+    if (t.artifact) {
+      if (Number(h.get('content-length')) !== t.size) errs.push(`content-length ${h.get('content-length')} != ${t.size}`);
+      if (h.get('content-encoding')) errs.push(`content-encoding ${h.get('content-encoding')}`);
+    } else if (h.get('content-encoding') || h.get('content-length') === null) {
+      const g = await fetch(origin + (r.url ? new URL(r.url).pathname + new URL(r.url).search : t.url), { headers: { 'accept-encoding': 'identity' }, redirect: 'follow' }).catch((e) => null);
+      const n = g ? (await g.arrayBuffer()).byteLength : -1;   // fetch decodes br/gzip; n is the original size
+      if (n !== t.size) errs.push(`decoded body ${n} B != ${t.size} (content-encoding ${h.get('content-encoding')})`);
+    } else if (Number(h.get('content-length')) !== t.size) errs.push(`content-length ${h.get('content-length')} != ${t.size}`);
     const ctErr = contentTypeProblem(t.url, h.get('content-type'));
     if (ctErr) errs.push(ctErr);
     if (errs.length) { bad++; if (bad <= 20) console.log(`FAIL HEAD ${t.url} — ${errs.join('; ')}`); }
