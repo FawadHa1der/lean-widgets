@@ -30,7 +30,12 @@ for i in $(seq 1 "$N"); do
     2) how=abs;  (bash "$WRAP" "w$i-$how" bash -c "$(body "w$i" "$HOLD_S")" > "$T/w$i.log" 2>&1 &) ;;
     0) how=rel;  (cd "$REL_DIR" && ./"$(basename "$WRAP")" "w$i-$how" bash -c "$(body "w$i" "$HOLD_S")" > "$T/w$i.log" 2>&1 &) ;;
   esac
-  ARR+=("w$i"); echo "arrived w$i via $how"
+  # "arrived" = its ticket is filed (the wrapper serves tickets in filing order). Launch order alone is not arrival
+  # order: under host load a later waiter's bash can start before an earlier one filed its ticket (seen as a flake,
+  # 2026-10-05: start order w1,w2,w4,w3,... with a 0.4 s gap), so wait for ticket i before launching waiter i+1.
+  for _ in $(seq 1 200); do [ "$(ls "$LOCKF.queue" 2>/dev/null | wc -l | tr -d ' ')" -ge "$i" ] && break; sleep 0.05; done
+  [ "$(ls "$LOCKF.queue" 2>/dev/null | wc -l | tr -d ' ')" -ge "$i" ] || { echo "LOCKFIFO FAIL: waiter w$i filed no ticket within 10 s"; exit 1; }
+  ARR+=("w$i"); echo "arrived w$i via $how (ticket filed)"
   sleep "$GAP_S"
 done
 # wait for everyone (the waiters are not our children: poll the journal)
