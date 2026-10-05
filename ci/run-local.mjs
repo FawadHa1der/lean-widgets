@@ -17,7 +17,7 @@
 //     ci/rehearse-deploy.sh for its wrangler stand-in). Nothing else from the caller's environment reaches a step
 //     except PATH, HOME, USER, LOGNAME, SHELL, LANG, LC_ALL, TMPDIR and TERM.
 //   * `timeout-minutes` (job and step) is enforced: the step's process group gets SIGTERM, then SIGKILL 10 s later.
-//   * not modelled: services, containers, reusable workflows, `include`/`exclude` in a matrix, concurrency,
+//   * not modelled: services, containers, reusable workflows, `exclude` in a matrix (`include` is: it extends matching combinations or adds new ones), concurrency,
 //     permissions, continue-on-error, job-level `container`/`services`.
 //
 //   node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml [--job <id>]… [--matrix <key>=<v1,v2>]…
@@ -318,12 +318,24 @@ function expandMatrix(j) {
   const m = j.strategy && j.strategy.matrix;
   if (!m) return [null];
   if (typeof m === 'string') throw new Error('a matrix from an expression is not supported by run-local');
-  if (m.include || m.exclude) throw new Error('matrix include/exclude is not supported by run-local');
+  if (m.exclude) throw new Error('matrix exclude is not supported by run-local');
   let combos = [{}];
   for (const [k, vals] of Object.entries(m)) {
+    if (k === 'include') continue;
     const keep = MATRIX_FILTER[k] ? vals.filter((v) => MATRIX_FILTER[k].includes(String(v))) : vals;
     if (MATRIX_FILTER[k]) for (const f of MATRIX_FILTER[k]) if (!vals.map(String).includes(f)) throw new Error(`matrix ${k} has no value '${f}'`);
     combos = combos.flatMap((c) => keep.map((v) => ({ ...c, [k]: v })));
+  }
+  // `include` (GitHub's semantics, the subset run-local models): an entry whose matrix-key values match an existing
+  // combination adds its other keys to that combination; an entry that matches none is a new combination.
+  const keys = Object.keys(m).filter((k) => k !== 'include');
+  for (const inc of Array.isArray(m.include) ? m.include : []) {
+    const hits = combos.filter((c) => keys.every((k) => !(k in inc) || String(c[k]) === String(inc[k])));
+    if (hits.length) {
+      for (const c of hits) for (const [k, v] of Object.entries(inc)) if (!keys.includes(k)) c[k] = v;
+    } else if (!keys.some((k) => k in inc && MATRIX_FILTER[k] && !MATRIX_FILTER[k].includes(String(inc[k])))) {
+      combos.push({ ...inc });
+    }
   }
   return combos;
 }
