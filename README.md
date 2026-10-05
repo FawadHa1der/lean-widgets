@@ -1,5 +1,7 @@
 # Lean InfoView Widgets (Lean v4.34.0)
 
+**Live:** https://qed64-showcase.fawadworkaddress.workers.dev/showcase/ (deployed 2026-10-05; Chromium-based desktop browser, ~16 GB RAM; first visit downloads ~680 MB).
+
 Eight InfoView widget packages for Lean 4 and Mathlib (v4.34.0), and two ways to see them without installing anything:
 a static gallery of their real panels, and the widgets running live in [QED64](https://github.com/FawadHa1der/QED64),
 Lean compiled to wasm64 and running in the browser. Everything in this repository builds from a clone.

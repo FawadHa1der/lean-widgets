@@ -1,6 +1,6 @@
 # Deploying the showcase to Cloudflare, the lean4game way
 
-> **Status: rehearsed locally, not deployed.** Nothing here has logged in to Cloudflare, uploaded to R2 or deployed.
+> **Status: DEPLOYED 2026-10-05** at https://qed64-showcase.fawadworkaddress.workers.dev (see "First deploy — record" below). Before that date the kit was only rehearsed locally.
 > Every script and command below was run against local fakes (an rclone `local` remote, a local S3 endpoint and
 > `wrangler dev --local`) or as a dry run, inside a macOS sandbox that blocks all outbound traffic except to localhost.
 > See [Rehearsal](#rehearsal). The GitHub Actions deploy (`.github/workflows/qed64-deploy.yml`, section 9) has never
@@ -128,6 +128,21 @@ bucket the loader accepts only `R2_PREFIX=qed64-showcase/`:
 Every script checks this before it runs rclone or wrangler. The rehearsal's `guard` step proves it on a fake bucket
 seeded with stand-ins for QED64's and lean4game's manifests.
 
+
+## First deploy — record (2026-10-05, done from this machine)
+
+| Step | Result |
+|---|---|
+| Preconditions | `showcase.sh verify`: all checks OK; `gallery`: GREEN on `3b4dc8bb…`, `UX CURRENT` (run `r4-main-full4`); `deploy-manifest --check`: OK, G2 names `r4-main-full4`; `wrangler whoami`: logged in (OAuth, workers write) |
+| Bucket before | `rclone size qed64-r2:qed64-artifacts`: 396 objects, 13.70 GiB (QED64 + lean4game; above the 10 GB free tier already, so storage is billed) |
+| Upload | `DRY_RUN=1 scripts/upload-artifacts.sh`: UPLOAD DRY RUN OK; then `scripts/upload-artifacts.sh`: UPLOAD OK, 11 lists, 93 objects, 2.420 GB, 3 multipart, copy only; release record `out/deploy/published/20261005T152953Z` |
+| Deploy | `DRY_RUN=1 scripts/deploy-app.sh`: RECORD OK (this shell's 93 keys == the record), DEPLOY DRY RUN OK; `scripts/deploy-app.sh`: 74 assets uploaded, Worker `qed64-showcase` version `ae781eae-35f9-49de-a739-440ffe587a69`, URL https://qed64-showcase.fawadworkaddress.workers.dev |
+| Smoke | `--smoke <url> --all --range`: first run 3 FAIL (the edge serves HTML with `content-encoding: br` and no content-length on HEAD; the check was fixed to compare the decoded size for page assets, artifacts unchanged); then **SMOKE OK**: 168 URLs (75 assets + 93 R2 keys), isolation headers, cache rule, Range 206 / 416 / mismatched If-Range → 200 |
+| Cold boot | `scripts/deploy-rehearsal/boot-check.mjs <url>` (headless Chrome, fresh profile, under the host browser lock): **BOOT-CHECK OK** — QED64 ready with hasse-view after 209 s, 26 artifact GETs (677.1 MB, all 200), HasseView panel rendered (`out/deploy-live/boot-hasse-view.png`); 1 page error = QED64's known boot-time `Error: unsupported` (N1) |
+| Rollback | `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z` + redeploy of the previous shell (section 5); **back up `out/deploy/published/`** |
+
+Not done at that time: the GitHub repository had no Actions secrets, so the `qed64-deploy` workflow ran in skip mode
+(as designed); `SHOWCASE_ORIGIN` was not set as a repository variable yet.
 
 ## First deploy checklist
 

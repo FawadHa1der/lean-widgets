@@ -1,6 +1,6 @@
-# Deploying the showcase on its own origin (kit only — nothing is deployed)
+# Deploying the showcase on its own origin (the kit; deployed 2026-10-05, see DEPLOY-CLOUDFLARE.md)
 
-> **Status: not deployed.** Nothing in this repo has uploaded, deployed or logged in anywhere.
+> **Status: deployed on 2026-10-05** at https://qed64-showcase.fawadworkaddress.workers.dev (record in DEPLOY-CLOUDFLARE.md). This page describes the kit.
 > Publishing needs the owner's Cloudflare account and an explicit go-ahead. This kit makes the
 > deployment reviewable before that: exactly which files go where, with sizes and sha256, plus
 > a dry-run check and a post-deploy smoke test.
