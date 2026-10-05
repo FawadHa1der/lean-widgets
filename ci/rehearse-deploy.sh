@@ -31,6 +31,9 @@ SC="$ROOT/qed64-showcase"
 die() { echo "rehearse-deploy: $*" >&2; exit 2; }
 command -v sandbox-exec >/dev/null || die "needs macOS sandbox-exec (the wrangler shim runs offline under it)"
 [ -d "$ROOT/ci/node_modules/yaml" ] || npm ci --prefix "$ROOT/ci" --no-audit --no-fund
+# the wrangler stand-in starts the pinned wrangler (infra/) before deploy-app.sh would install it: install it here so a
+# fresh clone works (the real workflow gets it from deploy-app.sh, which runs the same npm ci when it is missing)
+[ -x "$SC/infra/node_modules/.bin/wrangler" ] || npm ci --prefix "$SC/infra" --no-audit --no-fund
 REF=$(git -C "$ROOT" rev-parse "${REF:-HEAD}^{commit}")
 RUN=${RUN_DIR:-$W/ci-rehearsal/$(date -u +%Y%m%dT%H%M%SZ)}
 [ ! -e "$RUN" ] || die "$RUN exists"
