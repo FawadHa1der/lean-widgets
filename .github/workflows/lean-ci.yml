@@ -39,6 +39,17 @@ jobs:
       fail-fast: false
       matrix:
         package: [interval-inspector, expr-xray, simp-lens, graph-scope, tree-scope, hasse-view, dist-lens, chart-kit, lean-widget-kit]
+        # ClickE2E (the click-simulation test modules) compiles whole user files in-process with a nested Mathlib
+        # environment per scenario. Measured 2026-10-05 (one `lake build <Tests>.ClickE2E`, LEAN_NUM_THREADS=4, peak RSS):
+        # interval-inspector 19.8 GB, dist-lens 15.0 GB, simp-lens 12.8 GB, graph-scope 12.5 GB, hasse-view 5.2 GB.
+        # ubuntu-latest has 16 GB and systemd-oomd SIGTERMs the step (exit 143: run 37329653425), so those four build
+        # every other test module here and skip ClickE2E; ./test-all.sh runs it locally and the UX suite's C20 clicks
+        # every rendered link in the real browser. hasse-view's fits and runs in full.
+        include:
+          - { package: interval-inspector, clicke2e: skip }
+          - { package: dist-lens, clicke2e: skip }
+          - { package: simp-lens, clicke2e: skip }
+          - { package: graph-scope, clicke2e: skip }
     defaults:
       run:
         working-directory: packages/${{ matrix.package }}
@@ -58,10 +69,17 @@ jobs:
           if grep -q '"name": "mathlib"' lake-manifest.json; then lake exe cache get; else echo "$PKG: no Mathlib dependency"; fi
       - name: lake build
         run: lake build
-      - name: lake test
+      - name: lake test (ClickE2E skipped where its peak memory exceeds the runner, see the matrix)
+        env:
+          CLICKE2E: ${{ matrix.clicke2e || 'run' }}
         run: |
-          if grep -q '^testDriver' lakefile.toml; then lake test
-          else echo "$PKG: no test driver configured, lake test skipped (as test-all.sh does)"; fi
+          if ! grep -q '^testDriver' lakefile.toml; then echo "$PKG: no test driver configured, lake test skipped (as test-all.sh does)"; exit 0; fi
+          if [ "$CLICKE2E" != skip ]; then lake test; exit; fi
+          lib=$(sed -nE 's/^testDriver = "([^"]+)".*/\1/p' lakefile.toml)
+          mods=(); for f in "$lib"/*.lean; do m=$(basename "$f" .lean); [ "$m" = ClickE2E ] || mods+=("$lib.$m"); done
+          echo "$PKG: ClickE2E skipped on this runner (its nested Mathlib compiles peak above 16 GB); building every other test module: ${mods[*]}"
+          lake build "${mods[@]}"
+          echo "::notice title=$PKG::ClickE2E not run here (memory); it runs in ./test-all.sh locally, and the UX suite's C20 clicks every rendered link in the browser"
       - name: Showcase probe (regenerates showcase/dumps/<package>.json)
         run: |
           probe="../../showcase/probes/$PKG.lean"
