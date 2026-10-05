@@ -3,8 +3,11 @@
 // docs/UPSTREAM-REPORT-QED64.md, gallery/README.md, docs/DEPLOY*.md). Read-only; it recomputes everything from the
 // recorded runs, so a doc that disagrees with it is wrong:
 //   * every UX run directory out/ux/<run>/ with run-meta.json + report.json (the pin is run-meta.pin.qed64, mapped to
-//     the registered pins/<id>/pin.json; a test crashed when its tests/<id>.json records "crashed": true, i.e. the
-//     renderer died: Playwright's page 'crash' event),
+//     the registered pins/<id>/pin.json; a test crashed when its tests/<id>.json records "crashed": true OR one of its
+//     session streams tests/<id>.<label>.console.jsonl has a {"kind":"crash"} line, i.e. the renderer died:
+//     Playwright's page 'crash' event. The stream is needed because that event can arrive after the test already
+//     failed on the dead page (Playwright's own "Assertion error") and after the fixture computed the session's console
+//     verdict, so tests/<id>.json then says "crashed": false: r2-main-full1 and r4-main-full2, both C10),
 //   * tests/C20.json of each run (clean links, card stalls, gallery wedges, QED64's own liveness counters),
 //   * out/ux/showcase-ux-runs.jsonl, judged by scripts/lib/ux-record.mjs whyNotVerdict (the VERDICT rule),
 //   * the stock-page reload storms tests/ux/tools/reload-storm.mjs wrote (out/ux/{repin-ab,multipin-storm}/explore/),
@@ -47,7 +50,13 @@ for (const d of fs.readdirSync(UX)) {
   const pin = String(meta.pin.qed64).slice(0, 7);
   const tests = testsOf(rep);
   const crashed = [];
-  for (const t of tests) { const f = path.join(dir, 'tests', `${t.id}.json`); if (fs.existsSync(f) && /"crashed":\s*true/.test(fs.readFileSync(f, 'utf8'))) crashed.push(t.id); }
+  const tdir = path.join(dir, 'tests'); const tfiles = fs.existsSync(tdir) ? fs.readdirSync(tdir) : [];
+  for (const t of tests) {
+    const f = path.join(tdir, `${t.id}.json`);
+    const recorded = fs.existsSync(f) && /"crashed":\s*true/.test(fs.readFileSync(f, 'utf8'));
+    const streamed = tfiles.some((n) => n.startsWith(`${t.id}.`) && n.endsWith('.console.jsonl') && /"kind":"crash"/.test(fs.readFileSync(path.join(tdir, n), 'utf8')));
+    if (recorded || streamed) crashed.push(t.id);
+  }
   const res = (id) => { const t = tests.find((x) => x.id === id); if (!t) return null; if (crashed.includes(id)) return 'crashed'; return t.status === 'passed' ? 'passed' : t.status; };
   const c20 = readJson(path.join(dir, 'tests', 'C20.json'));
   const st = rep.stats || {};

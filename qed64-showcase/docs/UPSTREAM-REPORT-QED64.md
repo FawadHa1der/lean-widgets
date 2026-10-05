@@ -787,6 +787,21 @@ isolates per page, or a boot that waits until the previous runtime's memory is r
   lock's wait is not visible there. On that evidence we switched to E: it was at least as clean as C, and it passed our
   full gate (two UX verdicts, a headed sign-off, the slow-link first visit, the deploy rehearsal). A high-rate window
   (an idle host with 20 GB or more reclaimable) would be the place to confirm the fix on our side.
+* **Renderer crashes in the UX suite's C10 on E, with #55's wait visible (2026-10-04/05, R2 and R4 lanes).** C10 opens
+  `/showcase/#graph-scope` on a warm profile, waits for ready and reloads at 0, 3, 6, 9 and 12 s. On E it crashed the
+  renderer in 3 of 9 full runs from 19:52Z on 2026-10-04: `r2-main-full1` (chrome-headless-shell), `r4-main-full2`
+  (chrome-headless-shell) and `r4-main-headed1` (headed Chrome for Testing 151). Before that, E's full runs had 0 C10
+  crashes in 7 (`node scripts/ux-tally.mjs`, which since R4 also counts a crash that only the session stream recorded).
+  The R4 crashes have the V2 timing: after the 5th reload, 1.0 s and 1.4 s after the page's last `[qed64] starting
+  Lean`. In both, your lock's message appears just before: `[boot] waited 314 ms for 1 stopping runtime(s) (25 → 12
+  Workers alive)` (`r4-main-full2`, crash 1.16 s later) and `[boot] waited 444 ms for 1 stopping runtime(s) (25 → 9
+  Workers alive)` (`r4-main-headed1`, crash 1.66 s later). So the wait ran and the renderer still died. The crash reason is not captured: the suite's crash event has no OOM line, and macOS wrote no
+  crash report for the R4 crashes. The R2 crash's report (`chrome-headless-shell-2026-10-04-162712.ips`) shows a
+  `SIGTRAP` on a `DedicatedWorker thread`, which matches a V8 fatal error in a worker isolate; that it was V2's
+  `young object promotion failed` is an inference. The host had 26.4–26.5 GiB reclaimable at the start of the two R4
+  runs that crashed, against 18.6–25.5 GiB for the five R4 runs that did not, which fits "idle host, more V2" but is
+  far too few runs to show it. Runs with `DEBUG=pw:browser` (which would log the OOM line) did not crash. The runs,
+  timelines and logs are in `docs/results/REPO-TEST-ROUND.md` "C10 crashes on E".
 
 ## S1 — slow first visits and the boot card's memory figure (2026-10-03, last-mile lane)
 
