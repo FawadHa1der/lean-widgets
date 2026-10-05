@@ -72,6 +72,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0   # full history: the widget checks read the lock's WIDGETS_COMMIT, an older commit
       - if: steps.gate.outputs.mode != 'skip'
         uses: actions/setup-node@v4
         with:

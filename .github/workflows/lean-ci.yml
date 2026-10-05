@@ -136,6 +136,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0   # full history: the widget export archives the lock's WIDGETS_COMMIT, an older commit
       - uses: actions/setup-node@v4
         with:
           node-version: '26.3.0'   # the lock's toolchain.node; the page also builds byte-identically on 26.7.0

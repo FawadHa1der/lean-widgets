@@ -236,8 +236,18 @@ async function emulate(step, w, js) {
       if (withs.submodules !== 'recursive') { say(`REFUSED: actions/checkout without 'submodules: recursive' (every checkout in this repository must fetch QED64, the submodule qed64-showcase/deps/qed64)`); return 1; }
       if (fs.existsSync(w.ws) && fs.readdirSync(w.ws).length) { say(`REFUSED: ${w.ws} is not empty`); return 1; }
       say(`checkout (emulated): git clone ${REPO} -> ${w.ws}, detached at ${SHA.slice(0, 12)}; submodules: recursive`);
-      const rc1 = await runProcess('git', ['clone', '--no-checkout', '--quiet', REPO, '.'], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
+      // GitHub's actions/checkout fetches ONE commit unless fetch-depth: 0 — emulate that, so a job that needs history
+      // (e.g. an older commit named in a lock) fails here as it would on GitHub. file:// makes --depth apply to a local repo.
+      const depth = String(withs['fetch-depth'] ?? '1');
+      const cloneArgs = depth === '0' ? ['clone', '--no-checkout', '--quiet', REPO, '.']
+        : ['clone', '--no-checkout', '--quiet', '--depth', depth, '--no-single-branch', 'file://' + path.resolve(REPO), '.'];
+      if (depth !== '0') say(`checkout: shallow (fetch-depth ${depth}), as actions/checkout does by default`);
+      const rc1 = await runProcess('git', cloneArgs, { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
       if (rc1) return rc1;
+      if (depth !== '0') {   // a SHA that is not a branch tip is not in a shallow clone: fetch exactly it, as actions/checkout does
+        const have = (() => { try { git(['-C', w.ws, 'cat-file', '-e', `${SHA}^{commit}`]); return true; } catch { return false; } })();
+        if (!have) { const rcf = await runProcess('git', ['-c', 'protocol.version=2', 'fetch', '--quiet', '--depth', depth, 'origin', SHA], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` }); if (rcf) return rcf; }
+      }
       const rc2 = await runProcess('git', ['-c', 'advice.detachedHead=false', 'checkout', '--quiet', SHA], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
       if (rc2) return rc2;
       const rc3 = await runProcess('git', ['submodule', 'update', '--init', '--recursive'], { cwd: w.ws, env: w.baseEnv, logFile: lf, prefix: `[${js.name}]   ` });
