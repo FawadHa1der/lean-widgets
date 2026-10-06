@@ -184,6 +184,11 @@
           "pageerror": "^Session disposed\\.$",
           "stackIncludes": ".dispose (",
           "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
+        },
+        {
+          "consoleError": "^Error: \\?snapshots=((?:snapshots/)?[A-Za-z0-9][A-Za-z0-9._-]{0,63}): (?:Failed to fetch|/\\1/index\\.json: HTTP [0-9]{3})(?:\\n    at |$)",
+          "url": "@qed64-main-bundle",
+          "note": "v1 pins (QED64 5c327c2+, docs/EMBEDDING.md §4): a ?snapshots= overlay index that is missing (HTTP <status>, src/runtime/snapshots.ts) or unreachable (fetch rejects: 'Failed to fetch') is a NAMED boot failure thrown out of main() (frontend/src/qed64-boot.ts fetchSnapshotIndexFor: '?snapshots=<dir>: <msg>'); the page reports it as api.status().boot {failed, message} and its top-level catch (frontend/src/main.ts:625-629) console.error(err)s the Error, which Chromium records as 'Error: <message>' followed by its stack. It replaces, on v1, the legacy relay death lines (entries [0]/[1]): Lean never starts, so no relay dies. Anchored to the first line (the directory named twice must be the same WHOLE value, 'snapshots/' prefix included or absent in both: QED64 fetches /<dir>/index.json for ?snapshots=<dir>, frontend/src/qed64-boot.ts:118, with <dir> validated by frontend/src/embed/params.ts DIR_RULES ^(?:snapshots/)?<segment>$; up to the stack's first frame), the active pin's main bundle only, the bootFailure scenario only; no line0 (pin-switch.mjs requires every line0 to be a hash-pinned notify site, and this is main()'s catch, not one). Observed in run g-full1b: C8 stock ('?snapshots=snapshots/nope: /snapshots/nope/index.json: HTTP 404', main bundle line 1369) and C12 overlay-offline-stock ('?snapshots=snapshots/widgets8: Failed to fetch', line 1369). Any other uncaught main() error ('Error: runtime manifest: …', a refused parameter, another index fault text) still fails. Legacy pins A-E never print it (a missing overlay is a silent 'no snapshots' there, failing later through the relay), so it matches nothing on them."
         }
       ],
       "networkCut": [
@@ -233,6 +238,21 @@
           "stackIncludes": ".dispose (",
           "note": "QED64 N2 (all pins): the page's heap meter (frontend/src/main.ts startMemoryMeter, every 12 s) races session.request('telemetry') against 800 ms with no rejection handler; a session disposed (death, reboot, restart, halt) while that request is pending rejects it with 'Session disposed.' as an unhandled rejection. Only where a session is disposed; docs/UPSTREAM-REPORT-QED64.md N2"
         }
+      ],
+      "rpcKeepAliveStarved": [
+        {
+          "consoleError": "^Outdated RPC session$",
+          "url": "@qed64-main-bundle",
+          "line0": 627,
+          "pairWith": {
+            "lspErrorCode": -32900,
+            "qed64Kind": null,
+            "message": "^Outdated RPC session$",
+            "beforeMs": 3000,
+            "afterMs": 500
+          },
+          "note": "pin G (QED64 5c327c2: e4cffcc's request cap, frontend/src/embed/edit-coalescer.ts maxInFlightRequests, DEFAULT_MAX_IN_FLIGHT_REQUESTS 6; docs/EMBEDDING.md §7.8 'every frame behind it waits in order'; pinned by tests/unit/edit-coalescer.test.ts:613-623): during a silent elaboration over 30 s the InfoView's position-bound requests fill the 6 slots, so its $/lean/rpc/keepAlive notifications wait behind them in the coalescer; Lean 4.34 expires an RPC session after keepAliveTimeMs 30000 (FileWorker/Utils.lean:188, erased at FileWorker.lean:943-947), and when the slots free, Lean itself answers each queued $/lean/rpc/call -32900 'Outdated RPC session' (Rpc/RequestHandling.lean:84), which lean4monaco logs at its NotificationService site (line0 627) and the InfoView reconnects. No session was replaced. QED64 defect (keep-alives should never wait for a request slot; draft report, not posted). Pairing: each line needs its OWN -32900 reply seen by the LSP tap with qed64Kind null and that exact message (Lean's own reply; a relay-made '-32900 QED64: …' restart reply can never explain it) within -3 s/+0.5 s; fail-closed without tap reports. Only in C22 (tests/ux/specs/25-stall.spec.mjs), only on the pins listed there as having the cap without the keep-alive fix, and C22 also requires every such reply to fall in a phase silent for at least 30 s and the InfoView to reconnect after it. Observed in run g-full1b: C22 (s10) 9 lines, 5 at t 55063-55067 (end of the 38 s #eval) and 4 at t 166794 (end of the 55 s saturated sleep), each 0-2 ms after Lean's own -32900 reply."
+        }
       ]
     },
     "neverAllowed": [
@@ -243,14 +263,21 @@
       "V8 javascript OOM",
       "page crash"
     ],
+    "exclusiveScenarios": [
+      {
+        "scenarios": ["rpcKeepAliveStarved", "relayRestartOrReboot"],
+        "why": "classifyConsole takes the FIRST matching rule, and relayRestartOrReboot[0] allows the same '^Outdated RPC session$' line unpaired: declared together, it would match the keep-alive lines first and switch off rpcKeepAliveStarved's pairing with Lean's own -32900 replies (qed64Kind null). A verdict that declares both fails (conflicts), whatever was logged."
+      }
+    ],
     "_enforcedBy": "tests/ux/bringup/console.mjs classifyConsole (via lib.mjs): widgets.mjs, hints.mjs and questions.mjs exit 1 on any pageerror / console.error / console.warning outside this list, on a neverAllowed substring, over a per-load limit (loads = document requests of the QED64 frame / the InfoView frame), on an allowlisted empty console.error without its own LSP -32800 reply (pairWith; widgets/hints/questions install the LSP tap, tests/ux/bringup/lib.mjs installTap), or on a crash; scripts/check-gallery.mjs 8c unit-tests the classifier",
     "_scenarioNotes": {
       "relayRestartOrReboot": "tests in which a session is disposed or replaced on purpose (C10 reload storm, C11 network cut, C16 exact imports, C21 Restart Lean / Reset on a frozen checker, C23 the forced wedged reboot, C25 the frame reload the gallery adopts; C20 and W1-W8 only when a stall or a QED64 'wedged' reboot occurred): the InfoView's old RPC session is refused once per request ('Outdated RPC session'), and the page's heap meter's pending telemetry request rejects 'Session disposed.' (QED64 N2). Never allowed in any other test.",
-      "bootFailure": "tests that deliberately make the boot fail (C8 missing overlay, C9 unpaired overlay, C11 network cut, C12 unreachable overlay): the relay's own death path logs and throws 'QED64: the Lean checker died (bootFailed)' once per counted death (3 before the breaker), and a missing overlay file is a 404 resource error. Never allowed in any other test.",
+      "bootFailure": "tests that deliberately make the boot fail (C8 missing overlay, C9 unpaired overlay, C11 network cut, C12 unreachable overlay): the relay's own death path logs and throws 'QED64: the Lean checker died (bootFailed)' once per counted death (3 before the breaker), and a missing overlay file is a 404 resource error. On v1 pins (QED64 5c327c2+, EMBEDDING.md §4) a missing or unreachable ?snapshots= overlay index is instead a named failure before Lean starts: no relay death, one 'Error: ?snapshots=<dir>: …' console.error from main()'s catch (entry [4]). Never allowed in any other test.",
       "networkCut": "tests that cut the network on purpose (C11 CHAOS, C12 aborted routes): Chromium logs the aborted / truncated resource, and QED64's snapshot prefetcher warns that it falls back to streaming. Never allowed in any other test.",
       "exactImportsFallback": "C16 only: after 'Load exact imports' QED64 compiles the header's import lines against the essential pack; when that fails it warns '[qed64] exact import failed: …; serving the header from the preloaded library' and keeps serving the covered header (resident-session.ts:209-224, the designed degradation C16 checks).",
       "qed64WedgedReboot": "C23 (its forced-death fixture), and C20 and W1-W8 only when QED64 9fdf9b8+ itself declared a session wedged and rebooted it (an L7 occurrence handled upstream, status().liveness.qed64.wedgedReboots > 0): its relay answers every request in flight with 'QED64: the Lean checker died (wedged)' (lsp-relay.ts onDied -> failInFlight), which lean4monaco logs at the same site as stallRestart. Never allowed in any other test.",
       "livenessObserved": "tests (or hang hunts, UX_LIVENESS=observe) in which the gallery's liveness probe, in OBSERVE mode, declares a frozen checker wedged: gallery.js logs one console.warn per wedge and restarts nothing (C21 (b); C20 and W1-W8 only when an observe-mode wedge was recorded). Never allowed in any other test.",
+      "rpcKeepAliveStarved": "C22 only, and only on a pin whose edit coalescer caps the requests in flight without letting $/lean/rpc/keepAlive pass (QED64 5c327c2; the list in tests/ux/specs/25-stall.spec.mjs KEEPALIVE_STARVED_PINS): a silent elaboration over Lean's 30 s RPC keep-alive window starves the InfoView's keep-alives behind the 6 occupied request slots, Lean expires the RPC session and answers the queued rpc calls -32900 'Outdated RPC session' (its own reply, qed64Kind null). Paired one-to-one with those replies; C22 also requires each reply to fall in a phase silent for at least 30 s and an RPC reconnect after it, and still proves no restart through its session, restart, death and reboot counters. Never allowed in any other test, and never on a pin that fixes the keep-alive queueing.",
       "stallRestart": "tests that answer a stalled checker (QED64 L7) with the gallery's Restart Lean / Reset (C21; C20 and W1-W8 only when a real stall was recovered): QED64's relay.restart() answers every request still in flight with the hard-coded error 'QED64: restarting with exact imports' (lsp-relay.ts:127 failInFlight; -32603, rpc calls -32900), which lean4monaco logs at its NotificationService site and leaves as an unhandled rejection. A stalled checker always has requests in flight (nothing was answered), so a restart of one produces these; a restart from ready (C16) has none. Never allowed in any other test."
     }
   }

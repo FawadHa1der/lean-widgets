@@ -13,7 +13,7 @@ export const test = base.extend({
     ctl.close = async (s, { scenarios = ctl.scenarios } = {}) => {
       if (s.closed) return s.verdictRec;
       const v = s.verdict({ scenarios });
-      s.verdictRec = { label: s.label, ok: v.ok, line: consoleLine(v), counts: v.counts, loads: v.loads, unexpected: v.unexpected, overLimit: v.overLimit, emptyErrors: v.emptyErrors, crashed: v.crashed, scenarios: v.scenarios, bytes: s.bytes };
+      s.verdictRec = { label: s.label, ok: v.ok, line: consoleLine(v), counts: v.counts, loads: v.loads, unexpected: v.unexpected, overLimit: v.overLimit, conflicts: v.conflicts, emptyErrors: v.emptyErrors, crashed: v.crashed, scenarios: v.scenarios, bytes: s.bytes };
       ctl.verdicts.push(s.verdictRec);
       await s.close();
       return s.verdictRec;

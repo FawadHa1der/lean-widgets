@@ -109,7 +109,11 @@ test('C8 bad overlay: the stock page shows its boot-failure card; the gallery re
     expect(m.stock.boot, 'api.status().boot reports the failed boot').toMatchObject({ failed: true, done: false });
     expect(m.stock.boot.message, 'the failure names ?snapshots=snapshots/nope').toMatch(/\?snapshots=snapshots\/nope/);
     expect(m.stock.bootFailed).toBe(true);
-    expect(m.stock.bootlabel, 'the page\'s own card shows the same message').toBe(m.stock.boot.message);
+    // the page's own card is in its failed state and shows the API's message exactly; QED64's main() catch (frontend/src/main.ts:625-628)
+    // calls bootFail(msg) and then ui.idle('FAILED: ' + msg), which re-enters bootFail and rewrites the label with that literal prefix
+    // (the API keeps the first report), so only that prefix is allowed (run g-full1b C8: 'FAILED: ' + boot.message)
+    expect(m.stock.bootcard, 'the page\'s own boot card is in its failed state').toMatch(/failed/);
+    expect(m.stock.bootlabel, 'the page\'s own card shows the same message').toMatch(new RegExp(`^(?:FAILED: )?${String(m.stock.boot.message).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
   } else {
     expect(m.stock.bootcard).toMatch(/failed/);
     expect(m.stock.bootlabel).toMatch(/snapshot 'init' failed to load/);
@@ -179,29 +183,75 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   m.atFirstReady = { rss: chromeRss(), workers: g.page.workers().length };
   const t = Date.now();
   m.reloads = [];
+  // the phase each reload interrupts comes from a poller beside the storm, never from a probe ON the reload path: a status
+  // evaluate cannot finish while QED64 starts a runtime (seconds), so stamping a reload after one let the storm slip
+  // (run g-full1b C10: reloads at 0, 8.9, 8.9, 9.1, 19.8 s). `last` is the newest answer from the CURRENT page (an evaluate
+  // that started before the latest reload is discarded).
+  // The reloads go out through a CDP session (Page.reload), NOT page.reload(): with tracing on (config trace
+  // 'retain-on-failure' records every test), Playwright marks Page.reload `snapshot: true` and its tracer awaits a DOM
+  // snapshot of every frame BEFORE issuing the call, with no timeout; that snapshot needs the same busy renderer, so a reload
+  // stamped at 12 s reached the browser at ~20 s. A CDP command carries no snapshot. The session is opened and Page.enable'd
+  // while the page is ready (Page.enable reaches the renderer); a reload "lands" at the main frame's cross-document commit
+  // (Page.frameNavigated without parentId), the same event page.reload({waitUntil:'commit'}) waits for. Each reload is stamped
+  // right before it is sent, and the last one's commit time is asserted (below), so a storm held up anywhere fails the 15 s check.
+  const cdp = await g.page.context().newCDPSession(g.page);
+  await cdp.send('Page.enable');
+  let onCommit = null;
+  cdp.on('Page.frameNavigated', (e) => { if (!e.frame.parentId && onCommit) { const f = onCommit; onCommit = null; f(e); } });
+  const reloadViaCdp = async () => {
+    let timer = null;
+    const committed = new Promise((resolve, reject) => { onCommit = resolve; timer = setTimeout(() => reject(new Error('C10: a storm reload did not commit within 120 s')), 120000); });
+    committed.catch(() => {}); // awaited below; never an unhandled rejection if the send itself throws
+    try { await cdp.send('Page.reload'); return await committed; } finally { clearTimeout(timer); onCommit = null; }
+  };
+  let last = null; let gen = 0; let stopPoll = false; const evals = { n: 0, maxMs: 0, failed: 0 };
+  const poll = (async () => {
+    while (!stopPoll) {
+      const g0 = gen; const e0 = Date.now();
+      const st = await g.status().catch(() => null);
+      const ms = Date.now() - e0; evals.n++; evals.maxMs = Math.max(evals.maxMs, ms); if (!st) evals.failed++;
+      if (st && g0 === gen) last = { phase: st.phase, qed64: st.qed64 && st.qed64.phase, at: Date.now() - t };
+      await sleep(100);
+    }
+  })();
   for (let i = 0; i < 5; i++) {
     if (i) await sleep(Math.max(0, i * 3000 - (Date.now() - t))); // reloads at 0, 3, 6, 9, 12 s
-    const st = await g.status().catch(() => null);
-    m.reloads.push({ at: Date.now() - t, phaseBefore: st && st.phase, qed64Before: st && st.qed64 && st.qed64.phase });
-    await g.page.reload({ waitUntil: 'commit' });
+    const before = last; const at = Date.now() - t;
+    gen++; last = null;
+    await reloadViaCdp();
+    const committedMs = Date.now() - t - at;
+    m.reloads.push({ at, committedMs, landedAt: at + committedMs, phaseBefore: before && before.phase, qed64Before: before && before.qed64, phaseAgeMs: before ? at - before.at : null });
   }
+  stopPoll = true; await poll;
+  await cdp.detach().catch(() => {});
   m.stormMs = Date.now() - t;
+  m.stormProbe = evals; // the longest status evaluate during the storm: how long the page could not answer (a QED64 boot observation)
   const b = await g.waitGallery({ timeoutMs: 300000 });
   const p = await g.expectPanel(firstAt(id), firstGolden(id), { timeoutMs: 120000 });
   await sleep(3000);
-  rss.stop();
+  await rss.stop(); // waits for the ps in flight and keeps its reading
   const w = s.watches[0];
   m.after = { phase: b.s.phase, ms: Date.now() - t, panelEqual: p.equal, crashed: w.crashed, rss: chromeRss(), peak: rss.peak, workersAlive: g.page.workers().length, workersCreated: w.workers.length, workersClosed: w.workers.filter((x) => x.closed !== null).length, loads: w.loads, bridgeLate: b.s.bridge.late, api: b.s.api, bridge: b.s.bridge };
   // the renderer RSS timeline (0.5 s) and the transient peak against the plan's fail line, in bytes (UX audit minor 1).
   // The transient overlap of a dying page and the next boot is QED64's (L8 in docs/UX-RESULTS.md): recorded and
   // reported, with the fail line asserted on the settled state; a crash fails the test.
   m.failLineBytes = MEM_FAIL_BYTES;
-  m.samples = rss.samples.map((x) => ({ t: x.t, GB: x.rendererGB, renderers: x.renderers }));
-  m.transient = { peakGB: rss.peak.rendererGB, peakGiB: rss.peak.rendererGiB, peakAtMs: rss.peak.t, overFailLine: rss.peak.rendererBytes >= MEM_FAIL_BYTES, msOverFailLine: rss.samples.filter((x) => x.rendererBytes >= MEM_FAIL_BYTES).length * 500 };
+  m.samples = rss.samples.map((x) => ({ t: x.t, GB: x.rendererGB, renderers: x.renderers, psMs: x.psMs }));
+  m.sampler = { n: rss.samples.length, skipped: rss.skipped, lagMaxMs: rss.lagMaxMs, maxPsMs: Math.max(0, ...rss.samples.map((x) => x.psMs || 0)), maxGapMs: rss.samples.reduce((a, x, i) => (i ? Math.max(a, x.t - rss.samples[i - 1].t) : a), 0) };
+  m.transient = { peakGB: rss.peak.rendererGB, peakGiB: rss.peak.rendererGiB, peakAtMs: rss.peak.t, overFailLine: rss.peak.rendererBytes >= MEM_FAIL_BYTES, msOverFailLine: rss.samples.reduce((a, x, i) => (x.rendererBytes >= MEM_FAIL_BYTES ? a + rss.spanMs(i) : a), 0) }; // each sample stands for the time until the next one started (samples can be skipped behind a slow ps)
   await g.page.screenshot({ path: screenPath('C10-after-storm.png') });
   console.log(`C10 ${JSON.stringify({ ...m, samples: undefined })}`);
   console.log(`C10 renderer: first ready ${m.atFirstReady.rss.rendererGB} GB, transient peak ${m.transient.peakGB} GB at ${m.transient.peakAtMs} ms (${m.transient.msOverFailLine} ms over ${MEM_FAIL_BYTES / 1e9} GB), settled ${m.after.rss.rendererGB} GB`);
-  expect(m.reloads[4].at, '5 reloads within 15 s').toBeLessThanOrEqual(15000);
+  // the storm's density is asserted on when the reloads LANDED (committed), not when they were stamped (the legacy test
+  // asserted the stamp of the 5th reload <= 15 s; a commit is later than its stamp, so this is the stricter form)
+  expect(m.reloads[4].at + m.reloads[4].committedMs, `5 reloads committed within 15 s: ${JSON.stringify(m.reloads.map((r) => [r.at, r.committedMs]))}`).toBeLessThanOrEqual(15000);
+  // Commit latency and the phase each reload interrupted are RECORDED, not asserted per reload. A reload's commit needs the
+  // old document's renderer, and the renderer is busy for seconds while QED64 starts a runtime: run g-fix1 C10 (pin G) had
+  // commits of 97, 1131, 15, 4122 and 23 ms, and the phase poller (a page.evaluate) got no answer from the current page
+  // before 3 of the 5 reloads for the same reason (phaseBefore null = the page had not answered since it loaded, i.e. it
+  // was still starting). What the storm must not do is wait for ready: no reload 1-4 hit a page the poller saw ready.
+  m.commitLatency = { maxMs: Math.max(...m.reloads.map((r) => r.committedMs)), over1s: m.reloads.filter((r) => r.committedMs > 1000).length };
+  expect(m.reloads.slice(1).filter((r) => r.phaseBefore === 'ready').length, `no reload of the storm waited for ready: ${JSON.stringify(m.reloads.map((r) => r.phaseBefore))}`).toBe(0);
   expect(m.after).toMatchObject({ phase: 'ready', panelEqual: true, crashed: false, bridgeLate: 0 });
   // v1: bridge.late is always 0 (no bridge is ever installed late on a stood-down page), so the storm's v1 outcome is asserted
   // on the api itself: the last gallery holds the frame's api in embed mode, the bridge stood down and is not installed, and
@@ -386,11 +436,17 @@ test('C25 persistence across a frame reload: an in-page edit comes back on the r
     expect(m.adopted.v1.seed).toMatchObject({ action: 'embed' });
     expect(m.adopted.v1.frame.hash, 'no #code= resurrected on the reload').not.toMatch(/code=/);
   }
-  // the re-checked edit still elaborates clean and the panel is back at the first cursor
+  // the reloaded page boots its editor at 1:1 (QED64 main.ts restores no cursor, in either mode), and the gallery places an
+  // example's first cursor only when the adopted text IS that example (gallery.js adoptShown); an edited buffer is left as the
+  // page shows it (run g-full1b C25: the InfoView showed 'Probe.lean:1:0'). So put the cursor on the #hasse line, as the user
+  // does, through the RELOADED document's API (g.setCursor: api.setCursor; legacy: the editor). Where the page left it is recorded
+  const cursorAfterReload = await g.q(() => { const a = window.qed64.api; const c = a && typeof a.getCursor === 'function' ? a.getCursor() : window.qed64.editor.getPosition(); return c ? { lineNumber: c.lineNumber, column: c.column } : null; }).catch(() => null);
+  await g.setCursor(at.line, at.character);
+  // the re-checked edit still elaborates clean, and the new session's InfoView renders the golden panel at the first cursor
   const d = await g.diagnosticsOf(adopted.q.version);
   const p = await g.expectPanel(at, firstGolden(id), { timeoutMs: 60000 });
-  m.after = { errorsWarnings: errorsWarnings(d).length, panelEqual: p.equal };
-  expect(m.after).toEqual({ errorsWarnings: 0, panelEqual: true });
+  m.after = { cursorAfterReload, errorsWarnings: errorsWarnings(d).length, panelEqual: p.equal, panelDiffs: p.equal ? undefined : p.diffs };
+  expect({ errorsWarnings: m.after.errorsWarnings, panelEqual: m.after.panelEqual }).toEqual({ errorsWarnings: 0, panelEqual: true });
   const rs = await g.resetUI(ex);
   expect(rs.ok, 'Reset restores the example').toBe(true);
 });

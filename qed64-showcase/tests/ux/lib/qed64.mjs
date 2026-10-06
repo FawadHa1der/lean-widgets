@@ -20,7 +20,7 @@
 //                       tests/ux/selectors.json consoleAllowlist, plus a stricter correlation of the allowlisted empty
 //                       console.error with LSP RequestCancelled (-32800) replies seen by the tap.
 //   Metrics             out/ux/<run>/tests/<id>.json per test, merged into out/ux/<run>/metrics.json by global teardown.
-import { spawnSync, execFileSync } from 'node:child_process';
+import { spawnSync, execFileSync, execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -168,16 +168,24 @@ export async function cooldown({ minGiB = 6, ms = 180000 } = {}) {
  */
 export const MEM_FAIL_BYTES = 10.5e9;
 /** Renderer/GPU/browser RSS of the Playwright Chrome processes (bytes, plus GiB for reading; ps rss is KiB). */
+const PS_ARGS = () => (CHANNEL ? ['-axo', 'pid=,ppid=,rss=,command='] : ['-axo', 'rss=,command=']);
 export function chromeRss() {
+  return rssOfPs(spawnSync('ps', PS_ARGS(), { encoding: 'utf8' }).stdout || '');
+}
+/** The same reading without blocking Node's event loop (rssSampler; a synchronous ps blocks Node for as long as ps runs. Whether that caused the 1.7-2.9 s sampler gaps of run g-full1b C10 is not established: see rssSampler). */
+export function chromeRssAsync() {
+  return new Promise((resolve) => execFile('ps', PS_ARGS(), { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (err, stdout) => resolve(rssOfPs(err ? '' : stdout || ''))));
+}
+function rssOfPs(psOut) {
   const out = { totalBytes: 0, rendererBytes: 0, maxRendererBytes: 0, totalGiB: 0, rendererGiB: 0, maxRendererGiB: 0, rendererGB: 0, procs: 0, renderers: 0 };
   let lines;
   if (CHANNEL) {
     // branded Chrome (UX_CHANNEL): only processes descended from this test process (the browser Playwright launched)
-    const rows = (spawnSync('ps', ['-axo', 'pid=,ppid=,rss=,command='], { encoding: 'utf8' }).stdout || '').split('\n').map((l) => /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/.exec(l)).filter(Boolean);
+    const rows = psOut.split('\n').map((l) => /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/.exec(l)).filter(Boolean);
     const mine = new Set([process.pid]); let grew = true;
     while (grew) { grew = false; for (const r of rows) if (!mine.has(+r[1]) && mine.has(+r[2])) { mine.add(+r[1]); grew = true; } }
     lines = rows.filter((r) => +r[1] !== process.pid && mine.has(+r[1]) && /Google Chrome/.test(r[4])).map((r) => `${r[3]} ${r[4]}`);
-  } else lines = (spawnSync('ps', ['-axo', 'rss=,command='], { encoding: 'utf8' }).stdout || '').split('\n');
+  } else lines = psOut.split('\n');
   for (const l of lines) {
     if (!CHANNEL && (!/ms-playwright/.test(l) || !/chrome|Chromium/.test(l))) continue;
     const b = (Number(l.trim().split(/\s+/)[0]) || 0) * 1024;
@@ -188,10 +196,42 @@ export function chromeRss() {
   out.maxRendererGiB = +(out.maxRendererBytes / 1073741824).toFixed(2); out.rendererGB = +(out.rendererBytes / 1e9).toFixed(2);
   return out;
 }
+/**
+ * Sample the browser's RSS every `intervalMs` with an asynchronous ps, so sampling never blocks the test's own timing. One ps
+ * is in flight at a time: a tick that finds one still running is counted in `skipped` and the next ps starts the moment the
+ * running one returns (catch-up), so the samples are never sparser than ps itself allows (the synchronous sampler it replaces
+ * could not sample faster than ps either: a blocked event loop drops interval ticks). stop() is async: it waits for the ps
+ * in flight and KEEPS its reading (that ps started before stop()), so the peak sees every ps that was started.
+ * Diagnostics: each sample records `psMs` (how long its ps took; `t` = when it started); `lagMaxMs` is the largest delay of
+ * an interval tick beyond `intervalMs`, i.e. how long Node's event loop was blocked. Run g-full1b C10 recorded 1.7-2.9 s
+ * gaps between samples of the old synchronous sampler; their cause is NOT established (a ps measured ~21 ms when idle), so
+ * psMs (slow ps) and lagMaxMs (a stalled event loop) are recorded to tell the two apart.
+ */
 export function rssSampler(intervalMs = 1000) {
   const t0 = Date.now(); const samples = []; let peak = { rendererGiB: 0, totalGiB: 0 };
-  const h = setInterval(() => { const r = chromeRss(); samples.push({ t: Date.now() - t0, ...r }); if (r.rendererBytes > (peak.rendererBytes || 0)) peak = { ...r, t: Date.now() - t0 }; }, intervalMs);
-  return { samples, get peak() { return peak; }, stop: () => clearInterval(h) };
+  let inflight = null; let stopped = false; let skipped = 0; let catchUp = false; let lagMaxMs = 0; let lastTick = t0;
+  const take = () => {
+    const ts = Date.now();
+    inflight = chromeRssAsync().then((r) => {
+      samples.push({ t: ts - t0, psMs: Date.now() - ts, ...r });
+      if (r.rendererBytes > (peak.rendererBytes || 0)) peak = { ...r, t: ts - t0 };
+    }, () => {}).then(() => {
+      inflight = null;
+      if (catchUp && !stopped) { catchUp = false; take(); }
+    });
+  };
+  const h = setInterval(() => {
+    const now = Date.now(); lagMaxMs = Math.max(lagMaxMs, now - lastTick - intervalMs); lastTick = now;
+    if (inflight) { skipped++; catchUp = true; return; }
+    take();
+  }, intervalMs);
+  return {
+    samples, get peak() { return peak; }, get skipped() { return skipped; }, get lagMaxMs() { return lagMaxMs; },
+    /** Stop ticking; resolves once the ps in flight (if any) has returned and been recorded. */
+    stop: async () => { stopped = true; clearInterval(h); while (inflight) await inflight; },
+    /** Time each sample stands for (until the next sample started; the last one: intervalMs), for "ms over a line". */
+    spanMs: (i) => (i + 1 < samples.length ? samples[i + 1].t - samples[i].t : intervalMs),
+  };
 }
 /**
  * Bytes the server actually sent (scripts/serve.mjs request log: `<iso> GET <url> <status> <sent>/<len> <ms>ms [route]`)
@@ -495,7 +535,7 @@ class QedDriver {
     const d = await get();
     return d ? d.last.diags : null;
   }
-  tap() { return this.q(() => window.__uxTap ? { pub: window.__uxTap.pub.length, errReplies: window.__uxTap.errReplies.slice(-50), calls: window.__uxTap.calls, installedAt: window.__uxTap.installedAt } : null).catch(() => null); }
+  tap() { return this.q(() => window.__uxTap ? { pub: window.__uxTap.pub.length, errReplies: window.__uxTap.errReplies.slice(-50), calls: window.__uxTap.calls, connectAt: (window.__uxTap.connectAt || []).slice(-50), installedAt: window.__uxTap.installedAt } : null).catch(() => null); }
   telemetry() {
     return this.q(() => {
       const r = window.qed64.relay; const hatch = window.qed64.test;

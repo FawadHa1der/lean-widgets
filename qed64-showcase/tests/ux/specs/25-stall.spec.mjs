@@ -62,6 +62,16 @@ const DEFER_MS = BUILTIN ? 30000 : 10000;
 // status().liveness.qed64.totals: counted from the API's `liveness` events in v1 (no 'probes': the event has no such kind,
 // so the gallery reports probes: null), from QED64's status().liveness counters on a legacy page
 const TOTAL_KEYS = API ? ['answered', 'stalls', 'resumed', 'rescues'] : ['probes', 'answered', 'stalls', 'resumed', 'rescues'];
+// C22 on a v1 pin whose edit coalescer caps the requests in flight (QED64 e4cffcc, EMBEDDING.md §7.8) WITHOUT letting
+// $/lean/rpc/keepAlive pass a waiting request: during a silence over Lean's 30 s RPC keep-alive window the InfoView's keep-alives
+// wait behind the 6 occupied slots, Lean expires the RPC session, and when the slots free it answers each queued rpc call -32900
+// 'Outdated RPC session' (its own reply, qed64Kind null) although no session was replaced (run g-full1b, C22: 9 lines at the ends
+// of the 38 s #eval and the 55 s saturated sleep). A QED64 defect (draft report only). Only these pins declare the
+// rpcKeepAliveStarved scenario (selectors.json: paired one-to-one with Lean's own -32900 replies); a pin that fixes the queueing
+// is not listed, so the line fails C22 again there. C22 also checks below that every such reply ends a phase silent for 30 s+,
+// that no relay-made -32900 reply occurred, and that the InfoView reconnected and renders its panel after each burst.
+const KEEPALIVE_STARVED_PINS = ['5c327c2'];
+const KEEPALIVE_MS = 30000; // Lean 4.34 RpcSession.keepAliveTimeMs (Lean/Server/FileWorker/Utils.lean:188)
 
 /** Detach the current session's output inside the QED64 page (see the header). Returns the frozen session id. */
 const freeze = (g) => g.q(() => {
@@ -392,6 +402,15 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   const m = ux.metrics; const id = 'dist-lens'; const ex = BY_ID[id]; const gold = GOLDENS[id];
   const s = await ux.launch({ profile: 'warm' });
   const g = await Gallery.open(s, { hash: id });
+  // v1: Lean's own 'Outdated RPC session' replies (no session replaced) and the RPC connects the tap saw, per silent phase (see KEEPALIVE_STARVED_PINS)
+  const keepAliveStarved = API && KEEPALIVE_STARVED_PINS.includes(PIN.id);
+  if (keepAliveStarved) ux.scenarios.push('rpcKeepAliveStarved');
+  const leanOutdated = () => s.reports.filter((x) => x.kind === 'errorReply' && x.code === -32900 && x.message === 'Outdated RPC session' && (x.qed64Kind ?? null) === null);
+  const connects = async () => { const tp = await g.tap(); return tp && tp.calls ? (tp.calls['$/lean/rpc/connect'] || 0) : null; };
+  // the first $/lean/rpc/connect the editor sent at or after `sinceT` (page clock, the same clock as an error reply's own `t`):
+  // the reconnect witness is tied to the burst's first reply, so a connect from before the burst cannot count
+  const reconnectSince = async (sinceT) => { const tp = await g.tap(); const c = tp && tp.connectAt ? tp.connectAt.find((x) => x >= sinceT) : undefined; return c === undefined ? null : c; };
+  const ka = { pin: PIN.id, scenario: keepAliveStarved, phases: {} };
   expect(g.boot.s.phase).toBe('ready');
   expect(g.boot.s.liveness).toMatchObject({ mode: 'auto', probeAfterMs: 10000, probeTimeoutMs: 5000, wedged: 0, restarts: 0 });
   expect(g.boot.s.liveness.qed64.builtIn, `pin ${PIN.id}'s page ${BUILTIN ? 'has' : 'has no'} liveness of its own`).toBe(BUILTIN);
@@ -411,6 +430,7 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   // (2) a long, silent command appended to the example: one input event, so one didChange
   const SLEEP_MS = 38000;
   const lv0 = (await g.status()).liveness; const qv = await g.qstatus();
+  if (API) ka.phases.eval = { connectsBefore: await connects() };
   await g.setCursor(ex.text.split('\n').length - 1, 0);
   await g.focusEditor();
   await g.page.keyboard.insertText(`\n#eval IO.sleep ${SLEEP_MS}\n`);
@@ -422,6 +442,7 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     return q.phase === 'ready' && q.version > qv.version && Date.now() - t0 > 2000 ? { st, q } : null;
   }, { timeoutMs: SLEEP_MS + 120000, intervalMs: 500 });
   expect(done, 'the slow command finished').not.toBeNull();
+  if (API) Object.assign(ka.phases.eval, { start: t0, end: Date.now() });
   const lv = done.st.liveness;
   // v1: QED64's frame clock read right after the verdict (done.st was read just BEFORE the ready qstatus of the same poll)
   const frameAgoAfterReady = API ? (await g.status()).liveness.qed64.lastFrameAgoMs : null;
@@ -474,11 +495,21 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   // (3) a saturated task pool: 24 parallel sleeping proofs (see the header). Same session, no reload: one edit.
   const rs3 = await g.resetUI(ex);
   expect(rs3.ok).toBe(true);
+  // v1: after a burst of Lean's 'Outdated RPC session' replies at the end of (2), the InfoView reconnected (a new $/lean/rpc/connect)
+  if (API) {
+    const pe = ka.phases.eval; pe.maxIdleMs = m.eval.maxIdleMs;
+    pe.replies = leanOutdated().filter((x) => x.recvWall >= pe.start && x.recvWall <= pe.end + 1000).map((x) => ({ id: x.id, t: x.t, afterStartMs: x.recvWall - pe.start, afterEndMs: x.recvWall - pe.end }));
+    pe.burstT = pe.replies.length ? Math.min(...pe.replies.map((x) => x.t)) : null;
+    pe.reconnectAt = pe.replies.length ? await until(() => reconnectSince(pe.burstT), { timeoutMs: 30000, intervalMs: 500 }) : null;
+    pe.reconnectAfterBurstMs = pe.reconnectAt === null ? null : pe.reconnectAt - pe.burstT;
+    pe.connectsAfter = await connects();
+  }
   const SAT_N = 24; const SAT_MS = 55000;
   const lv3 = (await g.status()).liveness; const q3 = await g.qstatus(); const st3 = (await g.status()).stall;
   const via3 = { ...lv3.aliveVia }; const ml3 = { ...lv3.mainLoop };
   // (Mathlib's unusedTactic linter warns that `sleep` "does nothing"; a user silencing it is part of the scenario)
   const sat = Array.from({ length: SAT_N }, (_, i) => `set_option linter.unusedTactic false in\ntheorem showcaseSat${i} : True := by sleep ${SAT_MS}; trivial`).join('\n');
+  if (API) ka.phases.saturated = { connectsBefore: await connects() };
   await g.setCursor(ex.text.split('\n').length - 1, 0);
   await g.focusEditor();
   await g.page.keyboard.insertText(`\n${sat}\n`);
@@ -491,6 +522,7 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     return q.phase === 'ready' && q.version > q3.version && Date.now() - t3 > 2000 ? { st, q } : null;
   }, { timeoutMs: SAT_MS + 180000, intervalMs: 500 });
   expect(done3, 'the saturated elaboration finished').not.toBeNull();
+  if (API) Object.assign(ka.phases.saturated, { start: t3, end: Date.now() });
   const lvS = done3.st.liveness; const frameAgoAfterReady3 = API ? (await g.status()).liveness.qed64.lastFrameAgoMs : null; const d3 = await g.diagnosticsOf(done3.q.version); const q4 = await g.qstatus();
   const cards = s3.filter((x) => x.card);
   m.saturated = {
@@ -540,6 +572,43 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   // a 45 s card during this healthy (but silent) elaboration says so
   for (const v of m.saturated.cardVariants) expect(v, 'a card shown while Lean answers is worded "still working"').toBe('alive');
   for (const t of m.saturated.cardTitles) expect(t).toBe('Lean is still working');
+  if (API) {
+    // v1 (see KEEPALIVE_STARVED_PINS): what makes an 'Outdated RPC session' line legitimate here, checked whenever Lean sent one
+    // (the console oracle accepts the lines only on the listed pins, each paired with its own reply below):
+    // (a) every such reply of Lean's ends a phase silent for at least Lean's 30 s keep-alive window (within 1 s of its ready),
+    //     never earlier in it and never outside (2) and (3);
+    // (b) no -32900 reply the relay made itself (qed64Kind set: a restart, halt or orphaned request) in the whole test, and the
+    //     session, restart, death and reboot counters above (unchanged) prove nothing was replaced;
+    // (c) after each burst the InfoView reconnected (a $/lean/rpc/connect the tap saw at or after the burst's FIRST reply, both
+    //     on the page clock: tap.connectAt against the replies' own `t`) and renders the golden panel
+    //     at the example's first cursor on the final text.
+    const ps = ka.phases.saturated; ps.maxIdleMs = m.saturated.maxIdleMs;
+    ps.replies = leanOutdated().filter((x) => x.recvWall >= ps.start && x.recvWall <= ps.end + 1000).map((x) => ({ id: x.id, t: x.t, afterStartMs: x.recvWall - ps.start, afterEndMs: x.recvWall - ps.end }));
+    ps.burstT = ps.replies.length ? Math.min(...ps.replies.map((x) => x.t)) : null;
+    const inPhase = (x) => Object.values(ka.phases).some((p) => x.recvWall >= p.start && x.recvWall <= p.end + 1000);
+    ka.outside = leanOutdated().filter((x) => !inPhase(x)).map((x) => ({ id: x.id, recvWall: x.recvWall }));
+    ka.relayMade = s.reports.filter((x) => x.kind === 'errorReply' && x.code === -32900 && (x.qed64Kind ?? null) !== null).map((x) => ({ id: x.id, qed64Kind: x.qed64Kind, message: x.message }));
+    if (ps.replies.length) {
+      const fc = BY_ID[id].firstCursor; const at0 = { line: fc.line, character: fc.character };
+      await g.setCursor(at0.line, at0.character);
+      const p = await g.expectPanel(at0, goldenCursor(id, at0.line, at0.character).panels[0], { timeoutMs: 60000 });
+      ka.panelAfter = { equal: p.equal, diffs: p.equal ? undefined : p.diffs };
+      ps.reconnectAt = await until(() => reconnectSince(ps.burstT), { timeoutMs: 30000, intervalMs: 500 });
+      ps.reconnectAfterBurstMs = ps.reconnectAt === null ? null : ps.reconnectAt - ps.burstT;
+    } else ps.reconnectAt = null;
+    ps.connectsAfter = await connects();
+    m.keepAlive = ka;
+    console.log(`C22 keep-alive ${JSON.stringify(ka)}`);
+    expect(ka.outside, 'every "Outdated RPC session" reply of Lean ends a long silent phase ((2) or (3))').toEqual([]);
+    expect(ka.relayMade, 'no -32900 reply the relay made itself (a restart, halt or orphaned request)').toEqual([]);
+    for (const [name, p] of Object.entries(ka.phases)) {
+      if (!p.replies.length) continue;
+      expect(p.maxIdleMs, `${name}: the phase whose end the replies follow was silent for at least ${KEEPALIVE_MS} ms`).toBeGreaterThanOrEqual(KEEPALIVE_MS);
+      expect(Math.min(...p.replies.map((x) => x.afterStartMs)), `${name}: no reply before Lean's keep-alive window could expire`).toBeGreaterThanOrEqual(KEEPALIVE_MS);
+      expect(p.reconnectAt, `${name}: the InfoView reconnected after the burst (a $/lean/rpc/connect at or after the burst's first reply, page clock ${p.burstT}; connects ${p.connectsBefore} -> ${p.connectsAfter})`).not.toBeNull();
+    }
+    if (ka.panelAfter) expect(ka.panelAfter.equal, `the reconnected InfoView renders the golden panel at the first cursor: ${ka.panelAfter.diffs}`).toBe(true);
+  }
   await sleep(200);
 });
 

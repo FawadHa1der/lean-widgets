@@ -76,7 +76,8 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
     expect(b.s.api.capabilities).toMatchObject({ editorRpc: true, widgetSourceCache: true, documents: true, events: true, restart: true, embedMode: true, liveness: true, memory: true, offers: true });
     expect(a && a.revision, 'pin.json apiRevision is the page\'s api.revision').toBe(API_REVISION);
     expect(a && a.frozen, 'api and api.capabilities are frozen').toBe(true);
-    expect(b.s.seed, 'embed mode: the gallery seeds no buffer').toEqual({ saved: false, action: 'embed', error: null });
+    // the round-5 fields (selectors.json _status_v1): a clean cold boot holds no document, has storage, and lost nothing
+    expect(b.s.seed, 'embed mode: the gallery seeds no buffer, displaces nothing, and storage is neither blocked nor failing').toEqual({ saved: false, action: 'embed', error: null, blocked: false, keepFailed: null, unsaved: null });
     expect(frame.search, 'the frame runs in embed mode on the widgets8 overlay').toMatch(/(^\?|&)embed=1(&|$)/);
     expect(frame.search).toMatch(/(^\?|&)snapshots=snapshots\/widgets8(&|$)/);
     expect(frame.hash, '#code= was read once and dropped (§3.1)').not.toMatch(/code=/);
@@ -151,8 +152,9 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
   }
   await sleep(1500);
   m.afterAll = { rss: chromeRss(), heap: await g.telemetry() };
-  rss.stop();
+  await rss.stop(); // waits for the ps in flight and keeps its reading
   m.peak = rss.peak; m.samples = rss.samples.length;
+  m.sampler = { n: rss.samples.length, skipped: rss.skipped, lagMaxMs: rss.lagMaxMs, maxPsMs: Math.max(0, ...rss.samples.map((x) => x.psMs || 0)), maxGapMs: rss.samples.reduce((a, x, i) => (i ? Math.max(a, x.t - rss.samples[i - 1].t) : a), 0) };
   m.heapGrewAfterRegion = m.afterAll.heap && m.atReady.heap ? m.afterAll.heap.currentBytes > m.atReady.heap.currentBytes : null;
   const q = await g.qstatus();
   m.relay = q.stats;

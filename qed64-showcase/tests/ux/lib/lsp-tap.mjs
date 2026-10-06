@@ -5,7 +5,8 @@
 // Installed by an init script into every frame; it only acts in the QED64 page document (pathname '/'). It wraps
 // qed64.relay.toClient as soon as the page assigns globalThis.qed64 (before the editor starts, so even the boot-time
 // codeAction cancellation is seen). The relay calls this.toClient dynamically (lsp-relay.ts:137,218). Records
-// publishDiagnostics per document version (window.__uxTap.pub) and reports every LSP error reply to Node through
+// publishDiagnostics per document version (window.__uxTap.pub), the page-clock time of every $/lean/rpc/connect the editor
+// sends (tap.connectAt: C22's reconnect-after-the-burst witness, compared with the error replies' own page-clock `t`), and reports every LSP error reply to Node through
 // the exposed binding __uxReport (survives reloads): RequestCancelled (-32800) and, since QED64's edit coalescing
 // (EMBEDDING.md §7.8), ContentModified (-32801, error.data.qed64.kind 'superseded') alike — both pair with lean4monaco's
 // logged console.error lines (selectors.json consoleAllowlist pairWith, fail-closed without these reports); the reply's
@@ -15,7 +16,7 @@
 export const TAP_SRC = `(() => {
   try { if (location.pathname !== '/' || window.__uxTapInstalled) return; } catch (e) { return; }
   window.__uxTapInstalled = true;
-  const tap = window.__uxTap = { pub: [], errReplies: [], calls: {}, installedAt: null, frames: 0, lastFrameAt: null, probeReplies: 0 };
+  const tap = window.__uxTap = { pub: [], errReplies: [], calls: {}, connectAt: [], installedAt: null, frames: 0, lastFrameAt: null, probeReplies: 0 };
   const rep = (o) => { try { if (typeof window.__uxReport === 'function') window.__uxReport(o); } catch (e) {} };
   let wrapped = null;
   const tryInstall = () => {
@@ -42,7 +43,7 @@ export const TAP_SRC = `(() => {
       } catch (e) {}
       return tc.apply(this, arguments);
     };
-    r.fromClient = function (m) { try { if (m && m.method) { const k = typeof m.id === 'string' && m.id.indexOf('showcase-live-') === 0 ? 'showcase-live' : m.method; tap.calls[k] = (tap.calls[k] || 0) + 1; } } catch (e) {} return fc.apply(this, arguments); };
+    r.fromClient = function (m) { try { if (m && m.method) { const k = typeof m.id === 'string' && m.id.indexOf('showcase-live-') === 0 ? 'showcase-live' : m.method; tap.calls[k] = (tap.calls[k] || 0) + 1; if (k === '$/lean/rpc/connect') { tap.connectAt.push(Date.now()); if (tap.connectAt.length > 200) tap.connectAt.splice(0, 100); } } } catch (e) {} return fc.apply(this, arguments); };
     wrapped = r; tap.installedAt = Date.now(); rep({ kind: 'tapInstalled', t: Date.now() });
     return true;
   };

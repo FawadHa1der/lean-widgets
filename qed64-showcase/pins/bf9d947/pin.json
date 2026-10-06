@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "bf9d947",
+  "buildId": "wasm64-3ab1c6a9da03bc29",
+  "registeredAt": "2026-10-06T18:45:00Z",
+  "label": "H: QED64 bf9d947 (main, = G 5c327c2 + the keepAlive fix: a $/lean/rpc/keepAlive never waits for a request slot), E/F/G runtime 0035b (kernel a8817d01f9)",
+  "status": "registered 2026-10-06 (first as a staged test pin from the owner worktree, then confirmed: the same commit is on origin main, pushed and deployed by QED64; live qed64-build.json shell-7d85e161da8a56e4 == ours); strict C22 passed on it (run h-c22-1) before the push",
+  "qed64": {
+    "commit": "bf9d94788100235fe9c64f653a11d98a915d2a16",
+    "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "kernel": "a8817d01f97227b1b04cc7d661b9e396f6ca8f34"
+  },
+  "mainBundle": "/assets/index-CQnzGd9k.js",
+  "consoleSites": {
+    "627": "fc6ad361814cd79bf5e8ee8e0157281206e1fb3cf667cbcea4209a20cf561b6e"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035b/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The #52 worker liveness and the #55 lifetime locks as in E, now projected by the page API: status().liveness {stalled, lastAnswerAgoMs, lastFrameAgoMs, probeAfterMs, wedgeAfterMs, graceMs} and the `liveness` event (docs/EMBEDDING.md §2.2, §2.4). The gallery's own probe stands down on capabilities.liveness."
+  },
+  "knownLimitations": [],
+  "notes": "bf9d947 = 5c327c2 (G) + one commit: frontend/src/embed/edit-coalescer.ts forwards $/lean/rpc/keepAlive without waiting for a request slot (our C22 found the starvation on G: 9 Outdated RPC session lines; 0 on bf9d947), plus tests and docs. Same runtime manifest, snapshot index, profiles tree and KERNEL-PIN as D, E, F and G: their runtime stores serve H unchanged, nothing rebaked."
+}

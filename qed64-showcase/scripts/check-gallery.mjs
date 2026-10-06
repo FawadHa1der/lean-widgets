@@ -543,6 +543,72 @@ section('8c. tests/ux/bringup/console.mjs classifyConsole against selectors.json
       && classifyConsole(W({ messages: [wErr, wErr], pageErrors: [wPe] }), A, { scenarios: ['qed64WedgedReboot'] }).ok && !classifyConsole(W({ messages: [crashErr] }), A, { scenarios: ['qed64WedgedReboot'] }).ok,
       'QED64\'s "wedged" reboot replies only in the qed64WedgedReboot scenario (a "crash" death is not covered)');
   }
+  {
+    // v1 pins (QED64 5c327c2+, EMBEDDING.md §4): a missing / unreachable ?snapshots= overlay index is a named boot failure that
+    // main()'s catch console.errors once (run g-full1b C8 stock, C12 overlay-offline-stock): bootFailure[4], first line anchored
+    const stack = '\n    at http://localhost:5190/assets/index-X.js:1318:116665\n    at async rnn (http://localhost:5190/assets/index-X.js:1318:117810)';
+    const ix404 = { type: 'error', text: `Error: ?snapshots=snapshots/nope: /snapshots/nope/index.json: HTTP 404${stack}`, url: MAIN_BUNDLE, line: 1369 };
+    const ixNet = { ...ix404, text: `Error: ?snapshots=snapshots/widgets8: Failed to fetch${stack}` };
+    const bf = { scenarios: ['bootFailure'] };
+    ok(!classifyConsole(W({ messages: [ix404] }), A).ok && !classifyConsole(W({ messages: [ixNet] }), A).ok
+      && classifyConsole(W({ messages: [ix404] }), A, bf).ok && classifyConsole(W({ messages: [ixNet] }), A, bf).ok
+      && classifyConsole(W({ messages: [{ ...ix404, text: 'Error: ?snapshots=snapshots/nope: /snapshots/nope/index.json: HTTP 404' }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [ixNet] }), A, { scenarios: ['networkCut'] }).ok,
+      'the v1 overlay-index boot failure ("Error: ?snapshots=<dir>: HTTP <status> | Failed to fetch") only in the bootFailure scenario');
+    ok(!classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=x: not JSON${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: boom${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: runtime manifest: HTTP 500${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=snapshots/nope: /snapshots/other/index.json: HTTP 404${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=snapshots/nope: /snapshots/nope/index.json: HTTP 404 extra${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ixNet, url: '/showcase/gallery.js' }] }), A, bf).ok,
+      'bootFailure[4] rejects another index fault text, another error, a mismatched directory, a longer first line and another file');
+    // the directory is ONE captured value (QED64 fetches /<dir>/index.json for ?snapshots=<dir>; params.ts DIR_RULES allows an
+    // optional 'snapshots/' prefix): a bare <dir> matches itself, and a prefix on only one side never matches
+    ok(classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=nope: /nope/index.json: HTTP 404${stack}` }] }), A, bf).ok
+      && classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=nope: Failed to fetch${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=nope: /snapshots/nope/index.json: HTTP 404${stack}` }] }), A, bf).ok
+      && !classifyConsole(W({ messages: [{ ...ix404, text: `Error: ?snapshots=snapshots/nope: /nope/index.json: HTTP 404${stack}` }] }), A, bf).ok,
+      'bootFailure[4]: the directory named twice is the same whole value (a "snapshots/" prefix on one side only is rejected)');
+  }
+  {
+    // pin G (QED64 e4cffcc's request cap starves $/lean/rpc/keepAlive; run g-full1b C22): 'Outdated RPC session' with no session
+    // replaced, only in rpcKeepAliveStarved, each line paired with its own Lean -32900 reply (qed64Kind null, exact message)
+    const od = { type: 'error', text: 'Outdated RPC session', url: MAIN_BUNDLE, line: 627, wall: T0 };
+    const lean = (dt, o = {}) => ({ kind: 'errorReply', code: -32900, message: 'Outdated RPC session', qed64Kind: null, recvWall: T0 + dt, ...o });
+    const ka = { scenarios: ['rpcKeepAliveStarved'] };
+    ok(!classifyConsole(W({ messages: [od] }), A, { reports: [lean(-1)] }).ok && classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-1)] }).ok
+      && classifyConsole(W({ messages: [od, od] }), A, { ...ka, reports: [lean(-1), lean(0)] }).ok,
+      '"Outdated RPC session" without a restart: only in rpcKeepAliveStarved, paired one-to-one with Lean\'s own -32900 replies');
+    ok(!classifyConsole(W({ messages: [od] }), A, ka).ok
+      && !classifyConsole(W({ messages: [od, od] }), A, { ...ka, reports: [lean(-1)] }).ok
+      && !classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-1, { qed64Kind: 'restart', message: 'QED64: restarting with exact imports' })] }).ok
+      && !classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-1, { qed64Kind: 'restart' })] }).ok
+      && !classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-1, { message: 'something else' })] }).ok
+      && !classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-1, { code: -32800 })] }).ok
+      && !classifyConsole(W({ messages: [od] }), A, { ...ka, reports: [lean(-5000)] }).ok
+      && !classifyConsole(W({ messages: [{ ...od, line: 12 }] }), A, { ...ka, reports: [lean(-1)] }).ok,
+      'rpcKeepAliveStarved is fail-closed: no reports, one reply for two lines, a relay-made -32900 (qed64Kind set), another message or code, a reply 5 s before, another line all fail');
+    // the -32800 pool is unchanged by the filtered -32900 pool
+    ok(classifyConsole(W({ messages: [empty, od] }), A, { ...ka, reports: [cancel(-1), lean(-1)] }).ok && !classifyConsole(W({ messages: [empty, od] }), A, { ...ka, reports: [lean(-1)] }).ok,
+      'an empty -32800 line and a keep-alive line each need their own reply of their own code');
+    // ... and with the filtered -32900 pool active, consoleError[0] (empty) and consoleError[2] ("client cancelled") still draw on
+    // ONE shared -32800 pool: one -32800 reply never explains both, two do, and both entries see the same pool
+    const qc = { type: 'error', text: 'QED64: the client cancelled this request before it reached the checker', url: MAIN_BUNDLE, line: 627, wall: T0 + 200 };
+    const e1 = { ...empty, wall: T0 + 100 };
+    const shared1 = classifyConsole(W({ messages: [e1, qc, od] }), A, { ...ka, reports: [cancel(0), lean(-1)] });
+    const shared2 = classifyConsole(W({ messages: [e1, qc, od] }), A, { ...ka, reports: [cancel(0), cancel(1), lean(-1)] });
+    ok(!shared1.ok && shared1.unpaired.length === 1 && shared1.unpaired[0].key !== 'rpcKeepAliveStarved[0]'
+      && shared2.ok && shared2.paired['consoleError[0]'].replies === 2 && shared2.paired['consoleError[2]'].replies === 2 && shared2.paired['rpcKeepAliveStarved[0]'].replies === 1,
+      `with rpcKeepAliveStarved active the two -32800 entries still share one pool (one reply: unpaired ${shared1.unpaired.length}; two replies: ok ${shared2.ok}, pools ${JSON.stringify(shared2.paired)})`);
+    // rpcKeepAliveStarved and relayRestartOrReboot are never declared together (selectors.json exclusiveScenarios): first match
+    // wins, so relayRestartOrReboot[0] (unpaired '^Outdated RPC session$') would switch the keep-alive pairing off
+    const both = classifyConsole(W({ messages: [od] }), A, { scenarios: ['rpcKeepAliveStarved', 'relayRestartOrReboot'] });
+    const bothQuiet = classifyConsole(W({}), A, { scenarios: ['relayRestartOrReboot', 'rpcKeepAliveStarved'], reports: [] });
+    ok(!both.ok && both.conflicts.length === 1 && !bothQuiet.ok && bothQuiet.conflicts.length === 1
+      && classifyConsole(W({}), A, { scenarios: ['rpcKeepAliveStarved'], reports: [] }).ok && classifyConsole(W({}), A, { scenarios: ['relayRestartOrReboot'], reports: [] }).ok
+      && (SELS.consoleAllowlist.exclusiveScenarios || []).some((g) => g.scenarios.includes('rpcKeepAliveStarved') && g.scenarios.includes('relayRestartOrReboot')),
+      'rpcKeepAliveStarved with relayRestartOrReboot is a conflicting verdict (not ok) even with nothing logged; each alone is fine');
+  }
 }
 
 // ---------------------------------------------------------------- 9. the controller in a simulated page
