@@ -28,7 +28,7 @@ qed64-showcase/         the widgets in the QED64 page
   pins/<id>/            per QED64 pin: pin.json and QED64.lock.json (sha256 of every file that is served)
   gallery/              the /showcase/ page (rail of 8 examples, iframe of the stock page, a small bridge)
   scripts/              showcase.sh (one entry point), build-shell, fetch-artifacts, serve, deploy scripts, …
-  tests/ux/             Playwright UX suite (34 tests)
+  tests/ux/             Playwright UX suite (35 tests)
   infra/                Cloudflare Worker (worker.js), its tests, wrangler pin, committed UX verdict record
   lean/                 widget examples, native goldens, native delta lists
   docs/                 architecture, build from source, deploy, results, history
@@ -98,11 +98,11 @@ scripts/showcase.sh verify          # chain of trust: sources, page, binaries an
 scripts/showcase.sh gallery         # static gallery gate (check-gallery + sim-gallery), prints the gallery hash
 scripts/showcase.sh serve           # http://localhost:5190/showcase/  (stop: scripts/showcase.sh stop)
 npx playwright install chromium chromium-headless-shell
-scripts/showcase.sh ux              # the Playwright UX suite (34 tests, 25–40 min; one browser at a time on the host)
+scripts/showcase.sh ux              # the Playwright UX suite (35 tests, 25–40 min; one browser at a time on the host)
 ```
 
 `bootstrap` checks out QED64's sources (the submodule), builds QED64's page from them with QED64's own build and
-installs it only if all 58 files are byte-identical to the committed lock. It then fetches QED64's binaries and the
+installs it only if all its files (58 for E, 59 for F and G) are byte-identical to the committed lock. It then fetches QED64's binaries and the
 widget overlays by path from the artifact origin and checks every file's sha256 against the lock, links the served pin
 and runs `verify`. So an origin never has to be trusted. `--origin` is the deployed showcase, or `scripts/serve.mjs`
 of a checkout that has the artifacts (`PORT=5297 scripts/showcase.sh serve` there). `--qed64-origin
@@ -152,9 +152,12 @@ GitHub runner. A full `lean-ci` run clones Mathlib once per Mathlib-dependent pa
   snapshot (`widgets8`: the eight packages; `widgets7`: without DistLens). QED64 loads it like its own `mathlib`
   region, so the example files start with a plain `import Mathlib` / `import HasseView` and also work in VS Code.
 * **The gallery** iframes the stock page from the same origin, checks that the region is paired with the runtime
-  before navigating, fills the editor and moves the cursor through QED64's page API, and installs a small bridge for
-  two InfoView defects of the shipped page (D1, D2 in the
-  [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)).
+  before navigating, and fills the editor and moves the cursor through the page. On the QED64 pins up to E `33b0967`
+  (what the live site serves) it uses the page's internal hooks and installs a small bridge for three InfoView defects
+  of the shipped page (D1, D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins,
+  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure and is the active pin
+  of a local checkout since 2026-10-06, with F staged; neither is deployed), it uses QED64's declared embedding API v1
+  (`qed64.api`, `?embed=1`, `#code=`); those defects are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1").
 * **Tests:** a static gate (`showcase.sh gallery`), headless wasm checks in Node, and the Playwright UX suite.
   Every full `ux` run is recorded with the gallery, lock and overlay hashes it ran on. A run is a VERDICT only if it
   was green on unchanged inputs, and a deploy needs a verdict on exactly the inputs it deploys.

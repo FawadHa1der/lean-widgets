@@ -92,6 +92,15 @@ const lock = JSON.parse(lockBuf.toString('utf8'));
 ok(pin.buildId === lock.qed64.buildId && pin.qed64.commit === lock.qed64.commit && pin.lockSha256 === crypto.createHash('sha256').update(lockBuf).digest('hex'),
   `pin.json buildId ${pin.buildId} == lock; commit ${pin.qed64.commit.slice(0, 12)}; lockSha256 matches`);
 ok(JSON.stringify(pin.bundleBuildIds) === JSON.stringify([pin.buildId]), `release bundle names exactly [${pin.bundleBuildIds}]`);
+{ // embedding contract v1 (EMBEDDING.md §4): apiRevision / shell mirror release/<pin>/dist/qed64-build.json, null when the pin has none
+  const bf = path.join(SC, 'release', pin.pin, 'dist', 'qed64-build.json');
+  const b = fs.existsSync(bf) ? JSON.parse(read(bf)) : null;
+  const wantApi = b && typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null;
+  const wantShell = b && typeof b.shell === 'string' && b.shell ? b.shell : null;
+  ok('apiRevision' in pin && 'shell' in pin && pin.apiRevision === wantApi && pin.shell === wantShell && (!b || (b.schema === 'qed64.build/v1' && b.buildId === pin.buildId)),
+    `pin.json apiRevision ${JSON.stringify(pin.apiRevision)} / shell ${JSON.stringify(pin.shell)} == ${b ? `release/${pin.pin}/dist/qed64-build.json (${b.schema}, buildId ${b.buildId})` : 'null (no qed64-build.json: legacy page)'}`);
+  console.log(`info  gallery mode on this pin: ${pin.apiRevision != null ? `V1 (page API ${pin.apiRevision})` : 'legacy (qed64.buffer seed, relay waits)'}`);
+}
 
 // ---------------------------------------------------------------- 5. HTML structure
 section('5. index.html structure');
@@ -172,6 +181,13 @@ const L = await import(pathToFileURL(path.join(G, 'lib.js')).href);
     && !m('abc').ok && !m('-1').ok && m('3.1').bytes % (256 * 2 ** 20) === 0, 'parseMem: null, 3, 2.5, clamp 9→6, 0.1→1, rejects abc/-1, 256 MiB steps');
   ok(L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', 'widgets7') === '/snapshots/widgets7/init.35c8c5f5419e0c33.snapz'
     && L.rerootUrl('https://x/y.snapz', 'w') === 'https://x/y.snapz' && L.frameUrl('widgets8') === '/?snapshots=snapshots/widgets8', 'rerootUrl / frameUrl mirror qed64-boot.ts');
+  { // the v1 frame URL (EMBEDDING.md §3, §4): embed=1, the overlay, &memory=<GiB>, #code=<encodeURIComponent(text)>; the legacy form is unchanged
+    const text = 'import Mathlib\nimport HasseView\n\n/-! # é & #1 -/\n';
+    const u = L.frameUrl('widgets8', { embed: true, memoryGiB: 3, code: text });
+    ok(u === `/?embed=1&snapshots=snapshots/widgets8&memory=3#code=${encodeURIComponent(text)}` && L.codeOfFrameUrl(u) === text && L.frameUrl('widgets8', { embed: true }) === '/?embed=1&snapshots=snapshots/widgets8'
+      && L.frameUrl('widgets7', { embed: true, code: 'x' }) === '/?embed=1&snapshots=snapshots/widgets7#code=x' && L.codeOfFrameUrl('/?snapshots=snapshots/widgets8') === null && L.frameUrl('widgets8', {}) === '/?snapshots=snapshots/widgets8' && L.DOCUMENT_KEY === 'qed64-showcase:document',
+      `frameUrl v1 options: ${u.slice(0, 70)}… (embed, memory, #code= round-trips through codeOfFrameUrl); legacy form unchanged`);
+  }
   const cs = (st, r) => L.classifyStatus(st, r).kind;
   ok(cs(null, false) === 'none' && cs({ phase: 'ready' }, false) === 'ready' && cs({ phase: 'booting', relay: 'halted' }, true) === 'halted'
     && cs({ phase: 'booting', lastDeath: { reason: 'bootFailed', message: "snapshot 'init' failed to load" } }, false) === 'bootFailed'
@@ -474,6 +490,21 @@ section('8c. tests/ux/bringup/console.mjs classifyConsole against selectors.json
   ok(!classifyConsole(W({ messages: [empty] }), A, { reports: [cancel(-5000)] }).ok && !classifyConsole(W({ messages: [empty] }), A, { reports: [cancel(+2000)] }).ok, 'a -32800 reply 5 s before or 2 s after does not explain it');
   ok(!classifyConsole(W({ messages: [empty] }), A, { reports: [{ kind: 'errorReply', code: -32603, recvWall: T0 }] }).ok, 'a reply with another code (-32603) does not explain it');
   ok(classifyConsole(W({ messages: [empty] }), A, { reports: [cancel(+300)] }).ok, 'a -32800 reply 0.3 s after (same tick ordering) explains it');
+  {
+    // pin G (QED64 e4cffcc): the coalescer's local RequestCancelled for a still-queued request, at the same site, paired with its own -32800 reply
+    const qc = { type: 'error', text: 'QED64: the client cancelled this request before it reached the checker', url: MAIN_BUNDLE, line: 627, wall: T0 };
+    ok(classifyConsole(W({ messages: [qc] }), A, { reports: [cancel(-1)] }).ok && !classifyConsole(W({ messages: [qc] }), A).ok
+      && !classifyConsole(W({ messages: [qc] }), A, { reports: [{ kind: 'errorReply', code: -32801, recvWall: T0 }] }).ok
+      && !classifyConsole(W({ messages: [qc, qc] }), A, { reports: [cancel(-1)] }).ok
+      && !classifyConsole(W({ messages: [{ ...qc, text: `${qc.text}.` }] }), A, { reports: [cancel(-1)] }).ok && !classifyConsole(W({ messages: [{ ...qc, line: 12 }] }), A, { reports: [cancel(-1)] }).ok,
+      'QED64\'s local "client cancelled" console.error: allowed only paired with its own -32800 reply (fail-closed without reports, not by -32801, one reply per line), exact text, line0 627');
+    // the -32800 replies form ONE pool across both -32800 entries: one reply never explains an empty line AND a "client cancelled" line
+    const qc1 = { ...qc, wall: T0 + 200 }; const e1 = { ...empty, wall: T0 + 100 };
+    const both1 = classifyConsole(W({ messages: [e1, qc1] }), A, { reports: [cancel(0)] });
+    ok(!both1.ok && both1.unpaired.length === 1 && !classifyConsole(W({ messages: [empty, qc] }), A, { reports: [cancel(-1)] }).ok && !classifyConsole(W({ messages: [qc, empty] }), A, { reports: [cancel(-1)] }).ok
+      && classifyConsole(W({ messages: [empty, qc] }), A, { reports: [cancel(-1), cancel(-2)] }).ok,
+      `one -32800 reply explains one line across the -32800 entries: [empty, "client cancelled"] with one reply fails (unpaired ${both1.unpaired.length}), with two replies passes`);
+  }
   ok(!classifyConsole(W({ pageErrors: [unsupported, unsupported] }), A).ok, 'two "unsupported" page errors in one QED64 page load fail (maxPerPageLoad 1)');
   ok(classifyConsole(W({ pageErrors: [unsupported, unsupported, unsupported], loads: { top: 3, qed64: 3, infoview: 3 } }), A).ok, 'three in three page loads are allowed');
   ok(!classifyConsole(W({ pageErrors: [{ message: 'Maximum call stack size exceeded.', stack: '' }] }), A).ok, 'an unknown page error ("Maximum call stack size exceeded.", bridge mutant A) fails');
@@ -517,7 +548,8 @@ section('8c. tests/ux/bringup/console.mjs classifyConsole against selectors.json
 // ---------------------------------------------------------------- 9. the controller in a simulated page
 section('9. scripts/sim-gallery.mjs (gallery.js against a fake DOM + modelled QED64 page)');
 {
-  const r = spawnSync(process.execPath, [path.join(SC, 'scripts', 'sim-gallery.mjs')], { encoding: 'utf8', timeout: 120000 });
+  // runs 1–15 (legacy page) take ~100 s of modelled waits; the V1 runs 16–19 (the page API) add ~70 s (stall thresholds, throttles)
+  const r = spawnSync(process.execPath, [path.join(SC, 'scripts', 'sim-gallery.mjs')], { encoding: 'utf8', timeout: 420000, maxBuffer: 64 * 1024 * 1024 });
   const lines = (r.stdout || '').trim().split('\n');
   for (const l of lines.filter((x) => /^FAIL/.test(x))) console.log(`      ${l}`);
   ok(r.status === 0, `sim-gallery exit ${r.status}: ${lines.pop()}`);
@@ -539,9 +571,15 @@ if (LIVE) {
     }
     const overlays = fs.existsSync(path.join(SC, 'out', 'overlay', 'snapshots')) ? fs.readdirSync(path.join(SC, 'out', 'overlay', 'snapshots')) : [];
     console.log(`info  overlays on disk: ${overlays.join(', ') || 'none'}`);
+    // an overlay on disk must preflight OK iff its index was baked by THIS pin's runtime; one baked for another runtime (a stale
+    // rehearsal bake, an unswitched pin) must be refused by the runtime check, never served to the page (lib.js preflightOverlay)
+    const indexRuntimes = (ov) => { try { return (JSON.parse(fs.readFileSync(path.join(SC, 'out', 'overlay', 'snapshots', ov, 'index.json'), 'utf8')).snapshots || []).map((e) => e && e.runtime); } catch { return null; } };
     for (const ov of [...new Set([...overlays, 'widgets8', 'widgets7', 'nope'])]) {
       const r = await L.preflightOverlay({ overlay: ov, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
-      const expectOk = overlays.includes(ov);
+      const rts = overlays.includes(ov) ? indexRuntimes(ov) : null;
+      const paired = !!(rts && rts.length && rts.every((x) => x === pin.buildId));
+      const expectOk = overlays.includes(ov) && paired;
+      if (overlays.includes(ov) && !paired) { const failed = r.checks.filter((c) => !c.ok).map((c) => c.id); ok(!r.ok && failed.length > 0 && failed.every((id) => /-runtime$/.test(id)) && failed.length >= 1, `live preflight ${ov}: baked by [${[...new Set(rts || ['?'])].join(', ')}], not ${pin.buildId}: refused by the runtime checks only (${failed.join(', ')})`); continue; }
       const avail = r.availability ? Object.entries(r.availability).filter(([, v]) => v).map(([k]) => k) : null;
       ok(r.ok === expectOk, `live preflight ${ov}: ${r.ok ? 'OK' : `refused (${r.checks.filter((c) => !c.ok).map((c) => c.id).join(', ')})`}${r.notFound ? ' [index 404]' : ''}${avail ? `; packages in region: [${avail.join(', ')}]` : ''}`);
       for (const c of r.checks) if (/head|runtime/.test(c.id)) console.log(`        ${c.ok ? '✓' : '✗'} ${c.detail}`);

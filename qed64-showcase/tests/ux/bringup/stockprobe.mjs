@@ -87,7 +87,7 @@ try {
     await sleep(4000);
     s = await status();
     st.status = s; st.workers = watch.workers.length; st.rss = chromeRss();
-    st.bridge = await q(() => globalThis.__qed64Bridge || null).catch(() => null);
+    st.bridge = await q(() => globalThis.__showcaseBridge || null).catch(() => null);
     res.steps.push(st);
     watch.mark('step', st);
     console.log(JSON.stringify({ id: ex.id, readyMs: st.readyMs, pool: s.pool, session: s.session, workers: st.workers, rss: st.rss.totalGiB }));

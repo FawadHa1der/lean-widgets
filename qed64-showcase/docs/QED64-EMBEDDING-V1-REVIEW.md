@@ -263,3 +263,58 @@ Also add a structured origin ('lean'|'qed64') to synthesized error replies, in p
 - HARNESS, plain-page seeding: honour #code= outside embed mode too (lean4web's spelling), with the same size cap. Stock tests and tools could then stop writing qed64.buffer while the plain page keeps its own persistence.
 - HARNESS, the 'Load exact imports' offer: pull the v1.1 'offer' event into v1 as status().offer: {kind:'exactImports', label} | null, plus api.acceptOffer(). C16 then stops matching button text, and the gallery could show the offer in its own UI.
 - HARNESS, headless: add a 'headless' section to embedding/closure.json listing the runtime ABI the Node verifiers rely on (_lean_wasm_load_snapshot_mem, _lean_wasm_shell_mark_preinitialized, _lean_browser64_configure_input_ring, lsp-frames.js Qed64LspFrames, the $/qed64/headerStatus notification, pipeline/snapshot/snapshot-probe.mjs --via-mem, env QED64_ALLOW_LEGACY_IMPORTS for bake-snapshot.mjs), marked library-tier, test-only and change-noted. Failing that, accept that scripts/headless stays pinned to vendor/qed64 per pin.
+
+## Adoption (2026-10-05, QED64 84d594e)
+
+Added 2026-10-06 by the v1-adoption lane; the review above is the record of 2026-10-04 and is not rewritten. QED64
+answered it on `feature/embedding-api` (EMBEDDING.md §12 "Widgets review": the liveness projection, restart inputs,
+`settled({afterSession})`, cursor/focus/offer, `?memory=`, `boot.overlay`, a 100 ms `fileProgress` timer, `#code=`
+read-once, named overlay-index failures, the widget-source cache, the test hatch, `dist/qed64-build.json`, page-tier and
+hosting facts, the late-install note). We registered `84d594e` of that branch as pin F, made it the active pin locally
+(not deployed; the live site serves E `33b0967`, QED64 main) and moved the gallery and the UX suite onto contract
+revision `1.0.0` (docs/REPIN-LOG.md, pin F entry; gallery/README.md "Embedding API v1 (pins F and G)"). The gallery chooses the
+mode from `gallery/pin.json` `apiRevision`, so on pins A–E every row below is still used as the table above says.
+
+Outcome per row of the table above, on F: **API** = now through the declared API (or a parameter, event or fact §1–§8
+declare); **internal** = still a QED64 internal on F, with the reason; **dropped** = no longer needed on F.
+
+| Rows | Outcome on F | How |
+|---|---|---|
+| 1 | API | the frozen `qed64.api` from `qed64:frame-api` (`detail.frame` checked; a polled frozen `qed64.api` as fallback), bound to its document; `api.status()` |
+| 2 | dropped | no late-install heuristic: the bridge decision reads `capabilities.editorRpc` and `widgetSourceCache`; a v1 page must also report `documents`, `events`, `embedMode`, `restart` |
+| 3, 11 | API | polling `api.status()` (`ready`/`headerRefused` on `serving`), `api.getDocument().text`, and the version `setDocument` resolved with; the replacement-session wait compares `status().session`. `settled()`/`whenReady()` exist but are not used, so supersession and the progress-aware boot wait stay as they were |
+| 4, 18 | API | `?embed=1#code=` boots the example; persistence is the `document` event into our key `qed64-showcase:document`; an adopted frame reload calls `setDocument` synchronously in the `qed64:frame-api` handler (§3.1's 5 s window), with the newest forwarded text kept in memory. `#code=` is read-once on F, so the gap "a reload resurrects stale `#code=`" is closed. Our `saved`/`saved-history`/`edited-example` keys are kept for displaced text |
+| 5 | dropped (partly) | embed mode never writes `qed64.buffer`, so the 400 ms save race is gone; the `about:blank` step stays (heap release, and a `#code=`-only change does not reboot) |
+| 6 | API | `?snapshots=` is a validated §4 parameter |
+| 7, 40 | API (declared) / internal | §8 declares the overlay index; the gallery still preflights it before navigating (so a broken overlay never boots), and `make-overlay.mjs` still names our region `mathlib` (`roots` not adopted; C6 asserts the refusal of `import HasseView`) |
+| 8, 9, 10 | API | `setDocument(text, {cursor, focus: false, undoable: false})`, `setCursor(pos, {focus})` after ready, `getCursor()`, `focus()` |
+| 12, 13 | API | `fileProgress` and `diagnostics` events (`origin: 'qed64'` = the page's own notes, not proof of life) |
+| 14, 36 | dropped | the gallery's hover/main-loop probe stands down on `capabilities.liveness` (`status().liveness.probe 'stood-down'`); the 6 + 12 + 4 s window is QED64's business |
+| 15, 16 | API | `status().liveness` (the projection we proposed) and the `liveness`, `reboot` (`reason: 'wedged'`) and `death` events |
+| 17, 19 | API | `api.restart()` (the relay's own header rule, so our stale-`restartOpts` defect is gone on F), `api.restart({snapshots: ['init','mathlib']})` with `status().snapshots` |
+| 20 | API | `&memory=<GiB>`; `status().memory.initialBytes` confirms the commit; no light boot, wrap or restart |
+| 21, 23, 24, 37 | API | `boot` events, `status().boot {done, failed, message, overlay}`; the overlay-lifetime assumption is gone |
+| 22 | kept (not QED64's) | the frame's resource timing entries still count as boot progress: a standard Web API, not a QED64 internal |
+| 25 | dropped | the slow-download notice keeps its CSS position on F instead of reading `#bar` |
+| 26 | API | `embed=1` hides the examples menu (the gallery's own rule stays, a no-op) |
+| 27 | **internal** | the narrow-screen stacking `<style>` on `#split/#editor/#infoview`: the one page-tier internal left, kept until `layout=` (v1.1); runtime styling that never throws and never fails a boot. Monaco re-lays-out by itself, so `editor.layout()` is no longer called |
+| 28 | API (allowed) | §9: an embedder may add its own listeners to the framed window (the F6 capture `keydown`, `__showcaseKeys`) |
+| 29 | dropped / renamed | `__qed64Bridge` → `__showcaseBridge` (legacy pins only); `relay.__showcaseMem` is legacy-only |
+| 30, 31 | dropped | D1/D2 fixed by HARDENING #56 (`editorRpc`), D3 by the page's widget-source cache (§2.5, `widgetSourceCache`): the bridge is not installed (`status().bridge.stoodDown`). A page with `editorRpc` but no cache gets no bridge at all, because its D3 path matches only `sendClientRequest` |
+| 32 | API (declared) | §5 states the hosting facts we asked for; our Worker and `serve.mjs` are unchanged |
+| 33 | API | `status().lastDeath`, `status().boot.failed/message` (hard card unless halted or the re-armed halt's own report) |
+| 34 | dropped (gallery) | the gallery no longer copies pool or raw counters on F; the UX driver still reads them (rows 43, 54) |
+| 35 | API | `qed64:frame-api` fires at module start; the 120 s hook budget stays |
+| 38, 39 | API (build time) / internal | `dist/qed64-build.json` gives `gallery/pin.json` its `apiRevision` and `shell` (the UX driver also reads `api.build()`); `build-gallery.mjs` still checks the buildId inside `dist/assets/*.js`, and the dist layout is still undeclared |
+| 41, 57 | internal | pipeline CLIs and flags, the wasm runtime ABI: tools of the heavy path and headless verifiers, unchanged |
+| 42, 55 | internal | the LSP tap on `relay.toClient/fromClient` (console pairing of `-32800` and, new on F, `-32801` ContentModified from §7.8 edit coalescing); `qed64.test.lsp.on()` exists in the hatch but is not adopted yet |
+| 43, 54 | internal (partly API) | the UX driver's status comes from `api.status()`; `relay.stats`, `pool`, `lastText.length` are still read from the relay (`qed64.test.stats()`/`rawStatus()` not adopted yet) |
+| 44 | test hatch | telemetry through `qed64.test.telemetry()` when present (§9: tests only), else the session |
+| 45, 46, 47, 48, 58 | internal (tests) | the stock-page tests still seed `qed64.buffer` on the plain page and read the pill, boot card, Monaco and InfoView DOM; storm tools use the plain page |
+| 49, 50, 51, 52, 53 | internal (tests) | worker globals, `onLsp`/`onStatus` replacement (C21), `die()` (C23), `lean.died()`; `inject`/`freeze` and mailbox/pool hooks are v1.1; §9 now names `__qed64TestExports` the worker's test hook |
+| 56 | internal (tests) | console labels and the main bundle's notify line (per-pin sha256 in `consoleSites`), plus F's `-32801` entry |
+| 59 | done | `scripts/sim-gallery.mjs` models both pages: runs 1–15 legacy, 16–20 the v1 page (frozen api at module start, events, embed mode), asserting a v1 run touches no internal |
+
+Open from the "Gaps" list on F: layout (row 27) and the build-tier rows (38–41) are as planned (v1.1, or tools). Nothing
+in the "Proposals" list that the gallery depends on is missing on F. Whether the adoption holds in a browser is for F's
+gates (docs/REPIN-LOG.md "Browser gates on F").

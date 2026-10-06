@@ -3,10 +3,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
+import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, ORIGIN, API, API_REVISION, GALLERY_PIN, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
 const GiB = 1073741824;
+// v1 embed mode (EMBEDDING.md §3): the page neither reads nor writes localStorage['qed64.buffer']; C1 seeds this sentinel on
+// the origin before the gallery navigates and requires it untouched once ready (the gallery no longer seeds the buffer either)
+const BUFFER_SENTINEL = '-- UX C1 sentinel: embed mode must neither read nor write qed64.buffer\n';
 // The overlay the gallery boots by default (widgets8): its two snapshots, from the served index (the transfer sizes and
 // digests change with every rebake; they were constants until the 2026-10-01 re-pin, docs/REPIN-LOG.md)
 const W8 = JSON.parse(fs.readFileSync(path.join(SC, 'out/overlay/snapshots/widgets8/index.json'), 'utf8')).snapshots;
@@ -37,9 +40,15 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
   const m = ux.metrics;
   const s = await ux.launch({ profile: 'fresh', label: 'cold' });
   const page = s.page() || await s.newPage();
-  const g = new Gallery(s, page); g.tNav = Date.now();
+  const g = new Gallery(s, page);
+  if (API) {
+    // the sentinel goes into the origin's storage before the gallery is opened (a document of the origin is needed to reach it)
+    await page.goto(`${ORIGIN}/showcase/pin.json`);
+    await page.evaluate((t) => localStorage.setItem('qed64.buffer', t), BUFFER_SENTINEL);
+  }
+  g.tNav = Date.now();
   const tl = timeline(g);
-  await page.goto(`http://localhost:5190/showcase/#chart-kit`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${ORIGIN}/showcase/#chart-kit`, { waitUntil: 'domcontentloaded' });
   const b = await g.waitGallery();
   tl.stop();
   m.readyMs = b.ms; m.timeline = tl.tl; m.bytes = s.bytes; m.server = serverBytes(g.tNav);
@@ -52,6 +61,29 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
   expect(b.ms, 'budget <= 180 s locally').toBeLessThanOrEqual(180000);
   expect(m.server.snapz && m.server.snapz.bytes, 'a cold boot downloads both overlay snapshots (init + widgets region)').toBe(W8_TRANSFER);
   expect(m.panel.equal, `first panel: ${m.panel.diffs}`).toBe(true);
+  // the gallery's mode: pin.json's apiRevision, or the served release's /qed64-build.json when the server serves another pin
+  // than pin.json describes (UX_PIN with the active pin's gallery) — the same rule the suite's API comes from (lib/qed64.mjs)
+  expect({ mode: b.s.mode, modeSource: b.s.modeSource }, 'the gallery runs the mode the suite branches on').toEqual({ mode: API ? 'v1' : 'legacy', modeSource: GALLERY_PIN.modeSource || 'pin.json' });
+  expect(b.s.api.missing, 'no capability the gallery needs is missing').toEqual([]);
+  if (API) {
+    // v1 (EMBEDDING.md §2.1, §3): the gallery runs the page in embed mode through the API it got from qed64:frame-api (or the
+    // frozen api by polling), seeds nothing (seed.action 'embed'), and the page honoured #code= once and dropped it
+    const frame = await g.frameFacts(); const a = await g.apiStatus();
+    m.v1 = { api: b.s.api, seed: b.s.seed, frame: { search: frame.search, hash: frame.hash, bufferUntouched: frame.buffer === BUFFER_SENTINEL, examplesHidden: frame.embedExamplesHidden }, revision: a && a.revision, frozen: a && a.frozen, build: a && a.build, document: b.s.document };
+    console.log(`C1 v1 ${JSON.stringify(m.v1)}`);
+    expect(b.s.api, 'the gallery holds the v1 API of the framed page').toMatchObject({ present: true, revision: API_REVISION, embed: true });
+    expect(['frame-api', 'poll'], 'obtained from the qed64:frame-api event, or the frozen api by polling').toContain(b.s.api.via);
+    expect(b.s.api.capabilities).toMatchObject({ editorRpc: true, widgetSourceCache: true, documents: true, events: true, restart: true, embedMode: true, liveness: true, memory: true, offers: true });
+    expect(a && a.revision, 'pin.json apiRevision is the page\'s api.revision').toBe(API_REVISION);
+    expect(a && a.frozen, 'api and api.capabilities are frozen').toBe(true);
+    expect(b.s.seed, 'embed mode: the gallery seeds no buffer').toEqual({ saved: false, action: 'embed', error: null });
+    expect(frame.search, 'the frame runs in embed mode on the widgets8 overlay').toMatch(/(^\?|&)embed=1(&|$)/);
+    expect(frame.search).toMatch(/(^\?|&)snapshots=snapshots\/widgets8(&|$)/);
+    expect(frame.hash, '#code= was read once and dropped (§3.1)').not.toMatch(/code=/);
+    expect(frame.buffer, 'localStorage qed64.buffer neither read nor written by the embedded page or the gallery').toBe(BUFFER_SENTINEL);
+    expect(frame.embedExamplesHidden, 'embed mode hides the examples menu').toBe(true);
+    expect(b.s.document, 'status().document reports the forwarded version and the persisted text').toMatchObject({ version: expect.any(Number), length: EXAMPLES.find((e) => e.id === 'chart-kit').text.length });
+  }
   // every card's thumbnail is wired and loads from the server on a cold profile (bring-up audit r2 minor)
   m.thumbs = await g.thumbs();
   console.log(`C1 thumbnails ${JSON.stringify(m.thumbs.map((t) => `${t.id} ${t.naturalWidth}x${t.naturalHeight} ${t.w}x${t.h} ${t.ok ? 'ok' : 'BAD'}`))}`);
@@ -108,10 +140,13 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
     const p = await firstPanel(g, id);
     const st = await g.status(); const q = await g.qstatus();
     const action = await g.qframe.locator('button, a').filter({ hasText: 'Load exact imports' }).count();
-    const w = { selectOk: sel.ok, ms: Date.now() - t, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), header: q.header && q.header.mode, collision: q.collision, galleryCollision: st.qed64 && st.qed64.collision, exactImportsOffer: action, rss: chromeRss(), heap: await g.telemetry(), pool: q.pool };
+    // v1: the offer is a structured fact (api.status().offer, EMBEDDING.md §2.2) that the gallery mirrors in status().qed64.offer
+    const apiOffer = API ? (st.qed64 ? st.qed64.offer : undefined) : null;
+    const w = { selectOk: sel.ok, ms: Date.now() - t, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), header: q.header && q.header.mode, collision: q.collision, galleryCollision: st.qed64 && st.qed64.collision, exactImportsOffer: action, apiOffer, rss: chromeRss(), heap: await g.telemetry(), pool: q.pool };
     m.widgets[id] = w;
     if (!sel.ok || !p.equal) fail.push(`${id}: select ${sel.ok} panel ${p.equal} ${w.diffs}`);
     if (w.collision !== null || w.galleryCollision !== null || action) fail.push(`${id}: collision offer (C16) ${JSON.stringify(w.collision)} action ${action}`);
+    if (API && apiOffer !== null) fail.push(`${id}: v1 status().qed64.offer is ${JSON.stringify(apiOffer)}, not null (no exact-imports offer for a gallery example)`);
     console.log(`C3 ${id} panel ${p.equal} ${w.ms} ms header ${w.header} collision ${JSON.stringify(w.collision)} rss renderer ${w.rss.rendererGiB} GiB (${w.rss.rendererGB} GB) heap ${w.heap && w.heap.currentBytes}`);
   }
   await sleep(1500);
@@ -122,10 +157,38 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
   const q = await g.qstatus();
   m.relay = q.stats;
   m.failLineBytes = MEM_FAIL_BYTES;
+  if (API) {
+    // v1: the wasm heap the API projects (status().memory, EMBEDDING.md §2.2) beside the worker's telemetry; and the ?mem knob,
+    // when a run passes it (?mem=<GiB> -> &memory=<GiB>, no light first session), must have been applied by the page:
+    // status().mem.applied = (api.status().memory.initialBytes === the requested bytes)
+    const st = await g.status();
+    m.v1 = { memory: q.memory, mem: st.mem, offer: q.offer };
+    console.log(`C3 v1 ${JSON.stringify(m.v1)}`);
+    expect(q.memory, 'api.status().memory carries the commit and the meter readings').toMatchObject({ initialBytes: expect.any(Number), currentBytes: expect.any(Number) });
+    expect(st.mem, 'no ?mem session wrap in v1').toMatchObject({ wrapped: false, light: null, sessions: [] });
+    if (st.mem.requestedGiB != null) expect(st.mem, '?mem was applied through &memory= (api.status().memory.initialBytes === the requested bytes)').toMatchObject({ ok: true, applied: true, memory: { initialBytes: st.mem.bytes } });
+    expect(q.offer, 'no offer after the 8 examples').toBeNull();
+  }
   console.log(`C3 RSS renderer at ready ${m.atReady.rss.rendererGB} GB, after 8 ${m.afterAll.rss.rendererGB} GB, peak ${m.peak.rendererGB} GB = ${m.peak.rendererGiB} GiB (total ${m.peak.totalGiB} GiB), fail line ${MEM_FAIL_BYTES / 1e9} GB; heap ${m.atReady.heap && m.atReady.heap.currentBytes} -> ${m.afterAll.heap && m.afterAll.heap.currentBytes}`);
   expect(fail).toEqual([]);
   expect(m.peak.rendererBytes, `renderer RSS (summed) < ${MEM_FAIL_BYTES / 1e9} GB (BUILD-PLAN §8.3 C3)`).toBeLessThan(MEM_FAIL_BYTES);
   expect(q.stats.workerDeaths).toBe(0);
+  if (API) {
+    // v1 ?mem=<GiB> (contract item 8): the knob travels as &memory=<GiB> on the frame URL, no light first session, no wrap,
+    // and the page commits exactly that (status().mem.applied: api.status().memory.initialBytes === the requested bytes).
+    // Measured AFTER the RSS gate above, in a NEW browser (as C21 (b) and C23): the 8-example session is classified now under
+    // C3's own strict verdict (no scenario: no session may be disposed during the lane) and closed, so no second runtime
+    // boots in the same renderer (the L9 reload/restart pattern) and nothing is disposed mid-flight.
+    await ux.close(s);
+    const s3 = await ux.launch({ profile: 'warm', label: 'mem3' });
+    const gm = await Gallery.open(s3, { hash: 'chart-kit', query: '?mem=3' });
+    expect(gm.boot.s.phase).toBe('ready');
+    const sm = await gm.status(); const fm = await gm.frameFacts();
+    m.v1mem = { mem: sm.mem, search: fm && fm.search };
+    console.log(`C3 v1 ?mem ${JSON.stringify(m.v1mem)}`);
+    expect(sm.mem, '?mem=3 applied through &memory=3').toMatchObject({ requestedGiB: 3, bytes: 3 * 1073741824, ok: true, applied: true, wrapped: false, light: null, sessions: [], memory: { initialBytes: 3 * 1073741824 } });
+    expect(fm && fm.search, 'the frame URL carries &memory=3').toMatch(/[?&]memory=3(&|$)/);
+  }
 });
 
 test('C4 switching through the UI: 8 sequential card clicks, then a storm of 8 card clicks in 2 s', async ({ ux }) => {

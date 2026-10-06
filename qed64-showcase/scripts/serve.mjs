@@ -16,7 +16,9 @@
 // The pin (scripts/lib/pins.mjs; pins are keyed by QED64 commit) is fixed when the server starts: the active pin, or
 // SHOWCASE_PIN=<id> to serve a staged pin (e.g. to gate a candidate on another port without switching). Every response
 // carries `X-Showcase-Pin: <id> <buildId>`, so `showcase.sh serve/ux` can refuse a server that serves another pin than the
-// active one (a pin switch never changes what a running server serves).
+// active one (a pin switch never changes what a running server serves), and `X-Showcase-Api: <apiRevision>|none|invalid`
+// (the served release's dist/qed64-build.json, read at start; see API_HEADER). /showcase/pin.json is sent with
+// Cache-Control: no-store, so the headers the gallery reads from it never come from a cached response (no 304).
 // Env: PORT (default 5190), HOST (default: listen on 127.0.0.1 and ::1), QUIET=1 (no request log), SHOWCASE_PIN=<id>,
 //      GALLERY_DIR=<dir>  serve /showcase/ from <dir> instead of gallery/ (tests/ux/bringup/mutants.sh serves mutated copies)
 //      CHAOS=<regex>:<afterBytes>:<times>  cut the first <times> responses whose path matches <regex>
@@ -33,6 +35,21 @@ const PIN = process.env.SHOWCASE_PIN || activePinId();
 const BID = pinDescriptor(PIN).buildId;
 const R = releaseOf(PIN);
 const PIN_HEADER = `${PIN} ${BID}`;
+// The served release's embedding-contract revision, read ONCE here like the pin: QED64 writes dist/qed64-build.json (schema
+// qed64.build/v1; apiRevision since the embedding contract v1, deps/qed64/docs/EMBEDDING.md §4); releases of pins A–E have
+// none. Every response carries `X-Showcase-Api: <apiRevision>` (or `none`: a legacy page), so the gallery (gallery.js
+// servedBuild) and the UX suite (tests/ux/lib/qed64.mjs GALLERY_PIN) learn the served page's mode from the pin.json response
+// without probing /qed64-build.json (a 404 on a legacy release). A file of another schema, or one that cannot be parsed:
+// `X-Showcase-Api: invalid` (ALWAYS a value, so a response never lacks the header: the gallery treats anything but a revision
+// or 'none' as absent and probes, whose fallback ignores such a file too: pin.json decides; the UX suite refuses it).
+// The deployed Worker sends neither header.
+const API_HEADER = (() => {
+  const f = path.join(R, 'dist', 'qed64-build.json');
+  if (!fs.existsSync(f)) return 'none';
+  let b; try { b = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { console.error(`WARNING: ${f} is not JSON (${e.message}): X-Showcase-Api invalid`); return 'invalid'; }
+  if (!b || b.schema !== 'qed64.build/v1') { console.error(`WARNING: ${f} schema ${JSON.stringify(b && b.schema)}, want qed64.build/v1: X-Showcase-Api invalid`); return 'invalid'; }
+  return typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : 'none';
+})();
 // the pin's paired overlays, resolved now (the active links may be switched later; this server keeps serving its pin)
 const PINNED_OVERLAYS = Object.fromEntries(PIN_OVERLAYS.map((o) => [o, path.join(outRtDir(BID), 'overlay', o)]));
 const GALLERY = process.env.GALLERY_DIR ? path.resolve(process.env.GALLERY_DIR) : path.join(SC, 'gallery'); // GALLERY_DIR: mutation tests only
@@ -81,7 +98,8 @@ function baseHeaders(pathname) {
     'Cross-Origin-Embedder-Policy': 'require-corp',
     'Cross-Origin-Resource-Policy': 'same-origin',
     'X-Showcase-Pin': PIN_HEADER,
-    'Cache-Control': isImmutable(pathname) ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate',
+    'X-Showcase-Api': API_HEADER,
+    'Cache-Control': pathname === '/showcase/pin.json' ? 'no-store' : isImmutable(pathname) ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate',
   };
 }
 
@@ -135,7 +153,7 @@ function handler(req, res) {
 }
 const servers = HOSTS.map((h) => http.createServer(handler).listen(PORT, h));
 servers[0].on('listening', () => {
-  console.log(`serve.mjs pid=${process.pid} listening on ${HOSTS.join(',')} port ${PORT} (http://localhost:${PORT}/)  pin=${PIN} (${BID}${process.env.SHOWCASE_PIN ? ', SHOWCASE_PIN' : ', active'}) release=${path.relative(SC, R)} gallery=${path.relative(SC, GALLERY)} overlays=${path.relative(SC, path.dirname(PINNED_OVERLAYS.widgets8))}+${path.relative(SC, OVERLAYS)}${chaos ? ` CHAOS=${chaos.re}:${chaos.after}:${chaos.times}` : ''}`);
+  console.log(`serve.mjs pid=${process.pid} listening on ${HOSTS.join(',')} port ${PORT} (http://localhost:${PORT}/)  pin=${PIN} (${BID}${process.env.SHOWCASE_PIN ? ', SHOWCASE_PIN' : ', active'}) api=${API_HEADER} release=${path.relative(SC, R)} gallery=${path.relative(SC, GALLERY)} overlays=${path.relative(SC, path.dirname(PINNED_OVERLAYS.widgets8))}+${path.relative(SC, OVERLAYS)}${chaos ? ` CHAOS=${chaos.re}:${chaos.after}:${chaos.times}` : ''}`);
   if (!fs.existsSync(path.join(R, 'dist', 'index.html'))) console.log(`WARNING: ${R}/dist/index.html missing — run scripts/pin-qed64.mjs pin`);
 });
 for (const s of servers) s.on('error', (e) => { console.error(`listen error: ${e.message}`); process.exit(1); });

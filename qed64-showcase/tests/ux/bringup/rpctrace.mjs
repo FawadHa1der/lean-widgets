@@ -43,7 +43,7 @@ try {
 } catch (e) { res.error = String(e && e.message || e).slice(0, 400); }
 res.trace = await page.evaluate(() => globalThis.__trace).catch(() => null);
 res.pool = await page.evaluate(() => { const p = globalThis.__pool; return p.filter((x, i) => i === 0 || x.running !== p[i - 1].running || x.unused !== p[i - 1].unused); }).catch(() => null);
-res.bridgeStats = await page.evaluate(() => globalThis.__qed64Bridge).catch(() => null);
+res.bridgeStats = await page.evaluate(() => globalThis.__showcaseBridge).catch(() => null);
 res.crashed = watch.crashed; res.rss = chromeRss(); res.workers = watch.workers.length;
 writeJson(`${tag}.json`, res);
 await ctx.close().catch(() => {});

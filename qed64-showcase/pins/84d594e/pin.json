@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "84d594e",
+  "buildId": "wasm64-3ab1c6a9da03bc29",
+  "registeredAt": "2026-10-05T18:00:00Z",
+  "label": "F: QED64 84d594e (feature/embedding-api: embedding contract v1 RC), E's runtime 0035b (kernel a8817d01f9) with the v1 page: globalThis.qed64.api, ?embed=1 and #code=, native InfoView editor RPC (HARDENING #56), the widget-source cache, validated boot parameters (#57), edit coalescing (#59)",
+  "status": "staged: registered 2026-10-05 by the v1-adoption lane on E's runtime and stores (same runtime manifest, snapshot index and profile blobs as D and E); shell built from source in the pin's worktree; not yet gated",
+  "qed64": {
+    "commit": "84d594e3dc8e75d0a327b6b8999423d8a205c525",
+    "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "kernel": "a8817d01f97227b1b04cc7d661b9e396f6ca8f34"
+  },
+  "mainBundle": "/assets/index-Da0NIljc.js",
+  "consoleSites": {
+    "627": "53713dadfba93b39f51a3bd3d04536a69f797857dcd1f1adb8ce983f2a7cc3da"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035b/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The #52 worker liveness and the #55 lifetime locks as in E, now projected by the page API: status().liveness {stalled, lastAnswerAgoMs, lastFrameAgoMs, probeAfterMs, wedgeAfterMs, graceMs} and the `liveness` event (docs/EMBEDDING.md §2.2, §2.4). The gallery's own probe stands down on capabilities.liveness."
+  },
+  "knownLimitations": [],
+  "notes": "QED64 84d594e = feature/embedding-api at the commit the QED64 session named final (f150f47 is the last page/worker/embed change; 42c4ab2..84d594e are test lanes and docs plus a 10-line edit-coalescer change). Shell, workers and client only: public/runtime/runtime-manifest.json, public/snapshots/index.json and the public/profiles tree are the same git blobs as at 33b0967 (E) and 3b42714 (D), so E's runtime stores serve F unchanged and nothing is rebaked. The page is built from source in the pin's worktree ($W/qed64-pins/84d594e); the public/ binaries of the release are the same digest-named files as E's."
+}

@@ -1,15 +1,17 @@
 {
   "schema": "qed64-showcase.gallery-pin/v1",
   "derivedFrom": "QED64.lock.json",
-  "lockSha256": "190f09de2a4105fd534ce6934ca27f6fa8e6e4edea831f36bca080e96e3cbbbb",
-  "pin": "33b0967",
+  "lockSha256": "81c71b6359f143a1447e992ec077ae3b15ba8a2c70117be0b418c8bafaa695f5",
+  "pin": "5c327c2",
   "buildId": "wasm64-3ab1c6a9da03bc29",
   "bundleBuildIds": [
     "wasm64-3ab1c6a9da03bc29"
   ],
   "leanVersion": "4.34.0",
+  "apiRevision": "1.0.0",
+  "shell": "shell-6d9ca6f8b71443d9",
   "qed64": {
-    "commit": "33b09679077b3fea245123e261a7f0942918469f",
+    "commit": "5c327c216aa31bf3880041b3e3a3b26fcb6d5a45",
     "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20"
   },
   "widgetsSourceHash": "c2efe78fe8fe294b38a657e3170e9d64606862ae829126c385859e5aa145dbf6",

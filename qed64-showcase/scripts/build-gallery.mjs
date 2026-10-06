@@ -65,6 +65,21 @@ if (fs.existsSync(assetsDir)) {
   const ids = [...bundleIds].sort();
   if (!(ids.length === 1 && ids[0] === BID)) fail(`release bundle names buildIds [${ids.join(', ')}], want exactly ${BID} (${assetsDir})`);
 } else fail(`release bundle missing: ${assetsDir} (run scripts/pin-qed64.mjs pin)`);
+// QED64 embedding contract v1 (deps/qed64/docs/EMBEDDING.md §4): a dist built from a v1 page writes dist/qed64-build.json
+// {schema 'qed64.build/v1', buildId, …, shell, apiRevision}. The gallery reads pin.json's apiRevision to decide its mode
+// (V1 = apiRevision != null: the page API, embed mode, #code=; null = the legacy page: qed64.buffer seed, relay waits), so
+// pins A–E (no such file) keep booting exactly as before. check-gallery.mjs #4 verifies both fields against that file.
+let apiRevision = null; let shell = null;
+const buildFile = path.join(releaseDir, 'dist', 'qed64-build.json');
+if (fs.existsSync(buildFile)) {
+  const b = readJson(buildFile);
+  if (b.schema !== 'qed64.build/v1') fail(`${buildFile} schema ${b.schema}, want qed64.build/v1`);
+  if (b.buildId !== BID) fail(`${buildFile} names buildId ${b.buildId}, want ${BID}`);
+  if (b.commit && lock.qed64 && b.commit !== lock.qed64.commit) fail(`${buildFile} names commit ${b.commit}, lock ${lock.qed64.commit}`);
+  apiRevision = typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null;
+  shell = typeof b.shell === 'string' && b.shell ? b.shell : null;
+  if (apiRevision === null) warnings.push(`${buildFile} has no apiRevision: the gallery runs in legacy mode on this pin`);
+}
 let leanVersion = null;
 const rtManifest = path.join(releaseDir, 'public', 'runtime', `runtime-manifest.${BID}.json`);
 if (fs.existsSync(rtManifest)) {
@@ -80,6 +95,8 @@ const pin = {
   buildId: BID,
   bundleBuildIds: [...bundleIds].sort(),
   leanVersion,
+  apiRevision, // release/<pin>/dist/qed64-build.json apiRevision (embedding contract v1), else null (legacy page)
+  shell,       // its shell id ("shell-" + 16 hex over the dist listing), else null
   qed64: { commit: lock.qed64.commit, promote: lock.qed64.promote },
   widgetsSourceHash: lock.WIDGETS_SOURCE_HASH || null,
   mathlib: lock.toolchain && lock.toolchain.mathlib ? lock.toolchain.mathlib.commit || null : null,
@@ -451,6 +468,6 @@ for (const [name, body] of Object.entries(files)) {
 }
 for (const e of examples)
   console.log(`ok    ${e.id.padEnd(19)} ${e.title.padEnd(19)} phase ${e.phase} module ${e.module.padEnd(17)} ${String(e.lineCount).padStart(3)} lines  first cursor L${e.firstCursor.lineNumber}:${e.firstCursor.column}  ${e.tryThis.length} hints  thumb ${e.thumb ? `${e.thumb.width}x${e.thumb.height} ${e.thumb.bytes} B` : 'none'}  golden ${e.golden.present ? (e.golden.ok && e.golden.exampleSha256Matches ? 'ok' : 'STALE') : 'none'}`);
-console.log(`pin   buildId ${pin.buildId} (bundle ${pin.bundleBuildIds.join(',')} in ${bundleFiles} js files) lean ${pin.leanVersion} qed64 ${String(pin.qed64.commit).slice(0, 12)}`);
+console.log(`pin   buildId ${pin.buildId} (bundle ${pin.bundleBuildIds.join(',')} in ${bundleFiles} js files) lean ${pin.leanVersion} qed64 ${String(pin.qed64.commit).slice(0, 12)} api ${pin.apiRevision ?? 'none (legacy page)'} shell ${pin.shell ?? '-'}`);
 console.log(`BUILD-GALLERY ${CHECK ? (stale ? 'STALE' : 'CHECK OK') : 'OK'} ${examples.length} examples`);
 process.exit(stale ? 1 : 0);

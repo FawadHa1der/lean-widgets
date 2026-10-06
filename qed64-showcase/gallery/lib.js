@@ -30,10 +30,28 @@ export const SAVED_KEY = 'qed64-showcase:saved';            // the FIRST user bu
 export const SAVED_HISTORY_KEY = 'qed64-showcase:saved-history'; // later displaced user buffers, newest first, bounded
 export const SAVED_HISTORY_MAX = 5;
 export const EXAMPLE_EDIT_KEY = 'qed64-showcase:edited-example'; // the latest gallery-edited example (one slot; never a user buffer)
+export const DOCUMENT_KEY = 'qed64-showcase:document'; // V1 (embed mode): the text the relay last forwarded ('document' events); re-seeds an adopted reload
 export const MEM_PLACEHOLDER_PREFIX = '-- QED64 showcase:';
 
-/** The stock page URL for an overlay (relative to the gallery's origin). */
-export const frameUrl = (overlay) => `/?snapshots=snapshots/${overlay}`;
+/**
+ * The stock page URL for an overlay (relative to the gallery's origin). Legacy pins: `/?snapshots=snapshots/<overlay>`.
+ * Embedding contract v1 (deps/qed64/docs/EMBEDDING.md §3, §4): {embed: true} adds `embed=1` (the page neither reads nor
+ * writes qed64.buffer and hides its examples menu), {memoryGiB} adds `memory=<GiB>` (the page validates and clamps it: the
+ * initial commit of EVERY session), {code} appends `#code=<encodeURIComponent(text)>` (the boot document, honoured only
+ * inside a same-origin frame and read ONCE: the page drops it with history.replaceState).
+ */
+export function frameUrl(overlay, { embed = false, memoryGiB = null, code = null } = {}) {
+  let u = `/?${embed ? 'embed=1&' : ''}snapshots=snapshots/${overlay}`;
+  if (memoryGiB != null) u += `&memory=${memoryGiB}`;
+  if (typeof code === 'string') u += `#code=${encodeURIComponent(code)}`;
+  return u;
+}
+/** The document a v1 frame URL carries (`#code=`), decoded; null when none (mirrors page-api.ts codeFromHash). */
+export function codeOfFrameUrl(url) {
+  const m = /#(?:.*&)?code=([^&]*)/.exec(String(url || ''));
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]); } catch { return null; }
+}
 /** Exactly the page's re-rooting: `e.url.replace(/^\/snapshots\//, `/${dir}/`)` with dir = snapshots/<overlay>. */
 export const rerootUrl = (url, overlay) => url.replace(/^\/snapshots\//, `/snapshots/${overlay}/`);
 /** The import module of a header line (`import ChartKit` → `ChartKit`), else null. */

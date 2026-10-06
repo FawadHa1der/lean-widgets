@@ -7,7 +7,7 @@
 // 0 warnings. One warm-profile boot per package (packages with no links are skipped: chart-kit, expr-xray,
 // tree-scope have 0 in click-all).
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, EXAMPLES, CLICKALL, GOLDENS, LIVENESS_MODE, rel, clickAllPath, sleep } from '../lib/qed64.mjs';
+import { Gallery, EXAMPLES, CLICKALL, GOLDENS, LIVENESS_MODE, API, RESTART_HOW, rel, clickAllPath, sleep } from '../lib/qed64.mjs';
 import { clickLink, goldenCursor } from '../lib/actions.mjs';
 
 const withLinks = EXAMPLES.filter((e) => CLICKALL[e.id].links.length > 0);
@@ -27,8 +27,16 @@ test(`C20 click-all in the browser: all ${total} rendered links, each from a fre
     expect(g.boot.s.phase).toBe('ready');
     const q0 = await g.qstatus();
     const pk = { links: ca.links.length, ok: 0, failed: [], bootMs: g.boot.ms, clickToEditMs: [], clickToReadyMs: [], offCentreClicks: 0, results: [], stalls: [], poolTotals: {} };
-    expect(g.boot.s.stall, 'the stall watchdog is armed at its default').toMatchObject({ thresholdMs: 45000, tapped: true, shown: 0 });
-    expect(g.boot.s.liveness, 'the liveness probe is armed at its defaults (UX_LIVENESS=observe for hang hunts)').toMatchObject({ mode: LIVENESS_MODE || 'auto', probeAfterMs: 10000, probeTimeoutMs: 5000, wedged: 0 });
+    // v1: the watchdog's progress comes from the API's fileProgress/diagnostics events, not a relay tap; the gallery's own
+    // liveness probe is stood down on capabilities.liveness (QED64's worker liveness is projected by the API instead)
+    if (API) {
+      expect(g.boot.s.stall, 'the stall watchdog is armed at its default (v1: fed by API events, tapped = the api is held)').toMatchObject({ thresholdMs: 45000, tapped: true, source: 'api-events', shown: 0 });
+      expect(g.boot.s.liveness, 'the gallery probe is stood down on capabilities.liveness (its defaults still reported)').toMatchObject({ mode: LIVENESS_MODE || 'auto', probe: 'stood-down', probeAfterMs: 10000, probeTimeoutMs: 5000, sent: 0, wedged: 0, restarts: 0 });
+      expect(g.boot.s.bridge, 'no bridge in v1').toMatchObject({ installed: false, stoodDown: true, late: 0 });
+    } else {
+      expect(g.boot.s.stall, 'the stall watchdog is armed at its default').toMatchObject({ thresholdMs: 45000, tapped: true, shown: 0 });
+      expect(g.boot.s.liveness, 'the liveness probe is armed at its defaults (UX_LIVENESS=observe for hang hunts)').toMatchObject({ mode: LIVENESS_MODE || 'auto', probeAfterMs: 10000, probeTimeoutMs: 5000, wedged: 0 });
+    }
     pk.captures = [];
     const t0 = Date.now();
     for (const link of ca.links) {
@@ -80,7 +88,7 @@ test(`C20 click-all in the browser: all ${total} rendered links, each from a fre
       const okCard = x.card && x.card.role === 'alert' && /stopped making progress|Lean is still working/.test(x.card.title || '') && x.card.restart === 'Restart Lean' && x.card.reset === true && x.card.keepWaiting === 'Keep waiting';
       if (!okCard) fail.push(`${id} #${x.n}: stall card not as designed ${JSON.stringify(x.card)}`);
       if (!(x.shownEvent && x.shownEvent.idleMs >= 45000)) fail.push(`${id} #${x.n}: stall card shown after ${x.shownEvent && x.shownEvent.idleMs} ms idle (< 45 s)`);
-      if (!(x.restartEvent && x.restartEvent.how === 'relay.restart')) fail.push(`${id} #${x.n}: Restart Lean did not restart the relay ${JSON.stringify(x.restartEvent)}`);
+      if (!(x.restartEvent && x.restartEvent.how === RESTART_HOW)) fail.push(`${id} #${x.n}: Restart Lean did not restart the checker (how ${RESTART_HOW}) ${JSON.stringify(x.restartEvent)}`);
     }
     // a wedge the liveness probe restarted by itself (default mode) needs no card; every relay restart is accounted for
     if (pk.liveness.restartFailed) fail.push(`${id}: a liveness restart failed ${JSON.stringify(pk.liveness)}`);

@@ -5,9 +5,12 @@
 //                       fresh context or a persistent profile, SharedArrayBuffer, the diagnostics/RPC tap installed in
 //                       every QED64 page document (init script + exposeBinding, so it survives reloads), console
 //                       watcher on every page, Playwright tracing kept only on failure (retain-on-failure semantics).
-//   Gallery / Stock     drivers for /showcase/ and the bare QED64 page: status oracle (qed64.status(), relay.stats,
-//                       __showcase.status()), the InfoView frameLocator, cursor placement, ready-at-version waits,
-//                       the diagnostics of an exact document version.
+//   Gallery / Stock     drivers for /showcase/ and the bare QED64 page: status oracle (qed64.api.status() on a v1 page,
+//                       else qed64.status(); relay.stats as diagnostics; __showcase.status()), the InfoView frameLocator,
+//                       cursor placement, ready-at-version waits, the diagnostics of an exact document version.
+//   API                 the tested pin carries the QED64 embedding contract v1 (gallery/pin.json apiRevision != null):
+//                       the specs branch on it (v1 behaviour) and on PIN.liveness.builtIn; legacy pins keep every
+//                       assertion they had. RESTART_HOW is the restart `how` the gallery records in each mode.
 //   domSignature()      the env-independent panel signature read from the REAL InfoView DOM (tag multiset, svg tag
 //                       multiset, component counts, text leaves, InteractiveCode texts, MakeEditLink texts/titles),
 //                       compared field by field with the frozen golden (lean/expect/w8/<pkg>.json, dist-lens:
@@ -61,6 +64,68 @@ if (UX_PIN && !process.env.UX_ORIGIN) throw new Error('UX_PIN needs UX_ORIGIN (t
 export const SEL = PINS.loadSelectors(UX_PIN || undefined);
 /** The tested pin's descriptor (pins/<id>/pin.json; the active pin unless UX_PIN): id, buildId, liveness.builtIn, … — tests branch on it. */
 export const PIN = PINS.pinDescriptor(UX_PIN || undefined);
+/**
+ * gallery/pin.json as the served gallery reads it (scripts/build-gallery.mjs, from the lock): pin, buildId, and since the
+ * QED64 embedding contract v1 (deps/qed64/docs/EMBEDDING.md) `apiRevision` / `shell` from release/<pin>/dist/qed64-build.json,
+ * null on a pin whose release has no such file. The gallery's mode is pin.json's apiRevision, EXCEPT when the server serves
+ * another pin's release than pin.json describes (X-Showcase-Pin; gallery.js servedBuild): then that release's own revision,
+ * from serve.mjs's `X-Showcase-Api: <apiRevision>|none` header on the pin.json response, or (only without that header: a
+ * server started from an older serve.mjs) its /qed64-build.json (404 = legacy); `X-Showcase-Api: invalid` is refused. The suite mirrors exactly that, reading the
+ * same response. Under UX_PIN (a staged pin served by UX_ORIGIN) the SERVED pin.json is read, FAIL-CLOSED (no fallback to
+ * the file when the server does not answer). release/<UX_PIN>/dist/qed64-build.json of another schema than qed64.build/v1
+ * is REFUSED (as build-gallery.mjs refuses it): serve.mjs then sends X-Showcase-Api invalid (refused here too) and the gallery's probe ignores the
+ * file (pin.json decides), so a run would test the active pin's mode on a page of unknown mode. If the served pin.json
+ * describes UX_PIN itself (a gallery built for it, GALLERY_DIR) its apiRevision must be the file's (else that gallery runs
+ * the wrong mode); if it describes another pin (the active pin's gallery) the gallery follows the served release, and the
+ * header (when present) must agree with the file (else the server was started before the release changed).
+ * `servedVia` records how the gallery learns it: 'header' (no request) or 'probe' (one /qed64-build.json fetch; a 404 on a
+ * legacy release, which only then is allowed: allowlist() STAGED_LEGACY_404). global-setup checks that the server's
+ * X-Showcase-Pin is UX_PIN.
+ */
+export const GALLERY_PIN = (() => {
+  const file = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/pin.json'), 'utf8'));
+  if (!UX_PIN) return file;
+  // -D -: the response headers, then the body (the gallery reads X-Showcase-Pin / X-Showcase-Api from this same response)
+  let r; try { r = spawnSync('curl', ['-sf', '--max-time', '5', '-D', '-', `${ORIGIN}/showcase/pin.json`], { encoding: 'utf8' }); } catch (e) { r = { status: -1, error: e }; }
+  if (!(r && r.status === 0 && r.stdout)) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN}/showcase/pin.json is not served (curl status ${r && r.status}${r && r.error ? `: ${r.error.message || r.error}` : ''}); the suite's API branch must come from what the served gallery reads, so start that server first`);
+  const cut = r.stdout.search(/\r?\n\r?\n/);
+  const head = cut >= 0 ? r.stdout.slice(0, cut) : ''; const body = cut >= 0 ? r.stdout.slice(cut).trim() : r.stdout;
+  const hdr = (name) => { const m = new RegExp(`^${name}:[ \\t]*(.*?)[ \\t]*$`, 'im').exec(head); return m ? m[1].trim() : null; };
+  const served = JSON.parse(body);
+  const rawApi = hdr('x-showcase-api') || null;
+  // serve.mjs sends 'invalid' when the served release's qed64-build.json is unreadable or of another schema: refused, as the
+  // file check below refuses it (the served page's mode is unknown). Like gallery.js servedBuild, only a revision or 'none'
+  // counts as the header; any other value is absent (the gallery probes)
+  if (rawApi === 'invalid') throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} sends X-Showcase-Api invalid (its release's dist/qed64-build.json is unreadable or not qed64.build/v1): refused, the served page's mode is unknown`);
+  const apiHeader = rawApi === 'none' || /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(rawApi || '') ? rawApi : null;
+  const buildFile = path.join(PINS.releaseOf(UX_PIN), 'dist', 'qed64-build.json');
+  let want = null; let shell = null; const hasFile = fs.existsSync(buildFile);
+  if (hasFile) {
+    let b; try { b = JSON.parse(fs.readFileSync(buildFile, 'utf8')); } catch (e) { throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} is not JSON (${e.message}): refused`); }
+    if (!b || b.schema !== 'qed64.build/v1') throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} schema ${JSON.stringify(b && b.schema)}, want qed64.build/v1 (as build-gallery.mjs): refused, the served page's mode is unknown`);
+    want = typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null; shell = typeof b.shell === 'string' ? b.shell : null;
+  }
+  if (served.pin === UX_PIN) {
+    if ((served.apiRevision ?? null) !== want) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} serves a gallery built for ${UX_PIN} whose pin.json says apiRevision ${JSON.stringify(served.apiRevision ?? null)}, but release/${UX_PIN}/dist/qed64-build.json says ${JSON.stringify(want)}: rebuild that gallery`);
+    return served;
+  }
+  // the active pin's gallery over a staged release: the gallery follows the served release (modeSource 'served'), from
+  // X-Showcase-Api when the server sends it, else from its /qed64-build.json probe
+  if (apiHeader) {
+    const viaHeader = apiHeader === 'none' ? null : apiHeader;
+    if (viaHeader !== want) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} sends X-Showcase-Api ${JSON.stringify(apiHeader)} but release/${UX_PIN}/dist/qed64-build.json says apiRevision ${JSON.stringify(want)}: restart that server (serve.mjs reads the file at start)`);
+  }
+  return { ...served, pinJsonApiRevision: served.apiRevision ?? null, apiRevision: want, shell, modeSource: 'served', servedVia: apiHeader ? 'header' : 'probe' };
+})();
+/**
+ * API = the embedding contract v1 is present on the tested pin (gallery/pin.json apiRevision != null). The gallery then runs
+ * in V1 mode (?embed=1 + #code=, globalThis.qed64.api, no bridge, no qed64.buffer seed, liveness probe stood down) and
+ * every test asserts the v1 behaviour; on a legacy pin (API false) every test asserts exactly what it asserted before v1.
+ */
+export const API = GALLERY_PIN.apiRevision != null;
+export const API_REVISION = API ? GALLERY_PIN.apiRevision : null;
+/** How the gallery records a restart it made (stall events' `how`, liveness events' `action`): api.restart() in V1 mode, relay.restart in legacy mode. */
+export const RESTART_HOW = API ? 'api.restart' : 'relay.restart';
 export const EXAMPLES = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/examples.json'), 'utf8')).examples;
 export const BY_ID = Object.fromEntries(EXAMPLES.map((e) => [e.id, e]));
 export const IDS = EXAMPLES.map((e) => e.id);
@@ -220,18 +285,44 @@ export function watchConsole(page, t0, sink) {
  * The console oracle. classifyConsole (tests/ux/bringup/console.mjs) with EXACTLY selectors.json consoleAllowlist,
  * scenarios only where a test deliberately restarts / breaks the checker. Stricter than the allowlist: every empty
  * console.error at the allowlisted NotificationService site must be explained by an LSP RequestCancelled (-32800)
- * error reply seen by the tap within the 3 s before it (bring-up audit 4 minor: the entry has no count limit).
+ * error reply seen by the tap within the 3 s before it (bring-up audit 4 minor: the entry has no count limit). The
+ * ContentModified line lean4monaco logs at the same site on a v1 page (QED64 edit coalescing, EMBEDDING.md §7.8: -32801,
+ * error.data.qed64.kind 'superseded') is paired the same way by the allowlist's own pairWith (consoleError[1], fail-closed
+ * through the tap's -32801 reports); c.supersededErrors summarises it.
  */
 // Headed sign-off only (UX_HEADED_ALL=1): desktop Chrome itself requests /favicon.ico for a top-level document without an
 // icon link; the stock QED64 page (release dist/index.html) has neither a <link rel=icon> nor a favicon.ico, so every
 // headed stock-page load logs one 'Failed to load resource … 404' for /favicon.ico (final-gate lane: C6, C7, C15;
 // chrome-headless-shell never requests it; the gallery has favicon.svg). Allowed once per QED64 page load, headed only.
 const HEADED_ALLOWLIST = { ...SEL.consoleAllowlist, consoleError: [...SEL.consoleAllowlist.consoleError, { text: '^Failed to load resource: the server responded with a status of 404 \\(Not Found\\)$', url: '/favicon.ico', maxPerPageLoad: 1, note: 'headed only: the browser UI fetches /favicon.ico; QED64 dist has none' }] };
+// Staged release under the active pin's gallery only (UX_PIN, GALLERY_PIN.modeSource 'served'). serve.mjs sends the served
+// release's revision as X-Showcase-Api, so the gallery fetches nothing (servedVia 'header'). Only a server WITHOUT that header
+// (one started from an older serve.mjs; servedVia 'probe') makes the gallery ask /qed64-build.json (gallery.js servedBuild's
+// fallback): on a staged LEGACY release (API false; pins A–E have no such file) the gallery document then logs one 'Failed to
+// load resource … 404' for it per gallery load (the probe runs once per start(), before the QED64 page loads); never on a v1
+// release (200), never when the header is present (STAGED_LEGACY_404 is scoped to servedVia 'probe'). And whenever the served release's apiRevision differs from the
+// one gallery/pin.json carries (either direction: a v1 gallery over a staged legacy release, or a legacy gallery over a
+// staged v1 release), gallery.js start() logs one console.warn naming both and the mode it follows (SERVED_MODE_WARN).
+// Never on the active pin, never in production (no X-Showcase-Pin mismatch, no probe).
+const STAGED_LEGACY_404 = { text: '^Failed to load resource: the server responded with a status of 404 \\(Not Found\\)$', url: '/qed64-build.json', maxPerPageLoad: 1, note: 'UX_PIN on a staged legacy release served WITHOUT X-Showcase-Api only: the gallery probes the served release for its apiRevision (404 = legacy)' };
+const SERVED_MODE_WARN = { text: '^\\[showcase\\] the server serves QED64 pin [0-9a-f]{7,40} \\(apiRevision (null|"[^"]*")\\) but gallery/pin\\.json describes [0-9a-f]{7,40} \\((null|"[^"]*")\\): following the served page \\((v1|legacy) mode\\)$', url: '/showcase/gallery.js', maxPerPageLoad: 1, note: 'UX_PIN only: the active pin\'s gallery over a staged release of the other mode (gallery.js start())' };
+function allowlist() {
+  const base = HEADED_ALL ? HEADED_ALLOWLIST : SEL.consoleAllowlist;
+  if (GALLERY_PIN.modeSource !== 'served') return base;
+  const modeDiffers = (GALLERY_PIN.pinJsonApiRevision ?? null) !== (GALLERY_PIN.apiRevision ?? null);
+  return {
+    ...base,
+    consoleWarning: modeDiffers ? [...base.consoleWarning, SERVED_MODE_WARN] : base.consoleWarning,
+    consoleError: !API && GALLERY_PIN.servedVia === 'probe' ? [...base.consoleError, STAGED_LEGACY_404] : base.consoleError,
+  };
+}
 export function classify(watch, reports, { scenarios = [] } = {}) {
   // reports: the allowlist's pairWith entry is also enforced inside classifyConsole (fail-closed without reports)
-  const c = classifyConsoleWith(watch, HEADED_ALL ? HEADED_ALLOWLIST : SEL.consoleAllowlist, { scenarios, reports });
+  const c = classifyConsoleWith(watch, allowlist(), { scenarios, reports });
   const empty = watch.messages.filter((m) => m.type === 'error' && m.text === '' && String(m.url || '').startsWith(SEL.consoleAllowlist.consoleError[0].url));
-  const cancels = reports.filter((r) => r.kind === 'errorReply' && r.code === -32800).map((r) => ({ ...r, used: false }));
+  // not QED64's own local cancel replies (pin G, qed64Kind 'cancelled'): their message is non-empty and lean4monaco prints it,
+  // so they explain the "client cancelled" line (consoleError[2], paired in classifyConsole), never an empty one
+  const cancels = reports.filter((r) => r.kind === 'errorReply' && r.code === -32800 && r.qed64Kind !== 'cancelled' && !/client cancelled this request/.test(r.message || '')).map((r) => ({ ...r, used: false }));
   const unexplained = [];
   for (const m of empty) {
     const k = cancels.find((x) => !x.used && x.recvWall <= m.wall + 500 && x.recvWall >= m.wall - 3000);
@@ -239,6 +330,9 @@ export function classify(watch, reports, { scenarios = [] } = {}) {
   }
   c.emptyErrors = { count: empty.length, cancelReplies: cancels.length, unexplained };
   if (unexplained.length) c.ok = false;
+  // the -32801 (ContentModified, §7.8) lines: counted and paired by classifyConsole (consoleError[1].pairWith), summarised here
+  const superseded = reports.filter((r) => r.kind === 'errorReply' && r.code === -32801);
+  c.supersededErrors = { count: c.counts['consoleError[1]'] || 0, replies: superseded.length, supersededKind: superseded.filter((r) => r.qed64Kind === 'superseded' || (r.message && /document changed before this request/.test(r.message))).length, unpaired: (c.unpaired || []).filter((u) => u.key === 'consoleError[1]').length };
   // the InfoView DOM oracle (IV_SRC): a never-allowed string rendered in a panel fails like a console message
   const iv = reports.filter((r) => r.kind === 'ivNeverAllowed');
   c.infoviewDom = iv.map((r) => ({ text: r.text, context: String(r.context || '').slice(0, 260) }));
@@ -351,12 +445,39 @@ class QedDriver {
   q(fn, arg) { return qEval(this.page, this.kind, fn, arg); }
   get iv() { return this.kind === 'stock' ? this.page.frameLocator(SEL.infoview.frame) : this.page.frameLocator('#qed64-frame').frameLocator(SEL.infoview.frame); }
   get qframe() { return this.kind === 'stock' ? this.page : this.page.frameLocator('#qed64-frame'); }
+  /**
+   * The QED64 page oracle. With the embedding contract v1 (window.qed64.api, EMBEDDING.md §2.2) the facts the API carries
+   * (phase, version, header, collision, session, relay, lastDeath, snapshots, boot, memory, liveness, offer) come from
+   * api.status(); on a legacy page from qed64.status() / qed64.relay. The relay's counters (stats, pool, lastTextLen) are
+   * DIAGNOSTICS the API does not project: read from the internals on every pin (the harness, not product code; §9 binds
+   * the gallery). Null until the relay exists (the counters need it), exactly as before.
+   */
   qstatus() {
-    return this.q(() => { const q = window.qed64; if (!q) return null; const s = q.status(); const r = q.relay; return { phase: s.phase, version: s.version, header: s.header ? { mode: s.header.mode, missing: s.header.missing, key: s.header.key } : null, collision: s.collision || null, session: s.session, relay: s.relay, lastDeath: s.lastDeath, pool: s.pool, stats: { ...r.stats }, snapshots: r.session && r.session.snapshots, lastTextLen: r.lastText.length }; }).catch(() => null);
+    return this.q(() => {
+      const q = window.qed64; if (!q) return null; const r = q.relay; if (!r) return null;
+      const a = q.api && typeof q.api.status === 'function' ? q.api.status() : null;
+      const s = q.status();
+      const base = a
+        ? { phase: a.phase, version: a.version, header: a.header ? { mode: a.header.mode, missing: a.header.missing, moduleCount: a.header.moduleCount, key: s.header ? s.header.key : undefined } : null, collision: a.collision || null, session: a.session, relay: a.relay, lastDeath: a.lastDeath, snapshots: a.snapshots, boot: a.boot, memory: a.memory, liveness: a.liveness, offer: a.offer, api: true }
+        : { phase: s.phase, version: s.version, header: s.header ? { mode: s.header.mode, missing: s.header.missing, key: s.header.key } : null, collision: s.collision || null, session: s.session, relay: s.relay, lastDeath: s.lastDeath, snapshots: r.session && r.session.snapshots, api: false };
+      return { ...base, pool: s.pool, stats: { ...r.stats }, lastTextLen: r.lastText.length };
+    }).catch(() => null);
   }
-  text() { return this.q(() => { try { return window.qed64.editor.getModel().getValue(); } catch (e) { return null; } }).catch(() => null); }
-  setCursor(line0, char0) { return this.q((a) => { const e = window.qed64.editor; e.setPosition({ lineNumber: a[0] + 1, column: a[1] + 1 }); e.revealLineInCenter(a[0] + 1); return true; }, [line0, char0]); }
-  focusEditor() { return this.q(() => { window.qed64.editor.focus(); return window.qed64.editor.hasTextFocus(); }); }
+  /** The v1 API's own view (EMBEDDING.md §2.1-§2.2): null on a legacy page. Valid before boot (status() is synchronous). */
+  apiStatus() { return this.q(() => { const q = window.qed64; const a = q && q.api; if (!a || typeof a.status !== 'function') return null; return { revision: a.revision, version: a.version, frozen: Object.isFrozen(a) && Object.isFrozen(a.capabilities), capabilities: { ...a.capabilities }, build: a.build(), status: a.status() }; }).catch(() => null); }
+  text() { return this.q(() => { try { const a = window.qed64 && window.qed64.api; const d = a && typeof a.getDocument === 'function' ? a.getDocument() : null; if (d) return d.text; return window.qed64.editor.getModel().getValue(); } catch (e) { return null; } }).catch(() => null); }
+  /** Place the cursor (0-based line/char) without focusing: api.setCursor on a v1 page (then the same revealLineInCenter as before, so the scroll position, and with it the visual baselines, do not depend on the pin), else the editor directly. */
+  setCursor(line0, char0) {
+    return this.q((a) => {
+      const e = window.qed64.editor; const api = window.qed64.api;
+      const pos = { lineNumber: a[0] + 1, column: a[1] + 1 };
+      const viaApi = api && typeof api.setCursor === 'function' ? api.setCursor(pos, { focus: false, reveal: false }) : false;
+      if (!viaApi) e.setPosition(pos);
+      e.revealLineInCenter(a[0] + 1);
+      return true;
+    }, [line0, char0]);
+  }
+  focusEditor() { return this.q(() => { const api = window.qed64.api; if (!(api && typeof api.focus === 'function' && api.focus())) window.qed64.editor.focus(); return window.qed64.editor.hasTextFocus(); }); }
   async waitReady({ minVersion = -1, timeoutMs = 300000, text = null } = {}) {
     return until(async () => {
       const s = await this.qstatus();
@@ -377,9 +498,11 @@ class QedDriver {
   tap() { return this.q(() => window.__uxTap ? { pub: window.__uxTap.pub.length, errReplies: window.__uxTap.errReplies.slice(-50), calls: window.__uxTap.calls, installedAt: window.__uxTap.installedAt } : null).catch(() => null); }
   telemetry() {
     return this.q(() => {
-      const r = window.qed64.relay;
-      // the worker's telemetry reply carries the wasm memory report under .memory (tests/ux/bringup/memprobe.mjs)
-      return Promise.race([r.session.lean.request('telemetry'), new Promise((res) => setTimeout(() => res(null), 5000))]).then((v) => { const m = v && (v.memory || (v.result && v.result.memory)); return m ? { session: r.session.id, currentBytes: m.currentBytes, initialBytes: m.initialBytes, maximumBytes: m.maximumBytes, regionBytes: m.regionBytes } : null; });
+      const r = window.qed64.relay; const hatch = window.qed64.test;
+      // the worker's telemetry reply carries the wasm memory report under .memory (tests/ux/bringup/memprobe.mjs); on a v1
+      // page through the test hatch (qed64.test.telemetry(), EMBEDDING.md §9: test-only, which this harness is), else the session
+      const ask = hatch && typeof hatch.telemetry === 'function' ? hatch.telemetry() : r.session.lean.request('telemetry');
+      return Promise.race([ask, new Promise((res) => setTimeout(() => res(null), 5000))]).then((v) => { const m = v && (v.memory || (v.result && v.result.memory)); return m ? { session: r.session.id, currentBytes: m.currentBytes, initialBytes: m.initialBytes, maximumBytes: m.maximumBytes, regionBytes: m.regionBytes } : null; });
     }).catch((e) => ({ error: String(e.message).slice(0, 200) }));
   }
   ivText() { return this.iv.locator('body').innerText({ timeout: 5000 }).catch(() => ''); }
@@ -421,6 +544,14 @@ export class Gallery extends QedDriver {
   }
   status() { return this.page.evaluate(() => window.__showcase && window.__showcase.status()).catch(() => null); }
   bridge() { return this.page.evaluate(() => window.__showcase && window.__showcase.bridgeStats()).catch(() => null); }
+  /** V1 mode: the page's current offer as the gallery reports it (status().qed64.offer), and __showcase.offer() when present. */
+  offer() { return this.page.evaluate(() => (window.__showcase && typeof window.__showcase.offer === 'function' ? window.__showcase.offer() : (window.__showcase.status().qed64 || {}).offer) ?? null).catch(() => null); }
+  /** V1 mode: take the page's offer through the gallery (__showcase.acceptOffer() -> api.acceptOffer()); false/null in legacy mode. */
+  acceptOffer() { return this.page.evaluate(() => (window.__showcase && typeof window.__showcase.acceptOffer === 'function' ? window.__showcase.acceptOffer() : null)).catch(() => null); }
+  /** The frame's document location (search, hash) and localStorage['qed64.buffer'] on the QED64 origin: the embed-mode facts (EMBEDDING.md §3). */
+  // embedExamplesHidden: the PAGE's own embed-mode act (main.ts: examplesEl.style.display = 'none', an inline style); the
+  // gallery's '#examples{display:none}' stylesheet (galleryPageStyle) would hide it in either mode, so it is not read here
+  frameFacts() { return this.q(() => ({ search: location.search, hash: location.hash, buffer: (() => { try { return localStorage.getItem('qed64.buffer'); } catch (e) { return null; } })(), embedExamplesHidden: (() => { const el = document.getElementById('examples'); return el ? el.style.display === 'none' : null; })(), galleryPageStyle: !!document.getElementById('qed64-showcase-page') })).catch(() => null); }
   currentText() { return this.page.evaluate(() => window.__showcase && window.__showcase.currentText()).catch(() => null); }
   select(id) { return this.page.evaluate((i) => window.__showcase.select(i).then((s) => ({ ok: true, s }), (e) => ({ ok: false, code: e && e.code, message: String(e && e.message || e) })), id); }
   /**
@@ -538,7 +669,11 @@ export const THUMBS_CHECK = async (ids) => {
 };
 export class Stock extends QedDriver {
   constructor(session, page) { super(session, page || session.page(), 'stock'); }
-  /** Seed localStorage['qed64.buffer'] (the page's boot document, main.ts:335-342) then open /?snapshots=… */
+  /**
+   * Seed localStorage['qed64.buffer'] (the PLAIN page's boot document: main.ts reads it outside embed mode, EMBEDDING.md
+   * §3.1 rule 3) then open /?snapshots=… — the stock page, never the gallery's embed-mode frame. The key is internal to
+   * QED64 (§9); the harness uses it as the stock page's documented boot input, which the gallery no longer touches in V1.
+   */
   static async open(session, { buffer = null, query = '?snapshots=snapshots/widgets8', page = null, origin = ORIGIN } = {}) {
     const p = page || session.page() || await session.newPage();
     await p.goto(`${origin}/showcase/pin.json`);
@@ -547,10 +682,27 @@ export class Stock extends QedDriver {
     await p.goto(`${origin}/${query}`, { waitUntil: 'domcontentloaded' });
     return s;
   }
-  pageInfo() { return this.page.evaluate(() => ({ pill: (document.getElementById('ptext') || {}).textContent || null, bootcard: (document.getElementById('bootcard') || {}).className || null, bootlabel: (document.getElementById('bootlabel') || {}).textContent || null, action: (() => { const a = [...document.querySelectorAll('button, a')].find((b) => /Load exact imports/.test(b.textContent)); return a ? { text: a.textContent.trim(), visible: !!(a.offsetWidth || a.offsetHeight) } : null; })() })).catch(() => null); }
-  /** Settles on ready / headerRefused / halted / dead / a failed boot card. */
+  /**
+   * The stock page's own UI (pill, boot card, the "Load exact imports" button): DIAGNOSTICS from the DOM, as before. On a
+   * v1 page the structured equivalents come from api.status() (EMBEDDING.md §2.2): `boot` {stage, label, done, failed,
+   * message, overlay} and `offer`; `bootFailed` is api.status().boot.failed there and the boot card's "failed" class on a
+   * legacy page (the same fact the tests asserted before).
+   */
+  pageInfo() {
+    return this.page.evaluate(() => {
+      const a = window.qed64 && window.qed64.api; const st = a && typeof a.status === 'function' ? a.status() : null;
+      const bootcard = (document.getElementById('bootcard') || {}).className || null;
+      return {
+        pill: (document.getElementById('ptext') || {}).textContent || null, bootcard, bootlabel: (document.getElementById('bootlabel') || {}).textContent || null,
+        action: (() => { const b = [...document.querySelectorAll('button, a')].find((x) => /Load exact imports/.test(x.textContent)); return b ? { text: b.textContent.trim(), visible: !!(b.offsetWidth || b.offsetHeight) } : null; })(),
+        boot: st ? st.boot : null, offer: st ? st.offer : null, api: !!st,
+        bootFailed: st ? !!st.boot.failed : /failed/.test(bootcard || ''),
+      };
+    }).catch(() => null);
+  }
+  /** Settles on ready / headerRefused / halted / dead / a failed boot (api.status().boot.failed on a v1 page, the failed boot card on a legacy one). */
   async settle({ timeoutMs = 300000 } = {}) {
-    return until(async () => { const s = await this.qstatus(); const i = await this.pageInfo(); if (s && ['ready', 'headerRefused', 'halted', 'dead'].includes(s.phase)) return { s, i }; if (i && /failed/.test(i.bootcard || '')) return { s, i }; return null; }, { timeoutMs, intervalMs: 200 });
+    return until(async () => { const s = await this.qstatus(); const i = await this.pageInfo(); if (s && ['ready', 'headerRefused', 'halted', 'dead'].includes(s.phase)) return { s, i }; if (i && i.bootFailed) return { s, i }; return null; }, { timeoutMs, intervalMs: 200 });
   }
 }
 
@@ -601,7 +753,8 @@ export async function captureHang(g, { context = 'stall', synthetic = false, wat
   // (b)
   const tel = await g.q(() => {
     const t = Date.now();
-    let p; try { p = window.qed64.relay.session.lean.telemetry(); } catch (e) { return { answered: false, error: `telemetry() threw: ${String(e && e.message || e).slice(0, 200)}` }; }
+    // the test hatch's telemetry() on a v1 page (EMBEDDING.md §9, test-only), else the session's
+    let p; try { const h = window.qed64.test; p = h && typeof h.telemetry === 'function' ? h.telemetry() : window.qed64.relay.session.lean.telemetry(); } catch (e) { return { answered: false, error: `telemetry() threw: ${String(e && e.message || e).slice(0, 200)}` }; }
     return Promise.race([
       p.then((v) => ({ answered: true, ms: Date.now() - t, value: v }), (e) => ({ answered: true, ms: Date.now() - t, rejected: String(e && e.message || e).slice(0, 200) })),
       new Promise((res) => setTimeout(() => res({ answered: false, ms: Date.now() - t, note: 'did NOT answer within 10 s' }), 10000)),

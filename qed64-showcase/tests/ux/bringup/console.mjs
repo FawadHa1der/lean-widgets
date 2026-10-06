@@ -12,7 +12,8 @@
  * NotificationService console.error) is allowed only when EACH such record is explained by its own LSP error reply
  * with that code seen by the LSP tap (tests/ux/lib/lsp-tap.mjs; `reports` = the tap's __uxReport records
  * {kind:'errorReply', code, recvWall}) with recvWall in [rec.wall - beforeMs, rec.wall + afterMs]. Records need `wall`
- * (epoch ms). Fail-closed: without `reports` every such record is unexplained. So a run that logs an empty
+ * (epoch ms). The replies of one code form ONE pool shared by every pairWith entry of that code (a reply explains one line
+ * over the run, whichever entry the line matched). Fail-closed: without `reports` every such record is unexplained. So a run that logs an empty
  * console.error for any other reason fails even though the entry has no count limit.
  * Returns {ok, unexpected:[…], overLimit:[…], unpaired:[…], counts:{entryKey: n}, paired:{entryKey: {n, replies}}, loads, scenarios}.
  */
@@ -53,16 +54,26 @@ export function classifyConsole(watch, allow, { scenarios = [], reports = undefi
     counts[r.key] = (counts[r.key] || 0) + 1;
     if (r.pairWith) (pairedRecs[r.key] || (pairedRecs[r.key] = { rule: r, recs: [] })).recs.push(rec);
   }
-  const paired = {};
+  // ONE reply pool per lspErrorCode, shared by every pairWith entry of that code (the empty -32800 line and pin G's
+  // "client cancelled" -32800 line draw on the same replies): each LSP reply explains one line over the run, whichever entry
+  // that line matched. The records of a code are paired in wall order, each within its own entry's window.
+  const paired = {}; const pools = new Map();
+  for (const { rule } of Object.values(pairedRecs)) {
+    const code = rule.pairWith.lspErrorCode;
+    if (!pools.has(code)) pools.set(code, { replies: (reports || []).filter((x) => x && x.kind === 'errorReply' && x.code === code && Number.isFinite(x.recvWall)).map((x) => ({ w: x.recvWall, used: false })), recs: [] });
+  }
   for (const [key, { rule, recs: list }] of Object.entries(pairedRecs)) {
-    const pw = rule.pairWith;
-    const replies = (reports || []).filter((x) => x && x.kind === 'errorReply' && x.code === pw.lspErrorCode && Number.isFinite(x.recvWall)).map((x) => ({ w: x.recvWall, used: false }));
-    for (const rec of [...list].sort((a, b) => (a.wall || 0) - (b.wall || 0))) {
+    const pool = pools.get(rule.pairWith.lspErrorCode);
+    for (const rec of list) pool.recs.push({ key, rule, rec });
+    paired[key] = { n: list.length, replies: pool.replies.length };
+  }
+  for (const { replies, recs: list } of pools.values()) {
+    for (const { key, rule, rec } of [...list].sort((a, b) => (a.rec.wall || 0) - (b.rec.wall || 0))) {
+      const pw = rule.pairWith;
       const k = Number.isFinite(rec.wall) ? replies.find((x) => !x.used && x.w >= rec.wall - pw.beforeMs && x.w <= rec.wall + pw.afterMs) : null;
       if (k) k.used = true;
       else unpaired.push({ key, t: rec.t, url: rec.url || null, line: rec.line ?? null, why: !reports ? 'no LSP tap reports passed (fail-closed)' : !Number.isFinite(rec.wall) ? 'record has no wall time' : `no unused LSP ${pw.lspErrorCode} reply within -${pw.beforeMs}/+${pw.afterMs} ms` });
     }
-    paired[key] = { n: list.length, replies: replies.length };
   }
   const loads = watch.loads || { qed64: 1, infoview: 1 };
   for (const r of rules) {

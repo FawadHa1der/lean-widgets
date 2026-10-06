@@ -41,9 +41,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, BY_ID, GOLDENS, SC, PIN, screenPath, sleep, until, errorsWarnings } from '../lib/qed64.mjs';
+import { Gallery, BY_ID, GOLDENS, SC, PIN, API, RESTART_HOW, captureHang, screenPath, sleep, until, errorsWarnings } from '../lib/qed64.mjs';
 import { clickLink, cursorOfLine, goldenCursor } from '../lib/actions.mjs';
 
+// QED64 embedding contract v1 (lib/qed64.mjs API; pin F 84d594e+): on api.capabilities.liveness the gallery's OWN probe is
+// STOOD DOWN (status().liveness.probe 'stood-down', sent/answered/missed 0; QED64's worker liveness is projected by
+// api.status().liveness and the `liveness` event, mirrored in status().liveness.qed64), so the synthetic page-level freeze is
+// surfaced only by the stall card (shortened to ?stall=15), worded 'stopped' (QED64's worker still sees frames, so
+// liveness.qed64.stalled stays false and nothing reboots), and recovered by its "Restart Lean" (how 'api.restart'). The
+// hang capture still runs in observe mode (captureHang reads diagnostics), and nothing restarts until the card's button.
+// C22 then checks that no probe ran at all, and C23 that a QED64-handled wedged reboot reaches status().liveness.qed64
+// {wedgedReboots, lastReboot {from, to}} from the API's `reboot` event. The legacy branches below are unchanged.
 const STALL_S = 15;
 // Pin-agnostic (multi-pin lane): whether the served QED64 page has its OWN liveness is a property of the active pin
 // (pins/<id>/pin.json liveness.builtIn: 9fdf9b8 and 5ac5d00 yes, 1859b83 no), and the gallery must detect exactly that.
@@ -51,6 +59,9 @@ const STALL_S = 15;
 // probe is the primary recovery (after 10 s; restart about 20 s after the click).
 const BUILTIN = PIN.liveness.builtIn === true;
 const DEFER_MS = BUILTIN ? 30000 : 10000;
+// status().liveness.qed64.totals: counted from the API's `liveness` events in v1 (no 'probes': the event has no such kind,
+// so the gallery reports probes: null), from QED64's status().liveness counters on a legacy page
+const TOTAL_KEYS = API ? ['answered', 'stalls', 'resumed', 'rescues'] : ['probes', 'answered', 'stalls', 'resumed', 'rescues'];
 
 /** Detach the current session's output inside the QED64 page (see the header). Returns the frozen session id. */
 const freeze = (g) => g.q(() => {
@@ -62,9 +73,167 @@ const freeze = (g) => g.q(() => {
 });
 const galleryNow = (g) => g.page.evaluate(() => performance.now());
 
+/** C21 on a v1 pin (API): see the header. (a) default mode with a 15 s card; (b) observe mode, capture, Keep waiting, Reset. */
+async function c21V1(ux, m) {
+  const id = 'hasse-view'; const ex = BY_ID[id]; const gold = GOLDENS[id];
+  // Restart Lean / Reset on the frozen session answer its requests in flight with QED64's "restarting with exact imports"
+  // (stallRestart), and the InfoView's old RPC session may be refused once per request. No livenessObserved: the gallery's
+  // probe never runs in v1, so its observe-mode console.warn must not appear either.
+  ux.scenarios.push('stallRestart', 'relayRestartOrReboot');
+  const s = await ux.launch({ profile: 'warm' });
+
+  // ---- (a) default mode: the probe is stood down, the (15 s) card surfaces the freeze, its Restart Lean recovers it
+  const g = await Gallery.open(s, { hash: id, query: `?stall=${STALL_S}` });
+  expect(g.boot.s.phase).toBe('ready');
+  expect(g.boot.s.api, 'the v1 API is present').toMatchObject({ present: true, embed: true });
+  expect(g.boot.s.api.capabilities.liveness, 'this v1 branch assumes capabilities.liveness (the probe stands down on it)').toBe(true);
+  expect(g.boot.s.stall).toMatchObject({ thresholdMs: STALL_S * 1000, shown: 0, active: false });
+  expect(g.boot.s.liveness, 'the gallery probe stood down').toMatchObject({ mode: 'auto', probe: 'stood-down', sent: 0, answered: 0, missed: 0, wedged: 0, restarts: 0 });
+  expect(g.boot.s.liveness.qed64, `QED64's liveness (pin ${PIN.id}) projected by the API`).toMatchObject({ builtIn: BUILTIN, api: true });
+  expect(BUILTIN, 'a pin with capabilities.liveness has QED64 liveness built in').toBe(true);
+  const q0 = await g.qstatus();
+  const gc = gold.clicks[0];
+  const cur = cursorOfLine(id, gc.cursorLine);
+  const at = { line: cur.line, character: cur.character };
+  let tFreeze = null;
+  const r = await clickLink(g, ex, { kind: gc.kind, linkText: gc.linkText, title: gc.linkTitle || null, edit: gc.edit, editedSha256: gc.editedSha256 }, at, goldenCursor(id, at.line, at.character).panels[0],
+    { elabTimeoutMs: 180000, beforeClick: async () => { const sid = await freeze(g); tFreeze = await galleryNow(g); return sid; } });
+  m.frozenA = r.beforeClick;
+  const sa = await g.status(); const qa = await g.qstatus(); const lv = sa.liveness;
+  const stall = (r.stalls || [])[0] || null;
+  m.a = {
+    ok: r.ok, error: r.error || null, editExact: r.editExact, nativeSha: r.nativeSha, errors: r.errors, warnings: r.warnings, clickToReadyMs: r.clickToReadyMs,
+    cardStalls: (r.stalls || []).length, cardShown: sa.stall.shown, card: stall && stall.card, variant: stall && stall.galleryStall && stall.galleryStall.variant, shownEvent: stall && stall.shownEvent, restartEvent: stall && stall.restartEvent,
+    cardAfterFreezeMs: stall && stall.shownEvent && tFreeze !== null ? Math.round(stall.shownEvent.t - tFreeze) : null, qed64AtCard: stall && stall.qed64,
+    liveness: { probe: lv.probe, sent: lv.sent, answered: lv.answered, missed: lv.missed, wedged: lv.wedged, restarts: lv.restarts }, wedgeEvents: lv.events.filter((e) => e.source === 'wedged').length, notice: sa.notice,
+    qed64: { api: lv.qed64.api, stalled: lv.qed64.stalled, lastFrameAgoMs: lv.qed64.lastFrameAgoMs, lastAnswerAgoMs: lv.qed64.lastAnswerAgoMs, totals: lv.qed64.totals, wedgedReboots: lv.qed64.wedgedReboots, events: lv.events.filter((e) => String(e.source).startsWith('qed64-')).map((e) => e.source) },
+    sessionAfter: qa.session, userRestarts: qa.stats.userRestarts - q0.stats.userRestarts, workerDeaths: qa.stats.workerDeaths - q0.stats.workerDeaths,
+    probesSeenByTap: (await g.tap()).calls['showcase-live'] || 0,
+  };
+  await g.page.screenshot({ path: screenPath('C21-v1-card-recovered.png') });
+  console.log(`C21 (a, v1) ${JSON.stringify(m.a)}`);
+  expect(m.a.cardStalls, 'the card surfaced the freeze and Restart Lean was pressed once').toBe(1);
+  expect(m.a.cardShown).toBe(1);
+  expect(m.a.liveness, 'no probe of the gallery\'s own').toEqual({ probe: 'stood-down', sent: 0, answered: 0, missed: 0, wedged: 0, restarts: 0 });
+  expect(m.a.wedgeEvents, 'no wedge declared by the gallery').toBe(0);
+  expect(m.a.probesSeenByTap, 'no showcase-live probe went through the relay').toBe(0);
+  expect(stall.card).toMatchObject({ role: 'alert', title: 'Lean has stopped making progress', restart: 'Restart Lean', reset: true, keepWaiting: 'Keep waiting' });
+  expect(m.a.variant, 'no sign of life on a frozen checker (no frame, no fileProgress/diagnostics event, no QED64 answer): the card says it stopped').toBe('stopped');
+  expect(stall.shownEvent && stall.shownEvent.idleMs, `shown after >= ${STALL_S} s without progress`).toBeGreaterThanOrEqual(STALL_S * 1000 - 500);
+  // QED64 alone at that moment: the L7 symptoms (no death, relay serving, still 'elaborating', the frozen session), read through the API
+  expect(stall.qed64).toMatchObject({ phase: 'elaborating', relay: 'serving', lastDeath: null, session: m.frozenA });
+  expect(stall.restartEvent, 'Restart Lean = api.restart()').toMatchObject({ source: 'card', how: RESTART_HOW });
+  // QED64's own liveness did not act on this page-level freeze (its worker kept seeing frames): no stall, no reboot
+  expect(m.a.qed64).toMatchObject({ api: true, stalled: false, wedgedReboots: 0 });
+  expect(m.a.qed64.totals.stalls).toBe(0);
+  expect(sa.stall.events.some((e) => e.source === 'card' && e.how === RESTART_HOW)).toBe(true);
+  expect(m.a, 'the post-click text re-checked clean on a new session').toMatchObject({ ok: true, editExact: true, nativeSha: true, errors: 0, warnings: 0, userRestarts: 1, workerDeaths: 0 });
+  expect(m.a.sessionAfter).not.toBe(m.frozenA);
+  expect(sa.error, 'no card left').toBeNull();
+  const ra = await g.resetUI(ex);
+  expect(ra.ok, 'Reset after the recovery').toBe(true);
+  await ux.close(s);
+
+  // ---- (b) observe mode (?liveness=observe) with the 15 s card, in a FRESH browser (QED64 L9): the same card (the mode
+  // only changes what the stood-down probe would do), the hang capture BEFORE anything resets, nothing restarts until the
+  // card's button; Keep waiting re-arms it, the toolbar's Reset example restarts the checker on the example (api.restart).
+  const s2 = await ux.launch({ profile: 'warm', label: 'c21-observe' });
+  const g2 = await Gallery.open(s2, { hash: id, query: `?stall=${STALL_S}&liveness=observe` });
+  expect(g2.boot.s.phase).toBe('ready');
+  expect(g2.boot.s.liveness).toMatchObject({ mode: 'observe', probe: 'stood-down', sent: 0 });
+  expect(g2.boot.s.stall.thresholdMs).toBe(STALL_S * 1000);
+  const q1 = await g2.qstatus();
+  m.frozenB = await freeze(g2);
+  const v0 = (await g2.qstatus()).version;
+  const last = ex.text.split('\n').length - 1;
+  await g2.setCursor(last, 0);
+  await g2.focusEditor();
+  await g2.page.keyboard.type('-- stalled?');
+  const tEdit = Date.now();
+  // QED64 alone, sampled every second until the card: never a death, never ready, relay serving
+  m.b = { samples: [] };
+  const first = await until(async () => {
+    const q = await g2.qstatus(); m.b.samples.push({ t: Date.now() - tEdit, phase: q.phase, relay: q.relay, version: q.version, lastDeath: q.lastDeath, deaths: q.stats.workerDeaths });
+    return (await g2.stallCardVisible()) ? Date.now() - tEdit : null;
+  }, { timeoutMs: (STALL_S + 10) * 1000, intervalMs: 1000 });
+  m.b.cardAfterMs = first;
+  { const sb0 = await g2.status(); m.b.cardVariant = sb0.stall.variant; m.b.cardTitle = sb0.error && sb0.error.title; }
+  expect(m.b.cardVariant, 'no sign of life on a frozen checker: the card says it stopped').toBe('stopped');
+  expect(m.b.cardTitle).toBe('Lean has stopped making progress');
+  await g2.page.screenshot({ path: screenPath('C21-stall-card.png') });
+  expect(first, 'the card appeared after the keystroke').not.toBeNull();
+  const edited = m.b.samples.filter((x) => x.version > v0);
+  expect(edited.length).toBeGreaterThan(STALL_S - 3);
+  expect(edited.every((x) => x.relay === 'serving' && x.phase === 'elaborating' && x.lastDeath === null && x.deaths === q1.stats.workerDeaths)).toBe(true);
+  // observe mode in v1: for 10 s after the card nothing moves (no probe, no wedge, no restart, QED64 sees frames)
+  const quiet = []; const tq = Date.now();
+  while (Date.now() - tq < 10000) { const st = await g2.status(); const q = await g2.qstatus(); quiet.push({ t: Date.now() - tq, sent: st.liveness.sent, wedged: st.liveness.wedged, restarts: st.liveness.restarts, session: q.session, phase: q.phase, qed64Stalled: st.liveness.qed64.stalled, wedgedReboots: st.liveness.qed64.wedgedReboots, card: st.stall.active }); await sleep(1000); }
+  const qb = await g2.qstatus(); const sbq = await g2.status();
+  m.b.observe = { probe: sbq.liveness.probe, sent: sbq.liveness.sent, wedged: sbq.liveness.wedged, restarts: sbq.liveness.restarts, wedgeEvents: sbq.liveness.events.filter((e) => e.source === 'wedged').length, session: qb.session, userRestarts: qb.stats.userRestarts - q1.stats.userRestarts, qed64: { stalled: sbq.liveness.qed64.stalled, wedgedReboots: sbq.liveness.qed64.wedgedReboots, totals: sbq.liveness.qed64.totals }, quiet: quiet.length };
+  expect(m.b.observe).toMatchObject({ probe: 'stood-down', sent: 0, wedged: 0, restarts: 0, wedgeEvents: 0, session: m.frozenB, userRestarts: 0 });
+  expect(m.b.observe.qed64).toMatchObject({ stalled: false, wedgedReboots: 0 });
+  expect(quiet.every((x) => x.session === m.frozenB && x.phase === 'elaborating' && x.restarts === 0 && x.card), 'frozen, carded, untouched for 10 s').toBe(true);
+  // the hang capture, before anything resets it (the harness runs it directly: no wedge of the gallery's own to trigger maybeCapture in v1)
+  const cap = await captureHang(g2, { context: 'C21 (b) synthetic freeze (v1: the card, no gallery probe)' });
+  (g2.captures ||= []).push(cap);
+  const doc = JSON.parse(fs.readFileSync(path.join(SC, cap.file), 'utf8'));
+  m.b.capture = { file: cap.file, log: cap.log, summary: cap.summary, telemetry: { answered: doc.steps.b_telemetry.answered, ms: doc.steps.b_telemetry.ms }, d1: { workers: doc.steps.d1_rawCheckMailbox.workers, blocked: doc.steps.d1_rawCheckMailbox.blocked, calls: doc.steps.d1_rawCheckMailbox.calls.length, skipped: doc.steps.d1_rawCheckMailbox.skipped, resumed: doc.steps.d1_rawCheckMailbox.resumed }, d2: { called: doc.steps.d2_checkMailbox.called, ms: doc.steps.d2_checkMailbox.ms, resumed: doc.steps.d2_checkMailbox.resumed, pool: doc.steps.d2_checkMailbox.pool } };
+  console.log(`C21 (b, v1) capture ${JSON.stringify(m.b.capture)}`);
+  expect(doc.synthetic, 'labelled synthetic').toBe(true);
+  expect(doc.evidence).toMatch(/NOT L7 evidence/);
+  expect(doc.steps.a_status.qed64).toMatchObject({ phase: 'elaborating', relay: 'serving', session: m.frozenB });
+  expect(doc.steps.a_status.qed64.pool).toBeTruthy();
+  expect(doc.steps.b_telemetry.answered, 'telemetry answered (the worker JS thread is alive, as in L7)').toBe(true);
+  expect(doc.steps.c_workerConsole.lines, 'the worker / [lean:…] console lines since the session started').toBeGreaterThan(0);
+  expect(fs.existsSync(path.join(SC, doc.steps.c_workerConsole.file))).toBe(true);
+  expect(doc.steps.d1_rawCheckMailbox.calls.length, 'the raw __emscripten_check_mailbox() was called once per eligible worker').toBeGreaterThanOrEqual(1);
+  expect(doc.steps.d1_rawCheckMailbox.calls.every((c) => !c.error && typeof c.ms === 'number')).toBe(true);
+  expect(doc.steps.d1_rawCheckMailbox.mainThread.length, 'one Emscripten main-thread worker').toBe(1);
+  expect(doc.steps.d1_rawCheckMailbox.resumed, 'a JS-level freeze cannot be resumed by a mailbox kick').toBe(false);
+  expect(doc.steps.d2_checkMailbox).toMatchObject({ called: 'checkMailbox() once', resumed: false });
+  expect(doc.steps.d2_checkMailbox.error).toBeNull();
+  expect(doc.steps.d2_checkMailbox.pool).toBeTruthy();
+  // capture done; the card still works: Keep waiting hides it and it comes back after another threshold
+  expect(await g2.stallCardVisible(), 'the card is still up after the capture').toBe(true);
+  const tKeep = Date.now();
+  await g2.page.locator('#error-dismiss').click();
+  const hidden = await until(async () => { const st = await g2.status(); return st && !st.stall.active && (st.error === null) ? true : null; }, { timeoutMs: 3000, intervalMs: 100 });
+  const again = await until(async () => ((await g2.stallCardVisible()) ? Date.now() - tKeep : null), { timeoutMs: (STALL_S + 10) * 1000, intervalMs: 250 });
+  const sb = (await g2.status()).stall;
+  m.b.keepWaiting = { hidden: !!hidden, cameBackAfterMs: again, shown: sb.shown, events: sb.events.map((e) => e.source) };
+  expect(m.b.keepWaiting.hidden).toBe(true);
+  expect(again, 'the card came back after another threshold').not.toBeNull();
+  expect(again).toBeGreaterThanOrEqual(STALL_S * 1000 - 500);
+  // Reset example (the toolbar button) on the stalled checker: setDocument then api.restart() on the example
+  const tReset = Date.now();
+  await g2.page.locator('#reset-btn').click();
+  const back = await until(async () => { const st = await g2.status(); const q = await g2.qstatus(); const tx = await g2.currentText(); return st && st.phase === 'ready' && !st.edited && tx === ex.text && q && q.phase === 'ready' && q.session !== m.frozenB ? { st, q } : null; }, { timeoutMs: 120000, intervalMs: 150 });
+  m.b.reset = { ok: !!back, ms: Date.now() - tReset, session: back && back.q.session, events: back && back.st.stall.events.slice(-4) };
+  expect(back, 'Reset example recovered the stalled checker').not.toBeNull();
+  expect(back.st.stall.events.some((e) => e.source === 'reset' && e.how === RESTART_HOW), `the reset restarted through ${RESTART_HOW}`).toBe(true);
+  expect(back.st.error).toBeNull();
+  expect(back.st.liveness.restarts, 'nothing restarted by a probe').toBe(0);
+  expect(back.st.liveness.sent).toBe(0);
+  const first0 = gold.cursors[0];
+  const p = await g2.expectPanel({ line: first0.line, character: first0.character }, first0.panels[0], { timeoutMs: 60000 });
+  const d = await g2.diagnosticsOf(back.q.version);
+  m.b.after = { panelEqual: p.equal, errorsWarnings: errorsWarnings(d).length };
+  const q2 = await g2.qstatus();
+  m.relayB = { userRestarts: q2.stats.userRestarts - q1.stats.userRestarts, workerDeaths: q2.stats.workerDeaths - q1.stats.workerDeaths, reboots: q2.stats.reboots - q1.stats.reboots };
+  await g2.page.screenshot({ path: screenPath('C21-after-reset.png') });
+  // the test API still switches the mode value (it sends nothing in v1)
+  m.b.apiSwitch = await g2.page.evaluate(() => { const l = window.__showcase.liveness('auto'); return { mode: l.mode, probe: l.probe, sent: l.sent }; });
+  console.log(`C21 (b, v1) ${JSON.stringify({ ...m.b, samples: m.b.samples.length })} relay ${JSON.stringify(m.relayB)}`);
+  expect(m.b.after).toEqual({ panelEqual: true, errorsWarnings: 0 });
+  expect(m.relayB).toEqual({ userRestarts: 1, workerDeaths: 0, reboots: 0 });
+  expect(m.b.apiSwitch).toEqual({ mode: 'auto', probe: 'stood-down', sent: 0 });
+  await sleep(200);
+}
+
 test('C21 stall handling (QED64 L7) on a frozen checker: the liveness probe restarts it by itself; observe mode records it, the hang capture runs, and the card still works', async ({ ux }) => {
   test.setTimeout(20 * 60 * 1000);
   const m = ux.metrics; const id = 'hasse-view'; const ex = BY_ID[id]; const gold = GOLDENS[id];
+  if (API) { m.v1 = true; await c21V1(ux, m); return; } // v1 pin: the probe is stood down, the card recovers (see the header)
   // a relay restart answers the requests in flight on the frozen session with QED64's "restarting with exact imports"
   // (stallRestart), and the InfoView's old RPC session may be refused once per request
   // ... and (b)'s observe-mode wedge logs the gallery's one console.warn (livenessObserved)
@@ -226,6 +395,7 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   expect(g.boot.s.phase).toBe('ready');
   expect(g.boot.s.liveness).toMatchObject({ mode: 'auto', probeAfterMs: 10000, probeTimeoutMs: 5000, wedged: 0, restarts: 0 });
   expect(g.boot.s.liveness.qed64.builtIn, `pin ${PIN.id}'s page ${BUILTIN ? 'has' : 'has no'} liveness of its own`).toBe(BUILTIN);
+  if (API) expect(g.boot.s.liveness, 'v1: the gallery probe is stood down on capabilities.liveness').toMatchObject({ probe: 'stood-down', sent: 0, qed64: { api: true } });
   const q0 = await g.qstatus();
   // (1) the slowest DistLens declared click (by the native click-all re-elaboration time)
   const slow = gold.clicks.map((c, i) => ({ c, i, ms: c.reElaborationMs || 0 })).sort((x, y) => y.ms - x.ms)[0];
@@ -253,6 +423,8 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   }, { timeoutMs: SLEEP_MS + 120000, intervalMs: 500 });
   expect(done, 'the slow command finished').not.toBeNull();
   const lv = done.st.liveness;
+  // v1: QED64's frame clock read right after the verdict (done.st was read just BEFORE the ready qstatus of the same poll)
+  const frameAgoAfterReady = API ? (await g.status()).liveness.qed64.lastFrameAgoMs : null;
   const d = await g.diagnosticsOf(done.q.version);
   const q1 = await g.qstatus();
   m.eval = {
@@ -260,26 +432,44 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     probes: lv.sent - lv0.sent, answered: lv.answered - lv0.answered, missed: lv.missed - lv0.missed, wedged: lv.wedged - lv0.wedged, restarts: lv.restarts - lv0.restarts, lastAnswerMs: lv.lastAnswerMs, maxAnswerMs: lv.maxAnswerMs,
     answers: lv.events.filter((e) => e.source === 'answered').slice(-8).map((e) => e.ms),
     // QED64's own liveness during the same silence (its probe after 6 s without a frame, answered by the busy FileWorker)
-    qed64: Object.fromEntries(['probes', 'answered', 'stalls', 'resumed', 'rescues'].map((k) => [k, lv.qed64.totals[k] - lv0.qed64.totals[k]])), qed64WedgedReboots: lv.qed64.wedgedReboots - lv0.qed64.wedgedReboots,
+    qed64: Object.fromEntries(TOTAL_KEYS.map((k) => [k, lv.qed64.totals[k] - lv0.qed64.totals[k]])), qed64WedgedReboots: lv.qed64.wedgedReboots - lv0.qed64.wedgedReboots,
+    // v1: QED64's liveness as the API projects it at the end (status().liveness.qed64 mirrors api.status().liveness)
+    qed64Live: API ? { probe: lv.probe, stalled: lv.qed64.stalled, lastFrameAgoMs: lv.qed64.lastFrameAgoMs, lastAnswerAgoMs: lv.qed64.lastAnswerAgoMs, probeAfterMs: lv.qed64.probeAfterMs, wedgeAfterMs: lv.qed64.wedgeAfterMs, graceMs: lv.qed64.graceMs, totalsAnswered: lv.qed64.totals.answered, frameAgoAfterReady } : null,
     cardShown: done.st.stall.shown, sessionSame: q1.session === q0.session, userRestarts: q1.stats.userRestarts - q0.stats.userRestarts, workerDeaths: q1.stats.workerDeaths - q0.stats.workerDeaths,
     errorsWarnings: errorsWarnings(d).length,
   };
   m.evalSamples = samples.filter((x, i) => i % 4 === 0);
   console.log(`C22 (2) ${JSON.stringify(m.eval)}`);
   expect(m.eval.editToReadyMs, 'it really was slow').toBeGreaterThanOrEqual(SLEEP_MS);
-  // deferred to QED64 (30 s; or 10 s on a page without QED64's liveness), so the gallery's own probe runs at least once in
-  // a 38 s silence, and is answered
-  expect(m.eval.probes, 'the elaboration stayed silent past the deferred threshold, so the gallery probe ran').toBeGreaterThanOrEqual(1);
-  expect(m.eval.answered, 'the gallery probe was answered while Lean was busy').toBeGreaterThanOrEqual(1);
-  expect(m.eval.answered, 'every probe answered (the last may be cut short by ready)').toBeGreaterThanOrEqual(m.eval.probes - 1);
-  // QED64's own liveness took no action. Its probe fires only after 6 s with NO server frame at all; in a gallery session
-  // the editor's and InfoView's requests keep frames flowing during a silent #eval (measured in the worker,
-  // tests/ux/tools/qed64-liveness.mjs on 2026-10-01: longest gap 1,066 ms over 38 s, 0 probes), so it is normally not
-  // even probed. Whatever it did probe must have been answered, with no stall and no reboot.
-  expect(m.eval.qed64.answered, 'every QED64 probe (if any) answered by the busy FileWorker').toBeGreaterThanOrEqual(m.eval.qed64.probes - 1);
-  expect(m.eval.qed64.stalls, 'no QED64 stall').toBe(0);
-  expect(m.eval.qed64WedgedReboots, 'QED64 rebooted nothing').toBe(0);
-  expect(m.eval).toMatchObject({ missed: 0, wedged: 0, restarts: 0, cardShown: 0, sessionSame: true, userRestarts: 0, workerDeaths: 0, errorsWarnings: 0 });
+  if (API) {
+    // v1: no probe of the gallery's own ran (stood down), nothing restarted, nothing rebooted; QED64's liveness, read through
+    // the API, saw frames (the editor's and InfoView's requests keep flowing during a silent #eval) and reports numbers:
+    // lastFrameAgoMs since its last Lean frame; lastAnswerAgoMs since its last answered probe (null until it probed once,
+    // which a silent #eval in a gallery session normally never makes it do) and not stalled at the end
+    expect(m.eval.probes, 'the gallery probe is stood down: nothing sent').toBe(0);
+    expect(m.eval.qed64Live.probe).toBe('stood-down');
+    expect(typeof m.eval.qed64Live.lastFrameAgoMs, 'api.status().liveness.lastFrameAgoMs is a number').toBe('number');
+    expect(m.eval.qed64Live.frameAgoAfterReady, 'the ready verdict was a Lean frame: QED64 saw one within 5 s of ready').toBeLessThan(5000);
+    if (m.eval.qed64Live.totalsAnswered > 0) expect(typeof m.eval.qed64Live.lastAnswerAgoMs, 'answered once: lastAnswerAgoMs is a number').toBe('number');
+    expect(m.eval.qed64Live).toMatchObject({ stalled: false, probeAfterMs: 6000, wedgeAfterMs: 12000, graceMs: 4000 });
+    expect(m.eval.qed64.stalls, 'no QED64 stall').toBe(0);
+    expect(m.eval.qed64WedgedReboots, 'QED64 rebooted nothing').toBe(0);
+    expect(m.eval).toMatchObject({ answered: 0, missed: 0, wedged: 0, restarts: 0, cardShown: 0, sessionSame: true, userRestarts: 0, workerDeaths: 0, errorsWarnings: 0 });
+  } else {
+    // deferred to QED64 (30 s; or 10 s on a page without QED64's liveness), so the gallery's own probe runs at least once in
+    // a 38 s silence, and is answered
+    expect(m.eval.probes, 'the elaboration stayed silent past the deferred threshold, so the gallery probe ran').toBeGreaterThanOrEqual(1);
+    expect(m.eval.answered, 'the gallery probe was answered while Lean was busy').toBeGreaterThanOrEqual(1);
+    expect(m.eval.answered, 'every probe answered (the last may be cut short by ready)').toBeGreaterThanOrEqual(m.eval.probes - 1);
+    // QED64's own liveness took no action. Its probe fires only after 6 s with NO server frame at all; in a gallery session
+    // the editor's and InfoView's requests keep frames flowing during a silent #eval (measured in the worker,
+    // tests/ux/tools/qed64-liveness.mjs on 2026-10-01: longest gap 1,066 ms over 38 s, 0 probes), so it is normally not
+    // even probed. Whatever it did probe must have been answered, with no stall and no reboot.
+    expect(m.eval.qed64.answered, 'every QED64 probe (if any) answered by the busy FileWorker').toBeGreaterThanOrEqual(m.eval.qed64.probes - 1);
+    expect(m.eval.qed64.stalls, 'no QED64 stall').toBe(0);
+    expect(m.eval.qed64WedgedReboots, 'QED64 rebooted nothing').toBe(0);
+    expect(m.eval).toMatchObject({ missed: 0, wedged: 0, restarts: 0, cardShown: 0, sessionSame: true, userRestarts: 0, workerDeaths: 0, errorsWarnings: 0 });
+  }
 
   // (3) a saturated task pool: 24 parallel sleeping proofs (see the header). Same session, no reload: one edit.
   const rs3 = await g.resetUI(ex);
@@ -301,7 +491,7 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     return q.phase === 'ready' && q.version > q3.version && Date.now() - t3 > 2000 ? { st, q } : null;
   }, { timeoutMs: SAT_MS + 180000, intervalMs: 500 });
   expect(done3, 'the saturated elaboration finished').not.toBeNull();
-  const lvS = done3.st.liveness; const d3 = await g.diagnosticsOf(done3.q.version); const q4 = await g.qstatus();
+  const lvS = done3.st.liveness; const frameAgoAfterReady3 = API ? (await g.status()).liveness.qed64.lastFrameAgoMs : null; const d3 = await g.diagnosticsOf(done3.q.version); const q4 = await g.qstatus();
   const cards = s3.filter((x) => x.card);
   m.saturated = {
     theorems: SAT_N, sleepMs: SAT_MS, editToReadyMs: Date.now() - t3, maxIdleMs: Math.max(...s3.map((x) => x.idleMs)),
@@ -310,7 +500,8 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     // the gallery's main-loop probe over (3): sent with every hover, answered by the FileWorker main loop (MethodNotFound)
     mainLoop: { sent: lvS.mainLoop.sent - ml3.sent, answered: lvS.mainLoop.answered - ml3.answered, synthetic: lvS.mainLoop.synthetic - ml3.synthetic, lastMs: lvS.mainLoop.lastMs, maxMs: lvS.mainLoop.maxMs },
     events: lvS.events.filter((e) => ['probe', 'answered', 'alive', 'missed', 'wedged', 'late', 'main-answered'].includes(e.source)).slice(-16).map((e) => `${e.source}${e.via ? `:${e.via}` : ''}${e.ms !== undefined && e.ms !== null ? `:${e.ms}ms` : ''}`),
-    qed64: Object.fromEntries(['probes', 'answered', 'stalls', 'resumed', 'rescues'].map((k) => [k, lvS.qed64.totals[k] - lv3.qed64.totals[k]])), qed64WedgedReboots: lvS.qed64.wedgedReboots - lv3.qed64.wedgedReboots,
+    qed64: Object.fromEntries(TOTAL_KEYS.map((k) => [k, lvS.qed64.totals[k] - lv3.qed64.totals[k]])), qed64WedgedReboots: lvS.qed64.wedgedReboots - lv3.qed64.wedgedReboots,
+    qed64Live: API ? { probe: lvS.probe, stalled: lvS.qed64.stalled, lastFrameAgoMs: lvS.qed64.lastFrameAgoMs, lastAnswerAgoMs: lvS.qed64.lastAnswerAgoMs, totalsAnswered: lvS.qed64.totals.answered, frameAgoAfterReady: frameAgoAfterReady3 } : null,
     cardShown: done3.st.stall.shown - st3.shown, cardVariants: [...new Set(cards.map((x) => x.variant))], cardTitles: [...new Set(cards.map((x) => x.title))],
     sessionSame: q4.session === q0.session, userRestarts: q4.stats.userRestarts - q0.stats.userRestarts, workerDeaths: q4.stats.workerDeaths - q0.stats.workerDeaths, errorsWarnings: errorsWarnings(d3).length, diagnostics: errorsWarnings(d3).slice(0, 3).map((x) => `${x.line}:${x.character} sev ${x.sev} ${String(x.msg).slice(0, 160)}`),
   };
@@ -318,19 +509,33 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   console.log(`C22 (3) ${JSON.stringify(m.saturated)}`);
   expect(m.saturated.poolSaturated, 'every Lean task thread was busy at some point (pool unused 0): the premise of this case').toBe(true);
   expect(m.saturated.editToReadyMs, 'it really was slow').toBeGreaterThanOrEqual(SAT_MS);
-  expect(m.saturated.probes, 'the elaboration stayed silent past the deferred threshold, so the gallery probe ran').toBeGreaterThanOrEqual(1);
-  // every probe settled as answered or 'alive' (the last may be cut short by ready); a single miss may precede an 'alive'
-  expect(m.saturated.answered + m.saturated.alive, 'every gallery probe answered or settled alive by another sign of life').toBeGreaterThanOrEqual(m.saturated.probes - 1);
-  expect(m.saturated.missed, 'at most one miss, never two in a row').toBeLessThanOrEqual(1);
-  // the main-loop probe went out with the hovers and the FileWorker's main loop answered it while the pool was saturated
-  // (the last one may be cut short by ready); never a reply QED64's JS layer made
-  expect(m.saturated.mainLoop.sent, 'a main-loop probe went out with every hover probe').toBe(m.saturated.probes);
-  expect(m.saturated.mainLoop.answered, 'the main loop answered the main-loop probes during the saturation').toBeGreaterThanOrEqual(m.saturated.mainLoop.sent - 1);
-  expect(m.saturated.mainLoop.synthetic).toBe(0);
-  // without QED64's liveness there is no qed64-answered signal: the main loop's answer is what keeps the session alive
-  if (!BUILTIN) expect(m.saturated.aliveVia['main-loop'], `pin ${PIN.id} (no QED64 liveness): settled alive via the main-loop probe`).toBeGreaterThanOrEqual(1);
-  expect(m.saturated.qed64.stalls, 'QED64 saw no stall either (its own probe was answered)').toBe(0);
-  expect(m.saturated.qed64WedgedReboots).toBe(0);
+  if (API) {
+    // v1: no probe of the gallery's own (hover or main-loop) went out; QED64's own liveness (its probe is answered by the
+    // FileWorker main loop without a pool thread) saw no stall and rebooted nothing, and is not stalled at the end
+    expect(m.saturated.probes, 'the gallery probe is stood down: nothing sent').toBe(0);
+    expect(m.saturated.mainLoop.sent, 'no main-loop probe either').toBe(0);
+    expect(m.saturated).toMatchObject({ answered: 0, missed: 0 });
+    expect(m.saturated.qed64Live).toMatchObject({ probe: 'stood-down', stalled: false });
+    expect(typeof m.saturated.qed64Live.lastFrameAgoMs).toBe('number');
+    expect(m.saturated.qed64Live.frameAgoAfterReady, 'the ready verdict was a Lean frame: QED64 saw one within 5 s of ready').toBeLessThan(5000);
+    if (m.saturated.qed64Live.totalsAnswered > 0) expect(typeof m.saturated.qed64Live.lastAnswerAgoMs, 'QED64 probed and was answered: lastAnswerAgoMs is a number').toBe('number');
+    expect(m.saturated.qed64.stalls, 'QED64 saw no stall (its own probe was answered)').toBe(0);
+    expect(m.saturated.qed64WedgedReboots).toBe(0);
+  } else {
+    expect(m.saturated.probes, 'the elaboration stayed silent past the deferred threshold, so the gallery probe ran').toBeGreaterThanOrEqual(1);
+    // every probe settled as answered or 'alive' (the last may be cut short by ready); a single miss may precede an 'alive'
+    expect(m.saturated.answered + m.saturated.alive, 'every gallery probe answered or settled alive by another sign of life').toBeGreaterThanOrEqual(m.saturated.probes - 1);
+    expect(m.saturated.missed, 'at most one miss, never two in a row').toBeLessThanOrEqual(1);
+    // the main-loop probe went out with the hovers and the FileWorker's main loop answered it while the pool was saturated
+    // (the last one may be cut short by ready); never a reply QED64's JS layer made
+    expect(m.saturated.mainLoop.sent, 'a main-loop probe went out with every hover probe').toBe(m.saturated.probes);
+    expect(m.saturated.mainLoop.answered, 'the main loop answered the main-loop probes during the saturation').toBeGreaterThanOrEqual(m.saturated.mainLoop.sent - 1);
+    expect(m.saturated.mainLoop.synthetic).toBe(0);
+    // without QED64's liveness there is no qed64-answered signal: the main loop's answer is what keeps the session alive
+    if (!BUILTIN) expect(m.saturated.aliveVia['main-loop'], `pin ${PIN.id} (no QED64 liveness): settled alive via the main-loop probe`).toBeGreaterThanOrEqual(1);
+    expect(m.saturated.qed64.stalls, 'QED64 saw no stall either (its own probe was answered)').toBe(0);
+    expect(m.saturated.qed64WedgedReboots).toBe(0);
+  }
   expect(m.saturated, 'not restarted: same session, the work kept').toMatchObject({ wedged: 0, restarts: 0, sessionSame: true, userRestarts: 0, workerDeaths: 0, errorsWarnings: 0 });
   // a 45 s card during this healthy (but silent) elaboration says so
   for (const v of m.saturated.cardVariants) expect(v, 'a card shown while Lean answers is worded "still working"').toBe('alive');
@@ -414,16 +619,32 @@ test('C23 QED64-handled wedged reboot (fixture): the gallery reports it, the tex
   expect(m.click.beforeClick).toMatchObject({ armed: true, died: false });
   // the gallery saw QED64's own reboot (relay 'rebooting', rebootReason 'wedged') and did not act itself
   expect(m.gallery.wedgedReboots, 'the gallery counted exactly one QED64 "wedged" reboot').toBe(1);
-  expect(m.gallery.events).toEqual(expect.arrayContaining(['qed64-wedged', 'qed64-rebooted']));
+  if (API) {
+    // v1: the death and the reboot reach the gallery as the API's `death` and `reboot` events (EMBEDDING.md §2.4): recorded as
+    // a 'qed64-death' event, counted in wedgedReboots (reboot reason 'wedged') with lastReboot {from, to}
+    m.gallery.deathEvents = lv.events.filter((e) => e.source === 'qed64-death').length;
+    expect(m.gallery.events).toEqual(expect.arrayContaining(['qed64-death', 'qed64-reboot', 'qed64-wedged']));
+    expect(m.gallery.deathEvents, 'exactly one death recorded from the API').toBe(1);
+    // the death's identity: the fixture's own wedged death on the session before, with its reboot announced (§2.4 death payload)
+    const death = lv.events.find((e) => e.source === 'qed64-death');
+    m.gallery.death = death;
+    expect(death, 'the recorded death is the fixture\'s wedged death').toMatchObject({ kind: 'wedged', reason: 'wedged', session: m.relay.sessionBefore, willReboot: true });
+    expect(death.message).toContain(FIXTURE);
+    expect(m.click.lastReboot && m.click.lastReboot.lastDeath, 'lastReboot carries the death (api.status() read in the reboot handler)').toMatchObject({ reason: 'wedged' });
+    expect(lv.probe, 'the gallery probe stood down throughout').toBe('stood-down');
+    expect(lv.sent).toBe(0);
+  } else expect(m.gallery.events).toEqual(expect.arrayContaining(['qed64-wedged', 'qed64-rebooted']));
   expect(m.gallery, 'the gallery restarted nothing and showed no card').toMatchObject({ galleryWedged: 0, galleryRestarts: 0, cardShown: 0 });
   // the relay: exactly one death and one reboot, no user restart, a new session. QED64 clears status().lastDeath once
   // the new session serves (measured here: null after ready), so the reason is read from the gallery's reboot record,
   // sampled while the relay was 'rebooting'
   expect(m.relay).toMatchObject({ workerDeaths: 1, reboots: 1, userRestarts: 0 });
   expect(m.relay.sessionAfter).not.toBe(m.relay.sessionBefore);
-  expect(m.click.lastReboot && m.click.lastReboot.lastDeath, 'the gallery recorded the death with the reboot').toMatchObject({ reason: 'wedged' });
-  expect(m.click.lastReboot.lastDeath.message).toContain(FIXTURE);
-  expect(m.click.lastReboot).toMatchObject({ from: m.relay.sessionBefore, to: m.relay.sessionAfter });
+  if (!API) {
+    expect(m.click.lastReboot && m.click.lastReboot.lastDeath, 'the gallery recorded the death with the reboot').toMatchObject({ reason: 'wedged' });
+    expect(m.click.lastReboot.lastDeath.message).toContain(FIXTURE);
+  }
+  expect(m.click.lastReboot, 'lastReboot {from, to}' + (API ? ' from the API\'s reboot event' : '')).toMatchObject({ from: m.relay.sessionBefore, to: m.relay.sessionAfter });
   // the post-click text re-checked clean on the new session, as C20 requires of a QED64-handled hang
   expect(m.click, 'the click re-checked clean after QED64\'s reboot').toMatchObject({ ok: true, editExact: true, nativeSha: true, errors: 0, warnings: 0, stalls: 0, qed64WedgedReboots: 1 });
   // the harness's post-hoc record (clickLink -> captureQed64Reboot), labelled synthetic
@@ -435,8 +656,16 @@ test('C23 QED64-handled wedged reboot (fixture): the gallery reports it, the tex
   expect(doc.evidence).toMatch(/NOT L7 evidence/);
   expect(doc.frozenFixture.fixture).toBe(FIXTURE);
   expect(doc.summary).toMatchObject({ postHoc: true, synthetic: true, wedgedReboots: 1 });
-  expect(doc.qed64Liveness.events.map((e) => e.source)).toEqual(expect.arrayContaining(['qed64-wedged']));
-  expect(doc.qed64Liveness.qed64.lastReboot.lastDeath, 'the reboot record carries the death').toMatchObject({ reason: 'wedged' });
+  if (API) {
+    expect(doc.qed64Liveness.events.map((e) => e.source)).toEqual(expect.arrayContaining(['qed64-death', 'qed64-wedged']));
+    const recDeath = doc.qed64Liveness.events.find((e) => e.source === 'qed64-death');
+    expect(recDeath, 'the post-hoc record carries the fixture\'s death').toMatchObject({ kind: 'wedged', reason: 'wedged', session: m.relay.sessionBefore });
+    expect(recDeath.message).toContain(FIXTURE);
+    expect(doc.qed64Liveness.qed64.lastReboot, 'the reboot record (from the API\'s reboot event)').toMatchObject({ from: m.relay.sessionBefore, to: m.relay.sessionAfter });
+  } else {
+    expect(doc.qed64Liveness.events.map((e) => e.source)).toEqual(expect.arrayContaining(['qed64-wedged']));
+    expect(doc.qed64Liveness.qed64.lastReboot.lastDeath, 'the reboot record carries the death').toMatchObject({ reason: 'wedged' });
+  }
   expect(doc.qed64.session, 'the record was taken on the rebooted session').toBe(m.relay.sessionAfter);
   expect(doc.workerConsole.liveness.some((l) => /\[liveness\] \[fixture\]/.test(l)), 'the worker\'s [liveness] line is in the record').toBe(true);
   expect(fs.existsSync(path.join(SC, doc.workerConsole.file))).toBe(true);

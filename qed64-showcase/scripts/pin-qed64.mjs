@@ -55,7 +55,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { activePinId, pinDescriptor, repoPinDir, releaseDir, ID_RE } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { activePinId, pinDescriptor, repoPinDir, releaseDir, listPins, ID_RE } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
 const WSRC = await import(path.join(SC, 'scripts/lib/widgets-src.mjs'));
 const QSRC = await import(path.join(SC, 'scripts/lib/qed64-src.mjs'));
@@ -216,6 +216,19 @@ async function pin() {
   // preserve keys other stages own (e.g. WIDGETS_SOURCE_HASH from S0.1)
   let prev = {};
   try { prev = readJson(LOCK); } catch {}
+  // Docker image equivalence (verify #7) is a fact about the IMAGE, not about this pin: an image recorded as building the
+  // same oleans byte for byte stays recorded when a pin is (re-)registered. Carry it from this pin's previous lock, else
+  // from another registered pin's lock that records the same image tag and id (pin F lane, 2026-10-06: registering F
+  // dropped E's record, so verify printed the resolved Docker DRIFT again).
+  const eqOf = (l) => (l && l.toolchain && l.toolchain.docker && l.toolchain.docker.image === DOCKER_IMAGE && l.toolchain.docker.id === DOCKER_ID
+    && Array.isArray(l.toolchain.docker.equivalent) && l.toolchain.docker.equivalent.length ? l.toolchain.docker.equivalent : null);
+  // else from the active pin's lock, else from any other registered pin's lock (newest registration first)
+  const others = [];
+  try { const a = activePinId(); if (a !== ID) others.push(a); } catch { /* no active pin */ }
+  try { for (const p of listPins().slice().reverse()) if (p.id !== ID && !others.includes(p.id)) others.push(p.id); } catch { /* none */ }
+  let equivalent = eqOf(prev);
+  for (const o of others) { if (equivalent) break; try { equivalent = eqOf(readJson(path.join(repoPinDir(o), 'QED64.lock.json'))); } catch { /* unreadable */ } }
+  if (equivalent) toolchain.docker.equivalent = equivalent;
   const { schema: _s, qed64: _q, vendor: _v, source: _sr, shell: _sh, artifacts: _ar, release: _r, anchors: _a, toolchain: _t, pinnedAt: _p, ...keep } = prev;
   const anchors = {};
   for (const p of TRACKED_JSON) anchors[p] = { gitBlob: git('rev-parse', `${QPIN}:${p}`).toString().trim(), sha256: files[p].sha256 };

@@ -1,7 +1,68 @@
-# Next steps (updated 2026-10-04, pin-e lane)
+# Next steps (updated 2026-10-06, pin-G lane)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
+
+## Pin G `5c327c2`: the embedding API v1 pin to gate (first, in this order)
+
+**Where it stands (2026-10-06).** The live site serves E `33b0967` (QED64 main) with the pre-v1 gallery, deployed
+2026-10-05. This checkout's active pin is G `5c327c2` (QED64 `feature/embedding-api`, pushed by the user; merging it into
+QED64 main is the user's decision). G is F `84d594e` plus QED64's `e4cffcc`: edit back-pressure on the worker pool for
+HARDENING #59, `?edithold=<n>`, at most 6 requests in flight, and a `$/cancelRequest` for a still-queued request answered
+locally with `-32800`. It also adds `5c327c2` (deploy.yml step order). Runtime and API revision (`1.0.0`) are F's. F is
+staged. The gallery and the UX suite run on QED64's embedding API v1 on F and G and keep the legacy flow for pins A–E.
+G is **not yet gated in the browser and not deployed**, and nothing is committed. The working tree holds `pins/84d594e/`,
+`pins/5c327c2/`, the lock link, the staged gitlink, `gallery/`, `scripts/` (including the `pin-qed64.mjs` fix that carries
+`toolchain.docker.equivalent` forward), `tests/ux/` and these docs (docs/REPIN-LOG.md, pin F and pin G entries). Static
+gates after audit round 6 (re-run by the docs stage): `BUILD-GALLERY CHECK OK 8 examples`, `CHECK-GALLERY OK 132 ok, 0 failed`
+with its embedded `SIM-GALLERY OK 236 ok, 0 failed`, and `Total: 35 tests in 8 files`. Measured on F before audit rounds
+2 to 6 changed the gallery: `CONTROLS PASS` 11/11 and one v1 smoke 22/22. Neither counts for G. Every browser step goes
+through the lock wrapper.
+
+1. **The v1 smoke on G** (`tests/ux/tools/v1-smoke.mjs`, one browser). Read `complete` in `out/ux/v1-smoke/report.json`,
+   not only the pass count, and its `console.wholeRun` (whole-run pairing). Exit 3 means interrupted or incomplete. Run
+   it in the background or with a small `LOCK_WAIT_S`, because its worst case is about 30 min.
+2. **Headless controls on G**: `scripts/showcase.sh locked controls-G -- scripts/showcase.sh headless controls`
+   (`CONTROLS PASS` 11/11 expected; the headless tools read `lsp-frames.js`, `artifact-paths.mjs` and
+   `snapshot-probe.mjs` from G's checkout). An attempt on 2026-10-06 (`$W/logs/pinG-controls.log`) was still waiting for
+   the host browser lock held by another session when that log was last written, so it has no result.
+3. **Two full UX VERDICTs** on G's gallery: `UX_RUN=g-full1 LOCK_WAIT_S=21600 scripts/showcase.sh ux`, twice
+   (`showcase.sh gallery` then prints `UX CURRENT`). Watch the console oracle for G's new cancel line, `QED64: the client
+   cancelled this request before it reached the checker`. It is allowed only when paired (gallery/README.md "Console
+   messages") and has not been seen in a browser yet. G's back-pressure logs `[qed64] edit back-pressure: …` with
+   `console.debug`, which the oracle does not classify (log, info and debug are not failures). Those lines show whether
+   a run held edits at all.
+4. **Three `ux --grep "C20 "` runs** (`UX_RUN=<name> scripts/showcase.sh ux --grep "C20 "`).
+5. **A headed sign-off**: `UX_HEADED_ALL=1 UX_RUN=g-headed1 scripts/showcase.sh ux`.
+6. **The throttled first visit** at 10 Mbit/s (§4 has the commands). On a v1 pin the boot document comes from `#code=`
+   and the boot wait from the API's `boot` events, so this is a new path.
+7. **`node scripts/deploy-manifest.mjs --check`** (G2 must name a verdict on exactly this gallery and lock) and
+   **`ci/rehearse-deploy.sh`** (plus `node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job qed64-static`:
+   the shell is now 59 files).
+8. **Optional, ours: measure HARDENING #59 on G.** QED64 reports it fixed by `e4cffcc`. Type at 150 ms/char above a slow
+   line with the InfoView open, and compare the pool size and the absence of a crash (docs/UPSTREAM-REPORT-QED64.md #59).
+9. **Commit** (pins/84d594e, pins/5c327c2, the lock link, the gitlink, gallery, scripts, tests, docs). The Docker DRIFT
+   on F is resolved: `pin-qed64.mjs pin` now carries `toolchain.docker.equivalent` forward, F's lock got the record
+   back, and `verify` prints no DRIFT on F or G.
+10. **The user's decisions:** push, and deploy (the `qed64-deploy.yml` dispatch or `scripts/deploy-app.sh`). Serving a
+   commit of a QED64 feature branch before QED64 merges it is part of that decision. Which v1 pin to deploy is part of
+   it too. G is the one being gated; F stays staged as G's fallback (`scripts/showcase.sh pin use 84d594e`).
+
+The audit ran six rounds (docs/REPIN-LOG.md, pin F entry for rounds 1–4, pin G entry for rounds 5–6). The round-6 fix
+stages fixed every item they were given. Nothing is recorded as open from them, but two residuals are noted. First,
+`classify()` in `tests/ux/lib/qed64.mjs` has no unit test, so its emptyErrors change was checked by `node --check` only.
+Second, the new cancel console entry is a fail-closed pre-allowance that no browser run has exercised yet.
+
+
+**On QED64's side (gates our steps 5 and 6, "heavy path from a fetched release" and "drop the submodule and the source
+build", not the G gates above):** a release manifest per promote (every served file with sha256 and size, buildId,
+kernel commit, shell id, `apiRevision`, commit, slim-tree identity), a shell tarball, the `qed64/edge` export
+(`isImmutable`, artifact keys, range parsing, isolation headers; a Worker factory with a second static root, root
+redirect, R2 prefix, HEAD Content-Length and Range), and the slim base trees as a hashed artifact or a deterministic
+rebuild CLI. HARDENING #59 (typing above an uncancellable command crashes the tab; docs/UPSTREAM-REPORT-QED64.md "#59")
+stays open upstream.
+
+## Pins A–E (history and what is left on E)
 
 **Current state is printed by commands, not written here** (a written run name or count goes stale with the next run):
 
@@ -36,7 +97,9 @@ built the native oleans. The R2 lane rebuilt all 512 native modules in the curre
 Mathlib tree. All 7,616 output files are byte-identical to the originals, so every lock now records `8228ea564e7b`
 under `toolchain.docker.equivalent`, `verify` prints no DRIFT, and `showcase.sh native` accepts the image
 (docs/BUILD-FROM-SOURCE.md "Docker image drift", docs/REPIN-LOG.md R2 entry). If the tag moves again, the same
-experiment decides it.
+experiment decides it. *Exception (2026-10-05, resolved 2026-10-06):* pin F's lock was first generated without that `equivalent` record, so
+`verify` printed the DRIFT again on F. `scripts/pin-qed64.mjs pin` now carries the record forward from the pin's previous
+lock or from any registered pin's lock. F's lock got it back, and G's lock has it, so `verify` prints no DRIFT on either.
 
 ## 2. Confirm QED64's #55 on our side, in a high-rate window (optional)
 
@@ -132,7 +195,7 @@ These owner decisions come before a public deploy. Each is measured in `out/ux/l
   `out/ux/last-mile/RESULTS.md` (3)). Until then, the claim that Safari gets the capability card is an inference from
   JavaScriptCore.
 
-## Pin E `33b0967`: what is left after the switch
+## Pin E `33b0967`: what is left (E stays the live pin until a v1 pin, F or G, is deployed)
 
 E was registered by the pinE lane and gated and served by the pin-e lane (2026-10-04; docs/REPIN-LOG.md "pin E gated";
 `out/ux/pin-e/RESULTS.md`). The current state comes from `pin list`, `showcase.sh gallery` and `deploy-manifest --check`.

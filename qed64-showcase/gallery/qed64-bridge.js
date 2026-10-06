@@ -27,18 +27,23 @@
  *     source's content address) and answers every held and later duplicate directly. A failed or lost first
  *     request (error reply, relay reboot, 15 s timeout) releases the held duplicates to the page unchanged.
  *
+ * On a QED64 page that implements embedding contract v1 (deps/qed64/docs/EMBEDDING.md §2.1: capabilities.editorRpc
+ * for D1/D2, capabilities.widgetSourceCache for D3) the gallery does NOT install this bridge: the page does the
+ * repairs itself (HARDENING #56, §2.5), and its InfoView RPC no longer uses the message names matched here. The
+ * expando is __showcaseBridge (the __qed64* namespace is QED64's own, §9).
+ *
  * Usage (same origin only):  installQed64Bridge(qed64PageWindow[, {edits:false}])  — e.g. iframe.contentWindow
  * of the stock page, or `window` from an init script inside the page. Idempotent. Returns a
  * stats object {stripped, applied, shown, inserted, passed, ws:{fetched, cached, coalesced, released, tapped}} on
- * win.__qed64Bridge. {edits:false} repairs D1 only; {dedupe:false} turns D3 off (diagnostics).
+ * win.__showcaseBridge. {edits:false} repairs D1 only; {dedupe:false} turns D3 off (diagnostics).
  */
 (function () {
   function install(win, opts) {
-    if (!win || win.__qed64Bridge) return win && win.__qed64Bridge;
+    if (!win || win.__showcaseBridge) return win && win.__showcaseBridge;
     const fixEdits = !(opts && opts.edits === false); // {edits:false}: repair D1 only (diagnostic mode)
     const dedupe = !(opts && opts.dedupe === false);   // {dedupe:false}: no D3 coalescing (diagnostic mode)
     const stats = { stripped: 0, applied: 0, shown: 0, inserted: 0, passed: 0, errors: [], ws: { fetched: 0, cached: 0, coalesced: 0, released: 0, tapped: false } };
-    win.__qed64Bridge = stats;
+    win.__showcaseBridge = stats;
     const editorOf = () => { try { return win.qed64 && win.qed64.editor; } catch (e) { return null; } };
     const toRange = (r) => ({ startLineNumber: r.start.line + 1, startColumn: r.start.character + 1, endLineNumber: r.end.line + 1, endColumn: r.end.character + 1 });
     const reply = (src, seqNum, result, exception) => {

@@ -1,0 +1,28 @@
+{
+  "schema": "qed64-showcase.pin/v2",
+  "id": "5c327c2",
+  "buildId": "wasm64-3ab1c6a9da03bc29",
+  "registeredAt": "2026-10-06T15:00:00Z",
+  "label": "G: QED64 5c327c2 (feature/embedding-api: embedding API v1 + the edit back-pressure fix for the slow-typing crash, HARDENING #59 addendum), E/F runtime 0035b (kernel a8817d01f9)",
+  "status": "staged: registered 2026-10-06 by the pin-G lane on E/F runtime stores (same runtime manifest, snapshot index and profile blobs as D, E and F); shell built from source in the pin worktree; not yet gated",
+  "qed64": {
+    "commit": "5c327c216aa31bf3880041b3e3a3b26fcb6d5a45",
+    "promote": "3b42714df6ece5fefbb3adc7421df0af0c7d8d20",
+    "kernel": "a8817d01f97227b1b04cc7d661b9e396f6ca8f34"
+  },
+  "mainBundle": "/assets/index-DcBRSfza.js",
+  "consoleSites": {
+    "627": "46b0155cf80d8dfc583c7a5ab27611128b379a3f8f140efd66362944db8efdf7"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_REPO}/work/bump-0035b/slim/core-lib-slim",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "The #52 worker liveness and the #55 lifetime locks as in E, now projected by the page API: status().liveness {stalled, lastAnswerAgoMs, lastFrameAgoMs, probeAfterMs, wedgeAfterMs, graceMs} and the `liveness` event (docs/EMBEDDING.md §2.2, §2.4). The gallery's own probe stands down on capabilities.liveness."
+  },
+  "knownLimitations": [],
+  "notes": "QED64 5c327c2 = 84d594e (F) + e4cffcc (ResidentSession edit coalescing holds full-text changes while the worker pool is pressured and caps requests in flight at 6, ?edithold=<n>; a $/cancelRequest for a queued request is answered RequestCancelled -32800 locally with message QED64: the client cancelled this request before it reached the checker; the worker re-emits its status on telemetry) + 5c327c2 (deploy.yml step order). API revision unchanged (1.0.0). Shell, workers and client only: runtime-manifest, snapshot index, profiles tree and KERNEL-PIN are the same git blobs as at 84d594e and 33b0967, so E/F runtime stores serve G unchanged and nothing is rebaked."
+}

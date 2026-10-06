@@ -1,6 +1,6 @@
 # QED64: defects and limitations found while building the widget showcase
 
-**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03 and 2026-10-04).
+**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04 and 2026-10-06).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
 pin current`):** since 2026-10-04 the showcase **serves E `33b0967`** (your main with #55 and #54, on runtime
 `wasm64-3ab1c6a9da03bc29`; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
@@ -11,6 +11,24 @@ is registered, rebaked and fully gated, but **staged**: it removes L9 V1 but not
 it was not cleaner than C (V2: D 3/26, C 2/26, A 3/26), so C stayed served then (L9 below; docs/REPIN-LOG.md "final gate").
 **E `33b0967`** (your main with #55 lifetime locks and #54, on D's runtime) was registered on 2026-10-04, stormed against
 C on our visitor path, gated, and is served (L9 V2 and S1 below; `out/ux/pin-e/RESULTS.md`).
+**F `84d594e`** (your `feature/embedding-api` at the commit you named final; embedding contract v1 revision `1.0.0`, on
+E's runtime) was registered on 2026-10-05 and was the active pin of our local checkout until 2026-10-06 (now staged),
+with the gallery on your page API; it is not browser-gated or deployed, the live site still serves E, and merging the branch into your main is
+the user's decision (docs/REPIN-LOG.md, pin F entry).
+**G `5c327c2`** (your `feature/embedding-api`: F plus `e4cffcc`, the edit back-pressure on the worker pool and the cap of
+6 requests in flight, plus `5c327c2`, the deploy.yml step order; API revision still `1.0.0`, F's runtime) was registered
+on 2026-10-06 and is now the **active pin of our local checkout**. F is staged. G is not browser-gated or deployed yet
+(docs/REPIN-LOG.md, pin G entry).
+
+**Status as of G `5c327c2` (2026-10-06).** **D1 and D2 are fixed upstream** by your HARDENING #56 (the InfoView's RPC
+wrapped inside the webview, `capabilities.editorRpc`; `applyEdit`/`insertText`/`showDocument` implemented on the one
+model). **D3**, our `getWidgetSource` coalescing (the workaround for L2, gallery/README.md "QED64 limitations"), **is
+fixed upstream** by the page's widget-source cache (EMBEDDING.md §2.5, `capabilities.widgetSourceCache`). On F and G our
+bridge stands down completely: the gallery does not install it (`status().bridge.stoodDown`), and the UX suite asserts
+that and that the RPC panels and link edits work. That last part awaits the browser gates on G. Pins A–E keep the bridge.
+**L9 V2** is unchanged in this report: your #55 is in E, F and G, and our storms are consistent with it but do not confirm
+it (L9). **Your HARDENING #59** (below the table) is **fixed in G by `e4cffcc` by your measurement**. We have not
+measured it yet.
 Every run tally in this report is recomputed by `node scripts/ux-tally.mjs` from the recorded runs.
 **The findings below were made on the first pin (A):** QED64 commit `1859b830b3621dbacc1752a818634d06a1c94bd0`
 (promote `965c2494`), runtime `wasm64-4b025db7729c5f89` (`sourceRevision` `qed64-wasm64@9fbb45afcb`). That release
@@ -41,8 +59,9 @@ and L1 were not re-tested in a browser on the new pin; the front end and the pac
 
 | # | What | Severity for users | Our workaround | Suggested fix size |
 |---|---|---|---|---|
-| D1 | `abortSignal` crosses the InfoView RPC as `{}` → every ProofWidgets `mk_rpc_widget%` panel shows "Unrecognised error" | high: no RPC widget panel renders | `gallery/qed64-bridge.js` strips `abortSignal` | two lines: move `editorApiOfRpc` to the webview side (lean4monaco) |
-| D2 | `applyEdit`/`showDocument` reach `IEditorService.openEditor` = the `unsupported` stub → Try-this, MakeEditLink and `insertText` never change the text | high: no InfoView link edits the document | the bridge applies the edits on `qed64.editor` | register an editor-service override (lean4monaco), or intercept in QED64 |
+| D1 | `abortSignal` crosses the InfoView RPC as `{}` → every ProofWidgets `mk_rpc_widget%` panel shows "Unrecognised error" | high: no RPC widget panel renders | `gallery/qed64-bridge.js` strips `abortSignal` (pins A–E) | two lines: move `editorApiOfRpc` to the webview side (lean4monaco). **Fixed upstream in `84d594e` (HARDENING #56, `capabilities.editorRpc`); our bridge stands down on F and G** |
+| D2 | `applyEdit`/`showDocument` reach `IEditorService.openEditor` = the `unsupported` stub → Try-this, MakeEditLink and `insertText` never change the text | high: no InfoView link edits the document | the bridge applies the edits on `qed64.editor` (pins A–E) | register an editor-service override (lean4monaco), or intercept in QED64. **Fixed upstream in `84d594e` (HARDENING #56); our bridge stands down on F and G** |
+| D3 | N concurrent `Lean.Widget.getWidgetSource` for one hash (a HasseView panel fires 14) each hold a Lean thread, and the pthread pool grows past the renderer's isolate ceiling (L2 in gallery/README.md) | high on the panels that trigger it: the tab crashes | the bridge coalesces them per hash (pins A–E) | cache per hash in the page. **Fixed upstream in `84d594e` (EMBEDDING.md §2.5, `capabilities.widgetSourceCache`); our bridge stands down on F and G** |
 | L1 | wasm imports at `OLeanLevel.exported` → non-exposed core `module` defs become axioms (`whnf`/`decide`/`rfl`/reflection stuck, e.g. `Lean.RBMap.ofList`) | medium: wrong-looking failures for specific programs | none possible from outside; documented | runtime policy decision (kernel) |
 | N1 | boot console noise: one `Error: unsupported` pageerror and one empty `console.error` per boot | low: breaks strict console oracles | allowlisted in tests | drop `extensionDependencies` from the registered manifest |
 | P1 | `ProofWidgets.Component.HtmlDisplay`, `…Panel.SelectionPanel`, SimpleGraph, Catalan and Probability are absent from the served region and the essential pack | medium: `#html` / `with_panel_widgets` / graph and probability demos are refused | our own overlay region | add the two ProofWidgets modules to `QED64.Essential` (and optionally the rest) |
@@ -50,11 +69,16 @@ and L1 were not re-tested in a browser on the new pin; the front end and the pac
 | X1 | `_proc_exit` calls `Module.onExit` only when `!keepRuntimeAlive()`, but resident mode keeps the runtime alive, so a FileWorker exit is never reported as a death | low today (no exit was seen), but it would turn any FileWorker fatal error into an L7-like freeze | none needed so far | **fixed upstream in 9fdf9b8**: the worker's proxied-function table hooks `_proc_exit` / `exitOnMainThread` and reports died `exit` |
 | L9 | **new on 9fdf9b8**: reloading a ready page (or a relay restart booting a new worker) crashes the renderer with `V8 javascript OOM (Scavenger: semi-space copy)` (V1) about 2 s after the first reload; the 0034 runtime never did. **A second variant (V2, `MarkCompactCollector: young object promotion failed`, after a later reload) hits every pin we have, 0034 with either worker and 0035b included, in headed Chrome and in chrome-headless-shell** | high for users who reload: the renderer (the tab) dies | none possible from outside the page | yours: see L9 below. V1 needs 0035's parked threads: **your 3b42714 (0035b, cap 0) removes it** (0 V1 in 27 storms); V2 is unchanged by it (D 3/26 = A 3/26 ≈ C 2/26, also in headless-shell) and is not reached by an earlier teardown from a page script (our A/B: your workers already close 7–40 ms after a reload; "Hint for your V2 follow-up" in L9). V2 is 3–5× as frequent when your page runs inside a script-free same-origin iframe (16/48 vs 4/48, p = 0.005; "A repro without our gallery" in L9). **V2: fixed in your 33b0967 (#55)** by your measurement (17/48 → 0/36); ours on our visitor path, E vs C interleaved: 0/28 vs 1/28, consistent with the fix, but C was rare in those windows too, so it does not confirm it ("Your candidate arrived" in L9) |
 | N3 | the stock page has no favicon: headed desktop Chrome logs one 404 for `/favicon.ico` per load | cosmetic: breaks strict console checks in a real browser | allowed once per load in our headed run only | ship a favicon or `<link rel="icon" href="data:,">` |
+| #59 | **your HARDENING #59**: typing at a normal pace (150 ms/char) above a long uncancellable command (`#eval (IO.sleep 3000 : IO Unit)`, a long kernel check) with the InfoView open grew the pthread pool until the tab crashed, on every build up to F `84d594e`; the edit coalescing window (§7.8) caps bursts, not a sustained pace | medium for the gallery: a visitor who edits above a slow line can lose the tab; none of our eight examples has such a line | none from outside the page | yours (HARDENING #59). **Fixed in G `5c327c2` by your `e4cffcc` per your measurement** (back-pressure keyed on the worker's pool sample, at most 6 requests in flight, a queued request's cancel answered locally); **not yet measured by us** (#59 below) |
 | S1 | slow first visits: the boot card is removed 120 s after an idle `ready…` status while the mathlib download still runs, so a 10 Mbit/s visitor sees only elapsed timers for minutes; the card says "~3 GB of memory" while a tab measures 8–9 GB | low–medium: slow links and small machines | none (our gallery has its own boot-timeout defect on such links) | keep the card while bytes arrive; update the memory figure. **Fixed in your 3e182ff (#54), in 33b0967; confirmed by us at 10 Mbit/s** (S1 below) |
 
 ---
 
 ## D1 — `abortSignal` is serialised across the webview RPC; every `mk_rpc_widget%` panel fails
+
+**Status (2026-10-06): fixed upstream in `84d594e`** (`feature/embedding-api`, HARDENING #56: the webview wraps the
+proxy with `editorApiOfRpc`, `capabilities.editorRpc`). On pins F and G the gallery does not install the bridge. The text below
+is the original report (pin A).
 
 **Symptom.** Putting the cursor on any `mk_rpc_widget%` panel makes the InfoView render this
 instead of the panel:
@@ -141,6 +165,10 @@ we observed it only in QED64.
 ---
 
 ## D2 — `applyEdit` / `showDocument` hit the `unsupported` editor-service stub; no InfoView link edits the text
+
+**Status (2026-10-06): fixed upstream in `84d594e`** (HARDENING #56: `frontend/src/editor/infoview-edits.ts` implements
+the three actions on the one model). On pins F and G the gallery does not install the bridge. The text below is the original
+report (pin A).
 
 **Symptom.** Clicking core "Try this" `[apply]`, any ProofWidgets `MakeEditLink` (`conv?`'s
 "Generate conv", every widget suggestion), or an `insertText` action changes nothing. The page
@@ -885,6 +913,34 @@ refusal, L5 "Load exact imports" cannot succeed for `import Mathlib`, L6 no dark
 10.9–12.0 GB transient renderer peak in a reload storm, and three UI quirks) are listed with
 evidence in `docs/UX-RESULTS.md` § "QED64 limitations found". They are smaller, and the gallery
 handles each.
+
+---
+
+## #59 — sustained typing above an uncancellable command crashes the tab (your HARDENING #59; fixed in G by `e4cffcc` per QED64, not yet measured by us)
+
+**Found by** your edit-storm lane (`pageslow`, 2026-10-05); recorded here because it bears on the gallery. On the stock
+page, typing at 150 ms/char on the line above `#eval (IO.sleep 3000 : IO Unit)` with the InfoView open grew the pool
+24 → 61–64 and crashed the renderer on every build you measured (fd6c2ae, f150f47); your HARDENING.md at F `84d594e` still
+lists it as open. At that pace no two changes share a 300 ms window, so each keystroke is forwarded and starts a 3 s
+elaboration, and its InfoView requests wait as Lean tasks on a snapshot the sleep never finishes, each holding a
+dedicated thread (a ~129 MiB Worker; about 30 is the ceiling, our L2). The coalescer caps bursts, not a sustained pace.
+
+**For the gallery.** None of our eight examples has a long uncancellable command, so a visitor reaches it only by writing
+one. The gallery cannot prevent it from outside (it neither sees the pool on a v1 pin nor may hold the page's frames). The
+fix is yours: (a) back-pressure keyed on the worker's pool sample, or (b) the cap on live dedicated threads that #55
+named.
+
+**Status (2026-10-06): fixed in G `5c327c2` by your `e4cffcc` per your measurement; not yet measured by us.** Your fix is
+(a) plus a cap on requests in flight. The coalescer holds full-text changes while fewer than `minFreeWorkers` (default 6,
+`?edithold=<n>`) preallocated Workers are free. The hold lasts for a 1 s pressure memory and at most 5 s, polling
+telemetry every 250 ms. At most 6 requests are at the worker unanswered, and a `$/cancelRequest` for a request still
+queued is answered locally with RequestCancelled (`-32800`, `error.data.qed64.kind` `'cancelled'`) (EMBEDDING.md §4 and
+§7.8; HARDENING.md #59 addendum). Your addendum reports, in edit-storm with two runs per scenario on the production
+build, `pageslow` passing with the pool at 24 → 24/25. The same build with `?edithold=0` crashed (24 → 32). We registered
+G on 2026-10-06 (docs/REPIN-LOG.md, pin G entry). Our side so far is static only. The UX console oracle allows the new
+cancel reply text at the notify site (line0 627), paired with its own `-32800` reply (gallery/README.md "Console
+messages"; no browser run has seen it yet). Our own measurement is still open: a C20-style typing run at 150 ms/char
+above a slow `#eval` on G (docs/NEXT-STEPS.md "Pin G").
 
 ---
 

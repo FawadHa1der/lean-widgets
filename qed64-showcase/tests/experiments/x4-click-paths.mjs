@@ -113,7 +113,7 @@ async function caseA(browser, mode) {
     await page.screenshot({ path: path.join(shots, `a-${mode}-after.png`) });
     r.pass = !!(r.textChanged && /simp only/.test(after) && !/simp\?/.test(after) && r.afterPhase === 'ready' && r.errorsAfter === 0 && st1.workerDeaths === st0.workerDeaths && st1.reboots === st0.reboots);
   } catch (e) { r.error = String(e.stack || e).slice(0, 1500); r.pass = false; r.ivTextAtError = await ivText(page.frameLocator(SEL.infoview.frame)); await page.screenshot({ path: path.join(shots, `a-${mode}-error.png`) }).catch(() => {}); }
-  r.bridge = await page.evaluate(() => globalThis.__qed64Bridge ?? null).catch(() => null);
+  r.bridge = await page.evaluate(() => globalThis.__showcaseBridge ?? null).catch(() => null);
   r.console = { pageErrors: watch.pageErrors, errors: watch.errors.slice(0, 10), crashed: watch.crashed, tail: watch.tail.slice(-15) };
   await ctx.close();
   return r;
@@ -171,7 +171,7 @@ async function caseB(browser, mode) {
     await page.screenshot({ path: path.join(shots, `b-${mode}-after.png`) });
     r.pass = !!(r.textChanged && /conv =>/.test(after) && /enter/.test(after) && !/conv\?/.test(after) && r.afterPhase === 'ready' && r.errorsAfter === 0 && st1.workerDeaths === st0.workerDeaths && st1.reboots === st0.reboots);
   } catch (e) { r.error = String(e.stack || e).slice(0, 1500); r.pass = false; r.ivTextAtError = await ivText(page.frameLocator(SEL.infoview.frame)); r.ivHtmlAtError = (await page.frameLocator(SEL.infoview.frame).locator('body').innerHTML().catch(() => '')).slice(0, 20000); await page.screenshot({ path: path.join(shots, `b-${mode}-error.png`) }).catch(() => {}); }
-  r.bridge = await page.evaluate(() => globalThis.__qed64Bridge ?? null).catch(() => null);
+  r.bridge = await page.evaluate(() => globalThis.__showcaseBridge ?? null).catch(() => null);
   r.console = { pageErrors: watch.pageErrors, errors: watch.errors.slice(0, 10), crashed: watch.crashed, tail: watch.tail.slice(-15) };
   await ctx.close();
   return r;

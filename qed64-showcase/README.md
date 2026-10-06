@@ -9,10 +9,21 @@ HEADED SIGN-OFF count and last sign-off), `scripts/showcase.sh gallery` (the sta
 sha256, then `UX CURRENT …` naming the newest verdict on exactly this gallery + lock + overlays, or `UX STALE`) and
 `node scripts/deploy-manifest.mjs --check` (the `G2 UX:` line a deploy relies on). Run records:
 `out/ux/showcase-ux-runs.jsonl`, judged by `scripts/lib/ux-record.mjs`; tallies: `node scripts/ux-tally.mjs`. Dated
-figures below are history. **Status 2026-10-04:**
+figures below are history. **Status 2026-10-06** (the bullets after the first two are dated history from 2026-10-04):
 
 * **Open it:** `scripts/showcase.sh verify && scripts/showcase.sh serve`, then <http://localhost:5190/showcase/>.
-* **Served: pin E `33b0967`** (QED64 main with HARDENING #55, the runtime lifetime locks that QED64 reports fix L9 V2,
+* **Live site: pin E `33b0967`, active locally: pin G `5c327c2`, staged: pin F `84d594e`.** The Cloudflare Worker
+  (`qed64-showcase.fawadworkaddress.workers.dev`, deployed 2026-10-05) serves E with the pre-v1 gallery. This checkout's
+  active pin is G `5c327c2` (since 2026-10-06), a commit of QED64's `feature/embedding-api` branch (pushed by the user;
+  QED64 main is still `33b0967`, and merging is the user's decision): F `84d594e` plus QED64's `e4cffcc`, the edit
+  back-pressure on the worker pool for HARDENING #59 (`?edithold=<n>`, at most 6 requests in flight, a `$/cancelRequest`
+  for a still-queued request answered locally with `-32800`). Both run on E's runtime and stores, with API revision
+  `1.0.0`. On F and G (the v1 pins) the gallery drives QED64's embedding API v1 (`qed64.api`, `?embed=1`, `#code=`), the
+  RPC bridge and the liveness probe stand down, and legacy mode is kept for pins A–E (gallery/README.md "Embedding API
+  v1 (pins F and G)"; docs/REPIN-LOG.md, pin F and pin G entries). **G is not yet gated in the browser and not
+  deployed**; its static gates are green (`BUILD-GALLERY CHECK OK`, `CHECK-GALLERY OK 132`, `SIM-GALLERY OK 236`, 35 UX
+  tests listed). Remaining, in order: docs/NEXT-STEPS.md "Pin G". Nothing of it is committed yet.
+* **Served (live) and last gated: pin E `33b0967`** (QED64 main with HARDENING #55, the runtime lifetime locks that QED64 reports fix L9 V2,
   and #54, the boot card that stays until ready; runtime `wasm64-3ab1c6a9da03bc29`, D's runtime and stores). **Why:**
   on the visitor's path `/showcase/#hasse-view`, interleaved with C in the same windows, its reload storms were at least
   as clean as C's (headed E 0/20 vs C 0/20, chrome-headless-shell 0/8 vs 1/8). Then two full `ux` VERDICTs, a headed
@@ -121,7 +132,7 @@ bridge for two InfoView defects of the shipped page. Nothing under the QED64, ke
 
 | What | Result | Where |
 |---|---|---|
-| Browser UX (Playwright, gallery and stock page, 34 tests) | **Current verdicts are printed, not listed here:** `scripts/showcase.sh gallery` (`UX CURRENT …` / `UX STALE` for the current gallery), `scripts/showcase.sh pin list` (VERDICT and HEADED SIGN-OFF counts and the last of each per pin). *History (dated):* on gallery `921b0b6a…` the v2mit and last-mile lanes (2026-10-02/03) recorded four verdict runs (33 passed, 1 skipped each; C10 no crash; C20 135/135) and no headed sign-off (headed: `v2mit-headed1` 31/34, display scale, since fixed in the harness; `lastmile-cft-headed-c10c13` 4/4 subset; branded Chrome 154 `lastmile-chrome-headed2` 32/34); on `2081098d…` `final-C-full1/2` and the headed sign-off `final-C-headed1` (34/34); on D while served (`eab4f147…`) `final-D-full1/2` and sign-off `final-D-headed2`. The boot-fix lane's gallery change (2026-10-03) made those runs stop applying; its own three full runs on the new gallery were one red (one W4 renderer crash, cause unknown, not reproduced in 20 W4 repeats) then two verdicts (docs/UX-RESULTS.md "Boot-fix lane") | [docs/UX-RESULTS.md](docs/UX-RESULTS.md), `out/ux/showcase-ux-runs.jsonl`, `node scripts/ux-tally.mjs`, `$W/logs/finaldocs-verdicts.log` |
+| Browser UX (Playwright, gallery and stock page, 35 tests since C25, 2026-10-05) | **Current verdicts are printed, not listed here:** `scripts/showcase.sh gallery` (`UX CURRENT …` / `UX STALE` for the current gallery), `scripts/showcase.sh pin list` (VERDICT and HEADED SIGN-OFF counts and the last of each per pin). *History (dated):* on gallery `921b0b6a…` the v2mit and last-mile lanes (2026-10-02/03) recorded four verdict runs (33 passed, 1 skipped each; C10 no crash; C20 135/135) and no headed sign-off (headed: `v2mit-headed1` 31/34, display scale, since fixed in the harness; `lastmile-cft-headed-c10c13` 4/4 subset; branded Chrome 154 `lastmile-chrome-headed2` 32/34); on `2081098d…` `final-C-full1/2` and the headed sign-off `final-C-headed1` (34/34); on D while served (`eab4f147…`) `final-D-full1/2` and sign-off `final-D-headed2`. The boot-fix lane's gallery change (2026-10-03) made those runs stop applying; its own three full runs on the new gallery were one red (one W4 renderer crash, cause unknown, not reproduced in 20 W4 repeats) then two verdicts (docs/UX-RESULTS.md "Boot-fix lane") | [docs/UX-RESULTS.md](docs/UX-RESULTS.md), `out/ux/showcase-ux-runs.jsonl`, `node scripts/ux-tally.mjs`, `$W/logs/finaldocs-verdicts.log` |
 | Run tallies per pin (C10 crashes, C20 runs, storms) | one tool: `node scripts/ux-tally.mjs` prints the current counts. *History, final docs lane 2026-10-03 ~03:50Z* (`$W/logs/finaldocs-ux-tally.txt`; the figures below are from that snapshot): B: C10 crashed in 6 of the 8 runs that ran it (5 of 7 full runs); C20 17 runs, all 135/135. C: C10 ran in 19 runs (17 full), 0 crashes (the 3 branded-Chrome runs failed its 10.5 GB settled-memory line, no crash); C20 23 runs, all 135/135. D: C10 0 crashes in 4 full runs; C20 4 runs, all 135/135. A: C10 0 crashes in 11 runs; 1 L7 hang in its C20 history | docs/UX-RESULTS.md "Tallies" |
 | Pins and switching | A, B, C, D, E registered (E 33b0967 added 2026-10-04 and served since then), hash-verified and with complete stores (`pin list`, `verify`: all checks OK with 1 known Docker `DRIFT`, `$W/logs/finaldocs-{pin-list,verify}.log`); switching rehearsed C→A→C→A→C→B→C, then C→D→C in the final gate, then C→E on 2026-10-04 (pin-E lane) | [docs/REPIN-LOG.md](docs/REPIN-LOG.md) "2026-10-02" sections |
 | L9 in desktop Chrome (before the final gate) | l9-desktop (05:34–08:33Z): B V1 in headless-shell and headed; V2 headed on A 1/5, B 2/8, C 4/19, all in 05:51–06:40Z. Quiet slot (11:03–11:21Z, headed): V2 A 1/8, C 2/10, D 0/5 | `out/ux/l9-desktop/RESULTS.md`, `out/ux/l9-quiet/RESULTS.md`, docs/UPSTREAM-REPORT-QED64.md L9 |
@@ -284,7 +295,9 @@ multiple pins".
 | B `9fdf9b8` | `9fdf9b85` | `wasm64-2c18773ecfba45bb` (kernel 0035, `3ae65d36f9`) | #52 worker (QED64 liveness) | staged for evidence only (L9) |
 | C `5ac5d00` | `5ac5d00f` (QED64's interim local main) | `wasm64-4b025db7729c5f89` (kernel 0034) | #52 worker (QED64 liveness) | staged: the fallback (served 2026-10-02 to 2026-10-04; re-chosen by the final gate) |
 | D `3b42714` | `3b42714d` ("promote kernel 0035b"; QED64's L9 fix candidate, not handed over yet) | `wasm64-3ab1c6a9da03bc29` (kernel 0035b, `a8817d01f9`: parking off by default) | #52 worker, byte-identical to C's | staged; served and fully gated 17:35–19:26Z on 2026-10-02 (two VERDICTs, headed sign-off), switched back because its storms were not cleaner than C's (docs/REPIN-LOG.md "final gate") |
-| E `33b0967` | `33b09679` (QED64 main: merge of `fix/v2-reload-oom` over `3e182ff`; pushed 2026-10-03) | `wasm64-3ab1c6a9da03bc29` (D's runtime; promote `3b42714`; D's stores, equal by digest) | #52 worker + #55 runtime lifetime locks (QED64's L9 V2 fix), #54 boot card, in-chunk download progress | **active** since 2026-10-04 (pin-e lane: storms at least as clean as C's, two VERDICTs, headed sign-off, slow-link PASS, deploy check; docs/REPIN-LOG.md "pin E gated"; current state: `scripts/showcase.sh pin list`) |
+| E `33b0967` | `33b09679` (QED64 main: merge of `fix/v2-reload-oom` over `3e182ff`; pushed 2026-10-03) | `wasm64-3ab1c6a9da03bc29` (D's runtime; promote `3b42714`; D's stores, equal by digest) | #52 worker + #55 runtime lifetime locks (QED64's L9 V2 fix), #54 boot card, in-chunk download progress | **served by the live site** (deployed 2026-10-05); active 2026-10-04 to 2026-10-05 (pin-e lane: storms at least as clean as C's, two VERDICTs, headed sign-off, slow-link PASS, deploy check; docs/REPIN-LOG.md "pin E gated"); staged locally since F |
+| F `84d594e` | `84d594e3` (QED64 `feature/embedding-api`, pushed by the user; not on QED64 main) | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the same runtime blobs) | the v1 page: `qed64.api` (contract `1.0.0`), `?embed=1`, `#code=`, editor RPC (#56), widget-source cache, #57, #59 coalescing; `dist/qed64-build.json` | staged since 2026-10-06; active locally 2026-10-05 to 2026-10-06 (headless controls 11/11 and one v1 smoke 22/22 on an earlier gallery; no UX verdict), not deployed (docs/REPIN-LOG.md, pin F entry) |
+| G `5c327c2` | `5c327c21` (QED64 `feature/embedding-api`: F + `e4cffcc` edit back-pressure + `5c327c2` deploy.yml step order; not on QED64 main) | `wasm64-3ab1c6a9da03bc29` (E's and F's runtime and stores; the same runtime blobs) | F's v1 page (contract `1.0.0`) plus edit back-pressure on the worker pool (HARDENING #59 per QED64; `?edithold=<n>`, 6 requests in flight, local `-32800` cancel replies) | **active locally** since 2026-10-06; not browser-gated, not deployed (docs/REPIN-LOG.md, pin G entry; current state: `scripts/showcase.sh pin list`) |
 
 | Store | Keyed by | Where |
 |---|---|---|
@@ -300,7 +313,9 @@ the build-store links exist only in a checkout that built them) plus the submodu
 every script reads the active pin through them or through `pins.mjs`; **no file hardcodes a pin** (`verify` FAILs on a
 runtime buildId outside the generated `gallery/pin.json`, on a hashed QED64 bundle name and on a `release/wasm64-…`
 path). The console allowlist names the QED64 bundle as `"@qed64-main-bundle"`. `serve.mjs` fixes its pin at start
-(`SHOWCASE_PIN=<id>` serves a staged pin on another port) and says which in `X-Showcase-Pin`; `serve`, `ux` and the UX
+(`SHOWCASE_PIN=<id>` serves a staged pin on another port) and says which in `X-Showcase-Pin`, with the served release's
+embedding API revision in `X-Showcase-Api` (a revision, `none` or `invalid`, on every response; `/showcase/pin.json` is
+sent `Cache-Control: no-store`; the deployed Worker sends neither header); `serve`, `ux` and the UX
 suite refuse a server that serves another pin than the active one, and a UX run is a verdict only if the server served
 the active pin from start to end.
 
@@ -308,7 +323,7 @@ the active pin from start to end.
 
 ```
 scripts/showcase.sh stop                      # a running serve.mjs keeps serving the pin it started with
-scripts/showcase.sh pin use 5ac5d00           # or 33b0967 / 3b42714 / 1859b83 / 9fdf9b8: guards, atomic links, gallery/pin.json, deploy inputs
+scripts/showcase.sh pin use 33b0967           # or 5c327c2 / 84d594e / 5ac5d00 / 3b42714 / 1859b83 / 9fdf9b8: guards, atomic links, gallery/pin.json, deploy inputs
 scripts/showcase.sh verify                    # the new active pin fully, the staged ones cheaply
 scripts/showcase.sh headless controls         # optional: the wasm controls on the new active runtime
 scripts/showcase.sh gallery                   # then `ux` for a verdict on the new pin
@@ -318,7 +333,7 @@ scripts/showcase.sh gallery                   # then `ux` for a verdict on the n
 `gallery/pin.json`, the gitlink): commit them to record the served pin. It refuses (rc 3) for an unregistered or
 incomplete pin, while this repo's `serve.mjs` (without `SHOWCASE_PIN`)
 runs, during a bake, a headless run or a showcase browser run; an interrupted switch is reported by `pin current` and
-finished by re-running `pin use`. The switches A→C→A→C, C→B→C and C→D→C were rehearsed, and C→E is the current one
+finished by re-running `pin use`. The switches A→C→A→C, C→B→C and C→D→C were rehearsed, C→E was served (2026-10-04), E→F was the first local v1 switch (2026-10-05), and F→G is the current local switch (2026-10-06)
 (docs/REPIN-LOG.md). Each
 switch regenerates `gallery/pin.json`, so the gallery hash changes (C `921b0b6a…`, before the v2mit lane's memory
 wording `2081098d…`; D `eab4f147…` with the older wording) and a pin needs its own verdicts on its gallery (D's

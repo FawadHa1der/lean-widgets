@@ -6,8 +6,12 @@
 // qed64.relay.toClient as soon as the page assigns globalThis.qed64 (before the editor starts, so even the boot-time
 // codeAction cancellation is seen). The relay calls this.toClient dynamically (lsp-relay.ts:137,218). Records
 // publishDiagnostics per document version (window.__uxTap.pub) and reports every LSP error reply to Node through
-// the exposed binding __uxReport (survives reloads). Counts every other frame (tap.frames, tap.lastFrameAt: the hang
-// capture's "did any LSP frame arrive" signal). Never throws into the relay.
+// the exposed binding __uxReport (survives reloads): RequestCancelled (-32800) and, since QED64's edit coalescing
+// (EMBEDDING.md §7.8), ContentModified (-32801, error.data.qed64.kind 'superseded') alike — both pair with lean4monaco's
+// logged console.error lines (selectors.json consoleAllowlist pairWith, fail-closed without these reports); the reply's
+// error.data.qed64.kind travels with the report. Counts every other frame (tap.frames, tap.lastFrameAt: the hang
+// capture's "did any LSP frame arrive" signal). On a v1 page the relay's toClient/fromClient are already the page's own
+// wrappers (frontend/src/relay-taps.ts); this tap wraps those, so it sees what the editor receives. Never throws into the relay.
 export const TAP_SRC = `(() => {
   try { if (location.pathname !== '/' || window.__uxTapInstalled) return; } catch (e) { return; }
   window.__uxTapInstalled = true;
@@ -28,7 +32,10 @@ export const TAP_SRC = `(() => {
           tap.pub.push({ t: Date.now(), version: m.params.version, diags: (m.params.diagnostics || []).map((d) => ({ sev: d.severity == null ? 1 : d.severity, line: d.range.start.line, character: d.range.start.character, msg: String(d.message).slice(0, 400) })) });
           if (tap.pub.length > 600) tap.pub.splice(0, 300);
         } else if (m && m.id !== undefined && m.error) {
-          const e = { t: Date.now(), id: m.id, code: m.error.code, message: String(m.error.message || '').slice(0, 200) };
+          // error.data.qed64.kind: 'superseded' on a -32801 (§7.8), 'restart' | 'halted' | 'orphaned' on the relay's own. Carried as
+          // qed64Kind: the report's own kind stays 'errorReply' (classifyConsole pairWith and classify() select on it)
+          const qk = m.error.data && m.error.data.qed64 ? m.error.data.qed64.kind : undefined;
+          const e = { t: Date.now(), id: m.id, code: m.error.code, message: String(m.error.message || '').slice(0, 200), qed64Kind: qk === undefined ? null : String(qk) };
           tap.errReplies.push(e); if (tap.errReplies.length > 600) tap.errReplies.splice(0, 300);
           rep({ kind: 'errorReply', ...e });
         }

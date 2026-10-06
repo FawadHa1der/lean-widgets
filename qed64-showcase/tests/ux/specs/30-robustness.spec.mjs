@@ -3,9 +3,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { W, Gallery, Stock, BY_ID, EXAMPLES, SC, chromeRss, screenPath, serverBytes, startServer, stopServer, sleep, until, errorsWarnings, rssSampler, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
+import { W, Gallery, Stock, BY_ID, EXAMPLES, SC, API, chromeRss, screenPath, serverBytes, startServer, stopServer, sleep, until, errorsWarnings, rssSampler, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
+// v1 (lib/qed64.mjs API): the stock page's failed boot is read as api.status().boot {failed, message} (EMBEDDING.md §2.2, §4:
+// a missing overlay index is a named failure "?snapshots=<dir>: …"); on a legacy page as the boot card's "failed" class and
+// its label (Stock.pageInfo bootFailed is that same fact in either mode). C25 (v1 persistence through the `document` event
+// and an adopted frame reload) is new; on a legacy pin it asserts the page's own qed64.buffer restore the gallery adopts.
 const firstAt = (id) => ({ line: BY_ID[id].firstCursor.line, character: BY_ID[id].firstCursor.character });
 const firstGolden = (id) => goldenCursor(id, firstAt(id).line, firstAt(id).character).panels[0];
 const allConsole = (s) => s.watches.flatMap((w) => [...w.messages.map((m) => `${m.type} ${m.text}`), ...w.pageErrors.map((e) => `pageerror ${e.message}`)]);
@@ -96,12 +100,20 @@ test('C8 bad overlay: the stock page shows its boot-failure card; the gallery re
   const st = await Stock.open(s, { buffer: BY_ID['hasse-view'].text, query: '?snapshots=snapshots/nope' });
   const r = await st.settle({ timeoutMs: 180000 });
   const info = await st.pageInfo(); const q = await st.qstatus();
-  m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, pill: info.pill, lastDeath: q && q.lastDeath, stats: q && q.stats };
+  m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, boot: info.boot, bootFailed: info.bootFailed, pill: info.pill, lastDeath: q && q.lastDeath, stats: q && q.stats };
   await st.page.screenshot({ path: screenPath('C8-stock-bootcard.png') });
   await ux.close(s);
   expect(r).toBeTruthy();
-  expect(m.stock.bootcard).toMatch(/failed/);
-  expect(m.stock.bootlabel).toMatch(/snapshot 'init' failed to load/);
+  if (API) {
+    // v1 (EMBEDDING.md §4): a missing overlay index is a boot failure that NAMES the parameter, with cause kind 'missing'
+    expect(m.stock.boot, 'api.status().boot reports the failed boot').toMatchObject({ failed: true, done: false });
+    expect(m.stock.boot.message, 'the failure names ?snapshots=snapshots/nope').toMatch(/\?snapshots=snapshots\/nope/);
+    expect(m.stock.bootFailed).toBe(true);
+    expect(m.stock.bootlabel, 'the page\'s own card shows the same message').toBe(m.stock.boot.message);
+  } else {
+    expect(m.stock.bootcard).toMatch(/failed/);
+    expect(m.stock.bootlabel).toMatch(/snapshot 'init' failed to load/);
+  }
   // the gallery: preflight refuses, nothing loads
   const s2 = await ux.launch({ profile: 'fresh', label: 'gallery' });
   const g = await Gallery.open(s2, { hash: 'hasse-view', query: '?overlay=nope' });
@@ -138,13 +150,21 @@ test('C9 unpaired fixture (temp overlay with an altered runtime): the gallery re
     await st.settle({ timeoutMs: 180000 });
     const info = await st.pageInfo(); const q = await st.qstatus();
     const all = allConsole(s2);
-    m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, lastDeath: q && q.lastDeath, unpairedInUi: /SNAPSHOT_UNPAIRED|baked for runtime/.test(`${info.bootlabel} ${info.pill} ${JSON.stringify(q && q.lastDeath)}`), unpairedInConsole: all.filter((x) => /SNAPSHOT_UNPAIRED|baked for runtime/.test(x)).slice(0, 3), snapzGets: serverBytes(st.tNav).snapz || null };
+    m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, boot: info.boot, bootFailed: info.bootFailed, lastDeath: q && q.lastDeath, unpairedInUi: /SNAPSHOT_UNPAIRED|baked for runtime/.test(`${info.bootlabel} ${info.pill} ${JSON.stringify(q && q.lastDeath)}`), unpairedInConsole: all.filter((x) => /SNAPSHOT_UNPAIRED|baked for runtime/.test(x)).slice(0, 3), snapzGets: serverBytes(st.tNav).snapz || null };
     await st.page.screenshot({ path: screenPath('C9-stock-unpaired.png') });
     console.log(`C9 ${JSON.stringify(m)}`);
     expect(m.gallery.phase).toBe('error');
     expect(m.gallery.qed64Loads).toBe(0);
     expect(m.gallery.failed.some((f) => /runtime/.test(f))).toBe(true);
-    expect(m.stock.bootcard).toMatch(/failed/);
+    if (API) {
+      // v1: the unpaired snapshot is a named boot failure (api.status().boot; the death's cause kind 'unpaired', EMBEDDING.md §7.2)
+      expect(m.stock.boot, 'api.status().boot reports the failed boot').toMatchObject({ failed: true });
+      expect(m.stock.bootFailed).toBe(true);
+      // every bootFailed death carries its cause (§7.2); an unpaired snapshot is kind 'unpaired' (SNAPSHOT_UNPAIRED)
+      expect(m.stock.lastDeath && m.stock.lastDeath.cause, 'a bootFailed death carries its cause (EMBEDDING.md §7.2)').toMatchObject({ kind: 'unpaired' });
+      expect(m.stock.lastDeath.reason).toBe('bootFailed');
+      expect(typeof m.stock.boot.message === 'string' && m.stock.boot.message.length > 0, `api.status().boot.message names the failure (${JSON.stringify(m.stock.boot.message)})`).toBe(true);
+    } else expect(m.stock.bootcard).toMatch(/failed/);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   m.fixtureRemoved = !fs.existsSync(dir);
 });
@@ -171,7 +191,7 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   await sleep(3000);
   rss.stop();
   const w = s.watches[0];
-  m.after = { phase: b.s.phase, ms: Date.now() - t, panelEqual: p.equal, crashed: w.crashed, rss: chromeRss(), peak: rss.peak, workersAlive: g.page.workers().length, workersCreated: w.workers.length, workersClosed: w.workers.filter((x) => x.closed !== null).length, loads: w.loads, bridgeLate: b.s.bridge.late };
+  m.after = { phase: b.s.phase, ms: Date.now() - t, panelEqual: p.equal, crashed: w.crashed, rss: chromeRss(), peak: rss.peak, workersAlive: g.page.workers().length, workersCreated: w.workers.length, workersClosed: w.workers.filter((x) => x.closed !== null).length, loads: w.loads, bridgeLate: b.s.bridge.late, api: b.s.api, bridge: b.s.bridge };
   // the renderer RSS timeline (0.5 s) and the transient peak against the plan's fail line, in bytes (UX audit minor 1).
   // The transient overlap of a dying page and the next boot is QED64's (L8 in docs/UX-RESULTS.md): recorded and
   // reported, with the fail line asserted on the settled state; a crash fails the test.
@@ -183,6 +203,10 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   console.log(`C10 renderer: first ready ${m.atFirstReady.rss.rendererGB} GB, transient peak ${m.transient.peakGB} GB at ${m.transient.peakAtMs} ms (${m.transient.msOverFailLine} ms over ${MEM_FAIL_BYTES / 1e9} GB), settled ${m.after.rss.rendererGB} GB`);
   expect(m.reloads[4].at, '5 reloads within 15 s').toBeLessThanOrEqual(15000);
   expect(m.after).toMatchObject({ phase: 'ready', panelEqual: true, crashed: false, bridgeLate: 0 });
+  // v1: bridge.late is always 0 (no bridge is ever installed late on a stood-down page), so the storm's v1 outcome is asserted
+  // on the api itself: the last gallery holds the frame's api in embed mode, the bridge stood down and is not installed, and
+  // nothing was adopted (every reload is a fresh gallery that navigated its own frame)
+  if (API) expect({ present: m.after.api.present, embed: m.after.api.embed, stoodDown: m.after.bridge.stoodDown, installed: m.after.bridge.installed, adopted: m.after.api.adopted }, 'v1: the gallery after the storm holds the api, bridge stood down').toEqual({ present: true, embed: true, stoodDown: true, installed: false, adopted: 0 });
   expect(m.after.workersAlive, 'no worker accumulation across the reloads').toBeLessThanOrEqual(m.atFirstReady.workers + 2);
   expect(m.after.rss.rendererBytes, `settled renderer RSS < ${MEM_FAIL_BYTES / 1e9} GB`).toBeLessThan(MEM_FAIL_BYTES);
 });
@@ -276,7 +300,7 @@ test('C12 offline warm reload: snapshots come from the warm profile (no .snapz d
   const st3 = await Stock.open(s3, { buffer: BY_ID[id].text });
   await st3.settle({ timeoutMs: 180000 });
   const i3 = await st3.pageInfo(); const q3 = await st3.qstatus();
-  m.stockOverlayOffline = { phase: q3 && q3.phase, bootcard: i3.bootcard, bootlabel: i3.bootlabel, lastDeath: q3 && q3.lastDeath };
+  m.stockOverlayOffline = { phase: q3 && q3.phase, bootcard: i3.bootcard, bootlabel: i3.bootlabel, boot: i3.boot, bootFailed: i3.bootFailed, lastDeath: q3 && q3.lastDeath };
   await st3.page.screenshot({ path: screenPath('C12-overlay-offline-stock.png') });
   console.log(`C12 ${JSON.stringify(m)}`);
   expect(m.stock).toMatchObject({ phase: 'ready', aborted: 0 });
@@ -284,5 +308,89 @@ test('C12 offline warm reload: snapshots come from the warm profile (no .snapz d
   expect((m.gallery.server.snapz || { n: 0 }).n, 'no .snapz GET reached the server').toBe(0);
   expect(m.galleryOverlayOffline).toMatchObject({ phase: 'error', cardVisible: true, qed64Loads: 0 });
   // documented QED64 limitation (UX-RESULTS L3): the page fetches the override index.json on every boot
-  expect(m.stockOverlayOffline.bootcard).toMatch(/failed/);
+  if (API) {
+    // v1 (EMBEDDING.md §4): an unreachable overlay index is a NAMED boot failure (api.status().boot.failed, the message names ?snapshots=)
+    expect(m.stockOverlayOffline.boot, 'api.status().boot reports the failed boot').toMatchObject({ failed: true });
+    expect(m.stockOverlayOffline.boot.message).toMatch(/\?snapshots=snapshots\/widgets8/);
+    expect(m.stockOverlayOffline.bootFailed).toBe(true);
+  } else expect(m.stockOverlayOffline.bootcard).toMatch(/failed/);
+});
+
+// C25 (QED64 embedding contract v1 adoption): edits survive a reload of the FRAME that the gallery did not start (QED64's own
+// Reload button, a user reload of the frame). In v1 embed mode (EMBEDDING.md §3) the page neither reads nor writes
+// qed64.buffer, so the gallery owns persistence: every `document` event is written to localStorage['qed64-showcase:document']
+// (at most once per second; status().document.persisted), and on the reloaded frame's qed64:frame-api the gallery calls
+// api.setDocument(saved) synchronously (inside the page's 5 s boot-document window) and adopts the reload (adoptReload).
+// On a legacy pin the page itself restores its qed64.buffer (saved 400 ms after every edit) and the gallery adopts what it
+// shows: the same outcome (the edited text is back on a new session), asserted through the legacy facts.
+test('C25 persistence across a frame reload: an in-page edit comes back on the reloaded frame the gallery adopts', async ({ ux }) => {
+  test.setTimeout(10 * 60 * 1000);
+  const m = ux.metrics; const id = 'hasse-view'; const ex = BY_ID[id]; const at = firstAt(id);
+  ux.scenarios.push('relayRestartOrReboot'); // the reload disposes the running session mid-flight (QED64 N2 'Session disposed.')
+  const s = await ux.launch({ profile: 'warm' });
+  const g = await Gallery.open(s, { hash: id });
+  expect(g.boot.s.phase).toBe('ready');
+  const q0 = await g.qstatus(); const w = s.watches[0];
+  m.mode = API ? 'v1' : 'legacy';
+  // the edit: a comment appended with the real keyboard (one input, re-checks clean)
+  const EDIT = '-- C25: an edit that must survive a frame reload';
+  const last = ex.text.split('\n').length - 1;
+  await g.setCursor(last, 0);
+  await g.focusEditor();
+  await g.page.keyboard.type(EDIT);
+  const edited = `${ex.text}${EDIT}`;
+  const st1 = await g.waitReady({ minVersion: q0.version, timeoutMs: 120000, text: edited });
+  expect(st1, 'the edited text re-checked').not.toBeNull();
+  m.edited = { version: st1.version, textOk: (await g.currentText()) === edited, errorsWarnings: errorsWarnings(await g.diagnosticsOf(st1.version)).length, chipEdited: (await g.status()).edited };
+  expect(m.edited).toMatchObject({ textOk: true, errorsWarnings: 0, chipEdited: true });
+  // persisted: v1 by the gallery from the `document` event (<= 1 s); legacy by the page's own 400 ms buffer save
+  const persisted = await until(async () => {
+    if (API) { const st = await g.status(); const stored = await g.page.evaluate(() => { try { return localStorage.getItem('qed64-showcase:document'); } catch { return null; } }); return st.document && st.document.persisted && stored === edited ? { document: st.document } : null; }
+    const buf = await g.q(() => { try { return localStorage.getItem('qed64.buffer'); } catch (e) { return null; } }); return buf === edited ? { buffer: true } : null;
+  }, { timeoutMs: 10000, intervalMs: 200 });
+  m.persisted = persisted;
+  expect(persisted, API ? 'status().document.persisted and qed64-showcase:document hold the edit' : 'the page saved its qed64.buffer').not.toBeNull();
+  if (API) expect(persisted.document).toMatchObject({ persisted: true, version: expect.any(Number), length: edited.length });
+  // reload the FRAME (not the gallery): what QED64's own Reload button or a user reload of the frame does
+  const loads0 = w.loads.qed64; const sessionBefore = q0.session;
+  const apiBefore = API ? (await g.status()).api : null;
+  const frame = g.page.frames().find((f) => f.parentFrame() === g.page.mainFrame() && (() => { try { return new URL(f.url()).pathname === '/'; } catch { return false; } })());
+  expect(frame, 'the QED64 frame').toBeTruthy();
+  // a per-DOCUMENT marker: session ids restart at 's1' in every page document (src/runtime/client.ts sessionSeq is module
+  // state), so the reloaded page's session id equals the old one; the marker is gone only in a NEW document
+  await frame.evaluate(() => { window.__uxC25Old = true; });
+  const newDocument = async () => (await g.q(() => !window.__uxC25Old).catch(() => false)) === true;
+  const tR = Date.now();
+  await frame.evaluate(() => { setTimeout(() => location.reload(), 0); return true; }).catch(() => {});
+  const adopted = await until(async () => {
+    if (!(w.loads.qed64 > loads0)) return null;
+    const st = await g.status(); const q = await g.qstatus(); const tx = await g.currentText();
+    return st && st.phase === 'ready' && st.booted && q && q.phase === 'ready' && q.session && tx === edited && (await newDocument()) ? { st, q } : null;
+  }, { timeoutMs: 300000, intervalMs: 200 });
+  m.adopted = { ok: !!adopted, ms: Date.now() - tR, loadsBefore: loads0, loadsAfter: w.loads.qed64, phase: adopted && adopted.st.phase, op: adopted && adopted.st.op && adopted.st.op.label, session: adopted && adopted.q.session, sessionBefore, newDocument: await newDocument(), version: adopted && adopted.q.version, textOk: adopted ? (await g.currentText()) === edited : null, crashed: w.crashed, error: adopted && adopted.st.error };
+  if (API && adopted) m.adopted.v1 = { document: adopted.st.document, api: adopted.st.api, seed: adopted.st.seed, apiText: await g.q(() => window.qed64.api.getDocument().text) === edited, frame: await g.frameFacts() };
+  await g.page.screenshot({ path: screenPath('C25-after-frame-reload.png') });
+  console.log(`C25 ${JSON.stringify(m)}`);
+  expect(m.adopted, 'the gallery adopted the reloaded frame with the edited text on a new session').toMatchObject({ ok: true, phase: 'ready', textOk: true, crashed: false, error: null });
+  expect(m.adopted.loadsAfter, 'exactly one more QED64 page load').toBe(loads0 + 1);
+  expect(m.adopted.newDocument, 'a new QED64 page document (the per-document marker is gone)').toBe(true);
+  if (API) {
+    expect(m.adopted.v1.document, 'the adopted document is the persisted one').toMatchObject({ persisted: true, length: edited.length });
+    // the adoption path itself: on the reloaded frame's qed64:frame-api the gallery called api.setDocument(saved) synchronously
+    // (api.adopted, adoptSet from 'saved' with the edit's length, one more api document), and the new session delivered its
+    // own `document` event (lastEventAgoMs younger than the reload), so persisted/length are not inherited from before it
+    expect(m.adopted.v1.api, 'adopted through api.setDocument(saved) in the frame-api handler').toMatchObject({ adopted: 1, docs: apiBefore.docs + 1, adoptSet: { from: 'saved', length: edited.length } });
+    expect(typeof m.adopted.v1.document.lastEventAgoMs === 'number' && m.adopted.v1.document.lastEventAgoMs < m.adopted.ms, `a fresh document event on the new session (lastEventAgoMs ${m.adopted.v1.document.lastEventAgoMs} < ${m.adopted.ms} ms since the reload)`).toBe(true);
+    expect(m.adopted.v1.apiText, 'api.getDocument() shows the edit').toBe(true);
+    expect(m.adopted.v1.api).toMatchObject({ present: true, embed: true });
+    expect(m.adopted.v1.seed).toMatchObject({ action: 'embed' });
+    expect(m.adopted.v1.frame.hash, 'no #code= resurrected on the reload').not.toMatch(/code=/);
+  }
+  // the re-checked edit still elaborates clean and the panel is back at the first cursor
+  const d = await g.diagnosticsOf(adopted.q.version);
+  const p = await g.expectPanel(at, firstGolden(id), { timeoutMs: 60000 });
+  m.after = { errorsWarnings: errorsWarnings(d).length, panelEqual: p.equal };
+  expect(m.after).toEqual({ errorsWarnings: 0, panelEqual: true });
+  const rs = await g.resetUI(ex);
+  expect(rs.ok, 'Reset restores the example').toBe(true);
 });

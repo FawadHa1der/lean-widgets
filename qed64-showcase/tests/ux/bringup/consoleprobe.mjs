@@ -37,7 +37,7 @@ const PARENT = (mode) => `<!doctype html><meta charset="utf-8"><title>bring-up p
 <iframe id="f" title="qed64"></iframe>
 <script>
 const f = document.getElementById('f'); window.__installs = [];
-const inst = (why) => { try { const w = f.contentWindow; if (!w || w.location.href === 'about:blank' || w.__qed64Bridge) return !!(w && w.__qed64Bridge); window.installQed64Bridge(w); window.__installs.push({ why, rs: w.document.readyState, q: !!w.qed64 }); return true; } catch (e) { return false; } };
+const inst = (why) => { try { const w = f.contentWindow; if (!w || w.location.href === 'about:blank' || w.__showcaseBridge) return !!(w && w.__showcaseBridge); window.installQed64Bridge(w); window.__installs.push({ why, rs: w.document.readyState, q: !!w.qed64 }); return true; } catch (e) { return false; } };
 f.src = '/?snapshots=snapshots/widgets8';
 ${mode === 'parent-early' ? "const tick = () => { if (!inst('commit-poll')) setTimeout(tick, 4); }; tick();" : ''}
 window.__installLate = () => inst('late');
@@ -81,7 +81,7 @@ for (const mode of modes) {
     }
     await sleep(2000);
     r.installs = top ? null : mode === 'gallery' ? await page.evaluate(() => window.__showcase.status().bridge.installs) : await page.evaluate(() => window.__installs);
-    r.bridge = await ev('return W.__qed64Bridge || null').catch(() => null);
+    r.bridge = await ev('return W.__showcaseBridge || null').catch(() => null);
     // the census from every frame
     r.census = [];
     for (const fr of page.frames()) { const c = await fr.evaluate(() => window.__census || []).catch(() => []); r.census.push(...c); }

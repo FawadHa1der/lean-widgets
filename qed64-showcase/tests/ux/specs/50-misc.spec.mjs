@@ -2,7 +2,7 @@
 // accessibility (keyboard-only walkthrough, aria, the veil out of the accessibility tree, forward focus order), C18 two
 // tabs (record only), C19 headed sign-off (optional), C24 the browser capability card (before anything boots).
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, Stock, BY_ID, EXAMPLES, ORIGIN, CHANNEL, chromeRss, reclaimableGiB, screenPath, sleep, until, errorsWarnings } from '../lib/qed64.mjs';
+import { Gallery, Stock, BY_ID, EXAMPLES, ORIGIN, CHANNEL, API, chromeRss, reclaimableGiB, screenPath, sleep, until, errorsWarnings } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
 const firstAt = (id) => ({ line: BY_ID[id].firstCursor.line, character: BY_ID[id].firstCursor.character });
@@ -35,26 +35,44 @@ test('C16 forced collision: a name the covered superset already declares gets th
   m.example = { collision: q0.collision, header: q0.header && q0.header.mode };
   const text = 'import Mathlib\nimport HasseView\n\n-- DistLens.Demo.die is in the widgets8 region but not in this header\'s closure\ndef DistLens.Demo.die : Nat := 0\n';
   const v0 = q0.version;
-  await g.q((t) => window.qed64.editor.getModel().setValue(t), text);
+  // the forced text: api.setDocument on a v1 page (EMBEDDING.md §2.3), the editor model on a legacy one
+  if (API) m.setDocument = await g.q((t) => window.qed64.api.setDocument(t, { undoable: false }).then((r) => ({ version: r.version, unchanged: r.unchanged })), text);
+  else await g.q((t) => window.qed64.editor.getModel().setValue(t), text);
   const st = await g.waitReady({ minVersion: v0, timeoutMs: 120000, text });
   const offer = g.qframe.locator('button, a').filter({ hasText: 'Load exact imports' });
+  // v1: the offer is a structured fact, api.status().offer {kind:'exactImports', label} mirrored by status().qed64.offer and
+  // __showcase.offer(); the page's button is still rendered (recorded here, clicked only in legacy mode)
+  const offered = API ? await until(async () => { const o = await g.offer(); return o && o.kind === 'exactImports' ? o : null; }, { timeoutMs: 20000 }) : null;
   await until(async () => ((await offer.count()) ? true : null), { timeoutMs: 20000 });
   const q1 = await g.qstatus();
   const d1 = await g.diagnosticsOf(st.version);
-  m.forced = { collision: q1.collision, header: q1.header && q1.header.mode, offer: await offer.count(), offerText: (await offer.count()) ? (await offer.first().textContent()).trim() : null, note: (d1 || []).filter((x) => x.sev === 3).map((x) => x.msg.slice(0, 200)), errors: (d1 || []).filter((x) => x.sev === 1).map((x) => x.msg.slice(0, 160)), galleryEdited: (await g.status()).edited };
+  m.forced = { collision: q1.collision, header: q1.header && q1.header.mode, offer: await offer.count(), offerText: (await offer.count()) ? (await offer.first().textContent()).trim() : null, apiOffer: API ? offered : null, note: (d1 || []).filter((x) => x.sev === 3).map((x) => x.msg.slice(0, 200)), errors: (d1 || []).filter((x) => x.sev === 1).map((x) => x.msg.slice(0, 160)), galleryEdited: (await g.status()).edited };
   await g.page.screenshot({ path: screenPath('C16-collision-offer.png') });
   expect(m.example.collision, 'gallery examples never collide').toBeNull();
   expect(q1.collision, 'the forced name collides').not.toBeNull();
   expect(m.forced.offer).toBeGreaterThan(0);
+  if (API) {
+    expect(m.setDocument, 'setDocument forwarded the forced text').toMatchObject({ unchanged: false, version: expect.any(Number) });
+    expect(offered, 'the offer through the API: status().qed64.offer / __showcase.offer()').toMatchObject({ kind: 'exactImports', label: expect.stringMatching(/Load exact imports/) });
+    expect(q1.offer, 'api.status().offer agrees').toMatchObject({ kind: 'exactImports' });
+  }
   // take the offer: QED64 restarts with packs ['essential'] and warms the exact header; HasseView is not in the
-  // essential pack, so the exact import fails and the page must fall back to the preloaded (covered) library
+  // essential pack, so the exact import fails and the page must fall back to the preloaded (covered) library.
+  // v1: through the gallery's __showcase.acceptOffer() (-> api.acceptOffer(), EMBEDDING.md §2.3); legacy: the page's button
   const rss = []; const t = Date.now();
   const h = setInterval(() => rss.push(chromeRss().rendererBytes), 1000);
-  await offer.first().click();
+  if (API) { m.accepted = await g.acceptOffer(); expect(m.accepted, '__showcase.acceptOffer() took the offer').toBe(true); } else await offer.first().click();
   const back = await until(async () => { const q = await g.qstatus(); return q && q.phase === 'ready' && q.stats.userRestarts > q0.stats.userRestarts ? q : null; }, { timeoutMs: 420000, intervalMs: 500 });
   clearInterval(h);
   const pill = await g.q(() => (document.getElementById('ptext') || {}).textContent || null);
-  m.afterOffer = { ready: !!back, ms: Date.now() - t, header: back && back.header, collision: back && back.collision, userRestarts: back && back.stats.userRestarts, workerDeaths: back && back.stats.workerDeaths, pill, peakRendererGiB: +(Math.max(0, ...rss) / 1073741824).toFixed(2), peakRendererGB: +(Math.max(0, ...rss) / 1e9).toFixed(2), crashed: s.watches[0].crashed, warns: s.watches[0].messages.filter((x) => /exact import failed/.test(x.text)).map((x) => x.text.slice(0, 200)) };
+  m.afterOffer = { ready: !!back, ms: Date.now() - t, header: back && back.header, collision: back && back.collision, offer: API && back ? back.offer : undefined, userRestarts: back && back.stats.userRestarts, workerDeaths: back && back.stats.workerDeaths, pill, peakRendererGiB: +(Math.max(0, ...rss) / 1073741824).toFixed(2), peakRendererGB: +(Math.max(0, ...rss) / 1e9).toFixed(2), crashed: s.watches[0].crashed, warns: s.watches[0].messages.filter((x) => /exact import failed/.test(x.text)).map((x) => x.text.slice(0, 200)) };
+  // v1: the offer follows the collision (main.ts offerExactImports: withdrawn by a status WITHOUT a collision, offered again
+  // by a collision status). The exact import fails here, so the fallback session still holds the covered library and still
+  // collides: the page offers again. That it was TAKEN is proven by accepted === true and userRestarts (the wait above).
+  if (API) {
+    if (m.afterOffer.collision) expect(m.afterOffer.offer, 'the fallback session still collides: the page offers again').toMatchObject({ kind: 'exactImports' });
+    else expect(m.afterOffer.offer, 'no collision on the new session: no offer').toBeNull();
+  }
   await g.page.screenshot({ path: screenPath('C16-after-exact-imports.png') });
   console.log(`C16 ${JSON.stringify(m)}`);
   expect(m.afterOffer).toMatchObject({ ready: true, crashed: false, workerDeaths: 0 });

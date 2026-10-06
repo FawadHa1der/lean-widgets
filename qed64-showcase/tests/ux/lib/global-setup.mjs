@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { SC, RUN_DIR, RUN_ID, ORIGIN, UX_PIN, HEADED_ALL, CHANNEL, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
+import { SC, RUN_DIR, RUN_ID, ORIGIN, UX_PIN, HEADED_ALL, CHANNEL, GALLERY_PIN, API, API_REVISION, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
 export default async function globalSetup() {
   const lock = lockHeld();
   const meta = { run: RUN_ID, startedAt: new Date().toISOString(), lock, origin: ORIGIN, uxPin: UX_PIN, headed: HEADED_ALL, ...(CHANNEL ? { channel: CHANNEL } : {}), startedServer: false, reclaimableGiB: +reclaimableGiB().toFixed(1) };
@@ -17,8 +17,10 @@ export default async function globalSetup() {
     if (r.status !== 0 || !serverUp()) throw new Error(`could not start serve.mjs: ${r.stdout} ${r.stderr}`);
     meta.startedServer = true; meta.serverStart = r.stdout.trim();
   }
-  const pin = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/pin.json'), 'utf8'));
-  meta.pin = { id: pin.pin, buildId: pin.buildId, qed64: pin.qed64 && pin.qed64.commit };
+  // the pin.json the served gallery reads, and the mode the suite branches on (lib/qed64.mjs GALLERY_PIN / API: under UX_PIN
+  // with the active pin's gallery, the staged release's own apiRevision, which the gallery follows too)
+  const pin = GALLERY_PIN;
+  meta.pin = { id: pin.pin, buildId: pin.buildId, qed64: pin.qed64 && pin.qed64.commit, apiRevision: API_REVISION, shell: pin.shell ?? null, mode: API ? 'v1' : 'legacy', modeSource: pin.modeSource || 'pin.json', ...(pin.pinJsonApiRevision !== undefined ? { pinJsonApiRevision: pin.pinJsonApiRevision } : {}), ...(pin.servedVia ? { servedVia: pin.servedVia } : {}) };
   // the server must serve the ACTIVE pin's release (serve.mjs fixes its pin at start: X-Showcase-Pin "<id> <buildId>"):
   // two pins can share a buildId, so a server left over from before a `showcase.sh pin use` would test the wrong shell
   const P = await import(path.join(SC, 'scripts/lib/pins.mjs'));
