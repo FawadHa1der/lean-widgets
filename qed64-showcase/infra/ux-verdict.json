@@ -1,15 +1,15 @@
 {
  "schema": "qed64-showcase.ux-verdict/v1",
  "note": "Written by node scripts/deploy-manifest.mjs --record-verdict: the G2 verdict a checkout without out/ux (CI) accepts. Commit it with the gallery/lock it names.",
- "gallery": "3b4dc8bb74095e4e3faf24b00eb9a48b690e1d19dcdd54a7aa387f25593b5828",
- "lockSha256": "190f09de2a4105fd534ce6934ca27f6fa8e6e4edea831f36bca080e96e3cbbbb",
+ "gallery": "d8a5bb6d5ab4be114253f750df64e5fbdc6c9e08bb73bac65a64dee17083dcfa",
+ "lockSha256": "22eb45f51859c411dfaee45fd210bc20cf79bfe91ee7adfd7715609692b3ed95",
  "overlays": {
   "widgets8": "a23060407441920fcb76a2179deac2d5fdb1a5366d24a8f7b970a19ced2e48c7",
   "widgets7": "f3f7e6944326f8c8c0cb7d88577a8be2047417e769cbe44aad6972639caf24b3"
  },
- "run": "r4-main-full4",
- "end": "2026-10-05T01:22:41Z",
- "lane": "r4",
- "pin": "33b0967",
- "recordedAt": "2026-10-05T01:55:47.709Z"
+ "run": "h-full4",
+ "end": "2026-10-07T01:03:19Z",
+ "lane": "pinH",
+ "pin": "bf9d947",
+ "recordedAt": "2026-10-07T06:39:10.828Z"
 }

@@ -154,6 +154,9 @@ test('C9 unpaired fixture (temp overlay with an altered runtime): the gallery re
     await st.settle({ timeoutMs: 180000 });
     const info = await st.pageInfo(); const q = await st.qstatus();
     const all = allConsole(s2);
+    // a renderer crash during QED64's reboot loop leaves no page to read (run h-full1 on pin H: QED64 HARDENING #55 residual,
+    // the cost #62 removes): say so instead of failing on a null read; the crash itself is also the console oracle's CRASHED
+    if (!info) { m.stock = { crashed: s2.watches.some((w) => w.crashed), phase: q && q.phase }; console.log(`C9 ${JSON.stringify(m)}`); throw new Error(`C9: the stock page is gone (renderer crashed: ${m.stock.crashed}) during QED64's unpaired reboot loop`); }
     m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, boot: info.boot, bootFailed: info.bootFailed, lastDeath: q && q.lastDeath, unpairedInUi: /SNAPSHOT_UNPAIRED|baked for runtime/.test(`${info.bootlabel} ${info.pill} ${JSON.stringify(q && q.lastDeath)}`), unpairedInConsole: all.filter((x) => /SNAPSHOT_UNPAIRED|baked for runtime/.test(x)).slice(0, 3), snapzGets: serverBytes(st.tNav).snapz || null };
     await st.page.screenshot({ path: screenPath('C9-stock-unpaired.png') });
     console.log(`C9 ${JSON.stringify(m)}`);
@@ -210,7 +213,10 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
       const g0 = gen; const e0 = Date.now();
       const st = await g.status().catch(() => null);
       const ms = Date.now() - e0; evals.n++; evals.maxMs = Math.max(evals.maxMs, ms); if (!st) evals.failed++;
-      if (st && g0 === gen) last = { phase: st.phase, qed64: st.qed64 && st.qed64.phase, at: Date.now() - t };
+      // the page's JS heap (one isolate for the gallery, the QED64 frame and the InfoView): QED64 HARDENING #55's residual
+      // is a 4 GiB pointer-cage headroom limit during reloads, so each reload records the heap it left behind (data only)
+      const mem = st ? await g.page.evaluate(() => (performance.memory ? { used: performance.memory.usedJSHeapSize, total: performance.memory.totalJSHeapSize } : null)).catch(() => null) : null;
+      if (st && g0 === gen) last = { phase: st.phase, qed64: st.qed64 && st.qed64.phase, at: Date.now() - t, mem };
       await sleep(100);
     }
   })();
@@ -220,7 +226,7 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
     gen++; last = null;
     await reloadViaCdp();
     const committedMs = Date.now() - t - at;
-    m.reloads.push({ at, committedMs, landedAt: at + committedMs, phaseBefore: before && before.phase, qed64Before: before && before.qed64, phaseAgeMs: before ? at - before.at : null });
+    m.reloads.push({ at, committedMs, landedAt: at + committedMs, phaseBefore: before && before.phase, qed64Before: before && before.qed64, phaseAgeMs: before ? at - before.at : null, heapBefore: before && before.mem ? { usedMiB: +(before.mem.used / 1048576).toFixed(1), totalMiB: +(before.mem.total / 1048576).toFixed(1) } : null });
   }
   stopPoll = true; await poll;
   await cdp.detach().catch(() => {});
@@ -309,6 +315,9 @@ test('C11 network cut mid-.snapz (serve.mjs CHAOS on our own :5191 server): a si
     const tR = Date.now();
     await B.page.reload({ waitUntil: 'domcontentloaded' });
     const b2 = await B.g.waitGallery({ timeoutMs: 300000 });
+    // the reload lands while the halted page's runtimes are still being torn down; on a tight renderer that can crash it (run
+    // h-headed1 on pin H: QED64 HARDENING #55 residual, the cost #63 removes): say so instead of failing on a null read
+    if (!b2 || !b2.s) { m.recovered = { crashed: B.s.watches.some((w) => w.crashed), gallery: null }; console.log(`C11 ${JSON.stringify(m)}`); throw new Error(`C11: the gallery did not come back after the recovery reload (renderer crashed: ${m.recovered.crashed})`); }
     const p = await B.g.expectPanel(firstAt('chart-kit'), firstGolden('chart-kit'), { timeoutMs: 60000 });
     m.recovered = { phase: b2.s.phase, ms: Date.now() - tR, panelEqual: p.equal, errorCard: b2.s.error };
     await B.page.screenshot({ path: screenPath('C11-recovered.png') });
