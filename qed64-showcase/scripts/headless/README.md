@@ -37,6 +37,13 @@ cp -Rc $Q/work/bump-0035/slim/lib-tree-slim $W/tree-stock
 
 Every wasm tool refuses to run when `buildIdOf(--artifact)` is not the pinned buildId.
 
+*Note (2026-10-08).* The `stage1/bin` copy above reads QED64's `pipeline/toolchain/work/` tree, which is how every pin
+up to H was set up. The kernel fork's toolchain release
+[`lean-v4.34.0-a8817d0`](https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0) also ships the runtime:
+`node <pkg dir>/cli.mjs fetch --only runtime` (with `node`, never `npx`) fetches and verifies the runtime's
+`bin/{lean.js,lean.wasm}` (the release's e2e log: `FETCH VERIFIED`). It is the planned source once we re-pin onto a QED64 release (docs/NEXT-STEPS.md); the
+buildId check above applies to it unchanged. Not yet run here.
+
 ## Raw snapshot provenance (E1 and E3)
 
 A headless PASS is only meaningful if the raw `.snap` it loaded is byte-identical to the

@@ -4,17 +4,20 @@ One entry per change of the QED64 pin. Each entry says what the pin moved from a
 "Re-pin" was actually executed, the evidence for each gate, and how to switch back.
 
 **Where it stands:** printed by `scripts/showcase.sh pin current` / `pin list` and `showcase.sh verify`, not written
-here. *History (dated):* six pins registered, all with complete stores. The sequence of served pins: A `1859b83`
+here. *History (dated):* eight pins registered (A–H, 2026-10-06), all with complete stores. The sequence of served pins: A `1859b83`
 (first build) → B `9fdf9b8` (2026-10-01, QED64's L7 fix; L9 V1) → C `5ac5d00` (multi-pin lane, with the rehearsed
 switches C→A→C→A→C→B→C) → D `3b42714` (2026-10-02 17:35–19:26Z, final gate) → C (19:26Z, final gate: D's reload storms
 were not cleaner than C's) → **E `33b0967`** (2026-10-04 05:18Z, pin-e lane: its storms were at least as clean as C's;
 gated while served, below). D stays staged; QED64 has not handed over `3b42714`. **F `84d594e`** (QED64
 `feature/embedding-api`, the embedding contract v1) was registered on 2026-10-05 and made the **active pin locally**
-(E → F, last entry) with the gallery moved to the v1 page API; it is not browser-gated and not deployed, and the live
-site still serves E.
+(E → F) with the gallery moved to the v1 page API. **G `5c327c2`** (2026-10-06: F plus QED64's edit back-pressure)
+replaced it, and **H `bf9d947`** (QED64 main: G plus the keep-alive fix) is the **active pin locally** since 2026-10-06
+~20:03Z, gated in the browser on 2026-10-06/07 (three VERDICTs, a headed sign-off; last entry). F, G and H are committed
+on the local branch `qed64-embedding-v1`, which is not pushed, and the live site still serves E.
 
 Current verdict and sign-off counts per pin: `scripts/showcase.sh pin list` (this table's "Browser gates" column is
-dated history: as of the final gate, 2026-10-02, and for E as of the pin-e lane, 2026-10-04).
+dated history: as of the final gate, 2026-10-02, for E as of the pin-e lane, 2026-10-04, and for F–H as of
+2026-10-07).
 
 | Pin | Runtime | Registered by | Browser gates (history, 2026-10-02) | Status |
 |---|---|---|---|---|
@@ -23,7 +26,9 @@ dated history: as of the final gate, 2026-10-02, and for E as of the pin-e lane,
 | C `5ac5d00` | `wasm64-4b025db7729c5f89` (0034, #52 worker) | multi-pin lane | by the end of the final gate: 7 VERDICTs, the last two `final-C-full1/2` on `2081098d…`; headed sign-off `final-C-headed1` | served until 2026-10-04 05:18Z; staged since (the fallback) |
 | D `3b42714` | `wasm64-3ab1c6a9da03bc29` (0035b) | pin D lane (stores without switching) | VERDICT `final-D-full1/2` on `eab4f147…`; headed sign-off `final-D-headed2`; storms V2 3/26 vs C 2/26 | staged, ready |
 | E `33b0967` | `wasm64-3ab1c6a9da03bc29` (D's runtime and stores; #55 lifetime-lock worker, #54 boot card) | pinE lane, 2026-10-04 (below) | pin-e lane, 2026-10-04: storms on `/showcase/#hasse-view` E 0/20 vs C 0/20 headed, 0/8 vs 1/8 headless-shell; VERDICT `pinE-full1/2` and headed sign-off `pinE-headed1` on `bbdbc932…`; 10 Mbit/s first visit PASS | served since 2026-10-04 (current state: `pin current`) |
-| F `84d594e` | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the v1 page: `qed64.api`, `?embed=1`, `#code=`, #56 editor RPC, widget-source cache, #57, #59 coalescing) | v1-adoption lane, 2026-10-05 (last entry) | none yet (pending, last entry "Browser gates on F") | active locally since 2026-10-05; not deployed (the live site serves E) |
+| F `84d594e` | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the v1 page: `qed64.api`, `?embed=1`, `#code=`, #56 editor RPC, widget-source cache, #57, #59 coalescing) | v1-adoption lane, 2026-10-05 | `CONTROLS PASS` 11/11 and a v1 smoke 22/22 on an earlier gallery; no UX run (pin F entry) | staged since 2026-10-06 (active locally 2026-10-05/06); not deployed |
+| G `5c327c2` | `wasm64-3ab1c6a9da03bc29` (F + QED64's edit back-pressure `e4cffcc`, HARDENING #59) | pin-G lane, 2026-10-06 | `CONTROLS PASS` 11/11, smoke 22/22; `g-full1b` red with 7 failures, all diagnosed (one a QED64 defect: the keep-alive starvation); VERDICT `g-full1c` on `931c33a7…` (pin G entry) | staged since 2026-10-06 ~20:03Z; not deployed |
+| H `bf9d947` | `wasm64-3ab1c6a9da03bc29` (G + QED64's keep-alive fix; QED64 main) | v1-adoption session, 2026-10-06 (last entry) | smoke 22/22; VERDICT `h-full1b`, `h-full3`, `h-full4` on `d8a5bb6d…`; `C20` 135/135 ×3; headed sign-off `h-headed2`; 3 renderer crashes (QED64 #55 residual) in `h-full1`, `h-full2b`, `h-headed1` (pin H entry) | **active locally** since 2026-10-06 ~20:03Z; verdict record `infra/ux-verdict.json` → `h-full4`; not deployed (the live site serves E) |
 
 ## 2026-10-01: QED64 1859b830 / wasm64-4b025db7… → 9fdf9b85 / wasm64-2c18773ecfba45bb (QED64's L7 fix)
 
@@ -979,7 +984,7 @@ parameters (#57), edit coalescing (#59, §7.8) and `dist/qed64-build.json`. The 
 when `apiRevision != null` and in **legacy mode** otherwise; legacy is the flow of pins A–E unchanged. In V1 it drives the
 page only through `qed64.api` and its events, the RPC bridge and the liveness probe stand down on capabilities, `?mem=`
 travels as `&memory=`, and persistence is the `document` event into `qed64-showcase:document`. The details are in
-gallery/README.md "Embedding API v1 (pins F and G)" and docs/ARCHITECTURE.md "Integration points"; the contract between the
+gallery/README.md "Embedding API v1 (pins F, G and H)" and docs/ARCHITECTURE.md "Integration points"; the contract between the
 gallery and the tests was written once in the workflow script (`CONTRACT`, items 1–11). Changed: `gallery/{gallery.js,
 lib.js,qed64-bridge.js,pin.json}`, `scripts/{build-gallery,check-gallery,sim-gallery}.mjs`, `tests/ux/{lib,specs,
 bringup}/*`, `tests/ux/selectors.json` (test API version 9), new `tests/ux/tools/v1-smoke.mjs` (a one-browser smoke of
@@ -1023,11 +1028,22 @@ reload steps, so it is not evidence for F.
 
 ### Browser gates on F
 
-PENDING: filled in by the orchestrator after the runs
+*Filled 2026-10-08 from the logs.* F was replaced as the candidate by G (2026-10-06) before its UX gate, so F has no UX
+run of its own.
+
+| Gate | Result | Evidence |
+|---|---|---|
+| `headless controls` (2026-10-06, through the lock) | `CONTROLS PASS` 11/11 | `$W/logs/pinF-controls.log` |
+| v1 smoke on `:5235` (2026-10-06) | `v1-smoke: 22/22 pass`; ready 16.4 s, reload step at 28.0 s | `$W/logs/v1smoke-run1.log`; report moved to `out/ux/v1-smoke.F-20261006` |
+| full `ux`, `C20` ×3, headed sign-off, throttled first visit | not run on F | G, then H, took its place (entries below) |
+
+Both measurements ran before audit rounds 2–6 changed the gallery, so they describe F's page and an earlier gallery, not
+the gallery that was later committed. F stays registered and staged (`pin use 84d594e`: a V1 pin without the edit
+back-pressure).
 
 ### Not done (in order)
 
-The v1 smoke, `headless controls` on F, two full `ux` VERDICTs, three `ux --grep "C20 "` runs, a headed sign-off, the
+*(2026-10-08: overtaken. Controls and the smoke ran on F, above; the rest ran on H instead: pin H entry.)* The v1 smoke, `headless controls` on F, two full `ux` VERDICTs, three `ux --grep "C20 "` runs, a headed sign-off, the
 throttled first visit, `deploy-manifest --check` and `ci/rehearse-deploy.sh`, then a commit (pins/84d594e, the lock link,
 the gitlink, gallery, scripts, tests, docs). Pushing and deploying are the user's decisions (docs/NEXT-STEPS.md). Back to
 E: `scripts/showcase.sh stop && scripts/showcase.sh pin use 33b0967`, which sets `gallery/pin.json` `apiRevision` back
@@ -1146,15 +1162,219 @@ so neither is evidence for G's gallery.
 
 ### Browser gates on G
 
-PENDING: filled in by the orchestrator after the runs
+*Filled 2026-10-08 from the logs and `out/ux/showcase-ux-runs.jsonl`.* The steps ran as detached chains through the
+lock (`$W/pinG/chain{,3}.sh`, progress in `$W/logs/pinG-chain{,3}.log`; times are UTC from those logs and the run
+records, lock queueing included).
+
+| Step | When | Result | Evidence |
+|---|---|---|---|
+| `g-full1` | 2026-10-06 15:39–15:40Z | rc 130: aborted while it waited for the lock; recorded `NOT A VERDICT`, all 35 skipped. The name is used up | run record |
+| `headless controls` | 15:40–16:27Z | `CONTROLS PASS` 11/11 | `$W/logs/pinG-controls.log` |
+| CI mirror on commit `1c22222` | ~16:03Z (log time) | `node ci/run-local.mjs --job qed64-static --job showcase`: the qed64-static job SUCCESS (12/12 steps, the shell from source == G's lock); 6 of 7 packages jobs SUCCESS, then stopped by hand during packages (dist-lens) to leave memory to the browser chain; the showcase job not run | `$W/logs/pinG-ci-local-1.log` (handover §15) |
+| v1 smoke on `:5235` | 16:27–17:05Z | `v1-smoke: 22/22 pass; complete`; ready 14.7 s, reload step at 25.4 s | `$W/logs/v1smoke-G.log`; `out/ux/v1-smoke.G-20261006` |
+| `g-full1b` | 17:04–17:40Z | 27 passed, 1 skipped (C19), **7 failed** (C1, C8, C10, C12, C22, C25 and the C14 aggregate): `NOT A VERDICT`. Each failure was root-caused (table in the pin H entry, "The g-full1b diagnosis"); C22 was a QED64 defect, the rest were test expectations or allowlist gaps | `$W/logs/pinG-ux-full1b.log`, `out/ux/g-full1b` |
+| `g-fix1` | 18:26–18:31Z | `--grep "C1 \|C8 \|C10 \|C12 \|C22 \|C25 "`: 5 of 6 passed (C22 with the interim `rpcKeepAliveStarved` scenario). C10 failed only its new per-reload 1 s commit bound (commits of 97, 1131, 15, 4122 and 23 ms while QED64 started a runtime); the claim was restored (pin H entry) | `$W/logs/pinG-ux-fix1.log` |
+| `g-fix2` | 18:32–18:38Z | `--grep "C10 "`: 1/1 | `$W/logs/pinG-ux-fix2.log` |
+| `g-full1c` | 18:38–19:59Z | **VERDICT**: 34 passed, C19 skipped (gallery `931c33a7…`, lock `81c71b63…`) | `$W/logs/pinG-ux-full1c.log` |
+| `g-full2c` | from 19:59Z | stopped on purpose while it waited for the lock (chain 3 stopped for the switch to H); the log ends at `waiting`, and no run record was written | `$W/logs/pinG-ux-full2c.log` |
+
+`C20` ×3, the headed sign-off and the throttled first visit were not run on G: QED64 fixed the keep-alive starvation
+that `g-full1b` found (bf9d947), and H took G's place as the candidate (pin H entry). G's one VERDICT (`g-full1c`) is on
+gallery `931c33a7…`, which the switch to H replaced. G stays registered and staged; it was committed in `1c22222` on the
+local branch `qed64-embedding-v1`.
 
 ### Not done (in order)
 
-The v1 smoke on G (read `complete` and `console.wholeRun`), `headless controls` on G (an attempt was queued behind the
+*(2026-10-08: overtaken. The controls, the smoke and a VERDICT ran on G, above; the remaining gates ran on H, and the
+commit is `1c22222`: pin H entry.)* The v1 smoke on G (read `complete` and `console.wholeRun`), `headless controls` on G (an attempt was queued behind the
 host browser lock with no result yet: `$W/logs/pinG-controls.log`), two full `ux` VERDICTs, three `ux --grep "C20 "`
 runs, a headed sign-off, the throttled first visit, `deploy-manifest --check` and `ci/rehearse-deploy.sh`. Optionally, our
 own measurement of HARDENING #59 on G (typing at 150 ms/char above a slow `#eval`; QED64 reports it fixed by `e4cffcc`;
 docs/UPSTREAM-REPORT-QED64.md #59). Then a commit (pins/84d594e, pins/5c327c2, the lock link, the gitlink, gallery,
-scripts, tests, docs). Pushing and deploying are the user's decisions (docs/NEXT-STEPS.md "Pin G"). Back to F:
+scripts, tests, docs). Pushing and deploying are the user's decisions (docs/NEXT-STEPS.md "Pin H"). Back to F:
 `scripts/showcase.sh stop && scripts/showcase.sh pin use 84d594e` (V1 as well). Back to E: `pin use 33b0967`, which sets
 `gallery/pin.json` `apiRevision` back to `null`, so the gallery runs its legacy flow there.
+
+## 2026-10-06/07: pin H (bf9d947 / wasm64-3ab1c6a9da03bc29, QED64 main) — the keep-alive fix; H gated and active
+
+Lane: the v1-adoption session (logs `$W/logs/pinH-*.log`, chain logs `$W/logs/pinH-chain{4,5,6,7,8,9}.log`, scripts
+`$W/pinG/chain*.sh`; `$W` = `/Users/fawadhaider/code/qed64-showcase-work`; the timeline in `$W/HANDOVER-2026-10-05.md`
+§18–§28). **H is the active pin of this checkout since 2026-10-06 ~20:03Z** (`pinH-pin-use.log`); G and F are staged.
+The live site (`qed64-showcase.fawadworkaddress.workers.dev`) still serves E `33b0967` with the pre-v1 gallery. The work
+is committed on the local branch `qed64-embedding-v1` (`1c22222` F and G, `d791b20` H active plus the suite fixes,
+`bd42150` H gated and the verdict record), which is not pushed. Pushing and deploying are the user's decisions.
+
+**What H is.** `bf9d94788100235fe9c64f653a11d98a915d2a16` is G `5c327c2` plus one QED64 commit, "Edit coalescing:
+$/lean/rpc/keepAlive never waits for a request slot (the InfoView lost its RPC session after 30 s of a busy checker)"
+(`frontend/src/embed/edit-coalescer.ts`, with tests and docs). QED64 fast-forwarded its **main** onto it over `5c327c2`
+and deployed it, so H is the first v1 pin on QED64 main. The runtime, its stores and the API revision (`1.0.0`) are G's.
+
+| | G `5c327c2` | H `bf9d947` |
+|---|---|---|
+| Runtime / kernel / promote | `wasm64-3ab1c6a9da03bc29` / `a8817d01f9` / `3b42714` | the same; the same runtime manifest, snapshot index, profiles tree and `KERNEL-PIN`, so nothing was rebaked |
+| Release set | 146 files | 146 (`S0.4 OK cloned 146 files (1.676 GB logical) -> release/bf9d947`, `pinH-pin.log`) |
+| Shell (`dist/qed64-build.json`) | `shell-6d9ca6f8b71443d9` | `shell-7d85e161da8a56e4`, equal to the shell of the live QED64 site when it was checked (handover §22) |
+| Main bundle; console notify site | `/assets/index-DcBRSfza.js`, line0 627 `46b0155c…` | `/assets/index-CQnzGd9k.js`, line0 627 sha256 `fc6ad361…` (descriptor `consoleSites`) |
+| Gallery content; lock | `931c33a7…`; `81c71b63…` | `d8a5bb6d…` (after `pin use` regenerated `gallery/pin.json`); `22eb45f5…` |
+
+### The keep-alive starvation: found by C22 on G, fixed by QED64 in bf9d947
+
+* **Found.** In `g-full1b` (pin G, 2026-10-06 17:28Z) C22 failed its console verdict on 9 `console.error('Outdated RPC
+  session')` lines at the notify site, in two bursts: 5 at t 55.06 s, right after the 38 s silent `#eval`, and 4 at
+  t 166.8 s, right after the 55 s saturated-pool phase (`out/ux/g-full1b/tests/C22.s10.console.jsonl`). Every functional
+  assertion held: the session never changed (`sessionSame` true), no restart, no card.
+* **Root cause** (diagnosis `g-full1b-diag-C22.txt`, read from the pinned sources). G's `e4cffcc` caps the requests at
+  the worker at 6 (`edit-coalescer.ts` `maxInFlightRequests`). During a silent elaboration longer than 30 s, the
+  InfoView's position-bound requests fill the 6 slots and wait on the snapshot. Every frame behind them waits in order,
+  and only `$/cancelRequest` was exempt, so the InfoView's `$/lean/rpc/keepAlive` (sent every 10 s) queued too. Lean 4.34
+  drops an RPC session after 30 s without a keep-alive (`RpcSession.keepAliveTimeMs := 30000`). When the elaboration
+  finishes, the queued `$/lean/rpc/call`s reach a worker without that session, Lean answers each with `-32900`
+  "Outdated RPC session", lean4monaco logs it, and the InfoView reconnects.
+* **Reported** to the QED64 session with the evidence and a fix proposal: forward `keepAlive` (and `release`) without
+  waiting for a slot. **Interim** (commit `d791b20`): C22 allows those lines only in the scenario `rpcKeepAliveStarved`,
+  pushed only for pin `5c327c2`, each line paired with its own Lean `-32900` reply (`qed64Kind` null), each reply ending a
+  phase silent for 30 s or more, then a reconnect and the golden panel (gallery/README.md "Console messages"). On every
+  other pin C22 is strict.
+* **Fixed** by QED64 in `bf9d947`. QED64's own A/B: 7 "Outdated RPC session" with the bug, 0 with the fix (QED64's
+  measurement). Ours: strict C22 on a staged test copy of H, run **`h-c22-1`** (2026-10-06 19:31Z, our `serve.mjs` on
+  `:5236` serving `bf9d947`): **0 lines against 9 on G**, `$/lean/rpc/connect` count 1 before and still 1 after each silent phase (no reconnect),
+  `CONSOLE OK` with no scenario, and the 3 local `-32800` cancel lines of G's back-pressure paired
+  (`out/ux/h-c22-1/tests/C22.json`: `keepAlive` for the connects, `console` for the cancels, `consoleError[2]` n 3,
+  paired). It is a subset run on another origin, so by the rule it is `NOT A
+  VERDICT`; the full gate below repeats C22 strictly in every full run.
+
+### Registration
+
+1. **Staged first, from the owner's commit.** While `bf9d947` existed only in QED64's local `feature/embedding-api`, it was
+   fetched read-only into the submodule's repository (`refs/remotes/local-qed64-embed/feature-embedding-api`) and
+   registered as a staged test pin `pins/bf9d947` (descriptor `registeredAt` 2026-10-06 18:45Z), not committed and not
+   switched to. It was served on its own port for `h-c22-1` only.
+2. **Confirmed pushed.** QED64 then put `bf9d947` itself on origin **main**. The QED64 site's live
+   `qed64-build.json` named `shell-7d85e161da8a56e4`, the shell of ours. The descriptor's label and status were updated
+   (`pins/bf9d947/pin.json`: "registered 2026-10-06 (first as a staged test pin from the owner worktree, then confirmed
+   …)"). The confirmation changed only the descriptor's label and status; the build was the staged one of step 3.
+3. **The pin (done during the staging, 2026-10-06 18:33Z, before step 2).** The procedure was G's, in our worktree `$W/qed64-pins/bf9d947` (`pinH-npm-ci.log`, `pinH-build-site.log`):
+   `pin-qed64.mjs pin --pin bf9d947` → `S0.2 OK QED64 HEAD=bf9d94788100… clean, serves wasm64-3ab1c6a9da03bc29`,
+   `PIN DONE` (`pinH-pin.log`).
+4. **Shell from source 59/59.** Recorded in commit `d791b20` ("shell from source 59/59 == lock == the live QED64 build");
+   that build's log is not in `$W/logs`. The deploy rehearsal on `bd42150` built it again:
+   `SHELL-FROM-SOURCE OK: all 59 dist files built from bf9d94788100 == pins/bf9d947/QED64.lock.json (sha256)`
+   (`$W/pinG/rehearse-deploy-H1/dry-run.log`).
+5. **`pin use bf9d947`** (`pinH-pin-use.log`): `PIN SWITCHED 5c327c2 -> bf9d947`, `BUILD-GALLERY OK 8 examples` (`api 1.0.0
+   shell shell-7d85e161da8a56e4`), `DEPLOY-MANIFEST OK 76 assets, 93 R2 objects; gallery d8a5bb6d…`, `PIN CURRENT OK
+   bf9d947`. The 93 R2 objects are the live ones (same runtime and overlays), so a deploy of H changes only the Worker and
+   its assets (handover §25).
+6. **Pin check and verify** (`pinH-verify.log`): `PIN CURRENT OK bf9d947`, `PIN CHECK OK` (cheap) for every other
+   registered pin, and `VERIFY OK (1 DRIFT in a rebuild-only input)`. The pin check of H itself is recorded as OK in
+   commit `d791b20`. The DRIFT is new and not H's: `DRIFT #7 docker qed64-toolchain:emsdk-6.0.5 … sha256:5708c2dbf5a1`.
+   The kernel session rebuilt that tag on 2026-10-06 for its patches 0036/0037 (QED64's report), so neither the
+   recorded image nor its recorded equivalent is what the tag names now. Served artifacts are unaffected (they are
+   verified by hash); only `showcase.sh native` refuses the image. Nothing was changed for it (docs/NEXT-STEPS.md).
+
+### The g-full1b diagnosis (pin G, 7 failures)
+
+One read-only investigator per failure compared `out/ux/g-full1b` with the legacy baseline `out/ux/r4-main-full4`; one
+fix agent and an adversarial verifier followed (workflow `wf_7cb773b4-b31`; diagnoses in the session scratchpad
+`g-full1b-diag-*.txt`). The fixes are in commit `d791b20`.
+
+| Test | What failed | Category | Fix | Re-run |
+|---|---|---|---|---|
+| C1 | `toEqual` on `status().seed`: the three fields round 5 added (`blocked`, `keepFailed`, `unsaved`), with their correct clean-boot values | test expectation | the expected object has the round-5 shape (`00-boot.spec.mjs`) | `g-fix1` pass |
+| C8 | (1) the v1 page's named boot failure `Error: ?snapshots=snapshots/nope: /snapshots/nope/index.json: HTTP 404` (one `console.error` from `main()`'s catch) had no allowlist entry; (2) the assertion expected `#bootlabel` to equal `boot.message`, but the page prefixes `FAILED: ` | allowlist gap, plus a test expectation | new entry `bootFailure[4]`, only in the `bootFailure` scenario; the assertion accepts the prefix | `g-fix1` pass |
+| C10 | the storm missed "5 reloads in 15 s" because of the test's own probes: a `page.evaluate` before each reload cannot finish while QED64 starts a runtime, and the synchronous `ps` sampler stalled Node for 2–3 s; the reloads themselves committed in 14–155 ms | test harness | reloads through CDP `Page.reload` timed by `frameNavigated`, an asynchronous `ps` sampler. `g-fix1` then failed only the new per-reload 1 s commit bound; the claim was restored: the last reload commits within 15 s, no storm reload hits a page the poller saw ready, commit latency and phases recorded (`m.commitLatency`) | `g-fix2` pass |
+| C12 | the same named boot failure on `overlay-offline-stock` (`Error: ?snapshots=snapshots/widgets8: Failed to fetch`); every functional assertion passed | allowlist gap | `bootFailure[4]` | `g-fix1` pass |
+| C22 | 9 "Outdated RPC session" (above) | **QED64 defect** in `5c327c2` (`e4cffcc`) | reported; the scenario `rpcKeepAliveStarved` for `5c327c2` only; fixed by QED64 in `bf9d947` | `g-fix1` pass with the scenario; `h-c22-1` strict on H |
+| C25 | after the adopted reload of an EDITED buffer the panel was expected at the example's first cursor, but nothing puts the cursor there (the gallery places it only when the text equals an example, by design) | test expectation | the test sets the cursor itself | `g-fix1` pass |
+| C14 | the suite's aggregate console verdict over the failures above | follows from them | none of its own | – |
+
+Also in `d791b20`: `console.mjs` builds one reply pool per error code. `check-gallery.mjs` gained unit tests for the new
+entries (`CHECK-GALLERY OK 140/0`, `SIM 236/0`, 35 tests listed; handover §18).
+
+### Browser gates on H
+
+Through the lock, as detached chains 4–8 (`$W/logs/pinH-chain{4,5,6,7,8}.log`). Times are UTC from the run records
+(`out/ux/showcase-ux-runs.jsonl`, lock queueing included). Every full run is on gallery `d8a5bb6d…`, lock `22eb45f5…`,
+overlays `widgets7`/`widgets8` unchanged from G. Memory floor from chain 5 on: `MIN_BROWSER_GB=16 MIN_FREE_GB=16`.
+
+| Run | When | Result | Evidence |
+|---|---|---|---|
+| v1 smoke on `:5235` | 2026-10-06 20:06–20:07Z | `v1-smoke: 22/22 pass; complete`; ready 15.7 s, reload step at 26.9 s; console `allowlist verdict ok` | `$W/logs/pinH-smoke.log`, `out/ux/v1-smoke/report.json` |
+| `h-full1` | 20:07–20:36Z | 32 passed, 1 skipped, **2 failed**: C9 (a renderer crash of the stock page, below) and the C14 aggregate. `NOT A VERDICT` | `$W/logs/pinH-ux-full1.log` |
+| `h-full1b` | 20:37–21:53Z | **VERDICT**: 34 passed, C19 skipped | `$W/logs/pinH-ux-full1b.log` |
+| `h-full2b` | 21:53–22:24Z | 32 passed, 1 skipped, **2 failed**: C10 (a renderer crash after the storm, below) and C14. `NOT A VERDICT` | `$W/logs/pinH-ux-full2b.log` |
+| `h-full3` | 22:24–23:46Z | **VERDICT**: 34 passed, C19 skipped | `$W/logs/pinH-ux-full3.log` |
+| `h-full4` | 23:46Z–2026-10-07 01:03Z | **VERDICT**: 34 passed, C19 skipped (`h-full3` and `h-full4` consecutive) | `$W/logs/pinH-ux-full4.log` |
+| `h-c20-1`, `h-c20-2`, `h-c20-3` | 2026-10-07 01:03–03:06Z | `--grep "C20 "`: 1/1 each, **135/135 clean** in each (405/405) | `$W/logs/pinH-ux-c20-{1,2,3}.log` |
+| `h-headed1` (headed Chrome for Testing) | 03:06–04:35Z | 33 passed, **2 failed**: C11 (a renderer crash in the recovery reload, below) and C14. `NOT A HEADED SIGN-OFF` | `$W/logs/pinH-ux-headed1.log` |
+| `h-headed2` (headed) | 04:36–06:19Z | **HEADED SIGN-OFF**: 35/35, C19 included | `$W/logs/pinH-ux-headed2.log` |
+| `h-throttle-t10` (`throttled-first-visit.mjs`, CDP throttling only) | 06:18–06:56Z | `RESULT PASS`, ready at 119.2 s, progress visible in 118 of 119 samples, longest unchanged progress 6.0 s, no error card, panel EQUAL. **Not a 10 Mbit/s visit:** CDP throttled the page only (`targets {"page":1,"worker (NOT throttled)":28}`); the downloads (the page and its 28 unthrottled workers) totalled 693.1 MB at 46.7 Mbit/s aggregate. It verifies the v1 boot UI (QED64's card with bytes, rate and time left while the gallery shows no notice), not the slow-link timing | `$W/logs/pinH-throttle-t10.log` |
+| `heap-share-1` (`tests/ux/tools/heap-share.mjs`, `:5237`) | 06:55–07:00Z | 15/15 samples (below) | `$W/logs/heap-share-1.log`, `out/ux/heap-share-1/heap-share.json` |
+| `deploy-manifest --check` | 2026-10-06 after `h-full1b` | OK; G2 names `h-full1b` (handover §25) | – |
+| `deploy-manifest --record-verdict` | 2026-10-07 06:39Z | `infra/ux-verdict.json` names **`h-full4`** (gallery `d8a5bb6d…`, lock `22eb45f5…`, both overlays, pin `bf9d947`), the G2 record a checkout without `out/ux` (the CI deploy) accepts; committed in `bd42150` | `infra/ux-verdict.json` |
+
+**10 Mbit/s first visit, link shaped outside the browser** (run `h-throttle-t10p`, 2026-10-08 18:03–18:13Z; `throttle-proxy.mjs --listen 5198 --upstream 5197 --mbps 10 --rtt 40` in front of `serve.mjs :5197`, `throttled-first-visit.mjs --no-cdp --mbps 10 --rtt 40`; `$W/logs/pinH-tp-t10.log`, `$W/logs/pinH-tp-proxy.log`, `out/ux/h-throttle-t10p/explore/throttle-t10p.json`): **`RESULT PASS`**, ready at **565.6 s** (pin E: 565.1 s), visible progress in 564 of 565 samples before ready, the error card in 0 samples, longest unchanged progress 6.0 s, the gallery's slow-download notice from 368.4 s, the panel equal to the golden at ready, no crash, console OK. The proxy measured 693.6 MB down at 9.8 Mbit/s over 565.9 s and 28 connections, so the page and all 29 worker targets were shaped this time.
+
+**Deploy rehearsal** (`ci/rehearse-deploy.sh` on `bd42150`, 2026-10-08, fresh clones, local fakes only; `$W/logs/pinH-rehearse-deploy.log`, run dir `$W/pinG/rehearse-deploy-H1`): **`REHEARSE-DEPLOY OK`**, all seven scenarios: `skip` (no secrets: the skip line, every later step skipped), `dry-run` (up to `wrangler deploy --dry-run`), `unpublished` (the published check refused an origin without the artifacts; wrangler never called), `deploy` (G2 from the committed verdict `h-full4`, published check OK, `wrangler deploy --dry-run` + `wrangler dev`, SMOKE OK), `first` (published check skipped, smoke on the printed URL), `no-verdict` (G2 refused a gallery `infra/ux-verdict.json` does not name), `tamper` (`--published` caught a wrong index sha256 and a wrong object size).
+
+**CI mirror on `bd42150`** (`node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job qed64-static`, fresh clone, 2026-10-08; `$W/logs/pinH-ci-local.log`): **JOB SUCCESS**, 12/12 steps, among them the shell built from source byte-identical to H's lock (59 files), the Worker tests and the gallery gate (CHECK-GALLERY OK).
+
+**The three crash runs: QED64 HARDENING #55's residual, not the gallery.** Each lost one test to a renderer crash while a
+new QED64 runtime started in the same renderer:
+
+* **`h-full1` C9** (the stock-page half; the gallery half refused the unpaired fixture with 0 QED64 loads, as designed).
+  On the unpaired fixture the stock page reboots after each `bootFailed`. The renderer died at t 12.2 s after 9
+  `[qed64] starting Lean`, before the breaker halted (`out/ux/h-full1/tests/C9.stock.console.jsonl`). The host had
+  14.1 GiB reclaimable at the start of the run (lock cooldown, `pinH-ux-full1.log:8`; nothing measured it at the crash). G passed the same test in `g-full1b` and `g-full1c` (13 starts, halted, no crash). H differs
+  from G only in the keep-alive forwarding.
+* **`h-full2b` C10** (five reloads in 15 s on a warm profile). At first ready the renderer held 8.9 GiB with 26
+  Workers. After the last reload, QED64 logged `[boot] waited 132 ms for 1 stopping runtime(s) (24 → 5 Workers alive)`
+  and the renderer died 1.25 s later (`C10.s14.console.jsonl`, t 22.10 s and 23.35 s).
+* **`h-headed1` C11** (a lasting network cut through `serve.mjs` CHAOS). QED64 halted after 3 deaths (first
+  "checker halted" at t 23.1 s; `C11.json` `lasting.ms` 22816). The test's recovery reload, about 3.6 s later (load at
+  t 26.7 s, after the spec's 2.5 s wait, screenshot and server restart), crashed the renderer at t 30.1 s
+  (`C11.cut-lasting.console.jsonl`). The spec then failed on a null status (a `TypeError` at
+  `30-robustness.spec.mjs:313`); since `bd42150`, C9 and C11 report a renderer crash as such, with the same pass/fail.
+
+QED64's explanation (QED64's analysis, after our evidence): one booted runtime's ~25 glue isolates (~129 MiB each) fill
+most of the renderer's 4 GiB pointer-compression cage, so a reload that starts a new runtime before the old isolates
+are gone can exceed it. The embedder's own JS heap shifts the rate. QED64's "ballast" storm, an embedder holding extra
+heap: 0 MiB 0/8 crashes, 800 MiB 8/8, 1600 MiB 8/8. QED64 reopened #55 as a residual; the margin has to come from the
+kernel side (a pool-size knob, a smaller glue).
+
+**Our share of that heap: `heap-share-1`** (5 interleaved rounds, a fresh profile per sample, `chart-kit` on `widgets8`,
+measured at ready + 5 s; same-origin frames share one isolate, so the figure is the gallery, the QED64 page and the
+InfoView together):
+
+| | used JS heap, median (min–max) | renderer RSS, median |
+|---|---|---|
+| stock page at top level | 61.0 MiB (61.0–64.8) | 9194.7 MiB |
+| a trivial same-origin embed host | 64.8 MiB (64.8–68.9) | 9316.3 MiB |
+| the gallery | 64.8 MiB (64.8–64.8) | 9391.4 MiB |
+
+`performance.measureUserAgentSpecificMemory` was not available, and `performance.memory` took only three distinct
+values (61.0, 64.8 and 68.9 MiB), so the resolution is a few MiB. Within it, the gallery adds no JS heap over a trivial
+embed (+0 MiB median; the embed +3.8 MiB over the stock page) and about 75 MiB of renderer RSS. At about 65 MiB the
+gallery is not a heavy embedder next to QED64's 800 MiB threshold, and there is nothing material to cut on our side.
+Since `bd42150`, C10 also records the page's JS heap before each storm reload (data only).
+
+**Crash rate in our runs (G and H, counted from the per-test records):** C10 crashed in 1 of 9 headless-shell storms
+(`g-full1b`, `g-fix1`, `g-fix2`, `g-full1c`, `h-full1`, `h-full1b`, `h-full2b`, `h-full3`, `h-full4`) and 0 of 2 headed;
+C9's stock reboot loop in 1 of 9 runs; C11's recovery reload in 1 of 9. The gallery's own boots retire the old page
+through `about:blank` instead of reloading it; its one reload path is the card's Restart Lean when QED64 refuses
+`api.restart()` during a boot (gallery/README.md "QED64 limitations found", L9).
+
+**QED64 work in progress that keeps our assertions** (QED64's): **#62**, an early pairing check, keeps C9's projection
+exactly, with no new console text; **#63**, a network-kind boot failure downloads the snapshot before starting a new
+runtime, keeps C11's assertions (C9 and C11 assert no death count). Both mean a re-pin and a re-gate when they land.
+**#59** is fixed in G and H per QED64 (`e4cffcc`); we have not measured it.
+
+Back to G: `scripts/showcase.sh stop && scripts/showcase.sh pin use 5c327c2` (its `rpcKeepAliveStarved` scenario
+applies there). Back to F: `pin use 84d594e`. Back to E (legacy mode): `pin use 33b0967`.
+
+### Not done (in order)
+
+1. Done since: the proxy-shaped 10 Mbit/s first visit (`h-throttle-t10p`, PASS, above) and `ci/rehearse-deploy.sh` on
+   `bd42150` (above).
+2. Done since: `node ci/run-local.mjs --job qed64-static` on `bd42150` (JOB SUCCESS, above).
+3. The user's decisions: push the branch `qed64-embedding-v1`, and deploy H (docs/NEXT-STEPS.md).
+4. Our own measurement of #59 (optional).

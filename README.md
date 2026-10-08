@@ -102,7 +102,7 @@ scripts/showcase.sh ux              # the Playwright UX suite (35 tests, 25–40
 ```
 
 `bootstrap` checks out QED64's sources (the submodule), builds QED64's page from them with QED64's own build and
-installs it only if all its files (58 for E, 59 for F and G) are byte-identical to the committed lock. It then fetches QED64's binaries and the
+installs it only if all its files (58 for E, 59 for F, G and H) are byte-identical to the committed lock. It then fetches QED64's binaries and the
 widget overlays by path from the artifact origin and checks every file's sha256 against the lock, links the served pin
 and runs `verify`. So an origin never has to be trusted. `--origin` is the deployed showcase, or `scripts/serve.mjs`
 of a checkout that has the artifacts (`PORT=5297 scripts/showcase.sh serve` there). `--qed64-origin
@@ -155,8 +155,9 @@ GitHub runner. A full `lean-ci` run clones Mathlib once per Mathlib-dependent pa
   before navigating, and fills the editor and moves the cursor through the page. On the QED64 pins up to E `33b0967`
   (what the live site serves) it uses the page's internal hooks and installs a small bridge for three InfoView defects
   of the shipped page (D1, D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins,
-  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure and is the active pin
-  of a local checkout since 2026-10-06, with F staged; neither is deployed), it uses QED64's declared embedding API v1
+  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure) and H `bf9d947`
+  (QED64 main: G plus QED64's keep-alive fix; the active pin of a local checkout since 2026-10-06 and gated in the
+  browser, with G and F staged; none is deployed), it uses QED64's declared embedding API v1
   (`qed64.api`, `?embed=1`, `#code=`); those defects are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1").
 * **Tests:** a static gate (`showcase.sh gallery`), headless wasm checks in Node, and the Playwright UX suite.
   Every full `ux` run is recorded with the gallery, lock and overlay hashes it ran on. A run is a VERDICT only if it

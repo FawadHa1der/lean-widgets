@@ -272,7 +272,7 @@ answered it on `feature/embedding-api` (EMBEDDING.md §12 "Widgets review": the 
 read-once, named overlay-index failures, the widget-source cache, the test hatch, `dist/qed64-build.json`, page-tier and
 hosting facts, the late-install note). We registered `84d594e` of that branch as pin F, made it the active pin locally
 (not deployed; the live site serves E `33b0967`, QED64 main) and moved the gallery and the UX suite onto contract
-revision `1.0.0` (docs/REPIN-LOG.md, pin F entry; gallery/README.md "Embedding API v1 (pins F and G)"). The gallery chooses the
+revision `1.0.0` (docs/REPIN-LOG.md, pin F entry; gallery/README.md "Embedding API v1 (pins F, G and H)"). The gallery chooses the
 mode from `gallery/pin.json` `apiRevision`, so on pins A–E every row below is still used as the table above says.
 
 Outcome per row of the table above, on F: **API** = now through the declared API (or a parameter, event or fact §1–§8

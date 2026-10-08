@@ -9,20 +9,23 @@ HEADED SIGN-OFF count and last sign-off), `scripts/showcase.sh gallery` (the sta
 sha256, then `UX CURRENT …` naming the newest verdict on exactly this gallery + lock + overlays, or `UX STALE`) and
 `node scripts/deploy-manifest.mjs --check` (the `G2 UX:` line a deploy relies on). Run records:
 `out/ux/showcase-ux-runs.jsonl`, judged by `scripts/lib/ux-record.mjs`; tallies: `node scripts/ux-tally.mjs`. Dated
-figures below are history. **Status 2026-10-06** (the bullets after the first two are dated history from 2026-10-04):
+figures below are history. **Status 2026-10-08** (the bullets after the first two are dated history from 2026-10-04):
 
 * **Open it:** `scripts/showcase.sh verify && scripts/showcase.sh serve`, then <http://localhost:5190/showcase/>.
-* **Live site: pin E `33b0967`, active locally: pin G `5c327c2`, staged: pin F `84d594e`.** The Cloudflare Worker
-  (`qed64-showcase.fawadworkaddress.workers.dev`, deployed 2026-10-05) serves E with the pre-v1 gallery. This checkout's
-  active pin is G `5c327c2` (since 2026-10-06), a commit of QED64's `feature/embedding-api` branch (pushed by the user;
-  QED64 main is still `33b0967`, and merging is the user's decision): F `84d594e` plus QED64's `e4cffcc`, the edit
-  back-pressure on the worker pool for HARDENING #59 (`?edithold=<n>`, at most 6 requests in flight, a `$/cancelRequest`
-  for a still-queued request answered locally with `-32800`). Both run on E's runtime and stores, with API revision
-  `1.0.0`. On F and G (the v1 pins) the gallery drives QED64's embedding API v1 (`qed64.api`, `?embed=1`, `#code=`), the
-  RPC bridge and the liveness probe stand down, and legacy mode is kept for pins A–E (gallery/README.md "Embedding API
-  v1 (pins F and G)"; docs/REPIN-LOG.md, pin F and pin G entries). **G is not yet gated in the browser and not
-  deployed**; its static gates are green (`BUILD-GALLERY CHECK OK`, `CHECK-GALLERY OK 132`, `SIM-GALLERY OK 236`, 35 UX
-  tests listed). Remaining, in order: docs/NEXT-STEPS.md "Pin G". Nothing of it is committed yet.
+* **Live site: pin E `33b0967`; active locally: pin H `bf9d947`; staged: G `5c327c2` and F `84d594e`.** The Cloudflare
+  Worker (`qed64-showcase.fawadworkaddress.workers.dev`, deployed 2026-10-05) serves E with the pre-v1 gallery. This
+  checkout's active pin is H `bf9d947` (since 2026-10-06 ~20:03Z), **QED64 main**: G `5c327c2` plus QED64's fix for the
+  keep-alive starvation that our C22 found on G (`$/lean/rpc/keepAlive` never waits for a request slot). G is F `84d594e`
+  (QED64 `feature/embedding-api`) plus QED64's `e4cffcc`, the edit back-pressure on the worker pool for HARDENING #59
+  (`?edithold=<n>`, at most 6 requests in flight, a still-queued request's cancel answered locally with `-32800`). F, G
+  and H run on E's runtime and stores, with API revision `1.0.0`. On them (the v1 pins) the gallery drives QED64's
+  embedding API v1 (`qed64.api`, `?embed=1`, `#code=`), the RPC bridge and the liveness probe stand down, and legacy mode
+  is kept for pins A–E (gallery/README.md "Embedding API v1 (pins F, G and H)"; docs/REPIN-LOG.md, pin F, G and H
+  entries). **H is gated in the browser** (2026-10-06/07, gallery `d8a5bb6d…`): three VERDICTs (`h-full1b`, `h-full3`,
+  `h-full4`), a headed sign-off (`h-headed2`, 35/35), `C20` 135/135 in three runs, and `infra/ux-verdict.json` naming
+  `h-full4` for the CI deploy. Three other runs each lost one test to a renderer crash during a QED64 boot, QED64's #55
+  residual (docs/UPSTREAM-REPORT-QED64.md). It is committed on the local branch `qed64-embedding-v1` (`1c22222`,
+  `d791b20`, `bd42150`), **not pushed and not deployed**: both are the user's decisions (docs/NEXT-STEPS.md).
 * **Served (live) and last gated: pin E `33b0967`** (QED64 main with HARDENING #55, the runtime lifetime locks that QED64 reports fix L9 V2,
   and #54, the boot card that stays until ready; runtime `wasm64-3ab1c6a9da03bc29`, D's runtime and stores). **Why:**
   on the visitor's path `/showcase/#hasse-view`, interleaved with C in the same windows, its reload storms were at least
@@ -296,8 +299,9 @@ multiple pins".
 | C `5ac5d00` | `5ac5d00f` (QED64's interim local main) | `wasm64-4b025db7729c5f89` (kernel 0034) | #52 worker (QED64 liveness) | staged: the fallback (served 2026-10-02 to 2026-10-04; re-chosen by the final gate) |
 | D `3b42714` | `3b42714d` ("promote kernel 0035b"; QED64's L9 fix candidate, not handed over yet) | `wasm64-3ab1c6a9da03bc29` (kernel 0035b, `a8817d01f9`: parking off by default) | #52 worker, byte-identical to C's | staged; served and fully gated 17:35–19:26Z on 2026-10-02 (two VERDICTs, headed sign-off), switched back because its storms were not cleaner than C's (docs/REPIN-LOG.md "final gate") |
 | E `33b0967` | `33b09679` (QED64 main: merge of `fix/v2-reload-oom` over `3e182ff`; pushed 2026-10-03) | `wasm64-3ab1c6a9da03bc29` (D's runtime; promote `3b42714`; D's stores, equal by digest) | #52 worker + #55 runtime lifetime locks (QED64's L9 V2 fix), #54 boot card, in-chunk download progress | **served by the live site** (deployed 2026-10-05); active 2026-10-04 to 2026-10-05 (pin-e lane: storms at least as clean as C's, two VERDICTs, headed sign-off, slow-link PASS, deploy check; docs/REPIN-LOG.md "pin E gated"); staged locally since F |
-| F `84d594e` | `84d594e3` (QED64 `feature/embedding-api`, pushed by the user; not on QED64 main) | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the same runtime blobs) | the v1 page: `qed64.api` (contract `1.0.0`), `?embed=1`, `#code=`, editor RPC (#56), widget-source cache, #57, #59 coalescing; `dist/qed64-build.json` | staged since 2026-10-06; active locally 2026-10-05 to 2026-10-06 (headless controls 11/11 and one v1 smoke 22/22 on an earlier gallery; no UX verdict), not deployed (docs/REPIN-LOG.md, pin F entry) |
-| G `5c327c2` | `5c327c21` (QED64 `feature/embedding-api`: F + `e4cffcc` edit back-pressure + `5c327c2` deploy.yml step order; not on QED64 main) | `wasm64-3ab1c6a9da03bc29` (E's and F's runtime and stores; the same runtime blobs) | F's v1 page (contract `1.0.0`) plus edit back-pressure on the worker pool (HARDENING #59 per QED64; `?edithold=<n>`, 6 requests in flight, local `-32800` cancel replies) | **active locally** since 2026-10-06; not browser-gated, not deployed (docs/REPIN-LOG.md, pin G entry; current state: `scripts/showcase.sh pin list`) |
+| F `84d594e` | `84d594e3` (QED64 `feature/embedding-api`, pushed by the user; not on QED64 main) | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the same runtime blobs) | the v1 page: `qed64.api` (contract `1.0.0`), `?embed=1`, `#code=`, editor RPC (#56), widget-source cache, #57, #59 coalescing; `dist/qed64-build.json` | staged since 2026-10-06; active locally 2026-10-05 to 2026-10-06 (headless controls 11/11 and one v1 smoke 22/22 on an earlier gallery; no UX run), not deployed (docs/REPIN-LOG.md, pin F entry) |
+| G `5c327c2` | `5c327c21` (QED64 `feature/embedding-api`: F + `e4cffcc` edit back-pressure + `5c327c2` deploy.yml step order) | `wasm64-3ab1c6a9da03bc29` (E's and F's runtime and stores; the same runtime blobs) | F's v1 page (contract `1.0.0`) plus edit back-pressure on the worker pool (HARDENING #59 per QED64; `?edithold=<n>`, 6 requests in flight, local `-32800` cancel replies); the keep-alive starvation (C22 allows it here only) | staged since 2026-10-06 ~20:03Z (active earlier that day: controls 11/11, smoke 22/22, VERDICT `g-full1c`); not deployed (docs/REPIN-LOG.md, pin G entry) |
+| H `bf9d947` | `bf9d9478` (QED64 **main**, fast-forwarded over `5c327c2`: G + the keep-alive fix) | `wasm64-3ab1c6a9da03bc29` (the same runtime and stores) | G's page with `$/lean/rpc/keepAlive` never waiting for a request slot; shell `shell-7d85e161da8a56e4` | **active locally** since 2026-10-06 ~20:03Z; gated 2026-10-06/07 (three VERDICTs, headed sign-off, verdict record `h-full4`); not deployed (docs/REPIN-LOG.md, pin H entry; current state: `scripts/showcase.sh pin list`) |
 
 | Store | Keyed by | Where |
 |---|---|---|
@@ -323,7 +327,7 @@ the active pin from start to end.
 
 ```
 scripts/showcase.sh stop                      # a running serve.mjs keeps serving the pin it started with
-scripts/showcase.sh pin use 33b0967           # or 5c327c2 / 84d594e / 5ac5d00 / 3b42714 / 1859b83 / 9fdf9b8: guards, atomic links, gallery/pin.json, deploy inputs
+scripts/showcase.sh pin use 33b0967           # or bf9d947 / 5c327c2 / 84d594e / 5ac5d00 / 3b42714 / 1859b83 / 9fdf9b8: guards, atomic links, gallery/pin.json, deploy inputs
 scripts/showcase.sh verify                    # the new active pin fully, the staged ones cheaply
 scripts/showcase.sh headless controls         # optional: the wasm controls on the new active runtime
 scripts/showcase.sh gallery                   # then `ux` for a verdict on the new pin
@@ -439,6 +443,14 @@ and only `native` refuses. Before re-running `native`:
    built new oleans, so stage, bake, overlay, headless and UX follow).
 3. If it is not: rebuild or re-tag the intended image yourself (QED64's tree is read only for
    this project), and re-run `verify` until `#7 docker` is `OK` again.
+
+*Drift again (2026-10-06, open).* The kernel session rebuilt the tag for its patches 0036/0037 (QED64's report); it now
+names `sha256:5708c2dbf5a1`, so `verify` prints `DRIFT #7` for the active pin (`$W/logs/pinH-verify.log`: 1 DRIFT; the staged pins' cheap checks pass). Not acted on; the
+served artifacts are unaffected. *Pointer (2026-10-08):* the recipe and the native inputs are now published as the kernel
+fork's toolchain release [`lean-v4.34.0-a8817d0`](https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0)
+(its CLI: `node <pkg dir>/cli.mjs fetch --only …`, never `npx`). QED64's `pipeline/toolchain/build.sh` named in step 1
+still exists at the pins registered here; it is gone after QED64's B1 change, and this section moves to the release
+with that re-pin (docs/NEXT-STEPS.md).
 
 ## Resources
 

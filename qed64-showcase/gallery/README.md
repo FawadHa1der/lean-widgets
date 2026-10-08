@@ -3,7 +3,7 @@
 A two-pane page that shows the eight widget examples **inside the stock QED64 page**. QED64 is not
 changed. The right pane is QED64's own `dist/index.html`, iframed from the same origin at
 `/?snapshots=snapshots/<overlay>`. The left rail drives it through the page's embedding API when the pin has one
-(`globalThis.qed64.api`, QED64 embedding contract v1, pins F and G: "Embedding API v1 (pins F and G)" below; the frame URL is then
+(`globalThis.qed64.api`, QED64 embedding contract v1, pins F, G and H: "Embedding API v1 (pins F, G and H)" below; the frame URL is then
 `/?embed=1&snapshots=…#code=…`) and, on older pins, through the
 hooks the page already exposed (`globalThis.qed64`, the `qed64.buffer` boot document).
 
@@ -19,16 +19,24 @@ visits and a 60-min soak (`out/ux/closure/RESULTS.md`). The pin-e lane (2026-10-
 `33b0967` (QED64 #54/#55), which regenerated `pin.json`. It recorded two verdicts and a headed sign-off on the resulting
 gallery and a passing 10 Mbit/s first visit ("Timeouts"; `out/ux/pin-e/RESULTS.md`). The v1-adoption lane (2026-10-05/06) made pin F
 `84d594e` (QED64 `feature/embedding-api`) active locally and moved the gallery onto QED64's embedding API v1 for it
-("Embedding API v1 (pins F and G)"), keeping the legacy flow for pins A–E. The pin-G lane (2026-10-06) made pin G
+("Embedding API v1 (pins F, G and H)"), keeping the legacy flow for pins A–E. The pin-G lane (2026-10-06) made pin G
 `5c327c2` (F plus QED64's edit back-pressure, `e4cffcc`; API revision still `1.0.0`) the active pin and F a staged one;
-the live site still serves E, and neither F nor G has a browser verdict yet. **Browsers:** a Chromium-based desktop browser on a
+its first full run found QED64's keep-alive starvation, and G got one VERDICT (`g-full1c`) on gallery `931c33a7…`.
+**Since 2026-10-06 ~20:03Z the active pin is H `bf9d947`** (QED64 main: G plus QED64's keep-alive fix), and the
+gallery is `d8a5bb6d…` (`pin use` regenerated `pin.json`). On it: VERDICTs `h-full1b`, `h-full3` and `h-full4`, the
+headed sign-off `h-headed2` (35/35), `C20` 135/135 in three runs, and three runs that each lost one test to a renderer
+crash during a QED64 boot ("QED64 limitations found", L9; docs/REPIN-LOG.md, pin H entry). F and G are staged; the live
+site still serves E, and pushing and deploying are the user's decisions. **Browsers:** a Chromium-based desktop browser on a
 computer with 16 GB of RAM or more, one showcase tab at a time (measured: 8.2–9.0 GiB per tab at ready, transient peaks
 of about 12 GB on a reload, about 17 GB or more for two tabs or for QED64's "Load exact imports"; README.md "Browsers
 and memory"); anything without cross-origin isolation, SharedArrayBuffer or WebAssembly Memory64 gets the capability
 card ("Boot flow" step 0). Run: Chromium 151 (headless shell, headed Chrome for Testing) and branded Chrome 154 headed;
 Safari 26.6.2 not run (WebDriver refused). A reload storm could crash the tab on every pin before E (QED64 L9 V2;
 "QED64 limitations found"). QED64's #55 fix is in E. Our storms on E (0/28) were in windows where C was also nearly
-clean, so they do not confirm it (`out/ux/pin-e/RESULTS.md`).
+clean, so they do not confirm it (`out/ux/pin-e/RESULTS.md`). On the v1 pins a residual remains, which QED64 reopened as
+#55 on 2026-10-07: a reload during QED64's boot can still crash the renderer on some machines (C10 1 of 9 storms in
+chrome-headless-shell on G and H; "QED64 limitations found", L9). The gallery never reloads a booting page on its own
+except through the card's Restart Lean fallback, and its boots go through `about:blank`.
 
 ```
 index.html         the shell: top bar (Reset, Copy for VS Code, live status line), rail, stage (iframe, notice,
@@ -38,7 +46,7 @@ gallery.js         the controller (boot, preflight, seeding, bridge install, swi
 lib.js             pure logic shared with the Node gate: pairing preflight, overlay choice, ?mem parser, status classes
 qed64-bridge.js    the same-origin InfoView repair: D1 abortSignal, D2 applyEdit (stage A, X4) and D3 getWidgetSource
                    coalescing (this bring-up; without it the renderer dies, see "QED64 limitations"); pins A–E only,
-                   not installed on pins F and G (fixed upstream)
+                   not installed on pins F, G and H (fixed upstream)
 favicon.svg        the page icon (without one a headed browser asks for /favicon.ico, a 404: UX suite C19)
 thumbs/<pkg>.png   card thumbnails, 480 px wide, <= 60 KB, cropped from the REAL rendered panel by
                    tests/ux/bringup/widgets.mjs --thumbs (recorded with size and sha256 in examples.json)
@@ -67,7 +75,7 @@ Any other value, `invalid` included, counts as absent, and the gallery then asks
 suite's `API` follows the same rule (`tests/ux/lib/qed64.mjs` `GALLERY_PIN`), except that it refuses a server sending
 `X-Showcase-Api: invalid` (the served page's mode is unknown), as it refuses a `qed64-build.json` of another schema.
 
-* **V1 (`pin.apiRevision != null`, pins F `84d594e` and G `5c327c2`, both `apiRevision` `1.0.0`).** The gallery drives the page through its
+* **V1 (`pin.apiRevision != null`, pins F `84d594e`, G `5c327c2` and H `bf9d947`, all `apiRevision` `1.0.0`).** The gallery drives the page through its
   declared API only. Next section.
 * **Legacy (`pin.apiRevision == null`, pins A–E; E `33b0967` is what the live site serves).** Exactly the flow described
   in the rest of this document: the `qed64.buffer` seed, relay waits, the bridge, the liveness probe, the `?mem` session
@@ -77,16 +85,18 @@ suite's `API` follows the same rule (`tests/ux/lib/qed64.mjs` `GALLERY_PIN`), ex
 `scripts/sim-gallery.mjs` runs both page models (runs 1–15 legacy, 16–20 V1) and asserts that a V1 run touches no
 internal; `check-gallery.mjs` runs it.
 
-## Embedding API v1 (pins F and G)
+## Embedding API v1 (pins F, G and H)
 
 The contract is QED64's `deps/qed64/docs/EMBEDDING.md` (§1–§5, §7.8, §8, §9). The code is `gallery.js`, whose helpers
 (`api()`, `apiStatus()`, `docText()`, `placeCursor()`, `restartLean()`, …) branch on `S.v1` at the lowest level, so the
-driver, the waits, the cards, the keyboard handling and the test API are shared by both modes. *Status (2026-10-06):* G
-`5c327c2` is the active pin of this checkout only (F `84d594e` is staged), the static gates are green, and no browser
-gate has a verdict on F or G yet (docs/REPIN-LOG.md, pin F and pin G entries). G differs from F only inside the page
-(QED64's `e4cffcc`: the edit coalescer holds full-text changes while the worker pool is under pressure, `?edithold=<n>`,
-at most 6 requests in flight, a `$/cancelRequest` for a still-queued request answered locally; EMBEDDING.md §7.8). The
-gallery code is the same on both; the console oracle allows G's new cancel reply text ("Console messages").
+driver, the waits, the cards, the keyboard handling and the test API are shared by both modes. *Status (2026-10-08):* H
+`bf9d947` is the active pin of this checkout only (G `5c327c2` and F `84d594e` are staged), browser-gated with three
+VERDICTs and a headed sign-off (docs/REPIN-LOG.md, pin H entry; current counts: `scripts/showcase.sh pin list`). G
+differs from F only inside the page (QED64's `e4cffcc`: the edit coalescer holds full-text changes while the worker pool
+is under pressure, `?edithold=<n>`, at most 6 requests in flight, a `$/cancelRequest` for a still-queued request answered
+locally; EMBEDDING.md §7.8). H differs from G only in that coalescer: `$/lean/rpc/keepAlive` never waits for a request
+slot (QED64's fix for the starvation our C22 found on G). The gallery code is the same on all three; the console oracle
+allows G's and H's cancel reply text, and on G only the keep-alive starvation lines ("Console messages").
 
 * **The frame URL.** `/?embed=1&snapshots=snapshots/<overlay>[&memory=<GiB>]#code=<encodeURIComponent(example)>`
   (`lib.js` `frameUrl`). `embed=1` makes the gallery the owner of the document: the page neither reads nor writes
@@ -306,7 +316,7 @@ ones to the page unchanged. Why D3 is needed: "QED64 limitations" L2. The bridge
 messages that the InfoView iframe (`#infoview iframe`) posts to the **page window**; `bridgeStats().ws`
 counts `{fetched, cached, coalesced, released}`.
 
-**On pins F and G (v1) the bridge is not installed.** All three defects are fixed in the page: D1 and D2 by QED64's HARDENING #56
+**On pins F, G and H (v1) the bridge is not installed.** All three defects are fixed in the page: D1 and D2 by QED64's HARDENING #56
 (`capabilities.editorRpc`: the InfoView's RPC now crosses the iframe as `startClientRequest`/`awaitClientRequest`/
 `cancelClientRequest`, and the page implements `applyEdit`, `showDocument` and `insertText` on its one model), D3 by the
 page's own widget-source cache (`capabilities.widgetSourceCache`, EMBEDDING.md §2.5). With both capabilities the gallery
@@ -354,7 +364,7 @@ path matches only the pre-#56 `sendClientRequest` name and would repair nothing 
 
 ## Memory knob (`?mem=<GiB>`)
 
-**On pins F and G (v1)** the knob is a boot parameter of the page: `?mem=<GiB>` travels as `&memory=<GiB>` on the frame URL
+**On pins F, G and H (v1)** the knob is a boot parameter of the page: `?mem=<GiB>` travels as `&memory=<GiB>` on the frame URL
 (EMBEDDING.md §2.3, §4: rounded to 256 MiB, clamped to [1, 6] GiB and to the device's reservation ladder), so the FIRST
 session gets the commit and no light boot, wrap or restart is needed. `status().mem` reports `{requestedGiB, bytes, ok,
 applied, wrapped: false, light: null, sessions: []}`, with `applied` true when `api.status().memory.initialBytes` (the
@@ -530,7 +540,7 @@ but costs about 4.4 s of boot for no benefit here; keep it as an opt-in knob for
       worker keeps seeing frames, so its liveness rightly does nothing, and the gallery restarts about 40 s after the
       click, before the 45 s card) or a QED64 liveness that never acts.
     On the previous pin (no `status().liveness`) the 10 s probe above applies unchanged.
-  * **On pins F and G (v1): the probe stands down.** Its transport (`relay.fromClient` and a `toClient` filter) is internal
+  * **On pins F, G and H (v1): the probe stands down.** Its transport (`relay.fromClient` and a `toClient` filter) is internal
     (EMBEDDING.md §9), and QED64's liveness is declared (`capabilities.liveness`). `status().liveness.probe` is
     `'stood-down'` and `sent` stays 0 (W1–W8, C20–C23 assert it); without the capability it would read `'unavailable'`.
     The gallery mirrors QED64's projection `api.status().liveness` (`stalled`, `lastAnswerAgoMs`, `lastFrameAgoMs`,
@@ -1040,16 +1050,16 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
 | `console.error('Outdated RPC session')` (same `Xz.notify` site) | after a relay restart/reboot the InfoView's old RPC session is refused once per request | allow **only** in tests that restart or reboot (q3, `?mem`, crash) |
 | pageerror and `console.error` `QED64: checker halted after repeated crashes; edit the file to restart it` | the relay answering requests while halted | allow **only** in the breaker test (and the UX suite's boot-failure tests C8, C9, C11, C12, whose boots halt after three deaths) |
 | pageerror and `console.error` `QED64: the Lean checker died (bootFailed)`; `Failed to load resource: … 404 (Not Found)` | the relay's death path when a boot cannot load its snapshots (missing / unpaired / unreachable overlay); the missing file itself | allow **only** in the UX suite's `bootFailure` scenario (C8 missing overlay, C9 unpaired overlay, C11 lasting network cut, C12 unreachable overlay) |
-| `console.error` `Error: ?snapshots=<dir>: Failed to fetch` or `Error: ?snapshots=<dir>: /<dir>/index.json: HTTP <status>` followed by its stack (the main bundle; matched on the first line only) | **v1 pins (QED64 5c327c2+)**: a `?snapshots=` overlay index that is unreachable or missing is a named boot failure before Lean starts (EMBEDDING.md §4; `qed64-boot.ts` `fetchSnapshotIndexFor`), reported as `api.status().boot` and `console.error`ed once by `main()`'s catch (`frontend/src/main.ts:625-629`); it replaces the relay death lines above, which legacy pins print for the same fault | allow **only** in the `bootFailure` scenario (`bootFailure[4]`; seen in run g-full1b, C8 stock and C12 overlay-offline-stock); any other uncaught `main()` error fails |
-| `console.error('Outdated RPC session')` (the main bundle, line0 627) with **no** session replaced | **pin G (5c327c2) only**, a QED64 defect: its edit coalescer's request cap (e4cffcc, `maxInFlightRequests` 6, EMBEDDING.md §7.8) makes the InfoView's `$/lean/rpc/keepAlive` wait behind waiting requests, so a silence over Lean's 30 s keep-alive window expires the RPC session and Lean answers the queued rpc calls `-32900` itself | allow **only** in C22's `rpcKeepAliveStarved` scenario, on the pins listed in `25-stall.spec.mjs` `KEEPALIVE_STARVED_PINS`, each line paired with its own Lean `-32900` reply (`qed64Kind` null, exact message; fail-closed without tap reports); C22 also requires each reply to end a phase silent for 30 s+, no relay-made `-32900`, and a reconnect (an `$/lean/rpc/connect` at or after the burst's first reply) plus the golden panel afterwards (seen in run g-full1b, C22: 9 lines). Never declared together with `relayRestartOrReboot`, whose unpaired entry for the same text would match first (`exclusiveScenarios`: such a verdict fails) |
+| `console.error` `Error: ?snapshots=<dir>: Failed to fetch` or `Error: ?snapshots=<dir>: /<dir>/index.json: HTTP <status>` followed by its stack (the main bundle; matched on the first line only) | **v1 pins (F, G, H; seen in runs since g-full1b)**: a `?snapshots=` overlay index that is unreachable or missing is a named boot failure before Lean starts (EMBEDDING.md §4; `qed64-boot.ts` `fetchSnapshotIndexFor`), reported as `api.status().boot` and `console.error`ed once by `main()`'s catch (`frontend/src/main.ts:625-629`); it replaces the relay death lines above, which legacy pins print for the same fault | allow **only** in the `bootFailure` scenario (`bootFailure[4]`, added in `d791b20`); first seen in run g-full1b (C8 stock and C12 overlay-offline-stock), and since then exactly once in each of those two loads in every full run on H (all seven, `h-full1` … `h-headed2`); any other uncaught `main()` error fails |
+| `console.error('Outdated RPC session')` (the main bundle, line0 627) with **no** session replaced | **pin G (5c327c2) only**, a QED64 defect (fixed in H `bf9d947`, which forwards the keep-alive without waiting for a slot; docs/UPSTREAM-REPORT-QED64.md K1): its edit coalescer's request cap (e4cffcc, `maxInFlightRequests` 6, EMBEDDING.md §7.8) makes the InfoView's `$/lean/rpc/keepAlive` wait behind waiting requests, so a silence over Lean's 30 s keep-alive window expires the RPC session and Lean answers the queued rpc calls `-32900` itself | allow **only** in C22's `rpcKeepAliveStarved` scenario, on the pins listed in `25-stall.spec.mjs` `KEEPALIVE_STARVED_PINS`, each line paired with its own Lean `-32900` reply (`qed64Kind` null, exact message; fail-closed without tap reports); C22 also requires each reply to end a phase silent for 30 s+, no relay-made `-32900`, and a reconnect (an `$/lean/rpc/connect` at or after the burst's first reply) plus the golden panel afterwards (seen in run g-full1b, C22: 9 lines). **H is strict**: `bf9d947` is not in `KEEPALIVE_STARVED_PINS`, so on H (and on every pin but `5c327c2`) one such line fails C22; strict C22 on H printed 0 (`h-c22-1`, and every full run on H). Never declared together with `relayRestartOrReboot`, whose unpaired entry for the same text would match first (`exclusiveScenarios`: such a verdict fails) |
 | pageerror and `console.error` `QED64: restarting with exact imports` (the main bundle line 627) | QED64's `relay.restart()` answers every request still in flight with this hard-coded text (`lsp-relay.ts:127` `failInFlight`; -32603, rpc calls -32900), whatever the restart is for; lean4monaco logs each and leaves it unhandled. A stalled checker always has requests in flight, so the gallery's Restart Lean / Reset on one produces these | allow **only** in the UX suite's `stallRestart` scenario (C21; C20 and W1–W8 only when a real stall was recovered) |
 | `console.warn` `[showcase] liveness: Lean answered none of 2 probes on s<N> v<N> (observe mode: not restarting)` (`/showcase/gallery.js`) | the gallery's own note when its liveness probe, in observe mode, declares a frozen checker wedged (one per wedge) | allow **only** in the UX suite's `livenessObserved` scenario (C21 (b); C20 and W1–W8 only when an observe-mode wedge was recorded, i.e. a hang hunt) |
 | pageerror `Session disposed.` (stack through `….dispose (`) | QED64 N2 (every pin): the page's heap meter races `session.request('telemetry')` against 800 ms every 12 s with no rejection handler, so a session disposed while that request is pending (a death, reboot, restart or halt) leaves an unhandled rejection; seen once in 18 C12 stock runs (`multipin-C-full1`) | allow **only** in the scenarios in which a session is disposed (`bootFailure`, `crashBreakerTripped`, `relayRestartOrReboot`, `stallRestart`, `qed64WedgedReboot`), and only with that stack |
 | pageerror and `console.error` `QED64: the Lean checker died (wedged)` (the main bundle) | QED64 9fdf9b8+'s own liveness declared a session wedged (an L7 occurrence it handles itself): its relay answers every request still in flight with this text (`lsp-relay.ts` `onDied` → `failInFlight`), logged at the same site as the restart replies | allow **only** in the UX suite's `qed64WedgedReboot` scenario (C20 and W1–W8, only when `status().liveness.qed64.wedgedReboots` > 0; never seen so far) |
 | `console.warn` `[qed64] exact import failed: … serving the header from the preloaded library` | QED64's designed fallback after "Load exact imports" when the exact import cannot be compiled (`resident-session.ts:209-224`) | allow **only** in the UX suite's `exactImportsFallback` scenario (C16) |
 | `console.error` `Failed to load resource: net::ERR_…` (aborted / truncated); `console.warn` `[qed64] raw prefetch error: network error — the checker will stream it instead` | Chromium reporting a resource the test cut on purpose; QED64's snapshot prefetcher falling back to streaming after a cut | allow **only** in the UX suite's `networkCut` scenario (C11 CHAOS cuts, C12 aborted routes) |
-| `console.error` `QED64: the document changed before this request reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pins F and G (v1) only**: QED64's edit coalescing (EMBEDDING.md §7.8, HARDENING #59) answers a semantic-tokens or completion request queued behind a full-text change that a newer change replaced with `ContentModified` (-32801, `error.data.qed64.kind` `'superseded'`); lean4monaco logs each such reply (typing with the suggest widget open prints one per superseding change) | **allow**, anchored to that exact text and site, and only PAIRED, like the `-32800` entry: each needs its own LSP `-32801` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. Pins A–E print no such text, so the entry matches nothing there |
-| `console.error` `QED64: the client cancelled this request before it reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pin G (5c327c2) and later**: QED64's back-pressure (EMBEDDING.md §7.8, e4cffcc) answers a request still queued in its edit coalescer whose `$/cancelRequest` arrives with RequestCancelled (`-32800`, `error.data.qed64.kind` `'cancelled'`), through the relay's `toClient` (the LSP tap records it). The site logs every Error-severity notification, but an LSP reply reaches it only on the paths that hand the error to the notification service (the path that logs Lean's own empty `-32800` message, entry above); not yet observed in a browser run (the entry was added before any run on G, fail-closed) | **allow**, anchored to that exact text and site, and only PAIRED: each needs its own LSP `-32800` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. The `-32800` replies form ONE pool shared with the empty-text entry above (`console.mjs` `classifyConsole`: one pool per `lspErrorCode`, paired in wall order), so one reply never explains both an empty line and a cancel line. `tests/ux/lib/qed64.mjs` `classify()` also keeps QED64's local cancel replies (`qed64Kind` `'cancelled'`) out of the pool that explains empty errors. `check-gallery.mjs` unit-tests the entry and the shared pool. Pins A–F print no such text |
+| `console.error` `QED64: the document changed before this request reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pins F, G and H (v1) only**: QED64's edit coalescing (EMBEDDING.md §7.8, HARDENING #59) answers a semantic-tokens or completion request queued behind a full-text change that a newer change replaced with `ContentModified` (-32801, `error.data.qed64.kind` `'superseded'`); lean4monaco logs each such reply (typing with the suggest widget open prints one per superseding change) | **allow**, anchored to that exact text and site, and only PAIRED, like the `-32800` entry: each needs its own LSP `-32801` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. Pins A–E print no such text, so the entry matches nothing there |
+| `console.error` `QED64: the client cancelled this request before it reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pin G (5c327c2) and later**: QED64's back-pressure (EMBEDDING.md §7.8, e4cffcc) answers a request still queued in its edit coalescer whose `$/cancelRequest` arrives with RequestCancelled (`-32800`, `error.data.qed64.kind` `'cancelled'`), through the relay's `toClient` (the LSP tap records it). The site logs every Error-severity notification, but an LSP reply reaches it only on the paths that hand the error to the notification service (the path that logs Lean's own empty `-32800` message, entry above). Added before any run on G, fail-closed; observed since in every full run on G and H (37–71 lines per run, e.g. 38 in 7 tests of g-full1b, 50 in h-full4), in tests such as C3, C4, C13a, C20, C22, W2, W4 and W7 | **allow**, anchored to that exact text and site, and only PAIRED: each needs its own LSP `-32800` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. The `-32800` replies form ONE pool shared with the empty-text entry above (`console.mjs` `classifyConsole`: one pool per `lspErrorCode`, paired in wall order), so one reply never explains both an empty line and a cancel line. `tests/ux/lib/qed64.mjs` `classify()` also keeps QED64's local cancel replies (`qed64Kind` `'cancelled'`) out of the pool that explains empty errors. `check-gallery.mjs` unit-tests the entry and the shared pool. Pins A–F print no such text; G and H do |
 | `console.warn` `[showcase] the server serves QED64 pin … but gallery/pin.json describes …: following the served page (… mode)` (`/showcase/gallery.js`); `Failed to load resource: … 404` for `/qed64-build.json` | the gallery following a staged pin's release whose mode differs from `pin.json` ("Two modes"); the 404 is that probe on a legacy release | allow at most once per page load, **only** under `UX_PIN` when the served mode differs (the warning) and on a staged legacy release (the 404); never in an ordinary run |
 | `console.warn` `[showcase] QED64 page API has editorRpc but lacks widgetSourceCache …` / `… lacks editorRpc …: installing the InfoView repair late …` | a v1 page missing a capability the bridge decision reads ("The RPC bridge") | **never** (no such page exists; a run that logs it fails) |
 | pageerror `unsupported` at `$tryShowTextDocument`; an unhandled rejection `Object` | the page's own applyEdit path ran: the bridge was missing or late (D2) | **never** |
@@ -1079,7 +1089,7 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
   promise; QED64 may want a bounded pool. Correction (UX audit): over a long session the pool can still grow by
   one; in the audit's C20 run that hung (L7) the total went 24 → 25 at document version 43, 17 versions before
   the hang (`out/ux/auditor-full` trace; docs/UX-RESULTS.md L7).
-  **On pins F and G (2026-10-05/06)** the page coalesces `getWidgetSource` itself (per-session cache, an error reply
+  **On pins F, G and H (2026-10-05/06)** the page coalesces `getWidgetSource` itself (per-session cache, an error reply
   releases the waiters; EMBEDDING.md §2.5, `capabilities.widgetSourceCache`), so the gallery no longer installs D3
   there. Whether the pool stays at 24 through the HasseView cube is for the browser gates on the active v1 pin to show
   (W1–W8, C20). A related limit is QED64's HARDENING #59: typing at a normal pace above a long uncancellable command
@@ -1135,6 +1145,22 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
     storms on `/showcase/#hasse-view` (headed 0/20, headless-shell 0/8), interleaved with C (0/20, 1/8 V2). C was nearly
     clean in those windows too, so this shows E is not worse but does not confirm the fix. C10 in its three gate runs: no
     crash (`out/ux/pin-e/RESULTS.md`).
+  * **G `5c327c2` and H `bf9d947` (the v1 pins on E's runtime): QED64's #55 residual** (reopened by QED64 on 2026-10-07).
+    A reload or a reboot during a QED64 boot can still crash the renderer on some machines. On H three runs each lost one
+    test that way (docs/REPIN-LOG.md, pin H entry): `h-full1` C9 (the stock page's reboot loop on an unpaired overlay,
+    crash after 9 runtime starts), `h-full2b` C10 (1.25 s after QED64 waited 132 ms for the previous runtime) and
+    `h-headed1` C11 (the test's recovery reload, about 3.6 s after QED64 halted). Rates over every run on G and H:
+    C10 1 of 9 storms in chrome-headless-shell (0 of 2 headed), C9's stock reboot loop 1 of 9, C11's recovery reload
+    1 of 9. QED64's explanation (theirs): one booted runtime's ~25 glue isolates (~129 MiB each) fill most of the
+    renderer's 4 GiB pointer cage, and the embedder's JS heap shifts the rate (their ballast storm: 0 MiB 0/8, 800 MiB
+    8/8, 1600 MiB 8/8). The gallery's share is small: used JS heap 64.8 MiB with the gallery against 64.8 MiB for a
+    trivial same-origin embed and 61.0 MiB for the stock page (`out/ux/heap-share-1/heap-share.json`, medians of 5).
+    **What the gallery does:** its own boots (the first one, Try again, a switch that needs a boot) send the frame to
+    `about:blank` and wait up to 10 s for the old page to unload (`boot()` step 2), so the old runtime is released before
+    the new one starts; it never reloads a booting page itself, except the card's **Restart Lean** when QED64 refuses
+    `api.restart()` because a boot is in flight (`restartLean`'s page-reload fallback). A visitor's own reload (F5)
+    during a boot is the exposed path. The margin has to come from QED64's kernel side (a pool-size knob, a smaller
+    glue); QED64's #62 and #63 (in progress) change the boot-failure paths of C9 and C11.
   * **C `5ac5d00` (served until 2026-10-04), A `1859b83` (runtime 0034) and D `3b42714` (QED64's 0035b candidate):** no V1, and no
     crash in the UX suite (C10: 0 crashes in 9 full runs on C, 4 on D, 11 runs on A). **A second form V2** (`MarkCompactCollector: young
     object promotion failed`, after reload 2–4) hits all of them: first in headed desktop Chrome (C 4/19, A 1/5, B 2/8,

@@ -172,9 +172,11 @@ bake_pids() { pgrep -f '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs' 2>/dev/n
 browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing' 2>/dev/null || true; }
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
 # docker_image_guard: `native` must run in the toolchain image the lock records (QED64.lock.json
-# toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is
-# QED64's (its pipeline/toolchain/build.sh re-runs `docker build -t` on it), so it can move under us; then
-# `native` refuses until the image is re-pinned (README "Re-pin": Docker tag drift). verify reports it as DRIFT.
+# toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by
+# whoever builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; its
+# release lean-v4.34.0-a8817d0 records the image identity), and QED64's pipeline/toolchain/build.sh until QED64 retires
+# its toolchain lane to the fork. So it can move under us; then `native` refuses until the image is re-pinned (README
+# "Re-pin": Docker tag drift). verify reports it as DRIFT.
 # toolchain.docker.equivalent lists further image ids shown to build the SAME oleans byte for byte (docs/BUILD-FROM-SOURCE.md
 # "Docker image drift"); they are accepted too.
 docker_image_guard() {
@@ -425,7 +427,7 @@ check_stage1() {
   if [ "$(node "$SC/scripts/lib/pins.mjs" built 2>/dev/null)" = no ] && [ ! -e "$W/stage1" ]; then
     echo "ABSENT $W/stage1: no build stores of runtime $bid in this checkout (it serves fetched artifacts; the runtime is checked by pin-verify #2/#3). Bakes and the headless verifiers need it: README \"Re-pin\" step 4"; return 0
   fi
-  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (copy QED64's pipeline/toolchain/work/build/stage1/bin of the pinned runtime to $W/stage1/bin)"; return 1; }
+  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (the pinned runtime's bin: \`node <lean4-wasm64 package dir>/cli.mjs fetch --only runtime\` from the fork's release lean-v4.34.0-a8817d0, or QED64's pipeline/toolchain/work/build/stage1/bin while QED64 still builds it; into $W/stage1/bin)"; return 1; }
   got="wasm64-$(sha256sum_ "$W/stage1/bin/lean.wasm" | cut -c1-16)"
   if [ "$got" = "$bid" ]; then echo "OK   $W/stage1 buildId $got == lock"; else echo "FAIL $W/stage1 buildId $got != lock $bid"; return 1; fi
 }

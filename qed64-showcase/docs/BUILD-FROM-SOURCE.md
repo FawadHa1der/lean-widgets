@@ -63,6 +63,14 @@ Proved on 2026-10-04 from a fresh `git clone --recursive` (logs in `$W/logs/r2/`
 
 ### What you need
 
+*Note (2026-10-08).* The kernel fork now publishes these inputs as a toolchain release,
+[`lean-v4.34.0-a8817d0`](https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0) (the kernel of every
+pin from D to H), with a CLI in its `lean4-wasm64` package: `node <pkg dir>/cli.mjs fetch --only runtime` writes the
+runtime's `bin/{lean.js,lean.wasm}` with checksums verified (call the CLI with `node`, never through `npx`). QED64's
+own `pipeline/toolchain/build.sh` is gone from its tree after its B1 change; at the pins registered here (up to H) it
+still exists, and the table below is what we ran. We switch the table to the release when we re-pin onto a QED64 commit
+that ships its release record (docs/NEXT-STEPS.md). We have not yet run the release's runtime against a pin's buildId.
+
 | Input | Where it comes from | Variable | Pinned in the lock as |
 |---|---|---|---|
 | The kernel fork, branch `qed64-wasm64` | github.com/FawadHa1der/lean4 (`wasm64-build/README.md` there). The served runtime's kernel is QED64's `pipeline/toolchain/KERNEL-PIN` at the pin (E: `a8817d01f9`). The native64 compiler our oleans were built with is `NATIVE_COMMIT 857544b439` from build tree `BUILT_COMMIT 8d91aadcda` | `QED64_KERNEL_SRC` (optional; only `assert-untouched` watches it) | `qed64.kernel`, `toolchain.native64` |
@@ -138,3 +146,8 @@ originals**: `.olean`, `.ilean`, `.c`, `.ir`, `.ir.sig`, `.olean.server`, `.olea
 `drift-image-recipe.log`). So every lock records `8228ea564e7b` under `toolchain.docker.equivalent`, with the recipe and
 this evidence. `verify` #7 prints OK, and `showcase.sh native` accepts the image
 (`$W/logs/r2/native-guard-dryrun.log`). The served oleans, bakes and overlays did not change.
+
+**Drift again (2026-10-06, open).** The kernel session rebuilt the tag for its patches 0036/0037 (QED64's report); it
+now names `sha256:5708c2dbf5a1`, which is neither `8b6698bbf474` nor the recorded equivalent, so `verify` prints
+`DRIFT #7` (pin H entry in REPIN-LOG.md, `$W/logs/pinH-verify.log`). Not acted on: the served artifacts are unaffected,
+and the experiment above decides it when a native rebuild is next needed.

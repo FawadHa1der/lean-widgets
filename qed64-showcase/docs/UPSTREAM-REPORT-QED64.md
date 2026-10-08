@@ -1,6 +1,6 @@
 # QED64: defects and limitations found while building the widget showcase
 
-**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04 and 2026-10-06).
+**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06 and 2026-10-08).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
 pin current`):** since 2026-10-04 the showcase **serves E `33b0967`** (your main with #55 and #54, on runtime
 `wasm64-3ab1c6a9da03bc29`; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
@@ -17,15 +17,25 @@ with the gallery on your page API; it is not browser-gated or deployed, the live
 the user's decision (docs/REPIN-LOG.md, pin F entry).
 **G `5c327c2`** (your `feature/embedding-api`: F plus `e4cffcc`, the edit back-pressure on the worker pool and the cap of
 6 requests in flight, plus `5c327c2`, the deploy.yml step order; API revision still `1.0.0`, F's runtime) was registered
-on 2026-10-06 and is now the **active pin of our local checkout**. F is staged. G is not browser-gated or deployed yet
-(docs/REPIN-LOG.md, pin G entry).
+on 2026-10-06 and was the active pin of our local checkout until H replaced it the same day (one VERDICT, `g-full1c`;
+docs/REPIN-LOG.md, pin G entry). Its first full run found K1 below.
+**H `bf9d947`** (your **main** since you fast-forwarded it over `5c327c2`: G plus your keep-alive fix for K1; API
+revision `1.0.0`, the same runtime) was registered on 2026-10-06 and is the **active pin of our local checkout**, gated
+in the browser on 2026-10-06/07 (VERDICTs `h-full1b`, `h-full3`, `h-full4`, headed sign-off `h-headed2`; three renderer
+crashes in other runs, the #55 residual below; docs/REPIN-LOG.md, pin H entry). It is committed on our local branch
+`qed64-embedding-v1`, not pushed and not deployed; the live site still serves E.
 
-**Status as of G `5c327c2` (2026-10-06).** **D1 and D2 are fixed upstream** by your HARDENING #56 (the InfoView's RPC
+**Status as of H `bf9d947` (2026-10-08).** **K1** (the keep-alive starvation our C22 found in `5c327c2`) is **fixed in
+your `bf9d947`**, confirmed by our strict C22 (0 lines against 9). **#55 is reopened by you as a residual**: one booted
+runtime leaves too little of the renderer's pointer cage for a second one, which our C9, C10 and C11 each hit once on H
+("#55 residual" below). Your **#62** and **#63** are in progress; our C9 and C11 assertions stay as they are.
+*Earlier status (G `5c327c2`, 2026-10-06):* **D1 and D2 are fixed upstream** by your HARDENING #56 (the InfoView's RPC
 wrapped inside the webview, `capabilities.editorRpc`; `applyEdit`/`insertText`/`showDocument` implemented on the one
 model). **D3**, our `getWidgetSource` coalescing (the workaround for L2, gallery/README.md "QED64 limitations"), **is
 fixed upstream** by the page's widget-source cache (EMBEDDING.md §2.5, `capabilities.widgetSourceCache`). On F and G our
 bridge stands down completely: the gallery does not install it (`status().bridge.stoodDown`), and the UX suite asserts
-that and that the RPC panels and link edits work. That last part awaits the browser gates on G. Pins A–E keep the bridge.
+that and that the RPC panels and link edits work (measured since: every full run on H, W1–W8 and C20 135/135, pin H
+entry). Pins A–E keep the bridge.
 **L9 V2** is unchanged in this report: your #55 is in E, F and G, and our storms are consistent with it but do not confirm
 it (L9). **Your HARDENING #59** (below the table) is **fixed in G by `e4cffcc` by your measurement**. We have not
 measured it yet.
@@ -69,7 +79,9 @@ and L1 were not re-tested in a browser on the new pin; the front end and the pac
 | X1 | `_proc_exit` calls `Module.onExit` only when `!keepRuntimeAlive()`, but resident mode keeps the runtime alive, so a FileWorker exit is never reported as a death | low today (no exit was seen), but it would turn any FileWorker fatal error into an L7-like freeze | none needed so far | **fixed upstream in 9fdf9b8**: the worker's proxied-function table hooks `_proc_exit` / `exitOnMainThread` and reports died `exit` |
 | L9 | **new on 9fdf9b8**: reloading a ready page (or a relay restart booting a new worker) crashes the renderer with `V8 javascript OOM (Scavenger: semi-space copy)` (V1) about 2 s after the first reload; the 0034 runtime never did. **A second variant (V2, `MarkCompactCollector: young object promotion failed`, after a later reload) hits every pin we have, 0034 with either worker and 0035b included, in headed Chrome and in chrome-headless-shell** | high for users who reload: the renderer (the tab) dies | none possible from outside the page | yours: see L9 below. V1 needs 0035's parked threads: **your 3b42714 (0035b, cap 0) removes it** (0 V1 in 27 storms); V2 is unchanged by it (D 3/26 = A 3/26 ≈ C 2/26, also in headless-shell) and is not reached by an earlier teardown from a page script (our A/B: your workers already close 7–40 ms after a reload; "Hint for your V2 follow-up" in L9). V2 is 3–5× as frequent when your page runs inside a script-free same-origin iframe (16/48 vs 4/48, p = 0.005; "A repro without our gallery" in L9). **V2: fixed in your 33b0967 (#55)** by your measurement (17/48 → 0/36); ours on our visitor path, E vs C interleaved: 0/28 vs 1/28, consistent with the fix, but C was rare in those windows too, so it does not confirm it ("Your candidate arrived" in L9) |
 | N3 | the stock page has no favicon: headed desktop Chrome logs one 404 for `/favicon.ico` per load | cosmetic: breaks strict console checks in a real browser | allowed once per load in our headed run only | ship a favicon or `<link rel="icon" href="data:,">` |
-| #59 | **your HARDENING #59**: typing at a normal pace (150 ms/char) above a long uncancellable command (`#eval (IO.sleep 3000 : IO Unit)`, a long kernel check) with the InfoView open grew the pthread pool until the tab crashed, on every build up to F `84d594e`; the edit coalescing window (§7.8) caps bursts, not a sustained pace | medium for the gallery: a visitor who edits above a slow line can lose the tab; none of our eight examples has such a line | none from outside the page | yours (HARDENING #59). **Fixed in G `5c327c2` by your `e4cffcc` per your measurement** (back-pressure keyed on the worker's pool sample, at most 6 requests in flight, a queued request's cancel answered locally); **not yet measured by us** (#59 below) |
+| #59 | **your HARDENING #59**: typing at a normal pace (150 ms/char) above a long uncancellable command (`#eval (IO.sleep 3000 : IO Unit)`, a long kernel check) with the InfoView open grew the pthread pool until the tab crashed, on every build up to F `84d594e`; the edit coalescing window (§7.8) caps bursts, not a sustained pace | medium for the gallery: a visitor who edits above a slow line can lose the tab; none of our eight examples has such a line | none from outside the page | yours (HARDENING #59). **Fixed in G `5c327c2` by your `e4cffcc` per your measurement** (back-pressure keyed on the worker's pool sample, at most 6 requests in flight, a queued request's cancel answered locally); **not yet measured by us**; also in H (#59 below) |
+| K1 | **new in G `5c327c2`** (your `e4cffcc`): the cap of 6 requests in flight queues the InfoView's `$/lean/rpc/keepAlive` behind requests waiting on a slow snapshot, so a checker busy for more than Lean's 30 s keep-alive window expires the InfoView's RPC session; the queued calls then get `-32900` "Outdated RPC session" from Lean and the InfoView reconnects | low–medium: console errors (9 in C22's two long phases in g-full1b, 5 in g-full1c) and an InfoView RPC reconnect after each elaboration longer than 30 s; panels come back | our C22 allowed the lines on `5c327c2` only, paired and timed (scenario `rpcKeepAliveStarved`) | **fixed in your `bf9d947`** (`keepAlive` never waits for a slot); your A/B 7 → 0, ours 9 → 0 (K1 below) |
+| #55r | **your #55, reopened as a residual** (2026-10-07): one booted runtime's ~25 glue isolates (~129 MiB each) fill most of the renderer's 4 GiB pointer cage, so a reload or reboot that starts a new runtime before the old isolates are gone can crash the renderer | medium for visitors who reload during a boot; the gallery's own boots go through `about:blank` | none from outside the page; our share of the heap is about 65 MiB (measured) | yours: a pool-size knob or a smaller glue; #62 and #63 (in progress) change the paths of our C9 and C11 crashes ("#55 residual" below) |
 | S1 | slow first visits: the boot card is removed 120 s after an idle `ready…` status while the mathlib download still runs, so a 10 Mbit/s visitor sees only elapsed timers for minutes; the card says "~3 GB of memory" while a tab measures 8–9 GB | low–medium: slow links and small machines | none (our gallery has its own boot-timeout defect on such links) | keep the card while bytes arrive; update the memory figure. **Fixed in your 3e182ff (#54), in 33b0967; confirmed by us at 10 Mbit/s** (S1 below) |
 
 ---
@@ -916,7 +928,7 @@ handles each.
 
 ---
 
-## #59 — sustained typing above an uncancellable command crashes the tab (your HARDENING #59; fixed in G by `e4cffcc` per QED64, not yet measured by us)
+## #59 — sustained typing above an uncancellable command crashes the tab (your HARDENING #59; fixed in G and H by `e4cffcc` per QED64, not yet measured by us)
 
 **Found by** your edit-storm lane (`pageslow`, 2026-10-05); recorded here because it bears on the gallery. On the stock
 page, typing at 150 ms/char on the line above `#eval (IO.sleep 3000 : IO Unit)` with the InfoView open grew the pool
@@ -939,8 +951,98 @@ queued is answered locally with RequestCancelled (`-32800`, `error.data.qed64.ki
 build, `pageslow` passing with the pool at 24 → 24/25. The same build with `?edithold=0` crashed (24 → 32). We registered
 G on 2026-10-06 (docs/REPIN-LOG.md, pin G entry). Our side so far is static only. The UX console oracle allows the new
 cancel reply text at the notify site (line0 627), paired with its own `-32800` reply (gallery/README.md "Console
-messages"; no browser run has seen it yet). Our own measurement is still open: a C20-style typing run at 150 ms/char
-above a slow `#eval` on G (docs/NEXT-STEPS.md "Pin G").
+messages"; at the time no browser run had seen it). Our own measurement is still open: a C20-style typing run at 150 ms/char
+above a slow `#eval` on G (docs/NEXT-STEPS.md, now under "Pin H").
+
+**Status (2026-10-08): also in H `bf9d947`; still not measured by us.** H is G plus your keep-alive fix (K1 below), so it
+carries `e4cffcc` unchanged. What our runs on G and H do show is that the back-pressure acts in ordinary use: the local
+cancel text `QED64: the client cancelled this request before it reached the checker` appeared in every full run on G and
+H (37–71 lines per run; 38 in 7 tests of `g-full1b`), and our console oracle, which allows it only paired with its own
+`-32800` reply, accepted it in every test that passed. A typing run at
+150 ms/char above a slow `#eval` is still open on our side (docs/NEXT-STEPS.md).
+
+---
+
+## K1 — `$/lean/rpc/keepAlive` starved behind the request cap (your `5c327c2`, `e4cffcc`; fixed in your `bf9d947`)
+
+**Found by** our UX suite's C22 on pin G, run `g-full1b` (2026-10-06 17:28Z). C22 holds the checker busy on purpose: a
+38 s silent `#eval`, then a saturated task pool for 55 s. Every functional assertion held (same session, no restart, no
+card), but its console verdict failed on 9 `console.error('Outdated RPC session')` lines at the notify site (line0 627),
+in two bursts: 5 at t 55.06 s, right after the `#eval`, and 4 at t 166.8 s, right after the saturated phase
+(`out/ux/g-full1b/tests/C22.s10.console.jsonl`).
+
+**Cause** (read from the pinned sources; diagnosis `g-full1b-diag-C22.txt`). `e4cffcc` lets at most 6 requests be at the
+worker unanswered (`frontend/src/embed/edit-coalescer.ts` `maxInFlightRequests`), and every frame behind a waiting
+request waits in order; only `$/cancelRequest` was exempt, as your unit test `edit-coalescer.test.ts:616-623` pinned.
+During a silent elaboration the InfoView's and lean4monaco's position-bound requests fill the 6 slots, so the InfoView's
+`$/lean/rpc/keepAlive` (every 10 s) queues behind them. Lean 4.34 erases an RPC session after 30 s without a keep-alive
+(`RpcSession.keepAliveTimeMs := 30000`, `FileWorker/Utils.lean:188`; erased in `FileWorker.lean:943-947` before the
+queued keep-alive is handled). When the elaboration ends, the queued `$/lean/rpc/call`s reach a worker without that
+session, Lean answers each with `-32900` "Outdated RPC session" (`Rpc/RequestHandling.lean:84`), lean4monaco logs it, and
+the InfoView reconnects. G was the first build with the cap; on E, C22 printed no such line (`r4-main-full4`,
+`pinE-full1`, `pinE-full2`).
+
+**What we did.** We sent you the evidence and a fix proposal: forward `keepAlive` (and `release`) without waiting for a
+slot. Until a fix arrived, our C22 allowed the lines only on `5c327c2` (scenario `rpcKeepAliveStarved`), each paired with
+its own Lean `-32900` reply (`qed64Kind` null), each reply ending a phase silent for 30 s or more, followed by a reconnect
+and the golden panel (gallery/README.md "Console messages").
+
+**Fixed in your `bf9d947`** ("Edit coalescing: $/lean/rpc/keepAlive never waits for a request slot"), now your main.
+Your A/B: 7 lines with the bug, 0 with the fix (your measurement). Ours: strict C22 (no scenario) on `bf9d947` served
+by our `serve.mjs` before you pushed it, run `h-c22-1` (2026-10-06 19:31Z): **0 lines against 9 on G**, one
+`$/lean/rpc/connect` before and none added after each silent phase, `CONSOLE OK`, and the cap still active (3 local
+`-32800` cancel lines, each paired). Since then C22 was strict and passed in all seven full runs on H (`h-full1`, `h-full1b`,
+`h-full2b`, `h-full3`, `h-full4`, `h-headed1`, `h-headed2`). Credit: the starvation was found by our suite and the fix is yours.
+
+---
+
+## #55 residual — a reload or reboot during a boot can still crash the renderer (your #55, reopened 2026-10-07)
+
+**Our three crashes on H** (2026-10-06/07; each lost one test of an otherwise green run; docs/REPIN-LOG.md, pin H entry):
+
+| Run | Test | Timeline | Context |
+|---|---|---|---|
+| `h-full1` (chrome-headless-shell) | C9, the stock page on an unpaired overlay (your page reboots after each `bootFailed`) | 9 `[qed64] starting Lean`, then the renderer died at t 12.2 s, before your breaker halted | host 14.1 GiB reclaimable at the start of the run; G passed the same test twice (13 starts, halted, no crash) |
+| `h-full2b` (chrome-headless-shell) | C10, five reloads in 15 s on a warm profile | at first ready the renderer held 8.9 GiB with 26 Workers; after the last reload your `[boot] waited 132 ms for 1 stopping runtime(s) (24 → 5 Workers alive)` at t 22.10 s, crash at t 23.35 s | no boot budget spent |
+| `h-headed1` (headed Chrome for Testing) | C11, a lasting network cut | your relay halted after 3 deaths (t 23.1 s); the test's recovery reload (load at t 26.7 s) crashed the renderer at t 30.1 s | the gallery page itself, at the reload |
+
+H differs from G only in the keep-alive forwarding, so we read these as the L9 family, not as a new defect. Counting
+every per-test record on G and H: C10 crashed in 1 of 9 headless-shell storms and 0 of 2 headed; C9's stock reboot loop
+in 1 of 9 runs; C11's recovery reload in 1 of 9.
+
+**Your explanation** (your analysis): one booted runtime's ~25 glue isolates of ~129 MiB each fill most of the renderer's
+4 GiB pointer-compression cage, so a new runtime started before the old isolates are gone can exceed it, and the
+embedder's own JS heap shifts the rate. Your ballast storm, an embedder holding extra heap: **0 MiB 0/8, 800 MiB 8/8,
+1600 MiB 8/8** crashes. You reopened #55 as a residual whose margin has to come from the kernel side (a pool-size knob,
+a smaller glue).
+
+**Our share of the heap, measured** (`tests/ux/tools/heap-share.mjs`, run `heap-share-1`, 2026-10-07; 5 interleaved
+rounds, a fresh profile per sample, `chart-kit` on `widgets8`, at ready + 5 s; same-origin frames share one isolate, so
+each figure is the whole page):
+
+| | used JS heap, median (min–max) | renderer RSS, median |
+|---|---|---|
+| your page at top level | 61.0 MiB (61.0–64.8) | 9194.7 MiB |
+| a trivial same-origin embed host | 64.8 MiB (64.8–68.9) | 9316.3 MiB |
+| our gallery | 64.8 MiB (64.8–64.8) | 9391.4 MiB |
+
+`performance.memory` took only three distinct values (61.0, 64.8, 68.9 MiB), and `measureUserAgentSpecificMemory` was
+not available, so the resolution is a few MiB. Within it, the gallery adds no JS heap over a trivial embed and about
+75 MiB of renderer RSS. At about 65 MiB we are far below your 800 MiB threshold: not a heavy embedder, and nothing
+material to cut on our side. The gallery's own boots send the old page to `about:blank` and wait for it to unload
+instead of reloading it. Since our commit `bd42150`, C10 records the page's JS heap before each storm reload, and C9 and
+C11 report a renderer crash as such.
+
+## #62 and #63 — in progress at QED64 (2026-10-07)
+
+* **#62, an early pairing check** (an unpaired overlay is refused before a runtime boots, instead of the `bootFailed`
+  reboot loop of C9's crash). You told us it keeps C9's projection exactly, with no new console text. Our C9 assertions
+  stay as they are; a re-pin onto it needs a re-gate.
+* **#63, a network-kind boot failure** downloads the snapshot before the next session starts a runtime (the path of C11's
+  lasting cut). It keeps C11's assertions; C9 and C11 assert no death count, so neither depends on how many runtimes
+  start.
+
+Neither is in H. We will register the commit you name, as for H, and re-run the full gate.
 
 ---
 
