@@ -7,7 +7,10 @@
 //   node scripts/pin-switch.mjs list                 every registered pin: label, runtime, status, store completeness,
 //                                                    UX verdicts on its lock (out/ux/showcase-ux-runs.jsonl)
 //   node scripts/pin-switch.mjs current              the active pin and every active link (exit 1 if a link is missing,
-//                                                    is a real file/dir, or points into another pin's/runtime's store)
+//                                                    is a real file/dir, or points into another pin's/runtime's store),
+//                                                    and the directories its overlays are SERVED from (/snapshots/<dir>/,
+//                                                    overlayDir in scripts/lib/pins.mjs; exit 1 if the lock records
+//                                                    another url)
 //   node scripts/pin-switch.mjs check <id> [--full] [--if-materialized]
 //                                                    the CHEAP check of a pin's stores (what `showcase.sh verify` runs for
 //                                                    every staged pin): descriptor == lock; release/<id> file set and
@@ -15,7 +18,9 @@
 //                                                    line is the same notify code; QED64's sources (submodule or the
 //                                                    pin's worktree) at the commit, unmodified; the overlays == the lock's
 //                                                    sizes (paired: index runtime, {init, mathlib}, init == the pin's stock
-//                                                    init); the runtime's BUILD stores (stage1 buildId, raw and bake files,
+//                                                    init) and the lock's overlay url == overlayUrl (/snapshots/widgets8/
+//                                                    for a v2 descriptor, /snapshots/widgets8.<bid16>/ for a v3
+//                                                    per-runtime one); the runtime's BUILD stores (stage1 buildId, raw and bake files,
 //                                                    mathlib == this runtime's bake) where this checkout built them, else
 //                                                    one ABSENT line (a checkout bootstrapped from fetched artifacts).
 //                                                    --full adds the release and overlay sha256s (pin-qed64.mjs verify
@@ -45,7 +50,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SC, W, ID_RE, OVERLAYS, activeLinks, activePinId, listPins, pinDescriptor, lockOf, repoPinDir, releaseDir, outRtDir, wRtDir, mainBundle, hasBuildStores } from './lib/pins.mjs';
+import { SC, W, ID_RE, OVERLAYS, activeLinks, activePinId, listPins, pinDescriptor, lockOf, repoPinDir, releaseDir, outRtDir, wRtDir, mainBundle, hasBuildStores, overlayUrl } from './lib/pins.mjs';
 import { SUBMODULE, SUBMODULE_REL, checkSrc, ensureSrc, srcDir, headOf, worktreeDir } from './lib/qed64-src.mjs';
 import { readRuns, whyNotVerdict, whyNotSignOff } from './lib/ux-record.mjs';
 import { browserLockFile } from './lib/browser-lock.mjs';
@@ -140,6 +145,8 @@ function checkPin(id, { full = false } = {}) {
   let stockInit = null;
   try { stockInit = readJson(path.join(R, 'public/snapshots/index.json')).snapshots.find((s) => s.name === 'init'); } catch { /* below */ }
   for (const o of OVERLAYS) {
+    // where this overlay is SERVED: /snapshots/<dir>/ (bare for a v2 descriptor, <o>.<bid16> for a v3 per-runtime one)
+    let url = null; try { url = overlayUrl(o, id); } catch (e) { ok(false, `overlay ${o}: ${e.message}`); continue; }
     const d = path.join(outRtDir(bid), 'overlay', o), ix = path.join(d, 'index.json');
     if (!exists(ix)) { ok(false, `out/runtimes/${bid}/overlay/${o}/index.json missing`); continue; }
     const j = readJson(ix); const errs = [];
@@ -162,11 +169,13 @@ function checkPin(id, { full = false } = {}) {
     const lo = lock.overlays && lock.overlays[o];
     if (!lo) errs.push(`pins/${id}/QED64.lock.json records no overlay ${o}`);
     else {
+      if (lo.url !== url) errs.push(`lock url ${lo.url} != ${url}`);
+      if (lo.dir !== path.relative(SC, d)) errs.push(`lock dir ${lo.dir} != ${path.relative(SC, d)}`);
       const have = fs.readdirSync(d).sort().join(','), want = Object.keys(lo.files).sort().join(',');
       if (have !== want) errs.push(`files ${have} != lock ${want}`);
       for (const [f, m] of Object.entries(lo.files)) if (exists(path.join(d, f)) && (fs.statSync(path.join(d, f)).size !== m.bytes || (full && sha256File(path.join(d, f)) !== m.sha256))) errs.push(`${f} != lock`);
     }
-    ok(!errs.length, `out/runtimes/${bid}/overlay/${o}: runtime == ${bid}, {init, mathlib}, sizes == transfer, init == this pin's stock init, files == lock${full ? ' (sha256)' : ' (sizes)'}${built ? ", mathlib == this runtime's bake" : ''}`, errs.join('; '));
+    ok(!errs.length, `out/runtimes/${bid}/overlay/${o} (served at ${url}): runtime == ${bid}, {init, mathlib}, sizes == transfer, init == this pin's stock init, files == lock${full ? ' (sha256)' : ' (sizes)'}, lock url == ${url}${built ? ", mathlib == this runtime's bake" : ''}`, errs.join('; '));
   }
   if (built) ok(exists(path.join(outRtDir(bid), 'headless')), `out/runtimes/${bid}/headless exists`);
   // audit: the overlays' runtime == this pin's LOCK runtime (not only the descriptor's); for the active pin also the
@@ -196,6 +205,19 @@ function overlayLinksMatchLock() {
     out.push({ ok: rts.length === 1 && rts[0] === lockBid, msg: `${rel(link)} (-> ${isLink(link) ? fs.readlinkSync(link) : 'not a link'}): index runtime ${rts.join(',')} == active lock runtime ${lockBid}` });
   }
   return out;
+}
+
+/** The served overlay directories of pin `id` (overlayUrl, scripts/lib/pins.mjs): one row naming every logical overlay's
+ *  /snapshots/<dir>/ and the descriptor rule behind it; FAIL only when the active lock records another url for one (an
+ *  overlay not recorded yet, before record-overlays, is named, not failed). [{ok, msg}] */
+function servedOverlays(id) {
+  let desc, urls;
+  try { desc = pinDescriptor(id); urls = Object.fromEntries(OVERLAYS.map((o) => [o, overlayUrl(o, id)])); } catch (e) { return [{ ok: false, msg: `served overlay directories of pin ${id}: ${e.message}` }]; }
+  let lo = {}; try { lo = readJson(path.join(SC, 'QED64.lock.json')).overlays || {}; } catch { /* reported by the lock checks */ }
+  const rule = desc.overlayDirs === 'per-runtime' ? `${desc.schema}, per-runtime <o>.<bid16>` : `${desc.schema}, bare names`;
+  const bad = OVERLAYS.filter((o) => lo[o] && lo[o].url !== urls[o]).map((o) => `active lock ${o}.url ${lo[o].url} != ${urls[o]}`);
+  const unrec = OVERLAYS.filter((o) => !lo[o]);
+  return [{ ok: !bad.length, msg: `served overlay directories (pins/${id}/pin.json ${rule}): ${OVERLAYS.map((o) => `${o} -> ${urls[o]}`).join(', ')}${bad.length ? ` — ${bad.join('; ')}` : unrec.length ? ` (not recorded in the active lock yet: ${unrec.join(', ')})` : ' == active lock overlays.<o>.url'}` }];
 }
 
 function verdicts(id) {
@@ -264,9 +286,12 @@ if (cmd === 'list') {
   console.log(`${gpOk ? 'OK  ' : 'FAIL'} gallery/pin.json pin ${gp && gp.pin}, buildId ${gp && gp.buildId} and lockSha256 == the active lock${gpOk ? '' : ' (run: node scripts/build-gallery.mjs)'}`);
   const ovl = overlayLinksMatchLock();
   const ovlOk = printChecks(ovl);
+  // the directories the active pin's overlays are SERVED from (what serve.mjs, the gallery and the deploy use)
+  const served = servedOverlays(id);
+  const servedOk = printChecks(served);
   if (jr && jr.state !== 'done') console.log(`FAIL an interrupted switch ${jr.from} -> ${jr.to} (${jr.started}); re-run: scripts/showcase.sh pin use ${jr.to}`);
   const srcOk = printChecks(src);
-  const good = st.every((s) => s.state === 'ok' || s.state === 'absent') && gpOk && ovlOk && srcOk && !(jr && jr.state !== 'done');
+  const good = st.every((s) => s.state === 'ok' || s.state === 'absent') && gpOk && ovlOk && servedOk && srcOk && !(jr && jr.state !== 'done');
   console.log(good ? `PIN CURRENT OK ${id}` : `PIN CURRENT FAILED ${id}`);
   process.exit(good ? 0 : 1);
 } else if (cmd === 'check') {

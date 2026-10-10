@@ -3,14 +3,22 @@
 //
 // Routes, first match wins:
 //   1. /showcase/...             -> $SC/gallery/...                     (/showcase/ -> index.html)
-//   2. /snapshots/<overlay>/...  -> the pin's runtime store out/runtimes/<buildId>/overlay/<overlay>/ for widgets7 and
-//                                   widgets8 (resolved ONCE at start), else $SC/out/overlay/snapshots/<overlay>/...
-//                                   (only when that dir exists: the UX suite's own fixture overlays)
+//   2. /snapshots/<dir>/...      -> the pin's runtime store out/runtimes/<buildId>/overlay/<o>/ for the pin's SERVED overlay
+//                                   directories <dir> = overlayDir(<o>, pin) of widgets7 and widgets8 (scripts/lib/pins.mjs:
+//                                   the bare name for pins A–H, '<o>.<bid16>' for a pin.json v3 "per-runtime" pin; resolved
+//                                   ONCE at start), else $SC/out/overlay/snapshots/<dir>/... (only when that dir exists: the
+//                                   UX suite's own fixture overlays, e.g. ux-unpaired-<pid>). A bare logical name
+//                                   (widgets7, widgets8) is NEVER served through that fixture route: for a per-runtime pin
+//                                   out/overlay/snapshots/widgets8 is the active link, possibly of another pin, and
+//                                   production serves that path from whatever R2 holds there, so a gallery that still
+//                                   framed /snapshots/widgets8/ would pass locally and fail live. It falls through to
+//                                   route 3 (a 404 unless the release ships such a file).
 //   3. /runtime/ /profiles/ /snapshots/ -> $R/public/...
 //   4. everything else           -> $R/dist/...                         (/ -> index.html)
 // Every response: COOP same-origin, COEP require-corp, CORP same-origin; Content-Length; no
-// Content-Encoding; Cache-Control by QED64's own isImmutable() (imported from infra/worker.js of the served pin's
-// QED64 sources: the submodule deps/qed64 or the pin's worktree; scripts/lib/qed64-src.mjs). HEAD answered; missing
+// Content-Encoding; Cache-Control by QED64's own isImmutable() (imported from the served pin's QED64 sources, the
+// submodule deps/qed64 or the pin's worktree, scripts/lib/qed64-src.mjs: infra/edge-worker.js where the pin has it
+// (84d594e on; the library infra/worker.js imports), else infra/worker.js (pins A–E)). HEAD answered; missing
 // files are 404 (never an SPA fallback). ETag + If-None-Match -> 304 (revalidation, like production).
 //
 // The pin (scripts/lib/pins.mjs; pins are keyed by QED64 commit) is fixed when the server starts: the active pin, or
@@ -30,7 +38,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { activePinId, pinDescriptor, releaseOf, outRtDir, storePath, OVERLAYS: PIN_OVERLAYS } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { activePinId, pinDescriptor, releaseOf, outRtDir, storePath, overlayDir, OVERLAYS: PIN_OVERLAYS } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const PIN = process.env.SHOWCASE_PIN || activePinId();
 const BID = pinDescriptor(PIN).buildId;
 const R = releaseOf(PIN);
@@ -50,8 +58,9 @@ const API_HEADER = (() => {
   if (!b || b.schema !== 'qed64.build/v1') { console.error(`WARNING: ${f} schema ${JSON.stringify(b && b.schema)}, want qed64.build/v1: X-Showcase-Api invalid`); return 'invalid'; }
   return typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : 'none';
 })();
-// the pin's paired overlays, resolved now (the active links may be switched later; this server keeps serving its pin)
-const PINNED_OVERLAYS = Object.fromEntries(PIN_OVERLAYS.map((o) => [o, path.join(outRtDir(BID), 'overlay', o)]));
+// the pin's paired overlays, resolved now (the active links may be switched later; this server keeps serving its pin),
+// keyed by the SERVED directory (pins.mjs overlayDir: widgets8 for pins A–H, widgets8.<bid16> for a per-runtime pin)
+const PINNED_OVERLAYS = Object.fromEntries(PIN_OVERLAYS.map((o) => [overlayDir(o, PIN), path.join(outRtDir(BID), 'overlay', o)]));
 const GALLERY = process.env.GALLERY_DIR ? path.resolve(process.env.GALLERY_DIR) : path.join(SC, 'gallery'); // GALLERY_DIR: mutation tests only
 const OVERLAYS = path.join(SC, 'out', 'overlay', 'snapshots');
 const PORT = Number(process.env.PORT || 5190);
@@ -69,8 +78,13 @@ function mimeOf(p) {
   if (/\.part-\d+$/.test(p)) return 'application/octet-stream';
   return MIME[path.extname(p).toLowerCase()] || 'application/octet-stream';
 }
-// QED64's cache rule, not a copy: imported from the served pin's QED64 sources (infra/worker.js exports isImmutable)
-const { isImmutable } = await import(pathToFileURL(path.join(storePath('qed64', { id: PIN }), 'infra', 'worker.js')).href);
+// QED64's cache rule, not a copy: imported from the served pin's QED64 sources. infra/edge-worker.js (QED64's library,
+// 84d594e on) exports it with no other import; from 385a1ac on QED64's infra/worker.js also imports the toolchain
+// release record and builds its Worker at load, so the library is preferred. Pins A–E have only infra/worker.js.
+const QED64_INFRA = path.join(storePath('qed64', { id: PIN }), 'infra');
+const ISIMMUTABLE_SRC = fs.existsSync(path.join(QED64_INFRA, 'edge-worker.js')) ? 'edge-worker.js' : 'worker.js';
+const { isImmutable } = await import(pathToFileURL(path.join(QED64_INFRA, ISIMMUTABLE_SRC)).href);
+if (typeof isImmutable !== 'function') throw new Error(`${path.join(QED64_INFRA, ISIMMUTABLE_SRC)} exports no isImmutable`);
 
 let chaos = null;
 if (process.env.CHAOS) {
@@ -86,7 +100,8 @@ function resolve(pathname) {
   if (pathname.startsWith('/showcase/')) return { route: 'showcase', file: path.join(GALLERY, pathname.slice('/showcase/'.length)) };
   const m = /^\/snapshots\/([^/]+)\/(.*)$/.exec(pathname);
   if (m && PINNED_OVERLAYS[m[1]] && fs.existsSync(PINNED_OVERLAYS[m[1]])) return { route: `overlay:${m[1]}`, file: path.join(PINNED_OVERLAYS[m[1]], m[2]) };
-  if (m && !PINNED_OVERLAYS[m[1]] && fs.existsSync(path.join(OVERLAYS, m[1])) && fs.statSync(path.join(OVERLAYS, m[1])).isDirectory())
+  // fixture overlays: any other directory under out/overlay/snapshots/, but never a bare logical name (F7: see route 2)
+  if (m && !PINNED_OVERLAYS[m[1]] && !PIN_OVERLAYS.includes(m[1]) && fs.existsSync(path.join(OVERLAYS, m[1])) && fs.statSync(path.join(OVERLAYS, m[1])).isDirectory())
     return { route: `overlay:${m[1]}`, file: path.join(OVERLAYS, m[1], m[2]) };
   if (/^\/(runtime|profiles|snapshots)\//.test(pathname)) return { route: 'public', file: path.join(R, 'public', pathname) };
   return { route: 'dist', file: path.join(R, 'dist', pathname) };
@@ -153,7 +168,7 @@ function handler(req, res) {
 }
 const servers = HOSTS.map((h) => http.createServer(handler).listen(PORT, h));
 servers[0].on('listening', () => {
-  console.log(`serve.mjs pid=${process.pid} listening on ${HOSTS.join(',')} port ${PORT} (http://localhost:${PORT}/)  pin=${PIN} (${BID}${process.env.SHOWCASE_PIN ? ', SHOWCASE_PIN' : ', active'}) api=${API_HEADER} release=${path.relative(SC, R)} gallery=${path.relative(SC, GALLERY)} overlays=${path.relative(SC, path.dirname(PINNED_OVERLAYS.widgets8))}+${path.relative(SC, OVERLAYS)}${chaos ? ` CHAOS=${chaos.re}:${chaos.after}:${chaos.times}` : ''}`);
+  console.log(`serve.mjs pid=${process.pid} listening on ${HOSTS.join(',')} port ${PORT} (http://localhost:${PORT}/)  pin=${PIN} (${BID}${process.env.SHOWCASE_PIN ? ', SHOWCASE_PIN' : ', active'}) api=${API_HEADER} release=${path.relative(SC, R)} gallery=${path.relative(SC, GALLERY)} overlays=${path.relative(SC, path.join(outRtDir(BID), 'overlay'))}[${Object.keys(PINNED_OVERLAYS).join(',')}]+${path.relative(SC, OVERLAYS)} cache-rule=${ISIMMUTABLE_SRC}${chaos ? ` CHAOS=${chaos.re}:${chaos.after}:${chaos.times}` : ''}`);
   if (!fs.existsSync(path.join(R, 'dist', 'index.html'))) console.log(`WARNING: ${R}/dist/index.html missing — run scripts/pin-qed64.mjs pin`);
 });
 for (const s of servers) s.on('error', (e) => { console.error(`listen error: ${e.message}`); process.exit(1); });

@@ -25,7 +25,10 @@
 //                                       SKIP. Rebuild-only inputs that moved (the Docker image behind
 //                                       qed64-toolchain:emsdk-6.0.5, a tag QED64's own toolchain build rewrites; the
 //                                       Node version the bakes ran on) print DRIFT (not FAIL; `showcase.sh native`
-//                                       refuses on the image) unless --strict.
+//                                       refuses on the image) unless --strict. #12: a QED64 HARDENING fix that is an
+//                                       ancestor of the pin's commit needs its descriptor `hardening` flag true, and a
+//                                       flag true needs the fix (FAIL either way: the UX suite enforces QED64's asks
+//                                       only through these flags).
 //   node scripts/pin-qed64.mjs record-widgets-hash [--pin <id>]
 //                                       recompute WIDGETS_SOURCE_HASH over $W/widgets-src, require it
 //                                       to equal SOURCE-HASH.txt, check the export against its commit
@@ -33,7 +36,11 @@
 //   node scripts/pin-qed64.mjs record-overlays [--pin <id>]
 //                                       write the sha256/bytes of the pin's runtime overlays (out/runtimes/<bid>/overlay/
 //                                       widgets7|widgets8: index.json + both .snapz) into its lock (`overlays`), after
-//                                       the cheap pairing check; the lock is what bootstrap verifies fetched overlays by
+//                                       the cheap pairing check; the lock is what bootstrap verifies fetched overlays by.
+//                                       Each record's `url` is where the overlay is SERVED, /snapshots/<dir>/ with
+//                                       <dir> = overlayDir(<o>, id) (scripts/lib/pins.mjs): the bare name for a v2
+//                                       descriptor (pins A–H: /snapshots/widgets8/), '<o>.<bid16>' for a v3 one with
+//                                       "overlayDirs": "per-runtime" (/snapshots/widgets8.f69cca24d0878a58/)
 //
 // The widget sources: $W/widgets-src is a `git archive` of this repository's packages/ at WIDGETS_COMMIT
 // (scripts/export-widgets.mjs; scripts/lib/widgets-src.mjs). WIDGETS_SOURCE_HASH (amendment 1) = sha256 over the
@@ -43,7 +50,7 @@
 // `git ls-tree -r WIDGETS_COMMIT packages/`.
 //
 // Locations (scripts/lib/env.mjs): QED64_REPO (only for `pin`), QED64_KERNEL_BUILD (the kernel build, read-only; `pin`
-// needs it, `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as
+// reads the native toolchain record from it, or carries the active pin's record when it is unset; `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as
 // this machine's paths.
 //
 // Every operation on a QED64 tree is read-only: git rev-parse / status / show / ls-tree (with --no-optional-locks on
@@ -55,7 +62,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { activePinId, pinDescriptor, repoPinDir, releaseDir, listPins, ID_RE } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { activePinId, pinDescriptor, repoPinDir, releaseDir, listPins, ID_RE, OVERLAYS, outRtDir, overlayUrl } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
 const WSRC = await import(path.join(SC, 'scripts/lib/widgets-src.mjs'));
 const QSRC = await import(path.join(SC, 'scripts/lib/qed64-src.mjs'));
@@ -63,13 +70,17 @@ const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const cmd0 = process.argv[2];
 let Q = '', K = '';
 try {
-  if (cmd0 === 'pin') { Q = ENV.need('QED64_REPO'); K = ENV.need('QED64_KERNEL_BUILD'); }
+  // pin: QED64_KERNEL_BUILD set -> the native toolchain record is read from it; unset (a host without the native kernel
+  // build, e.g. after it was removed) -> carried from the active pin's lock, said so (verify #7 is then N/A here, as in CI)
+  if (cmd0 === 'pin') { Q = ENV.need('QED64_REPO'); if (ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); }
   if (cmd0 === 'verify' && ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); // optional for verify: set -> checked, unset -> N/A
 } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
 const QED64_UPSTREAM = 'https://github.com/FawadHa1der/QED64';
 // --pin <id> (default: the active pin). Its descriptor names the QED64 commit (QPIN), the promote, the runtime buildId and
-// the kernel commit that built the served lean.wasm (QED64's tracked pipeline/toolchain/KERNEL-PIN at QPIN, first token;
-// recorded in the lock as qed64.kernel and re-checked by verify #9).
+// the kernel commit that built the served lean.wasm: QED64's tracked release record toolchain/lean4-wasm64-release.json
+// at QPIN (kernel.commit, gate passed on it, runtime.buildId == the descriptor's; QED64 >= 4f46477, e.g. pin I 385a1ac),
+// else its tracked pipeline/toolchain/KERNEL-PIN at QPIN, first token (pins A–H). Recorded in the lock as qed64.kernel
+// and re-checked by verify #9 (kernelAt below).
 const pinArg = process.argv.indexOf('--pin');
 const ID = pinArg > 0 ? process.argv[pinArg + 1] : activePinId();
 if (!ID_RE.test(ID || '')) { console.error(`--pin needs a pin id: the 7-hex prefix of the QED64 commit (got ${ID})`); process.exit(2); }
@@ -78,7 +89,17 @@ const BID = DESC.buildId;
 const QPIN = DESC.qed64.commit;
 const QPROMOTE = DESC.qed64.promote;
 const KERNEL = DESC.qed64.kernel;
-const KERNEL_PIN_PATH = 'pipeline/toolchain/KERNEL-PIN';
+const KERNEL_PIN_PATH = 'pipeline/toolchain/KERNEL-PIN';                // QED64 <= bf9d947 (pins A–H); deleted in 4f46477
+const RELEASE_RECORD_PATH = 'toolchain/lean4-wasm64-release.json';       // QED64 >= 4f46477: the kernel release it serves
+const RELEASE_RECORD_SCHEMA = 'lean4-wasm64.release/v1';
+// QED64 HARDENING fixes behind the descriptor's `hardening` flags (the UX suite branches on these flags: C9, C11, the
+// network oracle). A flag true needs every fix to be an ancestor of QPIN (verify #12 FAILs otherwise); every fix an
+// ancestor with the flag absent or false is a FAIL too (the suite would silently skip the asks' assertions).
+const HARDENING_FIXES = {
+  earlyUnpaired: ['9045b86'],               // HARDENING #62: an unpaired overlay halts before the runtime starts
+  networkPreboot: ['e10454b', '3524618'],   // HARDENING #63: a network failure before boot is one named death
+  pinnedIndexes: ['5952e32', '3bd5521'],    // HARDENING #64: per-build index copies, the shell never 404s on them
+};
 const R = releaseDir(ID);
 const STORE = repoPinDir(ID);
 const LOCK = path.join(STORE, 'QED64.lock.json');
@@ -138,7 +159,32 @@ function walk(dir, base = dir, out = []) {
   return out.sort();
 }
 const urlToPublic = (u) => 'public' + u;
-const kernelPinAt = (rev) => git('show', `${rev}:${KERNEL_PIN_PATH}`).toString().split(/\s+/)[0];
+// git show <rev>:<path> of the source dependency, or null when the path does not exist at <rev> (stderr silenced)
+const gitShowOrNull = (rev, p) => { try { return execFileSync('git', ['-C', SRC, 'show', `${rev}:${p}`], { maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return null; } };
+/** The kernel commit QED64 names at `rev`, and where it was read: {kernel, from}. The release record (QED64 >= 4f46477)
+ *  when it exists at `rev`, checked against the descriptor (schema, kernel.commit a full id, runtime.buildId == BID,
+ *  gate passed on kernel.commit, gate.wasmSha256 == the buildId's lean.wasm digest); else the first token of KERNEL-PIN
+ *  (pins A–H, which have no record). Throws when the record is malformed or disagrees, or when neither file exists. */
+function kernelAt(rev) {
+  const r7 = String(rev).slice(0, 7);
+  const raw = gitShowOrNull(rev, RELEASE_RECORD_PATH);
+  if (raw === null) {
+    const kp = gitShowOrNull(rev, KERNEL_PIN_PATH);
+    if (kp === null) throw new Error(`QED64 at ${r7} has neither ${RELEASE_RECORD_PATH} nor ${KERNEL_PIN_PATH}`);
+    return { kernel: kp.toString().split(/\s+/)[0], from: KERNEL_PIN_PATH };
+  }
+  let rec; try { rec = JSON.parse(raw.toString()); } catch (e) { throw new Error(`${RELEASE_RECORD_PATH} at ${r7} is not JSON: ${e.message}`); }
+  const k = rec.kernel && rec.kernel.commit;
+  const bad = [
+    rec.schema !== RELEASE_RECORD_SCHEMA && `schema ${rec.schema} != ${RELEASE_RECORD_SCHEMA}`,
+    !/^[0-9a-f]{40}$/.test(k || '') && `kernel.commit ${k} is not a commit`,
+    rec.runtime?.buildId !== BID && `runtime.buildId ${rec.runtime?.buildId} != descriptor buildId ${BID}`,
+    !(rec.gate?.passed === true && rec.gate.commit === k) && `gate not passed on kernel.commit (gate ${JSON.stringify({ passed: rec.gate?.passed, commit: rec.gate?.commit })})`,
+    !(typeof rec.gate?.wasmSha256 === 'string' && /^[0-9a-f]{64}$/.test(rec.gate.wasmSha256) && rec.gate.wasmSha256.startsWith(BID.slice('wasm64-'.length))) && `gate.wasmSha256 ${rec.gate?.wasmSha256} does not start with the buildId's ${BID.slice('wasm64-'.length)}`,
+  ].filter(Boolean);
+  if (bad.length) throw new Error(`${RELEASE_RECORD_PATH} at ${r7}: ${bad.join('; ')}`);
+  return { kernel: k, from: `${RELEASE_RECORD_PATH} kernel.commit (${rec.id})` };
+}
 // WIDGETS_SOURCE_HASH recompute (see header; scripts/lib/widgets-src.mjs). Returns { hash, files, listing }.
 const WIDGETS_SRC = WSRC.WIDGETS_SRC;
 const widgetsSourceHash = async (dir = WIDGETS_SRC) => WSRC.widgetsSourceHash(dir);
@@ -168,15 +214,15 @@ async function pin() {
   const head = gitQ('rev-parse', 'HEAD').toString().trim();
   const dirty = gitQ('status', '--porcelain').toString();
   if (head !== QPIN) throw new Error(`QED64 HEAD ${head} != QPIN ${QPIN}`);
-  const kpin = kernelPinAt(QPIN);
-  if (kpin !== KERNEL) throw new Error(`QED64 ${KERNEL_PIN_PATH} at QPIN names kernel ${kpin}, not KERNEL ${KERNEL}`);
+  const { kernel: kpin, from: kfrom } = kernelAt(QPIN);
+  if (kpin !== KERNEL) throw new Error(`QED64 ${kfrom} at QPIN names kernel ${kpin}, not KERNEL ${KERNEL}`);
   if (dirty.trim()) throw new Error(`QED64 tree not clean:\n${dirty}`);
   const qbid = readJson(path.join(Q, 'public/runtime/runtime-manifest.json')).buildId;
   if (qbid !== BID) throw new Error(`QED64 serves runtime ${qbid}, the descriptor pins/${ID}/pin.json names ${BID}`);
   // dist/ is built, not tracked: snapshot its file list and mtimes so a rebuild DURING the clone is detected (S0.2 again)
   const distStamp = () => walk(path.join(Q, 'dist')).map((f) => `${f} ${fs.statSync(path.join(Q, 'dist', f)).mtimeMs} ${fs.statSync(path.join(Q, 'dist', f)).size}`).join('\n');
   const stamp0 = distStamp();
-  console.log(`S0.2 OK  QED64 HEAD=${head} clean, serves ${qbid}`);
+  console.log(`S0.2 OK  QED64 HEAD=${head} clean, kernel ${kpin.slice(0, 10)} from ${kfrom}, serves ${qbid}`);
 
   // S0.4 release clone (copy-on-write clone per file: APFS clonefile / Linux reflink; never a hard link)
   const set = releaseSet();
@@ -197,18 +243,31 @@ async function pin() {
   console.log('S0.4 OK  QED64 HEAD, status and dist/ unchanged during the clone');
 
   // toolchain pins (S0.5 #7)
-  const lm = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json'));
-  const pw = lm.packages.find((p) => p.name === 'proofwidgets');
-  const toolchain = {
-    native64: {
+  let native64, mathlib;
+  if (K) {
+    const lm = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json'));
+    const pw = lm.packages.find((p) => p.name === 'proofwidgets');
+    native64 = {
       dir: '${QED64_KERNEL_BUILD}/native',
       NATIVE_COMMIT: fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim(),
       BUILT_COMMIT: fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim(),
       'stage1/bin/lean': await sha256File(path.join(K, 'native/stage1/bin/lean')),
       'stage1/bin/lake': await sha256File(path.join(K, 'native/stage1/bin/lake')),
-    },
+    };
+    mathlib = { commit: fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim(), proofwidgets: pw.rev };
+  } else {
+    // the native toolchain is a rebuild-only input shared by every pin built with it: carry its record from the active
+    // pin's lock (never invent one); `verify` checks it wherever QED64_KERNEL_BUILD is set
+    let src = null; try { src = activePinId(); } catch { /* none */ }
+    const tc0 = src && src !== ID ? (readJson(path.join(repoPinDir(src), 'QED64.lock.json')).toolchain || {}) : {};
+    if (!tc0.native64 || !tc0.mathlib) throw new Error('QED64_KERNEL_BUILD is not set and no active pin lock (other than this pin) records the native toolchain to carry: set QED64_KERNEL_BUILD');
+    native64 = tc0.native64; mathlib = tc0.mathlib;
+    console.log(`S0.5 NOTE native toolchain record carried from pin ${src}'s lock (QED64_KERNEL_BUILD is not set on this host): NATIVE_COMMIT ${String(native64.NATIVE_COMMIT).slice(0, 10)}, Mathlib ${String(mathlib.commit).slice(0, 7)}`);
+  }
+  const toolchain = {
+    native64,
     docker: { image: DOCKER_IMAGE, id: DOCKER_ID },
-    mathlib: { commit: fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim(), proofwidgets: pw.rev },
+    mathlib,
     node: process.version,
     playwright: { version: PLAYWRIGHT, browserRevision: BROWSER_REV },
   };
@@ -247,11 +306,13 @@ async function pin() {
 }
 
 async function verify({ allowSkip = false, strictToolchain = false } = {}) {
-  let fails = 0, skips = 0, drifts = 0, nas = 0;
+  let fails = 0, skips = 0, drifts = 0, nas = 0, warns = 0;
   // N/A: a rebuild-only input this checkout does not have (no kernel build, no downloaded browser). Printed, counted and
   // named in the summary; never a reason to pass a check on the served files.
   const na = (msg, why) => { nas++; console.log(`N/A  ${msg} — ${why}`); };
   const ok = (cond, msg, detail = '') => { console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${detail ? ' — ' + detail : ''}`); if (!cond) fails++; };
+  // WARN: consistent but weaker than it could be (a QED64 fix is in the pin, the descriptor does not enforce it); not a FAIL
+  const warn = (msg, detail = '') => { warns++; console.log(`WARN ${msg}${detail ? ' — ' + detail : ''}`); };
   // a check that could not run is a FAIL unless --allow-skip
   const skip = (msg) => { if (allowSkip) { skips++; console.log(`SKIP ${msg} (--allow-skip)`); } else { fails++; console.log(`FAIL ${msg} (check could not run; pass --allow-skip to tolerate)`); } };
   // DRIFT: a rebuild-only input (the Docker image behind a tag QED64 owns) no longer matches the lock. The
@@ -266,9 +327,10 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   let act = null; try { act = activePinId(); } catch { /* no active pin yet */ }
   console.log(`     pin ${ID} = QED64 ${QPIN.slice(0, 12)}, runtime ${BID} (${ID === act ? 'ACTIVE' : 'staged'}): ${path.relative(SC, STORE)}/, ${path.relative(SC, R)}/`);
   ok(lock.qed64.commit === QPIN && lock.qed64.buildId === BID && lock.qed64.promote === QPROMOTE, 'lock pins the descriptor\'s commit, promote and buildId', `${lock.qed64.commit.slice(0, 12)} ${lock.qed64.buildId}`);
-  // 9. the kernel that built the served lean.wasm (QED64's own KERNEL-PIN at QPIN) == KERNEL == lock
-  let kpin = null; try { kpin = kernelPinAt(QPIN); } catch {}
-  ok(kpin === KERNEL && lock.qed64.kernel === KERNEL, `#9 ${KERNEL_PIN_PATH} at QPIN == KERNEL == lock qed64.kernel`, `${String(kpin).slice(0, 10)} / lock ${String(lock.qed64.kernel).slice(0, 10)}`);
+  // 9. the kernel that built the served lean.wasm (QED64's release record at QPIN, else its KERNEL-PIN) == KERNEL == lock
+  let kpin = null, kfrom = `${RELEASE_RECORD_PATH} or ${KERNEL_PIN_PATH}`, kerr = '';
+  try { ({ kernel: kpin, from: kfrom } = kernelAt(QPIN)); } catch (e) { kerr = e.message; }
+  ok(kpin === KERNEL && lock.qed64.kernel === KERNEL, `#9 ${kfrom} at QPIN == KERNEL == lock qed64.kernel`, kerr || `${String(kpin).slice(0, 10)} / lock ${String(lock.qed64.kernel).slice(0, 10)}`);
   let objOk = true; try { git('cat-file', '-e', `${QPIN}^{commit}`); } catch { objOk = false; }
   ok(objOk, `QPIN ${QPIN.slice(0, 12)} present in QED64 object store`);
 
@@ -427,10 +489,20 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   ok(dcopies.length > 0 && !dbad.length, `#10 the ${dcopies.length} dist/ copies of tracked public/ files == git show ${QPIN.slice(0, 7)}:public/<f> (incl. dist/workers/lean.worker.js)`, dbad.slice(0, 3).join(', '));
   ok(dcopies.includes('dist/workers/lean.worker.js'), '#10 dist/workers/lean.worker.js is among them');
 
-  // 11. the pin's runtime overlays (what /snapshots/widgets7|8/ serve) == the lock's `overlays` sha256/bytes
+  // 11. the pin's runtime overlays (served at /snapshots/<dir>/, <dir> = overlayDir(<o>, id): widgets7|8 for a v2
+  // descriptor, widgets7|8.<bid16> for a v3 per-runtime one) == the lock's `overlays` sha256/bytes; each record names this
+  // runtime's store (out/runtimes/<bid>/overlay/<o>) and the served URL overlayUrl(<o>, id)
   const ov = lock.overlays || {};
   if (!Object.keys(ov).length) ok(false, '#11 lock records the overlays', 'missing (run: pin-qed64.mjs record-overlays)');
+  else {
+    const keys = Object.keys(ov).sort().join(','), wantKeys = [...OVERLAYS].sort().join(',');
+    if (keys !== wantKeys) ok(false, `#11 lock records exactly the overlays ${wantKeys}`, `got ${keys} (run: pin-qed64.mjs record-overlays)`);
+  }
   for (const [o, rec] of Object.entries(ov)) {
+    let wantUrl = null, urlErr = ''; try { wantUrl = overlayUrl(o, ID); } catch (e) { urlErr = e.message; }
+    const wantDir = path.relative(SC, path.join(outRtDir(BID), 'overlay', o));
+    ok(wantUrl !== null && rec.url === wantUrl && rec.dir === wantDir, `#11 overlay ${o}: lock url == ${wantUrl || 'overlayUrl'} (pin ${ID} ${DESC.schema}), dir == ${wantDir}`,
+      urlErr || [rec.url !== wantUrl && `url ${rec.url}`, rec.dir !== wantDir && `dir ${rec.dir}`].filter(Boolean).join('; ') || '');
     const d = path.join(SC, rec.dir);
     const want = rec.files || {};
     const have = fs.existsSync(d) ? walk(d) : [];
@@ -441,8 +513,44 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
       [!have.length && 'not present (scripts/showcase.sh bootstrap fetches it)', missing.length && `missing ${missing.slice(0, 3)}`, extra.length && `extra ${extra.slice(0, 3)}`, bad.length && `differ ${bad.slice(0, 3)}`].filter(Boolean).join('; '));
   }
 
-  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : '', nas ? `${nas} N/A (rebuild-only input not on this host)` : ''].filter(Boolean).join('; ');
-  console.log(fails ? `VERIFY FAILED (${fails} FAIL${drifts ? `, ${drifts} DRIFT` : ''}${nas ? `, ${nas} N/A` : ''})` : (notes ? `VERIFY OK (${notes})` : 'VERIFY OK'));
+  // 12. the descriptor's `hardening` flags agree with QED64's history at QPIN (HARDENING_FIXES): a flag true needs every
+  // fix to be an ancestor of QPIN (FAIL otherwise: the UX suite would enforce a behaviour the pinned shell lacks); every
+  // fix an ancestor with the flag absent or false is a FAIL too (otherwise `verify` and `pin use` go green while the UX
+  // suite records a VERDICT without any of QED64's asks enforced). Pins A–H carry no `hardening` and contain none of
+  // the fixes.
+  const hard = DESC.hardening;
+  if (hard !== undefined && (hard === null || typeof hard !== 'object' || Array.isArray(hard))) ok(false, `#12 pins/${ID}/pin.json hardening is an object`, JSON.stringify(hard));
+  else {
+    const h = hard || {};
+    const unknown = Object.keys(h).filter((k) => k !== 'note' && !(k in HARDENING_FIXES));
+    if (unknown.length) ok(false, `#12 pins/${ID}/pin.json hardening names only ${Object.keys(HARDENING_FIXES).join(', ')} (and note)`, `unknown ${unknown.join(', ')}`);
+    if ('note' in h && typeof h.note !== 'string') ok(false, `#12 pins/${ID}/pin.json hardening.note is a string`, JSON.stringify(h.note));
+    let shallow = false; try { shallow = git('rev-parse', '--is-shallow-repository').toString().trim() === 'true'; } catch { /* old git: assume complete */ }
+    // 'yes' | 'no' | 'unknown' (the fix is not in the object store, or the store is shallow and the answer is no)
+    const ancestry = (fix) => {
+      try { execFileSync('git', ['-C', SRC, 'merge-base', '--is-ancestor', fix, QPIN], { stdio: 'ignore' }); return 'yes'; } catch (e) {
+        if (e.status !== 1) return 'unknown';
+        return shallow ? 'unknown' : 'no';
+      }
+    };
+    for (const [flag, fixes] of Object.entries(HARDENING_FIXES)) {
+      const v = h[flag];
+      const label = `#12 hardening.${flag} ${v === undefined ? 'absent' : JSON.stringify(v)}`;
+      if (v !== undefined && typeof v !== 'boolean') { ok(false, `${label} is a boolean`); continue; }
+      const anc = fixes.map((f) => [f, ancestry(f)]);
+      const desc = anc.map(([f, a]) => `${f} ${a === 'yes' ? 'ancestor' : a === 'no' ? 'not an ancestor' : 'unknown (not in the object store' + (shallow ? ', shallow' : '') + ')'}`).join(', ');
+      const all = anc.every(([, a]) => a === 'yes');
+      if (v === true) {
+        if (all) ok(true, `${label}: QED64 fix ${fixes.join(' + ')} in QPIN ${QPIN.slice(0, 7)}`, desc);
+        else if (anc.some(([, a]) => a === 'unknown') && !anc.some(([, a]) => a === 'no')) skip(`${label}: QED64 fix ${fixes.join(' + ')} in QPIN ${QPIN.slice(0, 7)} — ${desc}`);
+        else ok(false, `${label}: QED64 fix ${fixes.join(' + ')} in QPIN ${QPIN.slice(0, 7)}`, `${desc}: the flag claims a fix the pinned shell lacks`);
+      } else if (all) ok(false, `${label}, but QED64 fix ${fixes.join(' + ')} is in QPIN ${QPIN.slice(0, 7)}`, `${desc}: set "hardening": {"${flag}": true} in pins/${ID}/pin.json (the UX suite enforces the fix only through the flag)`);
+      else ok(true, `${label} == QED64 fix ${fixes.join(' + ')} not (all) in QPIN ${QPIN.slice(0, 7)}`, desc);
+    }
+  }
+
+  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : '', warns ? `${warns} WARN` : '', nas ? `${nas} N/A (rebuild-only input not on this host)` : ''].filter(Boolean).join('; ');
+  console.log(fails ? `VERIFY FAILED (${fails} FAIL${drifts ? `, ${drifts} DRIFT` : ''}${warns ? `, ${warns} WARN` : ''}${nas ? `, ${nas} N/A` : ''})` : (notes ? `VERIFY OK (${notes})` : 'VERIFY OK'));
   process.exit(fails ? 1 : 0);
 }
 
@@ -466,7 +574,6 @@ async function recordWidgetsHash() {
 }
 
 async function recordOverlays() {
-  const { OVERLAYS, outRtDir } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
   const lock = readJson(LOCK);
   const overlays = {};
   for (const o of OVERLAYS) {
@@ -488,11 +595,12 @@ async function recordOverlays() {
     }
     if (Object.keys(files).length !== ix.snapshots.length + 1) errs.push(`files ${Object.keys(files).join(',')}`);
     if (errs.length) { console.error(`FAIL overlay ${o}: ${errs.join('; ')}`); process.exit(1); }
-    overlays[o] = { dir: path.relative(SC, d), url: `/snapshots/${o}/`, files };
+    // url: where the overlay is served, /snapshots/<dir>/ (bare for a v2 descriptor, <o>.<bid16> for a v3 per-runtime one)
+    overlays[o] = { dir: path.relative(SC, d), url: overlayUrl(o, ID), files };
   }
   lock.overlays = overlays;
   fs.writeFileSync(LOCK, JSON.stringify(lock, null, 2) + '\n');
-  console.log(`RECORDED overlays ${Object.entries(overlays).map(([o, r]) => `${o} (${Object.keys(r.files).length} files)`).join(', ')} -> ${path.relative(SC, LOCK)}`);
+  console.log(`RECORDED overlays ${Object.entries(overlays).map(([o, r]) => `${o} (${Object.keys(r.files).length} files, served at ${r.url})`).join(', ')} -> ${path.relative(SC, LOCK)}`);
 }
 
 const cmd = process.argv[2];

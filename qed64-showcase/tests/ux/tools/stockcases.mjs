@@ -4,7 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { SC, ORIGIN, LAUNCH_ARGS, lockHeld, sleep, until, waitGalleryReady, api } from '../bringup/lib.mjs';
+import { SC, ORIGIN, LAUNCH_ARGS, OVERLAY_W8, lockHeld, sleep, until, waitGalleryReady, api } from '../bringup/lib.mjs';
+const W8Q = `?snapshots=snapshots/${OVERLAY_W8}`; // the pin's served widgets8 directory (gallery/pin.json overlays)
 lockHeld();
 const OUT = path.join(SC, 'out/ux/explore'); fs.mkdirSync(OUT, { recursive: true });
 const only = process.argv[2] ? process.argv[2].split(',') : ['c6', 'c7', 'c8', 'c9', 'c12'];
@@ -32,19 +33,19 @@ async function stock(name, buffer, query, { ctxOpts = {}, waitMs = 120000, persi
   await ctx.close();
   return r;
 }
-if (only.includes('c6')) res.c6 = await stock('c6', 'import HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/widgets8');
-if (only.includes('c7')) res.c7 = await stock('c7', 'import Mathlib.NotAModule\n\n#check (1 : Nat)\n', '?snapshots=snapshots/widgets8');
+if (only.includes('c6')) res.c6 = await stock('c6', 'import HasseView\n\n#check (1 : Nat)\n', W8Q);
+if (only.includes('c7')) res.c7 = await stock('c7', 'import Mathlib.NotAModule\n\n#check (1 : Nat)\n', W8Q);
 if (only.includes('c8')) res.c8 = await stock('c8', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/nope', { waitMs: 90000 });
 if (only.includes('c9')) res.c9 = await stock('c9', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/ux-unpaired', { waitMs: 90000 });
 if (only.includes('c12')) {
   const prof = path.join(SC, 'out/ux/profiles/explore-warm');
-  res.c12prime = await stock('c12-prime', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/widgets8', { persistent: prof });
-  res.c12warm = await stock('c12-warm', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/widgets8', { persistent: prof });
-  res.c12offline = await stock('c12-offline', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', '?snapshots=snapshots/widgets8', { persistent: prof, route: '**/snapshots/widgets8/**' });
+  res.c12prime = await stock('c12-prime', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', W8Q, { persistent: prof });
+  res.c12warm = await stock('c12-warm', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', W8Q, { persistent: prof });
+  res.c12offline = await stock('c12-offline', 'import Mathlib\nimport HasseView\n\n#check (1 : Nat)\n', W8Q, { persistent: prof, route: `**/snapshots/${OVERLAY_W8}/**` });
   // the gallery offline
   const ctx = await chromium.launchPersistentContext(prof, { args: LAUNCH_ARGS, viewport: { width: 1440, height: 900 } });
   const page = ctx.pages()[0] || await ctx.newPage(); let ab = 0;
-  await ctx.route('**/snapshots/widgets8/**', (r) => { ab++; return r.abort('internetdisconnected'); });
+  await ctx.route(`**/snapshots/${OVERLAY_W8}/**`, (r) => { ab++; return r.abort('internetdisconnected'); });
   await page.goto(`${ORIGIN}/showcase/#hasse-view`, { waitUntil: 'domcontentloaded' });
   const g = await waitGalleryReady(page, { timeoutMs: 120000 });
   res.c12gallery = { ms: g.ms, phase: g.s && g.s.phase, error: g.s && g.s.error, aborted: ab, preflight: g.s && g.s.preflight };

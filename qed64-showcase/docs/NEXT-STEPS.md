@@ -1,13 +1,93 @@
-# Next steps (updated 2026-10-08, pin H)
+# Next steps (updated 2026-10-10, pin J)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
 
-## Pin H `bf9d947`: gated; what remains is the user's
+## Pin J `5e63edd`: active and gated; the evidence runs, the commit, then the user's decisions
 
-**Where it stands (2026-10-08).** The live site serves E `33b0967` with the pre-v1 gallery, deployed 2026-10-05. This
-checkout's active pin is H `bf9d947`, QED64 **main** (G `5c327c2` plus QED64's fix for the keep-alive starvation our C22
-found on G), since 2026-10-06 ~20:03Z; G and F are staged. H is gated in the browser (docs/REPIN-LOG.md, pin H entry):
+**Where it stands (2026-10-10 ~03:55Z).** The live site serves E `33b0967`. This checkout's active pin is J `5e63edd`
+(since 2026-10-09 ~18:55Z, first as a staged test pin): QED64 main since ~20:30Z, a fast-forward of
+`fix/stack-probe-headroom` = I `385a1ac` plus `lean.worker.js` setting `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun
+(HARDENING #67, QED64's interim for the kernel-0036 regression). Same runtime `wasm64-f69cca24d0878a58`, overlays
+(`widgets{7,8}.f69cca24d0878a58`), main bundle and stock snapshots as I; lock `a6d481b782d9…`, gallery
+`65279b0b4c27aa9f…`, shell `shell-f4c57699a033beda`. I stays registered as the record of the regression (DistLens
+`pmf_num` clicks fail "stack is exhausted" in Chrome), superseded, not deployed. The work for I and J is uncommitted on
+the local branch `qed64-pin-i` (based on H's `d60b15e`), not pushed. Evidence: docs/REPIN-LOG.md, pin I entry, "Pin J".
+
+**Done (logs `$W/logs/pinJ-*.log`, chain log `pinJ-chain.log`):** `verify` OK (#7 N/A), `pin check --full`, shell from
+source 60/60; smoke 23/23; `j-dl1` (W8, C20, C22) 3/3 with C20 135/135, DistLens 21/21; **VERDICTs `j-full1`** (19:37Z)
+**and `j-full5`** (2026-10-10 00:51Z), 34 passed + C19 skipped each (red: `j-full2` C10 crash, `j-full3` C3 10.67 GB,
+`j-full4` C3 10.50 GB and a C21 crash); `j-c20-1/2/3` 135/135 each (405/405), DistLens 21/21 each; `j-headed1` red (C3
+10.51 GB, C10 crash), then **`j-headed2` HEADED SIGN-OFF 35/35** (03:35Z); the **10 Mbit/s / 40 ms first visit** through
+`throttle-proxy.mjs` on `:5297`/`:5298` (`:5197` was taken by another project's vite server): `RESULT PASS`, ready at
+565.1 s (H 565.6 s), 693.1 MB at 9.8 Mbit/s, progress visible in 563/564 samples, 0 error-card samples, no crash;
+`deploy-manifest --check` OK (G2 → `j-full5` on gallery `65279b0b…`, lock `a6d481b7…`, overlays widgets8/widgets7; 95 R2
+objects, 2.420 GB); `--record-verdict` wrote `infra/ux-verdict.json` naming `j-full5` (to be committed); **`j-c11h3`**
+(C11 headed ×3, QED64's #63 ask) 3/3. The C3 memory A/B (H, I, `58ae6d2` guard off, J; 5 interleaved rounds) found no
+runtime offset. **The crash finding (the kernel session):** the C10/C21 crashes of `i-full2`, `j-full2` and `j-full4`
+were a PartitionAlloc OOM inside Chrome's DevTools protocol, caused by Playwright's tracing fetching every response body
+(QED64's 1.27 GB snapshot included), a harness artifact; tracing is now off (`UX_TRACE` opts in). The two A/B crashes
+were V8 OOMs at 31 Workers (the #55 cage) and read as chance across arms (docs/REPIN-LOG.md "The crash classification and
+tracing").
+
+1. **Running:** QED64's evidence run `j-c10x20` (C10 ×20, tracing off; `$W/logs/pinJ-ux-c10x20.log`, chain
+   `$W/pinI/chainJ5.sh`). **Queued after it:** the pool-growth chain `$W/pinI/chainPG.sh` (8 interleaved rounds of the
+   local measurement pins `27a4ba6` = J + QED64's #68 restart wait + a `[pool]` diagnostic, `0ff314c` and `3b804ea` =
+   the same with parking 8 and 4; C3 + one C10 storm each, tracing off) for QED64 and the kernel; no results yet. The
+   measurement pins (`58ae6d2`, `349b1b7`, `27a4ba6`, `0ff314c`, `3b804ea`) are never committed and are removed after
+   their runs.
+2. **Ours, next:** commit this work on `qed64-pin-i` (`pins/385a1ac/`, `pins/5e63edd/`, `infra/ux-verdict.json` → `j-full5`,
+   the suite's tracing change); then, on that commit, the qed64-static CI mirror (`node ci/run-local.mjs --job
+   qed64-static`) and `ci/rehearse-deploy.sh` with the `old-shell` scenario (E1's evidence). Add the `j-c10x20` tally
+   and the pool-growth results to docs/UPSTREAM-REPORT-QED64.md when they exist.
+3. **The user's decisions** (docs/REPIN-LOG.md, pin I entry, "Open decisions"): **E1**, how to deploy a runtime change
+   (J replaces E's runtime): accept the window in which phase 3 has replaced the live stock and profile indexes before
+   the new Worker is live, split the upload by hand with `PHASES=` and `ALLOW_PARTIAL_UPLOAD=1`, or change the CI
+   published check, which compares the phase-3 indexes and so refuses a split upload. QED64's own DEPLOY.md says the
+   first #64-reading shell goes out on the already-served pairing, or the indexes go up right after the deploy; none of
+   our #64 pins is on E's runtime. **Pushing `qed64-pin-i`** (a push to `main` touching `qed64-showcase/` is a deploy),
+   and **whether to merge and deploy H first** (E's runtime, no index window). The **alias policy** (gallery-only, so
+   bookmarks of `/?snapshots=snapshots/widgets8` fail after a `f69cca24` deploy as a named unpaired error; or a Worker
+   redirect); a **"site updated, reload" card** for stale tabs, now or later; **H's verdict record** (the committed one
+   names `h-full4`, stale for a redeploy of H with this gallery code); **R2 growth** of about 762 MB per runtime (J adds
+   nothing over I). The upload, the push and the deploy each need an explicit yes.
+4. **Upstream, waiting:** kernel patch **0038** (the real 0036 fix: probe four times as often with a quarter of the
+   headroom) waits for the user's OK in the kernel session; it means a new release, a QED64 promote and a re-pin with the
+   full gate (TwoDice stays a browser regression case). QED64's **#68** (a page that replaces its own runtime waits for
+   all of its Workers) is the branch `fix/own-predecessor-wait`, **not on QED64 main**; re-pin when it lands.
+5. **Follow-up: a Chrome-budget headless lane** (the kernel session's guidance, 2026-10-09): run E3's persistent path
+   through the toolchain package's `snapshot-probe.mjs` with `LEAN4_WASM64_PTHREAD_STACK_MB=0.68` (Node 0.68 MB = a macOS
+   Chrome Worker; chrome-headless-shell measured within 1 % of it). The probe honours the knob only from kernel
+   `0249065cc0` (release `-r3`, not yet published), and on runtime f69cca24 `lean_wasm_compile` starts with
+   `Elab.async` off, so the probe file needs `set_option Elab.async true` for the proofs to run on the sized Workers.
+   The one-shot equivalent is the package's `node-runner.mjs` with the same knob (the kernel gate's own setting).
+   **But it would not have caught the 0036 case:** the kernel session ran the TwoDice proofs that way (Workers at
+   0.68 MB, `Elab.async` on, our widgets8 snapshot) and they compile at every guard setting; the browser's FileWorker
+   path starts deeper than the compile path. A headless Chrome-budget lane undercounts, so the browser gate (C20/W8)
+   stays the judge.
+6. **This host:** `.env.local` names the kernel build dir that another session deleted on 2026-10-09 ~12:48Z, so
+   `pin-qed64.mjs verify` needs `QED64_KERNEL_BUILD=` here (then `#7` prints N/A) until the dir is rebuilt or the user
+   updates or clears that line (rebuild-only inputs). `pin-qed64.mjs pin` now carries the native toolchain record from
+   the active pin's lock when `QED64_KERNEL_BUILD` is unset.
+7. **Optional:** record `servedTrees.baseSlimDigest` and `coreDigest` in `pins/385a1ac/pin.json` and
+   `pins/5e63edd/pin.json` so the G0 tree check runs instead of printing SKIP; the Docker tag's `DRIFT #7` (now
+   `0de79b891eb9`, the e1a79c1 release's image) stays unacted on while nothing native runs.
+
+## Pin I `385a1ac`: superseded by J on 2026-10-09 (the kernel-0036 regression record)
+
+I (QED64 main on the kernel fork's release `lean-v4.34.0-e1a79c1`, runtime `wasm64-f69cca24d0878a58`, with QED64's #62,
+#63 and #64; the first pin with per-runtime overlay directories) was the active pin from 2026-10-09 ~13:10Z. Its static
+and headless gates were green; its first full run `i-full2` (17:36Z) was red on kernel patch 0036's engine-stack probe:
+9 DistLens `twoDice … pmf_num` clicks (C20), W8 and C22 failed in Chrome with "the WebAssembly runtime's stack is
+exhausted", while H's runtime passes the same clicks 21/21 (docs/REPIN-LOG.md, pin I entry, "The regression"; repro
+`$W/pinI/repro-0036/`). #62, #63 and #64 held in that run. Its C10 crash was the tracing artifact above. Nothing is left
+to do on I: it stays registered, not deployed (`pin use 385a1ac` reproduces the regression).
+
+## Pin H `bf9d947`: gated; superseded locally by I on 2026-10-09
+
+**Where it stood (2026-10-08).** The live site serves E `33b0967` with the pre-v1 gallery, deployed 2026-10-05. This
+checkout's active pin was H `bf9d947`, QED64 **main** (G `5c327c2` plus QED64's fix for the keep-alive starvation our C22
+found on G), from 2026-10-06 ~20:03Z to 2026-10-09; G and F were staged. H is gated in the browser (docs/REPIN-LOG.md, pin H entry):
 v1 smoke 22/22, VERDICTs `h-full1b`, `h-full3`, `h-full4` on gallery `d8a5bb6d…`, `C20` 135/135 in three runs, the
 headed sign-off `h-headed2` (35/35), `deploy-manifest --check` OK, and `infra/ux-verdict.json` naming `h-full4` (the
 record the CI deploy accepts). Three other runs each lost one test to a renderer crash during a QED64 boot, QED64's #55
@@ -33,12 +113,10 @@ pushed**.
 
 ## When QED64 publishes: the re-pins we owe (in this order)
 
-* **#62 and #63** (QED64, in progress). #62 checks pairing early (keeps C9's projection exactly, no new console text);
-  #63 makes a network-kind boot failure download the snapshot before the next runtime starts (keeps C11's assertions;
-  C9 and C11 assert no death count). Neither is in H. When QED64 names the commit: register it like H (descriptor, our
-  worktree, `pin-qed64.mjs pin`, `record-widgets-hash`, `record-overlays`, `verify`, `pin check --full`, shell from
-  source, `pin use`), then the full gate (smoke, two full VERDICTs, `C20` ×3, headed sign-off, the proxy-shaped
-  throttled visit, `deploy-manifest --check` and `--record-verdict`, the rehearsal).
+* **#62 and #63: done as pin I** (`385a1ac`, with #64 too; registered 2026-10-09) **and gated on its successor J**
+  (`5e63edd`, the same fixes; the section above). The UX suite asserts them on I and J through the descriptor's
+  `hardening` flags (C9, C11, the network oracle).
+* **Kernel patch 0038 and QED64's #68:** each a re-pin with the full gate once it is on QED64 main (the section above).
 * **Our steps 5 and 6** ("heavy path from a fetched release" and "drop the submodule and the source build"), after QED64
   publishes its release bundle (B2: `release.json`, the shell tarball, the manifests, the umbrella pair, `SHA256SUMS`)
   and names pushed SHAs for A2 (`qed64/edge` etc.) and B2. Agreed with QED64 (handover §16, §23):
@@ -46,23 +124,16 @@ pushed**.
   * our R2 copy of the runtime and packs collapses onto the shared prefix `lean4-wasm64/lean-v4.34.0-a8817d0/` in bucket
     `qed64-artifacts`; `/profiles/index.json` and `/snapshots/*` stay site-owned under `qed64-showcase/`
     (`upload-artifacts`, `deploy-manifest`, the Worker's R2 routing);
-  * `pin-qed64.mjs` reads `toolchain.kernel` from `qed64.release/v1` on the first pin that ships the record, falling back
-    to `KERNEL-PIN` for older pins;
-  * on QED64's A3 commit `scripts/check-gallery.mjs` must read the Memory64 probe from
-    `public/workers/memory64-probe.js` (the literal left `lean.worker.js`), and every fixed list of served workers gains
-    that file.
-* **The toolchain-fork pointers, after QED64's B1 is pinned** (QED64 removed its `pipeline/toolchain/build.sh`,
-  `finish.sh` and `setup-source.sh` there; at H they still exist). Point at the fork's published release
-  `lean-v4.34.0-a8817d0` (https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0) and its CLI as
-  `node <pkg dir>/cli.mjs fetch --only runtime` (never `npx`):
-  * `scripts/showcase.sh`, the comments at about lines 174–178 (`docker_image_guard`: the tag "is QED64's") and about
-    line 428 (where the runtime's `stage1/bin` comes from). **Only when no job runs `showcase.sh`** (never edit it
-    mid-run);
-  * README.md "Docker tag drift" (step 1 names QED64's `pipeline/toolchain/work/lean4/docker-wasm64/Dockerfile`);
-  * scripts/headless/README.md line 29 (`cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin`);
-  * docs/BUILD-FROM-SOURCE.md, the "What you need" table (the runtime's `stage1/bin` and the Docker image rows).
-  The Markdown ones already carry a dated note pointing at the release (2026-10-08); the replacement of the commands
-  waits for the re-pin, because at H the commands written there are still the ones that work.
+  * done for pin I: `pin-qed64.mjs` reads the kernel from QED64's tracked `toolchain/lean4-wasm64-release.json`
+    (`kernel.commit`, schema `lean4-wasm64.release/v1`) where it exists and falls back to `KERNEL-PIN` for older pins;
+  * done for pin I: `scripts/check-gallery.mjs` reads the Memory64 probe from `public/workers/memory64-probe.js`, and
+    `deploy-app.sh` requires `workers/memory64-probe.js` when the staged `lean.worker.js` loads it.
+* **The toolchain-fork pointers: done with pin I** (QED64 `385a1ac` has no `pipeline/toolchain/build.sh`,
+  `KERNEL-PIN` or `pipeline/toolchain/work/`). `scripts/showcase.sh` (the `docker_image_guard` comment and the stage1
+  hint, which now names the release from the pin's record and the `cli.mjs fetch … --only runtime` command), README.md
+  "Re-pin" and "Docker tag drift", scripts/headless/README.md and docs/BUILD-FROM-SOURCE.md name the release route for
+  pin I on and keep the `pipeline/toolchain/work/` route for pins up to H. Pin I's stage1 and core library came from
+  the release `lean-v4.34.0-e1a79c1`.
 
 The audit ran six rounds on F and G (docs/REPIN-LOG.md, pin F entry for rounds 1–4, pin G entry for rounds 5–6), and
 the first real runs on G added the `g-full1b` fixes (pin H entry). One residual from the audit: `classify()` in

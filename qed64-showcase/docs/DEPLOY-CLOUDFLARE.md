@@ -91,14 +91,15 @@ setup:
   `qed64-r2`**, and the same bucket-scoped token serves all three apps.
 * **One origin.** `infra/worker.js` puts COOP/COEP/CORP on every response. Without these headers the browser refuses
   SharedArrayBuffer and Memory64, and QED64 cannot start.
-* **Uploads use `rclone copy`, never `sync`.** Phase order is digest-named objects, then manifests, then `index.json`.
+* **Uploads use `rclone copy`, never `sync`.** Phase order is digest-named objects, then manifests, then `index.json`
+  (`PHASES=` uploads a subset, for a split around the Worker deploy: 3.2).
   wrangler 4.125.0 is pinned in `infra/package.json`. `scripts/deploy-app.sh` stages the shell and runs `wrangler deploy`.
 
 | URL | Served from | Content |
 |---|---|---|
 | `/showcase/` | Workers static assets | the gallery (`gallery/` without `*.md`, `x3.html`, dotfiles) |
-| `/` | Workers static assets | the pinned QED64 `dist/` (`release/<pin id>/dist`, byte-identical to `QED64.lock.json`). A bare `/` redirects to `/showcase/` (`ROOT_REDIRECT`). The gallery iframes `/?snapshots=snapshots/widgets8`, which is never redirected. |
-| `/runtime/…`, `/profiles/…`, `/snapshots/…` | R2 key `qed64-showcase/<path>` | runtime chunks + manifests, core and mathlib-essential packs, the stock snapshot pair, our overlays `snapshots/widgets8/`, `snapshots/widgets7/` |
+| `/` | Workers static assets | the pinned QED64 `dist/` (`release/<pin id>/dist`, byte-identical to `QED64.lock.json`). A bare `/` redirects to `/showcase/` (`ROOT_REDIRECT`). The gallery iframes `/?snapshots=snapshots/<dir>` (the pin's served overlay directory, below), which is never redirected. |
+| `/runtime/…`, `/profiles/…`, `/snapshots/…` | R2 key `qed64-showcase/<path>` | runtime chunks + manifests, core and mathlib-essential packs, the stock snapshot pair (from pin I on also QED64's per-build index copies `snapshots/index.<buildId>.json`, `snapshots/profiles-index.<buildId>.json`), our overlays `snapshots/<dir>/`: `widgets8/` and `widgets7/` for pins A–H, `widgets8.<bid16>/` and `widgets7.<bid16>/` from pin I on (`scripts/lib/pins.mjs` `overlayDir`; I: `widgets8.f69cca24d0878a58/`), so a new runtime never overwrites the overlay an older live shell reads. The Worker does no alias or rewrite; `?overlay=widgets8` is mapped in the gallery |
 
 The deploy target is set in one place, **`infra/deploy.env`**:
 
@@ -259,7 +260,7 @@ first, then the push (the published check enforces that order).
    |---|---|
    | QED64 (QED64 `docs/DEPLOY.md`) | 2.1 GB |
    | lean4game (`wasm/DEPLOY.md`: runtime 154 MB + profiles 121 MB + ten game snapshots 2,142 MB) | 2.42 GB |
-   | **showcase, full** (default: stock pair + widgets8 + widgets7 + both packs) | **2.42 GB** (93 objects) |
+   | **showcase, full** (default: stock pair + widgets8 + widgets7 + both packs) | **2.42 GB** (93 objects; pin I 95 with the two per-build index copies, 2.420 GB) |
    | showcase, small variant (below) | 0.69 GB (26 objects) |
    | **Total with the full showcase** | **≈ 6.9 GB of 10 GB** |
 
@@ -277,11 +278,15 @@ first, then the push (the published check enforces that order).
    The showcase's runtime, packs and stock snapshots are byte-identical to QED64's when QED64 serves the same build.
    They are stored a second time anyway, because the showcase must stay pinned to its own build and keep its own
    mutable names. Uploads are copy-only, so every **re-pin or rebake adds** its new digest-named objects and the old
-   ones stay. A re-pin adds up to about 2.4 GB; one overlay rebake adds about 0.35 GB. Collect the old objects
-   deliberately once no deployed shell needs them (see [Re-pin](#6-re-pin)).
+   ones stay. A re-pin adds up to about 2.4 GB; one overlay rebake adds about 0.35 GB. From pin I on every runtime's
+   overlays live in their own directories (`snapshots/widgets{7,8}.<bid16>/`), about 762 MB per runtime that no upload
+   deletes. Pin I against the live E record: 21 new objects, 1,274.5 MB (761.5 MB of them overlays); the 69 pack parts
+   and the two profile manifests are already there. Collect the old objects deliberately once no deployed shell needs
+   them (see [Re-pin](#6-re-pin)).
 
    **Small variant.** Set `MANIFEST_ARGS="--overlays widgets8 --no-stock-snapshots --no-essential-pack"` for the upload
-   (and the same for `deploy-app.sh`). The gallery uses only `widgets8`, so it is unaffected. What you give up:
+   (and the same for `deploy-app.sh`; `--overlays` takes the logical names, uploaded under the pin's served directory).
+   The gallery uses only `widgets8`, so it is unaffected. What you give up:
    * the bare stock page at `/?…` without `snapshots=` cannot boot (no stock snapshots). Keep `ROOT_REDIRECT`;
    * QED64's on-demand **"Load exact imports"** fails, because it needs the 1 GB essential pack;
    * `widgets7` is not uploaded. The gallery's automatic fallback, used when `widgets8` fails its preflight, is
@@ -315,18 +320,33 @@ What the script does (each step was exercised in the rehearsal):
 1. It reads the target from `infra/deploy.env` (refusing a shared-bucket prefix other than `qed64-showcase/`, see the
    guard at the top) and checks `rclone listremotes`.
 2. It regenerates the manifest with `--prefix qed64-showcase/`, which hashes every file and runs every gate (A1–A5,
-   L1, R1–R4, G1), then runs `--check`. It refuses on any FAIL. It prints the G2 line and refuses unless it names a
-   verdict run.
+   L1, R1–R6, G1; R5: each overlay is uploaded under the pin's served directory and nothing under the bare one for a
+   per-runtime pin; R6: a pin with `hardening.pinnedIndexes` uploads QED64's per-build index copies), then runs
+   `--check`. It refuses on any FAIL. It prints the G2 line and refuses unless it names a verdict run.
 3. It writes the upload plan to `out/deploy/upload/plan.tsv`: one exact file list per phase, group and content type.
    It then runs one `rclone copy --files-from-raw` per list, **never sync**, with `--checksum` (already-uploaded
    digest-named files are skipped) and multipart in 64 MiB chunks. The three `.snapz` files over 300 MiB need
    multipart: wrangler's `r2 object put` cannot upload them. The phases run in this order:
    1. every digest-named object (runtime chunks, pack parts, `.snapz`), as `application/octet-stream`;
-   2. the manifests that name them (`runtime-manifest*.json`, `*.manifest.json`), as `application/json`;
-   3. the `index.json` files that name the manifests (profiles, stock snapshots, each overlay), as `application/json`.
+   2. the manifests that name them (`runtime-manifest*.json`, `*.manifest.json`), as `application/json`, and (since
+      pin I) every index no older shell reads: a per-runtime overlay's `snapshots/widgets{7,8}.<bid16>/index.json` and
+      QED64's per-build copies `snapshots/index.<buildId>.json`, `snapshots/profiles-index.<buildId>.json`;
+   3. the shared mutable `index.json` files (`profiles/index.json`, `snapshots/index.json`, and a bare overlay's
+      `snapshots/widgets{7,8}/index.json` on pins A–H), as `application/json`.
 
    A browser that revalidates an index halfway through the upload therefore never learns a name whose object is not
    there yet.
+
+   **`PHASES=`** (default all three, in that order) uploads a subset, e.g. `PHASES=1-objects,2-manifests`. A phase goes
+   up only after every earlier one, selected in the same run or uploaded with the same R2 keys by this remote's newest
+   release records (`PHASE ORDER OK …`; `ALLOW_UNRECORDED_UPLOAD=1` skips that check deliberately). Each record names
+   its phases (`target.env` `phases=`). This makes a **split upload** possible: phases 1–2 before the Worker deploy,
+   `PHASES=3-indexes` after it, so the shared indexes an older live shell reads change only once the new shell is live
+   (decision E1 of pin I, docs/REPIN-LOG.md pin I entry; QED64 hit this window on 2026-10-08, its HARDENING #64). By
+   hand: `PHASES=1-objects,2-manifests scripts/upload-artifacts.sh`, then `ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh`
+   (no `PUBLISHED_ORIGIN`), then `PHASES=3-indexes scripts/upload-artifacts.sh`. **Not through the CI deploy yet:** its
+   published check (section 9) compares the phase-3 indexes too and refuses until they are up. Which path to take is
+   the user's decision; `ci/rehearse-deploy.sh old-shell` measures both orders.
 4. It sets the Content-Type explicitly with `--header-upload`. rclone's s3 backend would guess the same types from
    the file extension, but the guess depends on the host's MIME tables. The pinned shell refuses a runtime manifest
    that is not typed JSON (`qed64-boot.ts:67-70`), and the gallery refuses a snapshot typed as HTML.
@@ -357,15 +377,17 @@ The script:
 2. runs `--stage-assets` into `out/deploy/assets` (S1/S2: exactly the manifest's files, checked against their sha256);
 3. refuses any file over **25 MiB**, any `runtime/`, `profiles/` or `snapshots/` directory in the tree, and a
    missing required file (`index.html`, `workers/{lean.worker,lsp-front-door,lsp-frames,snapshot-prefetch.worker}.js`,
-   `showcase/{index.html,gallery.js,lib.js,qed64-bridge.js,examples.json,pin.json}`), and checks that the staged
-   bundle and `showcase/pin.json` name the same runtime buildId;
+   `showcase/{index.html,gallery.js,lib.js,qed64-bridge.js,examples.json,pin.json}`, and `workers/memory64-probe.js`
+   when the staged `lean.worker.js` loads it, QED64 385a1ac on), and checks that the staged bundle and
+   `showcase/pin.json` name the same runtime buildId;
 4. **checks the release record.** The newest record in `out/deploy/published/` for the remote `R2_REMOTE` (written by
    `upload-artifacts.sh`, or by `rollback-artifacts.sh`) must have the same bucket and prefix, and exactly this
    manifest's R2 keys with the same sha256. That includes the runtime manifest and the indexes. Otherwise the script
    stops with `RECORD MISSING … run scripts/upload-artifacts.sh first` or `RECORD MISMATCH …`. This catches the
    upload and the deploy running with different overrides or `MANIFEST_ARGS`, and a re-pinned shell deployed before
-   its upload. `ALLOW_UNRECORDED_UPLOAD=1` skips the check deliberately, for example when the upload ran on another
-   machine;
+   its upload. The newest consecutive records with these keys must together have uploaded all three phases
+   (`RECORD PARTIAL …` otherwise); `ALLOW_PARTIAL_UPLOAD=1` accepts phases 1–2 only, for the split upload in 3.2.
+   `ALLOW_UNRECORDED_UPLOAD=1` skips the check deliberately, for example when the upload ran on another machine;
 5. **writes `wrangler.toml` from `wrangler.toml.example`** when the file is absent, with the name, bucket, prefix and
    assets directory from `infra/deploy.env`. If the file exists, the script **refuses it unless it agrees**, including
    `run_worker_first = true`;
@@ -380,8 +402,10 @@ alone. A re-pin or an overlay rebake needs both, in order.
 ```
 node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.workers.dev --all --range
 curl -sI https://qed64-showcase.<subdomain>.workers.dev/showcase/ | grep -i cross-origin
-curl -s -o /dev/null -D - -H 'Range: bytes=1000000-1000099' https://qed64-showcase.<subdomain>.workers.dev/snapshots/widgets8/<widgets.….snapz>
+curl -s -o /dev/null -D - -H 'Range: bytes=1000000-1000099' https://qed64-showcase.<subdomain>.workers.dev/snapshots/<dir>/<widgets.….snapz>
 ```
+(`<dir>`: `node scripts/lib/pins.mjs overlay-dir widgets8`, i.e. `widgets8` on pins A–H and
+`widgets8.f69cca24d0878a58` on pin I.)
 
 `--smoke --all` sends a HEAD request to every asset and every R2 key in the manifest (168 URLs). For each one
 it checks:
@@ -440,10 +464,16 @@ the earlier **names** back and redeploying the earlier **shell**.
    * the record was made through another rclone remote than `R2_REMOTE`. Override this with
      `ALLOW_REMOTE_MISMATCH=1`, deliberately;
    * any digest-named object of that release is missing from the bucket or has the wrong size (`rclone lsjson`,
-     metadata only). Re-publishing an index whose objects are gone would strand visitors.
+     metadata only; every immutable entry of the record's `manifest.json`, not only the lists it uploaded).
+     Re-publishing an index whose objects are gone would strand visitors.
 
    Otherwise it re-copies the record's manifests, then its indexes, with their content types. It then writes a new
-   record `<time>-rollback`, so that `deploy-app.sh` compares against what is live now.
+   record `<time>-rollback`, so that `deploy-app.sh` compares against what is live now. A record of a **split upload**
+   (`phases=` naming fewer than all three phases, 3.2) holds only those phases' files; either record of such a release
+   may be named, and the script joins its companion records (the consecutive records of this remote, bucket and prefix
+   with the same R2 keys, sha256 and sizes, no rollback in between), re-publishing phase 2 and phase 3 from the newest
+   record that uploaded each. If the companions do not cover all three phases it refuses unless
+   `ALLOW_PARTIAL_ROLLBACK=1`.
 
    **Keep the records.** They are the only copy of what each release published. Unlike lean4game, whose rollback reads
    old indexes from git history, the published indexes here are build outputs in the gitignored `out/` (only QED64's
@@ -472,14 +502,25 @@ The order is the reverse of a release: put the old names back first, then the ol
 
 A re-pin (README "Re-pin: adding a pin when QED64 sends a new commit") usually changes the runtime buildId. That has
 these consequences:
-* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; C `5ac5d00` until 2026-10-04, E `33b0967` since). `pin use <id>` regenerates
+* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves E `33b0967`, deployed
+  2026-10-05; the active pin locally is J `5e63edd` since 2026-10-09, on I's runtime). `pin use <id>` regenerates
   `out/deploy` for the new active pin, and `deploy-manifest --check` G2 then needs a verdict run on that pin's gallery.
 * **Snapshots are binary-paired to the runtime.** The overlays must be rebaked against the new runtime before
   anything is uploaded. The R3 gate refuses an index entry whose `runtime` is not the lock's buildId, and the gallery
   refuses a mismatch with `SNAPSHOT_UNPAIRED`.
 * **Upload before you deploy.** The new runtime chunks, packs and snapshots have new digest names, so phase 1 uploads
-  them next to the old ones. Phase 2/3 then switches `runtime-manifest.json`, `snapshots/index.json` and the overlay
-  indexes. Only after that does `deploy-app.sh` put the new shell live.
+  them next to the old ones. Phase 2/3 then switches `runtime-manifest.json`, `snapshots/index.json` and
+  `profiles/index.json` (and, for pins A–H, the bare overlay indexes). Only after that does `deploy-app.sh` put the new
+  shell live.
+* **From pin I on, the overlays never switch under a live shell.** A per-runtime pin (`pin.json` v3) uploads its
+  overlays to new directories, `snapshots/widgets{7,8}.<bid16>/`, index included, in phases 1–2; the old shell's bare
+  `snapshots/widgets{7,8}/` objects are not touched (gate R5). What still changes under the old shell is phase 3, the
+  stock and profile indexes: from then until the new Worker is live, bare `/?…` visits of the old stock page can fail
+  (the gallery boots from its overlay). Splitting the upload around the deploy (3.2, `PHASES=`) closes that window by
+  hand but not yet through CI (section 9); decision E1, docs/REPIN-LOG.md pin I entry. After the deploy, a bookmark of
+  `/?snapshots=snapshots/widgets8` gets the new shell with the old overlay and stops with QED64's named unpaired error;
+  the gallery's `?overlay=widgets8` keeps working (it maps to the pin's directory). A gallery tab opened before the
+  deploy that reboots its frame afterwards fails the same way until the page is reloaded.
 * **Old objects stay.** The previous shell, still open in visitors' tabs, needs its own chunks and
   `runtime-manifest.<old buildId>.json`, and rollback needs them too. Delete them only deliberately, after the new
   release has been live for a while. Use exact keys from the old release record's `manifest.json`
@@ -538,8 +579,8 @@ Two workflows at the repository root (`.github/workflows/`), both runnable local
 1. **Gate.** Without the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` it logs
    `CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping deploy` and every other step is skipped (green).
    A dispatch with `dry_run` runs everything up to `wrangler deploy --dry-run` without them.
-2. `qed64-src check`, then **QED64's page built from the submodule** (`scripts/build-shell.mjs`: all 58 `dist/` files
-   byte-identical to the lock, or nothing is installed), `fetch-artifacts --git-only` (QED64's five tracked manifests
+2. `qed64-src check`, then **QED64's page built from the submodule** (`scripts/build-shell.mjs`: every `dist/` file,
+   58 on E, 59 on F–H, 60 on I, byte-identical to the lock, or nothing is installed), `fetch-artifacts --git-only` (QED64's five tracked manifests
    and indexes), the Worker tests.
 3. **`DEPLOY_FROM_LOCK=1 scripts/deploy-app.sh`**, the same script as the manual path, with these differences:
    * the manifest is `deploy-manifest.mjs --from-lock`: the assets are hashed as usual, the R2 keys, sizes and sha256
@@ -554,7 +595,10 @@ Two workflows at the repository root (`.github/workflows/`), both runnable local
      with the repository variable `SHOWCASE_ORIGIN` set, `deploy-manifest.mjs --published $SHOWCASE_ORIGIN` must pass
      before wrangler runs (every immutable object: HEAD 200 with the manifest's size; every manifest and index: GET
      sha256 == the manifest's; R3 on the fetched overlay indexes). Without the variable (the very first deploy) it
-     logs `PUBLISHED CHECK SKIPPED …` and the smoke below is the check;
+     logs `PUBLISHED CHECK SKIPPED …` and the smoke below is the check. Because it GETs the phase-3 indexes
+     (`/snapshots/index.json`, `/profiles/index.json`) too, a split upload (3.2: phases 1–2, deploy, then phase 3)
+     **cannot deploy through this job yet**: the check refuses until phase 3 is up. That is open decision E1 of pin I
+     (docs/REPIN-LOG.md); there is no CI equivalent of `ALLOW_PARTIAL_UPLOAD=1`;
    * `wrangler deploy --message "pin … gallery … prefix … ci <commit>"` with the pinned wrangler 4.125.0, so
      `wrangler versions list` tells versions apart for a rollback (section 5).
 4. **Smoke:** `deploy-manifest.mjs --smoke <origin> --all --range` against `SHOWCASE_ORIGIN`, or the workers.dev URL
@@ -588,12 +632,23 @@ npm ci --prefix ci                                                        # the 
 node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --parallel 3
 node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job packages --matrix package=simp-lens
 ci/rehearse-deploy.sh                                                     # the deploy job, 6 scenarios + a tamper check (macOS)
+OLD_REF=<live commit> ci/rehearse-deploy.sh old-shell                     # a runtime change against the live shell (below)
 ```
 `ci/rehearse-deploy.sh` needs the fake R2 that `scripts/deploy-rehearsal/rehearse.sh upload-dry upload deploy-dry load`
 leaves in `$QED64_SHOWCASE_WORK/deploy-rehearsal/state`. Its `wrangler` is
 `scripts/deploy-rehearsal/wrangler-shim.sh`: `wrangler deploy` becomes `wrangler deploy --dry-run` in the offline
 sandbox with no token, and the "deployed" Worker is `wrangler dev --local` on the generated `wrangler.toml` over a copy
-of the fake R2. See [CI rehearsal](#ci-rehearsal) for its results.
+of the fake R2. See [CI rehearsal](#ci-rehearsal) for its results. Since pin I the `tamper` scenario alters the
+overlay index at the directory the manifest records (`options.overlayDirs`), and an eighth scenario, **`old-shell`**,
+rehearses a runtime-changing deploy against the live shell: the fake R2 is the live pin's objects (`OLD_STATE`) with
+the new pin's phases 1–2 loaded on top (nothing deleted); the old Worker and shell (a fresh clone at `OLD_REF`) must
+still pass their published check, every bare `snapshots/widgets{7,8}/` object must be untouched, and one boot of the
+old gallery plus one bare `/` stock boot run under the browser lock; then phase 3 and the new Worker in both orders
+(A: phase 3 before the deploy, B: after it), printing `E1 MEASURE …` lines (evidence for decision E1, not failures).
+It needs `OLD_REF` and a rehearsal state of the new pin built into another directory than `OLD_STATE`; without
+`OLD_REF` it is skipped and named on the last line, never counted as OK. Its first run is pending: on pin J (I's
+successor on the same runtime), after J's evidence runs and the commit (docs/REPIN-LOG.md, pin I entry, "Not done /
+running").
 
 ## 10. Troubleshooting
 

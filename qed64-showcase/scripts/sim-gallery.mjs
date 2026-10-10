@@ -22,6 +22,11 @@
 //     semantics. Every access to the INTERNAL members (qed64.relay / ui / editor / status()), to localStorage['qed64.buffer']
 //     and to the page's #boot/#bootcard/#bootlabel/#bar DOM is recorded (SIM.internalTouches, SIM.storageAccess,
 //     SIM.pageDomTouches): a V1 run asserts the gallery made none (§9). The tests reach the model through SIM.internals.
+//
+// OVERLAYS: setupEnv({overlays}) is keyed by LOGICAL name (widgets8, widgets7) or a literal directory (widgets9, nope). The fake
+// server serves a logical overlay ONLY at its served directory (setupEnv servedDirs; default: the pin.json overlays map the
+// gallery sees, else the bare names), never at a bare logical name that is not its directory (serve.mjs's F7 rule); the
+// gallery's pin.json carries PIN.overlays unless setupEnv({pinOverlays}) replaces (an object) or removes (null) it.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -32,6 +37,8 @@ const G = path.join(SC, 'gallery');
 const ORIGIN = 'http://localhost:5190';
 const GiB = 2 ** 30, MiB = 2 ** 20;
 const PIN = JSON.parse(fs.readFileSync(path.join(G, 'pin.json'), 'utf8'));
+/** The active pin's served directory of logical overlay `o` (gallery/pin.json overlays; the bare name without the map). */
+const PDIR = (o) => (PIN.overlays && typeof PIN.overlays[o] === 'string' ? PIN.overlays[o] : o);
 const EX = JSON.parse(fs.readFileSync(path.join(G, 'examples.json'), 'utf8')).examples;
 const byId = Object.fromEntries(EX.map((e) => [e.id, e]));
 let fails = 0, oks = 0;
@@ -104,8 +111,17 @@ function parseHtml(html) {
 // ---------------------------------------------------------------- the fake QED64 page
 const SIM = {};
 const needsMathlib = (t) => t.split('\n').some((l) => /^\s*import\s+(Mathlib|Batteries|MIL|QED64)\b/.test(l));
+/** The fake server's view of /snapshots/<dir>/: the overlay key it serves there (SIM.servedDirs: logical name → directory), or
+ *  null for a logical name that is not its own directory (404, as serve.mjs on a per-runtime pin); any other dir is literal. */
+function overlayAtDir(dir) {
+  const sd = SIM.servedDirs || {};
+  for (const k of Object.keys(sd)) if (sd[k] === dir) return k;
+  if (Object.prototype.hasOwnProperty.call(sd, dir)) return null;
+  return dir;
+}
+const servedOverlay = (dir) => { const k = overlayAtDir(dir); return k !== null && Object.prototype.hasOwnProperty.call(SIM.overlays, k) ? SIM.overlays[k] : null; };
 function makeQed(pw, bootText, overlay, hooks = {}) {
-  const region = (SIM.overlays[overlay] || {}).imports || [];
+  const region = (servedOverlay(overlay) || {}).imports || [];
   const W = { phase: 'booting', version: null, header: null };
   const relay = { state: { kind: 'rebooting' }, lastText: '', lastDeath: null, stats: { rangedChanges: 0 } };
   let n = 0;
@@ -425,12 +441,16 @@ function makePage(src) {
 // active pin's gallery, which makes the gallery read the served release's revision); apiHeader: serve.mjs sends
 // X-Showcase-Api (<apiRevision>|none, default true: then the gallery never fetches /qed64-build.json; false = an older
 // server, the gallery's fallback probe; a string = that literal value, e.g. 'invalid'); servedBuild 'error': that file cannot be read
-function setupEnv({ search = '', hash = '', overlays = {}, storage = {}, narrow = false, bootMs = 60, elabMs = 40, pageBootFail = false, pageBootFailLate = null, pageBootFailLateDeath = null, builtIn = false, caps = {}, holdBoot = false, v1 = false, caps2 = null, embedWaitMs = 5000, pinV1 = null, servedBuild = null, servedPin = null, apiHeader = true }) {
+// pinOverlays: gallery/pin.json's overlays map (undefined: PIN.overlays; null: an older pin.json without it; an object: that map);
+// servedDirs: where the fake server serves each logical overlay (default: that map, else the bare names)
+function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = '', hash = '', overlays = {}, storage = {}, narrow = false, bootMs = 60, elabMs = 40, pageBootFail = false, pageBootFailLate = null, pageBootFailLateDeath = null, builtIn = false, caps = {}, holdBoot = false, v1 = false, caps2 = null, embedWaitMs = 5000, pinV1 = null, servedBuild = null, servedPin = null, apiHeader = true }) {
   for (const t of SIM.timers || []) clearInterval(t); // the previous run's page tickers
   const html = fs.readFileSync(path.join(G, 'index.html'), 'utf8');
   const root = parseHtml(html);
   const byIdEl = (id) => { for (const e of root.walk()) if (e.id === id) return e; return null; };
   const blank = { location: { href: 'about:blank' }, document: { readyState: 'complete' }, focus() {} };
+  const pinOv = pinOverlays === undefined ? (PIN.overlays ?? null) : pinOverlays;
+  Object.assign(SIM, { pinOverlays: pinOv, servedDirs: servedDirs ?? pinOv ?? { widgets7: 'widgets7', widgets8: 'widgets8' } });
   Object.assign(SIM, { overlays, storage: new Map(Object.entries(storage)), fetchLog: [], navigations: [], positions: [], setValueCalls: 0, rearms: 0, editorFocus: 0, pageFocus: 0, layouts: 0, firstSessions: [], clipboard: null, bootMs, elabMs, pageBootFail, page: null, stuck: false, busy: false, noHover: false, stuckVersions: [], restarts: [], toClient: [], fromClient: [], badRequests: 0, hoverMs: 20, noMain: false, mainMs: 5, builtIn, qlive: { probes: 0, answered: 0, stalls: 0, resumed: 0, rescues: 0 }, qedReboots: [], holdBoot, releaseBoot: null, uiSeen: [], resources: [],
     // V1 model state and the §9 trackers
     v1, caps2, embedWaitMs, pageBootFailLate, pageBootFailLateDeath, timers: [], refuseRestart: false, deathSeq: 0, pages: [], internalTouches: [], storageAccess: [], pageDomTouches: [], setDocCalls: [], setCursorCalls: [], apiRestarts: [], didChanges: 0, bootDocs: [], hashDrops: 0, frameApiDispatches: 0, lastSetDocResult: null, internals: null, offer: null, offerRuns: 0, bootFinished: 0, listenerThrows: [], pageReloads: 0, moduleDelayMs: 15, pinV1, servedBuild, servedPin, apiHeader, storageThrow: new Set(), onlyCurrentRun: false });
@@ -486,6 +506,7 @@ function setupEnv({ search = '', hash = '', overlays = {}, storage = {}, narrow 
     if (u.pathname === '/showcase/pin.json') { // the ACTIVE pin's view (build-gallery.mjs reads release/<pin>/dist/qed64-build.json); SIM.pinV1 overrides it
       const pv = SIM.pinV1 ?? SIM.v1;
       const pj = { ...PIN, apiRevision: pv ? (PIN.apiRevision ?? '1.0.0') : null, shell: pv ? (PIN.shell ?? 'shell-0000000000000000') : null };
+      if (SIM.pinOverlays === null) delete pj.overlays; else pj.overlays = SIM.pinOverlays;
       // serve.mjs: X-Showcase-Api = the SERVED release's dist/qed64-build.json apiRevision, 'none' without one (SIM.v1 = the served page)
       const apiH = SIM.apiHeader ? { 'x-showcase-api': typeof SIM.apiHeader === 'string' ? SIM.apiHeader : SIM.v1 ? (PIN.apiRevision ?? '1.0.0') : 'none' } : {};
       return res(200, 'application/json', JSON.stringify(pj), { 'x-showcase-pin': `${SIM.servedPin ?? PIN.pin} ${PIN.buildId}`, ...apiH });
@@ -498,7 +519,7 @@ function setupEnv({ search = '', hash = '', overlays = {}, storage = {}, narrow 
     if (u.pathname.startsWith('/showcase/')) { const f = path.join(G, u.pathname.slice(10)); return fs.existsSync(f) ? res(200, 'application/json', fs.readFileSync(f, 'utf8')) : res(404, 'text/plain'); }
     if (u.pathname === `/runtime/runtime-manifest.${PIN.buildId}.json`) return res(200, 'application/json', JSON.stringify({ buildId: PIN.buildId, leanVersion: '4.34.0' }));
     const m = /^\/snapshots\/([^/]+)\/(.*)$/.exec(u.pathname);
-    const ov = m && overlays[m[1]];
+    const ov = m && servedOverlay(m[1]);
     if (!ov) return res(404, 'text/plain');
     const index = { schema: 'qed64.snapshot-index/v1', snapshots: [
       { name: 'init', url: '/snapshots/init.35c8c5f5419e0c33.snapz', digest: `sha256:${'a'.repeat(64)}`, bytes: 1, transfer: 1000, imports: [], runtime: PIN.buildId },
@@ -524,7 +545,7 @@ await until(() => st().phase === 'ready', 8000, 'run1 ready');
 let s = st();
 const nav0 = SIM.navigations.find((n) => n.src !== 'about:blank');
 ok(s.shown === 'hasse-view' && s.overlay === 'widgets7' && s.fellBack === true && /widgets8 is not built yet; using widgets7/.test(s.notice || ''), `deep link booted hasse-view on widgets7 (fallback), notice: "${s.notice}"`);
-ok(nav0 && nav0.src === '/?snapshots=snapshots/widgets7' && SIM.fetchLog.slice(0, nav0.fetchesBefore).some((f) => f.method === 'HEAD') && SIM.fetchLog.slice(0, nav0.fetchesBefore).filter((f) => f.path.includes('/snapshots/')).length >= 4,
+ok(nav0 && nav0.src === `/?snapshots=snapshots/${PDIR('widgets7')}` && SIM.fetchLog.slice(0, nav0.fetchesBefore).some((f) => f.method === 'HEAD') && SIM.fetchLog.slice(0, nav0.fetchesBefore).filter((f) => f.path.includes('/snapshots/')).length >= 4,
   `preflight (index + ${SIM.fetchLog.slice(0, nav0.fetchesBefore).filter((f) => f.method === 'HEAD').length} HEADs) ran before navigating to ${nav0 && nav0.src}`);
 ok(SIM.storage.get('qed64-showcase:saved') === 'theorem mine : True := trivial\n' && nav0.buffer === byId['hasse-view'].text, 'user buffer saved under qed64-showcase:saved; qed64.buffer seeded with the example before navigation');
 { // the veil is out of the accessibility tree and the focus order once it is hidden (hardening lane)
@@ -1248,7 +1269,7 @@ console.log('\n== run 16 (V1): frame-api at module start, embed mode + #code=, s
   s = st();
   const nav = SIM.navigations.find((n) => n.src !== 'about:blank');
   const HV = byId['hasse-view'];
-  ok(nav && frameUrlOf(nav) === `/?embed=1&snapshots=snapshots/widgets7#code=${encodeURIComponent(HV.text)}` && SIM.navigations.length === 1,
+  ok(nav && frameUrlOf(nav) === `/?embed=1&snapshots=snapshots/${PDIR('widgets7')}#code=${encodeURIComponent(HV.text)}` && SIM.navigations.length === 1,
     `frame URL: ${frameUrlOf(nav).slice(0, 60)}… (embed=1, the overlay, #code= the example)`);
   ok(SIM.bootDocs.length === 1 && SIM.bootDocs[0].source === 'hash' && SIM.bootDocs[0].text === HV.text && SIM.bootDocs[0].embed === true && SIM.hashDrops === 1 && SIM.frame._win.location.hash === '' && SIM.frameApiDispatches === 1,
     `the page booted the #code= document (read once: the fragment was dropped, hashDrops ${SIM.hashDrops}), after dispatching qed64:frame-api at module start`);
@@ -1393,7 +1414,7 @@ console.log('\n== run 17 (V1): ?mem=3 is passed as &memory=3; applied = api.stat
   await sleep(300);
   s = st();
   const nav = SIM.navigations.find((n) => n.src !== 'about:blank');
-  ok(/^\/\?embed=1&snapshots=snapshots\/widgets8&memory=3#code=/.test(nav.src) && SIM.bootDocs[0].text === byId['graph-scope'].text && SIM.firstSessions.length === 1 && SIM.firstSessions[0].initialBytes === 3 * GiB && SIM.firstSessions[0].snapshots.join() === 'init,mathlib',
+  ok(nav.src.startsWith(`/?embed=1&snapshots=snapshots/${PDIR('widgets8')}&memory=3#code=`) && SIM.bootDocs[0].text === byId['graph-scope'].text && SIM.firstSessions.length === 1 && SIM.firstSessions[0].initialBytes === 3 * GiB && SIM.firstSessions[0].snapshots.join() === 'init,mathlib',
     `frame URL carries &memory=3; the FIRST session is the example's [init,mathlib] at ${SIM.firstSessions[0].initialBytes / GiB} GiB (no light session, no placeholder)`);
   ok(s.mem.requestedGiB === 3 && s.mem.bytes === 3 * GiB && s.mem.ok && s.mem.applied === true && s.mem.wrapped === false && s.mem.light === null && s.mem.sessions.length === 0 && s.mem.telemetry === null && s.mem.memory && s.mem.memory.initialBytes === 3 * GiB && s.qed64.memory.initialBytes === 3 * GiB,
     `status().mem = {requestedGiB 3, applied ${s.mem.applied} (api.status().memory.initialBytes ${s.mem.memory && s.mem.memory.initialBytes / GiB} GiB), wrapped false, light null, sessions []}`);
@@ -1854,7 +1875,7 @@ console.log('\n== run 20 (V1): the api is bound to its document; adopted reloads
   await until(() => st().phase === 'ready', 8000, 'run20e ready');
   s = st();
   const navE = SIM.navigations.find((n) => n.src !== 'about:blank');
-  ok(s.mode === 'legacy' && s.modeSource === 'served' && s.api.pinRevision === '1.0.0' && s.api.servedRevision === null && s.api.revision === null && navE && navE.src === '/?snapshots=snapshots/widgets8' && s.seed.action !== 'embed' && s.bridge.installed === true && api.currentText() === CK.text,
+  ok(s.mode === 'legacy' && s.modeSource === 'served' && s.api.pinRevision === '1.0.0' && s.api.servedRevision === null && s.api.revision === null && navE && navE.src === `/?snapshots=snapshots/${PDIR('widgets8')}` && s.seed.action !== 'embed' && s.bridge.installed === true && api.currentText() === CK.text,
     `pin.json 1.0.0 but the server serves a staged legacy pin (X-Showcase-Pin 3b42714, X-Showcase-Api none) → legacy flow (frame ${navE && navE.src}, seed ${s.seed && s.seed.action}, bridge installed ${s.bridge.installed})`);
   ok(!SIM.fetchLog.some((f) => f.path === '/qed64-build.json'), `X-Showcase-Api present → the gallery never fetches /qed64-build.json (no 404 on a staged legacy release; fetches ${SIM.fetchLog.filter((f) => f.path === '/qed64-build.json').length})`);
   // a server without X-Showcase-Api (older serve.mjs): the fallback probe, /qed64-build.json 404 = legacy
@@ -1887,6 +1908,68 @@ console.log('\n== run 20 (V1): the api is bound to its document; adopted reloads
   await until(() => st().phase === 'ready', 8000, 'run20e3 ready');
   s = st();
   ok(s.mode === 'v1' && s.modeSource === 'pin.json' && s.api.present === true, `/qed64-build.json unreadable → pin.json decides (modeSource ${s.modeSource}, mode ${s.mode})`);
+}
+
+// ================================================================ run 21: served overlay directories (pin.json overlays)
+console.log('\n== run 21: served overlay directories — legacy pin.json, per-runtime alias ?overlay=widgets8, explicit ?overlay=<dir>, bare-only site');
+{
+  const B16 = PIN.buildId.slice(7);
+  const D = { widgets7: `widgets7.${B16}`, widgets8: `widgets8.${B16}` };
+  const bareHits = () => SIM.fetchLog.filter((f) => /^\/snapshots\/widgets[78]\//.test(f.path)).length;
+  const navOf = () => SIM.navigations.find((n) => n.src !== 'about:blank');
+  const badge = () => SIM.byIdEl('overlay-badge');
+  // (a) an older pin.json without `overlays` (built before the map existed): the bare names, exactly as before
+  setupEnv({ pinOverlays: null, hash: '#chart-kit', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run21a ready');
+  s = st();
+  ok(s.overlayDirs === null && s.overlay === 'widgets8' && s.overlayDir === 'widgets8' && navOf() && navOf().src === '/?snapshots=snapshots/widgets8' && badge().textContent === 'snapshot widgets8' && /\/snapshots\/widgets8\//.test(badge().title),
+    `legacy pin.json (no overlays): overlay widgets8 at /snapshots/${s.overlayDir}/, frame ${navOf() && navOf().src}`);
+  // (b) a per-runtime pin, ?overlay=widgets8: the alias of the pin's directory (V1 page); the bare widgets8/ is never requested
+  setupEnv({ v1: true, pinOverlays: D, search: '?overlay=widgets8', hash: '#dist-lens', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] }, widgets7: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run21b ready');
+  await sleep(300);
+  s = st();
+  const DL = byId['dist-lens'];
+  ok(s.requestedOverlay === 'widgets8' && s.overlay === 'widgets8' && s.overlayDir === D.widgets8 && JSON.stringify(s.overlayDirs) === JSON.stringify(D)
+    && navOf() && navOf().src === `/?embed=1&snapshots=snapshots/${D.widgets8}#code=${encodeURIComponent(DL.text)}` && SIM.navigations.filter((n) => n.src !== 'about:blank').length === 1,
+    `?overlay=widgets8 on a per-runtime pin → frame /?embed=1&snapshots=snapshots/${D.widgets8}#code=… (overlay ${s.overlay}, dir ${s.overlayDir})`);
+  ok(badge().textContent === 'snapshot widgets8' && badge().title.startsWith(`Snapshot overlay /snapshots/${D.widgets8}/ — region imports:`) && s.preflight.dir === D.widgets8 && s.preflight.attempts.length === 1 && s.preflight.attempts[0].dir === D.widgets8 && s.preflight.attempts[0].overlay === 'widgets8'
+    && bareHits() === 0 && SIM.fetchLog.some((f) => f.path === `/snapshots/${D.widgets8}/index.json`) && s.shown === 'dist-lens' && s.preflight.availability['dist-lens'] === true && (s.statusLine.detail || '').includes(`overlay widgets8 @ ${D.widgets8}`),
+    `badge "${badge().textContent}" (logical), title /snapshots/${D.widgets8}/; preflight at the directory only (bare requests ${bareHits()}); DistLens available`);
+  noInternals('per-runtime overlay alias');
+  // (c) ?overlay=<the directory itself>, legacy page: reads as widgets8; and the default choice falls back between DIRECTORIES
+  setupEnv({ pinOverlays: D, search: `?overlay=${D.widgets8}`, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run21c ready');
+  s = st();
+  ok(s.requestedOverlay === D.widgets8 && s.overlay === 'widgets8' && s.overlayDir === D.widgets8 && navOf() && navOf().src === `/?snapshots=snapshots/${D.widgets8}` && badge().textContent === 'snapshot widgets8' && bareHits() === 0,
+    `?overlay=${D.widgets8} (explicit directory) → overlay ${s.overlay}, frame ${navOf() && navOf().src}`);
+  setupEnv({ pinOverlays: D, hash: '#hasse-view', overlays: { widgets7: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run21c2 ready');
+  s = st();
+  ok(s.overlay === 'widgets7' && s.overlayDir === D.widgets7 && s.fellBack === true && s.preflight.attempts.map((a) => a.dir).join() === `${D.widgets8},${D.widgets7}` && navOf().src === `/?snapshots=snapshots/${D.widgets7}`
+    && /widgets8 is not built yet; using widgets7/.test(s.notice || '') && bareHits() === 0,
+    `default choice on a per-runtime pin: ${D.widgets8} 404 → ${D.widgets7} (notice "${s.notice}")`);
+  // (d) a per-runtime pin whose site serves ONLY the bare widgets8/ widgets7/ (a stale deploy, a server without the directories):
+  //     the preflight card, no navigation — never a silent fallback to the bare (another runtime's) overlay
+  setupEnv({ pinOverlays: D, servedDirs: { widgets7: 'widgets7', widgets8: 'widgets8' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 }, widgets7: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'error', 5000, 'run21d error');
+  s = st();
+  ok(SIM.navigations.length === 0 && s.error.kind === 'preflight' && s.error.title === 'No usable widgets overlay' && s.error.detail.includes(`/snapshots/${D.widgets8}/index.json was not found`)
+    && s.error.detail.includes(`Tried widgets8 (/snapshots/${D.widgets8}/), then widgets7 (/snapshots/${D.widgets7}/)`) && s.preflight.attempts.every((a) => a.notFound) && bareHits() === 0
+    && !SIM.byIdEl('error-card').hidden && SIM.byIdEl('error-stock').href === `/?snapshots=snapshots/${D.widgets8}`,
+    `per-runtime pin, only bare directories served → card "${s.error.title}": ${s.error.detail.slice(0, 110)}…; stock link ${SIM.byIdEl('error-stock').href}; no navigation`);
+  // (e) a malformed overlays map in pin.json: the data card, nothing fetched under /snapshots/
+  setupEnv({ pinOverlays: { widgets8: '../x', widgets7: 'widgets7' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'error', 5000, 'run21e error');
+  s = st();
+  ok(SIM.navigations.length === 0 && s.error.kind === 'data' && /pin\.json overlays\.widgets8/.test(s.error.detail) && !SIM.fetchLog.some((f) => f.path.startsWith('/snapshots/')),
+    `pin.json overlays {widgets8: "../x"} → data card: ${s.error.detail.slice(0, 120)}`);
 }
 
 console.log(`\nSIM-GALLERY ${fails ? 'FAIL' : 'OK'} ${oks} ok, ${fails} failed`);

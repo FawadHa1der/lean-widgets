@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { launch, RUN_DIR, sleep } from '../lib/qed64.mjs';
+import { launch, RUN_DIR, sleep, OVERLAY_W8, BOOT_WAITED_RE, RUNTIME_START_RE, pageLines } from '../lib/qed64.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const ORIGIN = arg('--origin', 'http://localhost:5190');
@@ -26,7 +26,7 @@ const CHANNEL = arg('--channel', undefined);
 const HEADED = process.argv.includes('--headed');
 const ENTRY = arg('--entry', 'stock');
 if (!['stock', 'showcase'].includes(ENTRY)) throw new Error(`--entry ${ENTRY}: want stock or showcase`);
-const PATH = arg('--path', ENTRY === 'showcase' ? '/showcase/' : '/?snapshots=snapshots/widgets8');
+const PATH = arg('--path', ENTRY === 'showcase' ? '/showcase/' : `/?snapshots=snapshots/${OVERLAY_W8}`); // the pin's served widgets8 directory
 const URL = `${ORIGIN}${PATH}`;
 const GALLERY = /^\/showcase\//.test(PATH);
 const mode = HEADED ? 'headed' : (CHANNEL ? `${CHANNEL}-new-headless` : 'headless-shell');
@@ -72,6 +72,17 @@ out.crashedAtMs = crashed; out.crashEpoch = crashed === null ? null : t0 + crash
 if (crashed !== null) {
   const prev = (out.reloads || []).filter((r) => r.tRun <= crashed);
   out.crashAfterReload = prev.length ? { reloadIndex: prev[prev.length - 1].i, msAfterReload: crashed - prev[prev.length - 1].tRun } : { reloadIndex: null, msAfterReload: null };
+}
+// the same #55-residual timeline the suite's C10 records (tests/ux/specs/30-robustness.spec.mjs): every '[boot] waited' line
+// and runtime start ('[mem] runtime-initialized') of the page, relative to t0 and to the reload sent last before it, and the
+// crash against the last of each (QED64 #55 residual; the page logs its worker's stderr as console.debug '[lean:stderr] …')
+{
+  const sent = (out.reloads || []).map((r) => ({ i: r.i, wall: t0 + r.tRun }));
+  const near = (wall) => { const p = sent.filter((r) => r.wall <= wall).pop(); return p ? { reload: p.i, msAfterReload: wall - p.wall } : { reload: null, msAfterReload: null }; };
+  out.bootWaited = pageLines(s, BOOT_WAITED_RE, { sinceWall: t0 }).map((x) => { const g = BOOT_WAITED_RE.exec(x.text); return { atMs: x.wall - t0, ...near(x.wall), waitedMs: +g[1], stopping: +g[2], workers: g[3], budgetSpent: !!g[4] }; });
+  out.runtimeStarts = pageLines(s, RUNTIME_START_RE, { sinceWall: t0 }).map((x) => ({ atMs: x.wall - t0, ...near(x.wall), mib: +RUNTIME_START_RE.exec(x.text)[1] }));
+  const sinceLast = (list, at) => { const e = list.filter((x) => x.atMs <= at).pop(); return e ? at - e.atMs : null; };
+  out.crashAt = crashed === null ? null : { atMs: crashed, ...near(t0 + crashed), msSinceLastBootWaited: sinceLast(out.bootWaited, crashed), msSinceLastRuntimeStart: sinceLast(out.runtimeStarts, crashed) };
 }
 out.peakAlive = Math.max(...samples.map((x) => x.alive));
 out.peakAliveAt = (samples.find((x) => x.alive === out.peakAlive) || {}).t;

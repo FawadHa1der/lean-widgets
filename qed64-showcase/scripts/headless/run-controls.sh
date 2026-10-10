@@ -25,8 +25,11 @@ echo "controls on pin $(node "$SC/scripts/lib/pins.mjs" target) ($(node "$SC/scr
 "$H/derive-raw.sh" || exit 2
 # $W/tree-stock is a clone of the served base tree; bump-51, bump-0035 and bump-0035b slim trees are byte-identical
 # (docs/REPIN-LOG.md 2026-10-01 §2 and 2026-10-02 pin D: 20,014/20,014 files), so one copy serves every pin so far (made
-# from the target pin's tree when missing)
+# from the target pin's tree when missing). A pin that records its base-tree digest (pins/<id>/pin.json
+# servedTrees.baseSlimDigest == its QED64 embedding/base-tree.json lib-tree-slim; pin I on) has the shared copy checked
+# against it (scripts/stage-trees.mjs --check-digest, G0: about 4 s); pins A–H record none and print SKIP
 [ -d "$W/tree-stock" ] || cp -Rc "$STOCK_TREE" "$W/tree-stock" || exit 2
+node "$SC/scripts/stage-trees.mjs" --check-digest baseSlim --tree "$W/tree-stock" || { echo "REFUSED: $W/tree-stock fails pin $(node "$SC/scripts/lib/pins.mjs" target)'s base-tree digest check above (a stale copy: remove it and rerun, which re-clones it from servedTrees.baseSlim)"; exit 2; }
 
 declare -a NAMES RCS
 step() { local name="$1"; shift; echo "== $name: $*"; "$@" > "$W/logs/controls-$name.log" 2>&1; local rc=$?

@@ -6,12 +6,12 @@
 // again (120 s budget). Writes out/ux/<run>/explore/reload-storm-<tag>.json.
 import fs from 'node:fs';
 import path from 'node:path';
-import { launch, RUN_DIR, sleep } from '../lib/qed64.mjs';
+import { launch, RUN_DIR, sleep, OVERLAY_W8 } from '../lib/qed64.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const ORIGIN = arg('--origin', 'http://localhost:5190');
 const TAG = arg('--tag', 'run');
-const URL = `${ORIGIN}/?snapshots=snapshots/widgets8`;
+const URL = `${ORIGIN}/?snapshots=snapshots/${OVERLAY_W8}`; // the pin's served widgets8 directory (lib/qed64.mjs)
 const out = { tag: TAG, url: URL, startedAt: new Date().toISOString() };
 const s = await launch({ title: `reload-storm ${TAG}`, file: 'tools/reload-storm.mjs' }, { profile: 'fresh', label: `storm-${TAG}` });
 const page = s.page() || await s.newPage();

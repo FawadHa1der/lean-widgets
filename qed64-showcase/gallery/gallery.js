@@ -1,6 +1,7 @@
 // gallery.js — the M2 gallery wrapper (BUILD-PLAN §7.3; stage A X3/X4/X5).
 //
-// The right pane is the STOCK QED64 page, same origin, iframed at /?snapshots=snapshots/<overlay>. Nothing in
+// The right pane is the STOCK QED64 page, same origin, iframed at /?snapshots=snapshots/<dir>, <dir> the overlay's SERVED
+// directory (gallery/pin.json overlays: the bare name on pins A–H, '<name>.<bid16>' on a per-runtime pin). Nothing in
 // QED64 is changed; everything here drives the page through what it already exposes:
 //   globalThis.qed64 = { artifacts, relay, ui, status: () => relay.status(), get editor() }  (bundle, main.ts:403-410)
 //   localStorage['qed64.buffer'] is the page's boot document (main.ts:335-342).
@@ -11,7 +12,8 @@
 //        the page document commits → wait for qed64.status().phase === 'ready' (with our text) → cursor + focus.
 // Switch: editor.getModel().setValue(text) → wait for 'ready' at a newer version with relay.lastText === text →
 //        cursor. A newer selection supersedes an in-flight wait (switch storms settle on the last one).
-// ?overlay=<dir> (default widgets8, fallback widgets7)   ?mem=<GiB> (X5 memory knob, see memBoot)
+// ?overlay=<name|dir> (default widgets8, fallback widgets7; a logical name is the alias of pin.json's directory for it, any
+// other value a literal directory: lib.js chooseOverlay)   ?mem=<GiB> (X5 memory knob, see memBoot)
 // ?liveness=auto|observe|off (the L7 liveness probe, see PROBE_AFTER_MS)
 // #<pkg> deep links.   window.__showcase = { select, reset, restoreSaved, status, bridgeStats, currentText, examples, liveness,
 // offer, acceptOffer } for Playwright (contract: tests/ux/selectors.json showcaseApi, version 9).
@@ -21,7 +23,7 @@
 // SHOWCASE_PIN=<id>): then from that release's own revision (servedBuild: serve.mjs's X-Showcase-Api header on the pin.json
 // response; only without it, the release's /qed64-build.json, 404 = legacy):
 //   * V1 (apiRevision != null; QED64 embedding contract v1, deps/qed64/docs/EMBEDDING.md): the frame is
-//     /?embed=1&snapshots=snapshots/<overlay>[&memory=<GiB>]#code=<example>. The gallery drives the page ONLY through the
+//     /?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<example>. The gallery drives the page ONLY through the
 //     frozen globalThis.qed64.api it receives in the 'qed64:frame-api' CustomEvent on this window (fallback: a polled
 //     pageWin().qed64.api when Object.isFrozen), never through qed64.relay / qed64.ui / qed64.status() / qed64.editor /
 //     qed64.buffer / the page's #boot DOM / any __qed64* name (§9: internal). Waits stay polling-based on api.status()
@@ -186,6 +188,8 @@ const S = {
   requestedOverlay: params.get('overlay') || null,
   mem: { ...L.parseMem(params.get('mem')), applied: null, sessions: [], light: null, wrapped: false, telemetry: null },
   overlay: null, choice: null, availability: null,
+  overlayDir: null,       // the chosen overlay's SERVED directory (/snapshots/<dir>/); S.overlay is its logical name
+  overlayDirs: null,      // pin.json overlays (logical name → served directory), validated in start(); null = bare names
   current: null,          // the example the user selected (UI)
   shownId: null,          // the example whose text the worker has checked
   phase: 'starting',      // starting | preflight | booting | switching | ready | refused | halted | error
@@ -722,7 +726,7 @@ function showError({ kind, title, detail, checks = null, raw = null, soft = fals
   E.errRaw.textContent = raw || '';
   E.errTech.hidden = !raw;
   E.errRetry.hidden = !retry && action !== 'reset' && action !== 'restart' && action !== 'try-anyway';
-  E.errStock.href = L.frameUrl(S.overlay || S.requestedOverlay || L.DEFAULT_OVERLAYS[0]);
+  E.errStock.href = L.frameUrl(S.overlayDir || L.overlayDirOf(S.requestedOverlay || L.DEFAULT_OVERLAYS[0], S.overlayDirs));
   E.err.hidden = false;
   if (!soft) hideVeil();
 }
@@ -781,7 +785,7 @@ function technicalStatus(ex, st, busy) {
     if (st.collision) parts.push(`collision ${st.collision.names.slice(0, 2).join(',')}`);
   }
   if (S.mem.bytes) parts.push(`mem ${S.mem.gib} GiB${S.mem.applied === true ? ' ✓' : S.mem.applied === false ? ' ✗' : ''}`);
-  if (S.overlay) parts.push(`overlay ${S.overlay}`);
+  if (S.overlay) parts.push(`overlay ${S.overlay}${S.overlayDir && S.overlayDir !== S.overlay ? ` @ ${S.overlayDir}` : ''}`);
   parts.push(busy ? fmtS(now() - S.op.t0) : S.op.doneMs != null ? `${S.op.label} ${fmtS(S.op.doneMs)}` : '');
   return parts.filter(Boolean).join(' · ');
 }
@@ -1666,18 +1670,19 @@ async function boot(w) {
   if (!S.mem.ok) showNotice(`${S.mem.note}; ignoring the memory knob.`);
   else if (S.mem.note) showNotice(S.mem.note);
   const modules = Object.fromEntries(S.examples.map((e) => [e.id, e.module]));
-  const choice = await L.chooseOverlay({ requested: S.requestedOverlay, buildId: S.pin.buildId, fetch: (u, i) => fetch(u, i), modules });
+  const choice = await L.chooseOverlay({ requested: S.requestedOverlay, dirs: S.overlayDirs, buildId: S.pin.buildId, fetch: (u, i) => fetch(u, i), modules });
   S.choice = choice;
   if (!choice.ok) {
-    const tried = choice.attempts.map((a) => a.overlay).join(', then ');
+    const tried = choice.attempts.map((a) => (a.dir !== a.overlay ? `${a.overlay} (/snapshots/${a.dir}/)` : a.overlay)).join(', then ');
     throw new GalleryError('preflight', S.requestedOverlay ? `The “${choice.overlay}” overlay is not usable` : 'No usable widgets overlay',
-      `Tried ${tried}. ${choice.result.notFound ? `/snapshots/${choice.overlay}/index.json was not found — build the overlay (scripts/showcase.sh overlay) or pass ?overlay=<dir>.` : 'The overlay is not paired with this QED64 runtime; nothing was loaded.'}`,
-      { checks: choice.result.checks, raw: JSON.stringify(choice.attempts.map((a) => ({ overlay: a.overlay, ok: a.ok, failed: a.result.checks.filter((c) => !c.ok) })), null, 2) });
+      `Tried ${tried}. ${choice.result.notFound ? `/snapshots/${choice.dir}/index.json was not found — build the overlay (scripts/showcase.sh overlay) or pass ?overlay=<dir>.` : 'The overlay is not paired with this QED64 runtime; nothing was loaded.'}`,
+      { checks: choice.result.checks, raw: JSON.stringify(choice.attempts.map((a) => ({ overlay: a.overlay, dir: a.dir, ok: a.ok, failed: a.result.checks.filter((c) => !c.ok) })), null, 2) });
   }
   S.overlay = choice.overlay;
+  S.overlayDir = choice.dir;
   S.availability = choice.result.availability;
   E.overlayBadge.textContent = `snapshot ${S.overlay}`;
-  E.overlayBadge.title = `Snapshot overlay /snapshots/${S.overlay}/ — region imports: ${(choice.result.regionImports || ['(not listed)']).join(', ')}`;
+  E.overlayBadge.title = `Snapshot overlay /snapshots/${S.overlayDir}/ — region imports: ${(choice.result.regionImports || ['(not listed)']).join(', ')}`;
   if (choice.fellBack) {
     const first = choice.attempts[0];
     showNotice(`${first.overlay} is ${first.result.notFound ? 'not built yet' : 'not usable'}; using ${S.overlay}.${S.availability && S.availability['dist-lens'] === false ? ' DistLens needs widgets8.' : ''}`);
@@ -1715,7 +1720,7 @@ async function boot(w) {
     }
     S.phase = 'booting'; setOp('boot');
     hideVeil();
-    E.frame.src = S.v1 ? L.frameUrl(S.overlay, { embed: true, memoryGiB: memOn ? S.mem.gib : null, code: ex.text }) : L.frameUrl(S.overlay);
+    E.frame.src = S.v1 ? L.frameUrl(S.overlayDir, { embed: true, memoryGiB: memOn ? S.mem.gib : null, code: ex.text }) : L.frameUrl(S.overlayDir);
     watchBridge();
     renderStatus();
 
@@ -2034,9 +2039,9 @@ function snapshot() {
     api: { present: !!a, revision: S.v1 ? S.api.revision : null, embed: !!(a && S.api.embed), via: a ? S.api.via : null, capabilities: a && S.api.capabilities ? { ...S.api.capabilities } : null, missing: S.api.missing.slice(),
       pinRevision: S.pin ? S.pin.apiRevision ?? null : null, servedRevision: S.servedRevision, docs: S.api.docs, adopted: S.api.adopted, adoptSet: S.api.adoptSet, events: { ...S.api.counts }, deaths: S.api.deaths },
     document: { version: S.doc.version, length: S.doc.length, persisted: S.doc.persisted, lastEventAgoMs: S.doc.lastEventAt == null ? null : Math.round(now() - S.doc.lastEventAt), writes: S.doc.writes, error: S.doc.error, held: S.doc.held ? { ...S.doc.held } : null, unsaved: S.doc.unsaved ? { length: S.doc.unsaved.text.length, error: S.doc.unsaved.error, at: S.doc.unsaved.at, copied: !!S.doc.unsaved.copied } : null },
-    phase: S.phase, current: S.current, shown: S.shownId, overlay: S.overlay, requestedOverlay: S.requestedOverlay,
+    phase: S.phase, current: S.current, shown: S.shownId, overlay: S.overlay, overlayDir: S.overlayDir, overlayDirs: S.overlayDirs ? { ...S.overlayDirs } : null, requestedOverlay: S.requestedOverlay,
     fellBack: S.choice ? S.choice.fellBack : null,
-    preflight: S.choice ? { ok: S.choice.ok, overlay: S.choice.overlay, attempts: S.choice.attempts.map((a) => ({ overlay: a.overlay, ok: a.ok, notFound: a.result.notFound, failed: a.result.checks.filter((c) => !c.ok).map((c) => c.id) })), availability: S.availability, regionImports: S.choice.result.regionImports } : null,
+    preflight: S.choice ? { ok: S.choice.ok, overlay: S.choice.overlay, dir: S.choice.dir, attempts: S.choice.attempts.map((a) => ({ overlay: a.overlay, dir: a.dir, ok: a.ok, notFound: a.result.notFound, failed: a.result.checks.filter((c) => !c.ok).map((c) => c.id) })), availability: S.availability, regionImports: S.choice.result.regionImports } : null,
     booted: S.booted, everReady: S.everReady, bootMs: S.bootMs, lastSwitchMs: S.lastSwitchMs,
     op: { label: S.op.label, elapsedMs: Math.round(now() - S.op.t0), doneMs: S.op.doneMs == null ? null : Math.round(S.op.doneMs) },
     statusLine: S.statusLine ? { ...S.statusLine } : null,
@@ -2158,6 +2163,10 @@ async function start() {
     const [pin, data] = await Promise.all([pinRes.json(), exP]);
     if (!pin || !/^wasm64-[0-9a-f]{16}$/.test(pin.buildId || '')) throw new Error('pin.json has no buildId (run node scripts/build-gallery.mjs)');
     if (!data || !Array.isArray(data.examples) || data.examples.length === 0) throw new Error('examples.json has no examples (run node scripts/build-gallery.mjs)');
+    // the served overlay directories (build-gallery.mjs from scripts/lib/pins.mjs overlayDirs); absent on an older pin.json = bare names
+    const od = L.parseOverlayDirs(pin.overlays);
+    if (!od.ok) throw new Error(`pin.json ${od.error} (run node scripts/build-gallery.mjs)`);
+    S.overlayDirs = od.dirs;
     S.pin = pin;
     // embedding contract v1 (see the header): pin.json's apiRevision, unless the server serves another pin's release than
     // pin.json describes (servedBuild): then that release's own. null on pins A–E: the legacy flow.

@@ -5,7 +5,11 @@
 //
 // Facts this mirrors (QED64 @9fdf9b8, read from the submodule deps/qed64; qed64-boot.ts and resident-session.ts are unchanged since 1859b83):
 //   * ?snapshots=<dir> fetches /<dir>/index.json and re-roots every entry url that starts with
-//     /snapshots/ to /<dir>/ (frontend/src/qed64-boot.ts:96-106). A failed or malformed override index
+//     /snapshots/ to /<dir>/ (frontend/src/qed64-boot.ts:96-106). The gallery names overlays LOGICALLY (widgets8, widgets7;
+//     ?overlay=, badges, chips, notices) and SERVES them from /snapshots/<served dir>/: gallery/pin.json's `overlays` map
+//     (build-gallery.mjs, from scripts/lib/pins.mjs overlayDirs) — the identity for pins A–H (pin.json schema v2), and
+//     '<name>.<bid16>' for a per-runtime pin (schema v3, e.g. widgets8.f69cca24d0878a58); a pin.json without the map
+//     (an older build) means the bare names. overlayDirOf / overlayNameOf translate. A failed or malformed override index
 //     fails SILENTLY in the page and only surfaces later as "snapshot 'init' failed to load"
 //     (map-frontend-boot.md (1c)) — hence this preflight before navigation.
 //   * A Mathlib header boots the snapshot names ['init','mathlib'] (resident-session.ts:85).
@@ -34,14 +38,53 @@ export const DOCUMENT_KEY = 'qed64-showcase:document'; // V1 (embed mode): the t
 export const MEM_PLACEHOLDER_PREFIX = '-- QED64 showcase:';
 
 /**
- * The stock page URL for an overlay (relative to the gallery's origin). Legacy pins: `/?snapshots=snapshots/<overlay>`.
+ * The served directory of overlay `name` under pin.json's `overlays` map: an OWN-property lookup (so `?overlay=widgets8` is
+ * an alias of the pin's widgets8 directory), else `name` itself (a literal directory: `nope`, `ux-unpaired-<pid>`, an
+ * explicit `widgets8.<bid16>`). No map (null/undefined: an older pin.json) → the bare name.
+ */
+export function overlayDirOf(name, dirs) {
+  if (dirs && typeof dirs === 'object' && Object.prototype.hasOwnProperty.call(dirs, name) && typeof dirs[name] === 'string') return dirs[name];
+  return name;
+}
+/** The logical name a served directory stands for under the map (reverse lookup), else the directory itself. */
+export function overlayNameOf(dir, dirs) {
+  if (dirs && typeof dirs === 'object') for (const k of Object.keys(dirs)) if (dirs[k] === dir) return k;
+  return dir;
+}
+/**
+ * Validate pin.json's `overlays` (logical name → served directory). Absent (undefined/null) → {ok, dirs: null} (bare names).
+ * Otherwise a plain non-empty object whose keys and values all match OVERLAY_RE, with distinct values, no value naming
+ * ANOTHER logical name, and every DEFAULT_OVERLAYS name present. Never throws: {ok, dirs, error}.
+ */
+export function parseOverlayDirs(v) {
+  if (v === undefined || v === null) return { ok: true, dirs: null, error: null };
+  const bad = (error) => ({ ok: false, dirs: null, error });
+  if (typeof v !== 'object' || Array.isArray(v)) return bad(`overlays must be an object (logical name → served directory), got ${Array.isArray(v) ? 'an array' : typeof v}`);
+  const keys = Object.keys(v);
+  if (keys.length === 0) return bad('overlays is empty');
+  for (const k of keys) {
+    if (!OVERLAY_RE.test(k)) return bad(`overlay name ${JSON.stringify(k).slice(0, 80)} must match ${OVERLAY_RE}`);
+    if (typeof v[k] !== 'string' || !OVERLAY_RE.test(v[k])) return bad(`overlays.${k} = ${JSON.stringify(v[k]).slice(0, 80)} must be a directory name matching ${OVERLAY_RE}`);
+    if (v[k] !== k && keys.includes(v[k])) return bad(`overlays.${k} = ${v[k]} names another logical overlay`);
+  }
+  const vals = keys.map((k) => v[k]);
+  const dup = vals.filter((x, i) => vals.indexOf(x) !== i);
+  if (dup.length) return bad(`overlays serve ${dup[0]} twice`);
+  const missing = DEFAULT_OVERLAYS.filter((o) => !keys.includes(o));
+  if (missing.length) return bad(`overlays lacks ${missing.join(', ')}`);
+  return { ok: true, dirs: Object.fromEntries(keys.map((k) => [k, v[k]])), error: null };
+}
+
+/**
+ * The stock page URL for an overlay's SERVED directory `dir` (relative to the gallery's origin; overlayDirOf maps a logical
+ * name). Legacy pins: `/?snapshots=snapshots/<dir>`.
  * Embedding contract v1 (deps/qed64/docs/EMBEDDING.md §3, §4): {embed: true} adds `embed=1` (the page neither reads nor
  * writes qed64.buffer and hides its examples menu), {memoryGiB} adds `memory=<GiB>` (the page validates and clamps it: the
  * initial commit of EVERY session), {code} appends `#code=<encodeURIComponent(text)>` (the boot document, honoured only
  * inside a same-origin frame and read ONCE: the page drops it with history.replaceState).
  */
-export function frameUrl(overlay, { embed = false, memoryGiB = null, code = null } = {}) {
-  let u = `/?${embed ? 'embed=1&' : ''}snapshots=snapshots/${overlay}`;
+export function frameUrl(dir, { embed = false, memoryGiB = null, code = null } = {}) {
+  let u = `/?${embed ? 'embed=1&' : ''}snapshots=snapshots/${dir}`;
   if (memoryGiB != null) u += `&memory=${memoryGiB}`;
   if (typeof code === 'string') u += `#code=${encodeURIComponent(code)}`;
   return u;
@@ -52,8 +95,8 @@ export function codeOfFrameUrl(url) {
   if (!m) return null;
   try { return decodeURIComponent(m[1]); } catch { return null; }
 }
-/** Exactly the page's re-rooting: `e.url.replace(/^\/snapshots\//, `/${dir}/`)` with dir = snapshots/<overlay>. */
-export const rerootUrl = (url, overlay) => url.replace(/^\/snapshots\//, `/snapshots/${overlay}/`);
+/** Exactly the page's re-rooting: `e.url.replace(/^\/snapshots\//, `/${dir}/`)` with dir = snapshots/<served dir>. */
+export const rerootUrl = (url, dir) => url.replace(/^\/snapshots\//, `/snapshots/${dir}/`);
 /** The import module of a header line (`import ChartKit` → `ChartKit`), else null. */
 export const moduleOfImport = (line) => { const m = /^\s*import\s+([A-Za-z_«][\w.«»']*)\s*$/.exec(line || ''); return m ? m[1] : null; };
 
@@ -78,18 +121,22 @@ const isJsonish = (ct) => /json/i.test(ct || '');
 
 /**
  * The pairing preflight for one overlay. Never throws: every failure is a check with ok:false.
- * @param {{overlay:string, buildId:string, fetch:(url:string, init?:object)=>Promise<Response>, modules?:Record<string,string>, origin?:string}} o
+ * @param {{overlay:string, dir?:string, buildId:string, fetch:(url:string, init?:object)=>Promise<Response>, modules?:Record<string,string>, origin?:string}} o
+ *   overlay: the logical name (reported); dir: the SERVED directory fetched (/snapshots/<dir>/), default `overlay`.
  *   modules: example id → its package module (from the header's second import), for availability.
  *   origin: prefix for URLs (Node needs an absolute origin; the browser passes '').
- * @returns {Promise<{ok:boolean, overlay:string, checks:{id:string, ok:boolean, detail:string}[], notFound:boolean,
+ * @returns {Promise<{ok:boolean, overlay:string, dir:string, checks:{id:string, ok:boolean, detail:string}[], notFound:boolean,
  *   index:object|null, entries:object[], availability:Record<string, boolean|null>|null, regionImports:string[]|null}>}
  */
 export async function preflightOverlay(o) {
-  const { overlay, buildId, fetch: f, modules = {}, origin = '' } = o;
+  const { buildId, fetch: f, modules = {}, origin = '' } = o;
+  const dir = o.dir ?? o.overlay;
+  const overlay = o.overlay ?? dir;
   const checks = [];
-  const res = { ok: false, overlay, checks, notFound: false, index: null, entries: [], availability: null, regionImports: null };
+  const res = { ok: false, overlay, dir, checks, notFound: false, index: null, entries: [], availability: null, regionImports: null };
   const check = (id, ok, detail) => { checks.push({ id, ok: !!ok, detail }); return !!ok; };
-  if (!check('overlay-name', OVERLAY_RE.test(overlay || ''), `overlay name ${JSON.stringify(overlay)} ${OVERLAY_RE.test(overlay || '') ? 'is valid' : 'must match ' + OVERLAY_RE}`)) return res;
+  const dirOk = OVERLAY_RE.test(typeof dir === 'string' ? dir : '');
+  if (!check('overlay-name', dirOk, `overlay ${dir !== overlay ? `${JSON.stringify(overlay)} directory ` : 'name '}${JSON.stringify(dir)} ${dirOk ? 'is valid' : 'must match ' + OVERLAY_RE}`)) return res;
   if (!check('build-id', /^wasm64-[0-9a-f]{16}$/.test(buildId || ''), `gallery pin buildId ${buildId || '(missing)'}`)) return res;
 
   // 1. The pinned runtime manifest the bundle asks for first (qed64-boot.ts:62-66) is served and names the buildId.
@@ -104,10 +151,10 @@ export async function preflightOverlay(o) {
   // 2. The overlay index.
   let idx = null;
   try {
-    const r = await f(`${origin}/snapshots/${overlay}/index.json`, { cache: 'no-cache' });
+    const r = await f(`${origin}/snapshots/${dir}/index.json`, { cache: 'no-cache' });
     const ct = r.headers.get('content-type');
     if (r.status === 404) res.notFound = true;
-    if (check('index-http', r.ok && !isHtml(ct), r.ok ? (isHtml(ct) ? `index.json answered as HTML (SPA fallback?)` : `GET /snapshots/${overlay}/index.json 200 (${ct || 'no content-type'})`) : `GET /snapshots/${overlay}/index.json → HTTP ${r.status}`)) {
+    if (check('index-http', r.ok && !isHtml(ct), r.ok ? (isHtml(ct) ? `index.json answered as HTML (SPA fallback?)` : `GET /snapshots/${dir}/index.json 200 (${ct || 'no content-type'})`) : `GET /snapshots/${dir}/index.json → HTTP ${r.status}`)) {
       const body = await r.text();
       try { idx = JSON.parse(body); } catch { idx = null; }
       check('index-json', !!idx, idx ? `index.json parses (${body.length} bytes)` : 'index.json is not valid JSON');
@@ -130,7 +177,7 @@ export async function preflightOverlay(o) {
     check(`entry-${n}-fields`, fieldsOk, fieldsOk ? `${n}: ${e.url} digest ${e.digest.slice(7, 23)}… transfer ${e.transfer}` : `${n}: malformed entry ${JSON.stringify(e).slice(0, 200)}`);
     check(`entry-${n}-runtime`, e && e.runtime === buildId, `${n}: runtime ${e && e.runtime} ${e && e.runtime === buildId ? '==' : '!='} bundle ${buildId}`);
     if (!fieldsOk) continue;
-    const url = rerootUrl(e.url, overlay);
+    const url = rerootUrl(e.url, dir);
     try {
       const r = await f(`${origin}${url}`, { method: 'HEAD', cache: 'no-store' });
       const len = r.headers.get('content-length');
@@ -156,19 +203,24 @@ export async function preflightOverlay(o) {
 
 /**
  * Choose the overlay: an explicit ?overlay= is preflighted alone (never falls back); otherwise widgets8,
- * then widgets7. Returns {ok, overlay, result, attempts:[{overlay, ok, result}], fellBack, requested}.
+ * then widgets7. `dirs`: pin.json's overlays map (null: bare names). Each candidate is served from overlayDirOf(name, dirs)
+ * (`?overlay=widgets8` is the alias of the pin's widgets8 directory; any other value a literal directory) and reported by
+ * its logical name overlayNameOf(dir, dirs) (an explicit `widgets8.<bid16>` of this pin reads as widgets8).
+ * Returns {ok, overlay, dir, result, attempts:[{overlay, dir, ok, result}], fellBack, requested}.
  */
-export async function chooseOverlay({ requested, buildId, fetch: f, modules, origin = '' }) {
+export async function chooseOverlay({ requested, dirs = null, buildId, fetch: f, modules, origin = '' }) {
   const list = requested ? [requested] : DEFAULT_OVERLAYS;
   const attempts = [];
-  for (const overlay of list) {
-    const result = await preflightOverlay({ overlay, buildId, fetch: f, modules, origin });
-    attempts.push({ overlay, ok: result.ok, result });
-    if (result.ok) return { ok: true, overlay, result, attempts, fellBack: attempts.length > 1, requested: requested || null };
+  for (const name of list) {
+    const dir = overlayDirOf(name, dirs);
+    const overlay = overlayNameOf(dir, dirs);
+    const result = await preflightOverlay({ overlay, dir, buildId, fetch: f, modules, origin });
+    attempts.push({ overlay, dir, ok: result.ok, result });
+    if (result.ok) return { ok: true, overlay, dir, result, attempts, fellBack: attempts.length > 1, requested: requested || null };
   }
   // all failed: report the first attempt whose index exists (a real pairing failure beats a plain 404)
   const best = attempts.find((a) => !a.result.notFound) || attempts[0];
-  return { ok: false, overlay: best.overlay, result: best.result, attempts, fellBack: false, requested: requested || null };
+  return { ok: false, overlay: best.overlay, dir: best.dir, result: best.result, attempts, fellBack: false, requested: requested || null };
 }
 
 /**
@@ -270,8 +322,9 @@ export function parseHash(hash, ids) {
 //   * cross-origin isolation (crossOriginIsolated): the page must be served with COOP/COEP; without it there is no
 //     SharedArrayBuffer and no threads;
 //   * SharedArrayBuffer (Lean's pthreads share one wasm memory);
-//   * WebAssembly Memory64: the same 13-byte module QED64's worker validates (public/workers/lean.worker.js
-//     MEMORY64_PROBE: a memory section with flags 0x04) and, where the first two hold, a SHARED 64-bit memory built the
+//   * WebAssembly Memory64: the same 13-byte module QED64's worker validates (MEMORY64_PROBE: a memory section with flags
+//     0x04; public/workers/lean.worker.js up to pin H, public/workers/memory64-probe.js Qed64Memory64 from 385a1ac on —
+//     check-gallery.mjs compares both) and, where the first two hold, a SHARED 64-bit memory built the
 //     way the worker builds it (lean.worker.js capabilities(): {initial 1, maximum 2, shared, address 'i64'});
 //   * memory: navigator.deviceMemory where the browser exposes it (Chromium only; an approximate figure: Chrome 151 on this 36 GB host reports 32, UX C24). A Chromium tab
 //     running the gallery uses about 8–9 GB at ready (renderer 8.2–9.0 GiB, UX C3) and peaks at about 12 GB on a

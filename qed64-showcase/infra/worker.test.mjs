@@ -2,7 +2,7 @@
  * Pattern from the lean4game precedent (wasm64-lean4game/infra/worker.test.mjs). No network, no account.
  *
  * Covers: COOP/COEP/CORP on every response; the cache rule IS QED64's isImmutable (imported from the submodule
- * deps/qed64/infra/worker.js; serve.mjs, deploy-manifest.mjs and worker.js keep no copy of its regexes);
+ * deps/qed64/infra/worker.js, which exports it at every pin; serve.mjs, deploy-manifest.mjs and worker.js keep no copy of its regexes);
  * artifact routing with and without R2_PREFIX; HEAD with an explicit Content-Length (the gallery's
  * preflight needs content-length == transfer); 404 for missing objects (never a fallback page);
  * path traversal refused; non-GET/HEAD refused on artifacts; assets pass through; ROOT_REDIRECT
@@ -10,7 +10,9 @@
  * the R2 object's Content-Type is passed through on GET and HEAD (qed64-boot.ts:69 and gallery/lib.js
  * refuse a runtime manifest whose type is not JSON); each of /runtime/, /profiles/, /snapshots/ is
  * routed to R2 and never to ASSETS; single-range GETs (206 / If-Range / 416 / multi-range ignored), ported
- * with their tests from wasm64-lean4game/infra/worker.js.
+ * with their tests from wasm64-lean4game/infra/worker.js; per-runtime overlay directories (/snapshots/widgets8.<bid16>/,
+ * scripts/lib/pins.mjs overlayDir for a pin.json v3): routed like the bare ones, index revalidates, .snapz immutable,
+ * HEAD with Content-Length, R2_PREFIX applied, and no alias (the bare directory is a different key).
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,6 +24,11 @@ import worker, { isImmutable, artifactKey, parseRange, resolveRange } from "./wo
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ORIGIN = "https://showcase.example";
 const SNAPZ = "/snapshots/widgets8/widgets.0880fd91b58098c0.snapz";
+// a per-runtime overlay directory (pin.json v3, "overlayDirs": "per-runtime"; pin I's runtime as the fixture)
+const RT_DIR = "widgets8.f69cca24d0878a58";
+const RT_INDEX = `/snapshots/${RT_DIR}/index.json`;
+const RT_SNAPZ = `/snapshots/${RT_DIR}/widgets.1b2c3d4e5f60718a.snapz`;
+const RT_BYTES = Uint8Array.from({ length: 777 }, (_, i) => (i * 13 + 5) % 256);
 // the active pin's runtime manifest name and main bundle (scripts/lib/pins.mjs): routing fixtures only, any pin will do
 const PINS = await import(path.join(SC, "scripts/lib/pins.mjs"));
 const RTM = `runtime/runtime-manifest.${PINS.activeBuildId()}.json`;
@@ -77,6 +84,9 @@ const env = (o = {}) => ({
     "snapshots/widgets8/index.json": { bytes: new TextEncoder().encode("{}"), contentType: "application/json" },
     "snapshots/widgets8/widgets.0880fd91b58098c0.snapz": { bytes: BYTES },
     "showcase-v1/snapshots/widgets8/widgets.0880fd91b58098c0.snapz": { bytes: BYTES },
+    [RT_INDEX.slice(1)]: { bytes: new TextEncoder().encode('{"per":"runtime"}'), contentType: "application/json" },
+    [RT_SNAPZ.slice(1)]: { bytes: RT_BYTES },
+    ["showcase-v1/" + RT_SNAPZ.slice(1)]: { bytes: RT_BYTES },
     [RTM]: { bytes: new TextEncoder().encode("{}"), contentType: "application/json" },
     "profiles/index.json": { bytes: new TextEncoder().encode("{}"), contentType: "application/json" },
     "profiles/lean-core.pack.gzip.1016929d99bb0ba0e148.part-007": { bytes: BYTES },
@@ -99,10 +109,15 @@ test("isImmutable IS QED64's rule (imported from the submodule's infra/worker.js
   const paths = ["/snapshots/index.json", "/snapshots/widgets8/index.json", SNAPZ, "/runtime/runtime-manifest.json",
     "/" + RTM, "/runtime/chunks/lean.wasm.0123456789abcdef0123.part-003",
     "/profiles/index.json", "/profiles/lean-core.manifest.json", "/profiles/lean-core.pack.gzip.1016929d99bb0ba0e148.part-007",
-    MAIN_BUNDLE, "/showcase/gallery.js", "/showcase/examples.json", "/", "/index.html", "/infoview/webview.js"];
+    MAIN_BUNDLE, "/showcase/gallery.js", "/showcase/examples.json", "/", "/index.html", "/infoview/webview.js",
+    RT_INDEX, RT_SNAPZ, `/snapshots/${RT_DIR}/init.b6d945e398b4d55e.snapz`];
   for (const p of paths) assert.equal(isImmutable(p), qed64(p), p);
   assert.equal(isImmutable(SNAPZ), true);
   assert.equal(isImmutable("/snapshots/widgets8/index.json"), false);
+  // per-runtime overlay directories: the hex in the directory name must not make the index immutable
+  assert.equal(isImmutable(RT_INDEX), false, RT_INDEX);
+  assert.equal(isImmutable(RT_SNAPZ), true, RT_SNAPZ);
+  assert.equal(isImmutable("/snapshots/widgets7.f69cca24d0878a58/index.json"), false);
   // an index under a digest-named directory must still revalidate (the index rule wins)
   assert.equal(isImmutable("/snapshots/bake-0880fd91b58098c0/index.json"), false);
 });
@@ -348,4 +363,55 @@ test("HEAD on a static asset carries the GET's Content-Length (the asset binding
   const miss = env();   // a 404 is not re-fetched
   assert.equal((await worker.fetch(req("/nope.js", { method: "HEAD" }), miss)).status, 404);
   assert.deepEqual(miss.ASSETS.calls, ["/nope.js"]);
+});
+
+// ------------------------------------------------------------------ per-runtime overlay directories (pin I on)
+test("per-runtime overlay dir: artifactKey with and without R2_PREFIX; never rewritten to the bare directory", () => {
+  assert.equal(artifactKey(RT_INDEX), RT_INDEX.slice(1));
+  assert.equal(artifactKey(RT_SNAPZ, "qed64-showcase/"), "qed64-showcase/" + RT_SNAPZ.slice(1));
+  assert.notEqual(artifactKey(RT_INDEX), artifactKey("/snapshots/widgets8/index.json"));
+});
+
+test("per-runtime overlay dir: GET index (revalidate, JSON) and .snapz (immutable, exact bytes) from R2", async () => {
+  const e = env();
+  const ix = await worker.fetch(req(RT_INDEX), e);
+  assert.equal(ix.status, 200); isolation(ix);
+  assert.equal(ix.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+  assert.equal(ix.headers.get("content-type"), "application/json");
+  assert.equal(await ix.text(), '{"per":"runtime"}');
+  const z = await worker.fetch(req(RT_SNAPZ), e);
+  assert.equal(z.status, 200); isolation(z);
+  assert.equal(z.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(z.headers.get("content-length"), String(RT_BYTES.length));
+  assert.deepEqual(new Uint8Array(await z.arrayBuffer()), RT_BYTES);
+  assert.deepEqual(e.ARTIFACTS.calls, [{ op: "get", key: RT_INDEX.slice(1) }, { op: "get", key: RT_SNAPZ.slice(1) }]);
+  assert.deepEqual(e.ASSETS.calls, []);
+});
+
+test("per-runtime overlay dir: HEAD answers Content-Length == size (the gallery's pairing preflight), with R2_PREFIX", async () => {
+  for (const prefix of ["", "showcase-v1/"]) {
+    const e = env(prefix ? { R2_PREFIX: prefix } : {});
+    const h = await worker.fetch(req(RT_SNAPZ, { method: "HEAD" }), e);
+    assert.equal(h.status, 200, prefix); isolation(h);
+    assert.equal(h.headers.get("content-length"), String(RT_BYTES.length), prefix);
+    assert.equal(h.headers.get("accept-ranges"), "bytes", prefix);
+    assert.equal(h.headers.get("cache-control"), "public, max-age=31536000, immutable", prefix);
+    assert.equal(h.body, null, prefix);
+    assert.deepEqual(e.ARTIFACTS.calls, [{ op: "head", key: prefix + RT_SNAPZ.slice(1) }], prefix);
+  }
+});
+
+test("per-runtime overlay dir: a range GET resumes; the other runtime's or the bare directory is a plain 404 (no alias)", async () => {
+  const r = await get(RT_SNAPZ, { range: "bytes=7-16" });
+  assert.equal(r.status, 206);
+  assert.equal(r.headers.get("content-range"), `bytes 7-16/${RT_BYTES.length}`);
+  assert.deepEqual(await bytesOf(r), RT_BYTES.slice(7, 17));
+  for (const p of ["/snapshots/widgets8.0000000000000000/index.json", "/snapshots/widgets8/widgets.1b2c3d4e5f60718a.snapz"]) {
+    const e = env();
+    const miss = await worker.fetch(req(p), e);
+    assert.equal(miss.status, 404, p); isolation(miss);
+    assert.deepEqual(e.ARTIFACTS.calls, [{ op: "get", key: p.slice(1) }], `${p}: asked R2 for exactly that key`);
+  }
+  const frame = await worker.fetch(req(`/?snapshots=snapshots/${RT_DIR}`), env({ ROOT_REDIRECT: "/showcase/" }));
+  assert.equal(frame.status, 200, "the gallery's per-runtime iframe URL is never redirected");
 });

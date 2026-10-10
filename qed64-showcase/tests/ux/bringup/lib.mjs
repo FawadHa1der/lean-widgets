@@ -15,6 +15,12 @@ export const SEL = (await import(path.join(SC, 'scripts/lib/pins.mjs'))).loadSel
 export const EXAMPLES = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'examples.json'), 'utf8')).examples;
 export const SPECS = Object.fromEntries(EXAMPLES.map((e) => [e.id, JSON.parse(fs.readFileSync(path.join(SC, 'lean/examples', `${e.id}.json`), 'utf8'))]));
 export const LAUNCH_ARGS = ['--enable-features=SharedArrayBuffer']; // tests/experiments/lib.mjs, buffer-probe.cjs:14
+// the served overlay directories (scripts/lib/pins.mjs overlayDir, carried by gallery/pin.json `overlays`: the bare logical
+// names on pins A-H and on a pin.json built before per-runtime directories, '<name>.<bid16>' on a per-runtime pin);
+// OVERLAY_W8 is tests/ux/lib/qed64.mjs's OVERLAY_W8. overlayDirOf(<logical name>) maps a name, any other value is kept.
+export const OVERLAY_DIRS = (() => { let o = null; try { o = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'pin.json'), 'utf8')).overlays; } catch { o = null; } return { widgets7: 'widgets7', widgets8: 'widgets8', ...(o || {}) }; })();
+export const overlayDirOf = (name) => (Object.prototype.hasOwnProperty.call(OVERLAY_DIRS, name) ? OVERLAY_DIRS[name] : name);
+export const OVERLAY_W8 = OVERLAY_DIRS.widgets8;
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 fs.mkdirSync(OUT, { recursive: true });
 

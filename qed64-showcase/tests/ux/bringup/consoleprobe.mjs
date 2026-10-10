@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, lockHeld, writeJson, sleep } from './lib.mjs';
+import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, OVERLAY_W8, lockHeld, writeJson, sleep } from './lib.mjs';
 
 lockHeld();
 const argv = process.argv.slice(2);
@@ -38,7 +38,7 @@ const PARENT = (mode) => `<!doctype html><meta charset="utf-8"><title>bring-up p
 <script>
 const f = document.getElementById('f'); window.__installs = [];
 const inst = (why) => { try { const w = f.contentWindow; if (!w || w.location.href === 'about:blank' || w.__showcaseBridge) return !!(w && w.__showcaseBridge); window.installQed64Bridge(w); window.__installs.push({ why, rs: w.document.readyState, q: !!w.qed64 }); return true; } catch (e) { return false; } };
-f.src = '/?snapshots=snapshots/widgets8';
+f.src = '/?snapshots=snapshots/${OVERLAY_W8}';
 ${mode === 'parent-early' ? "const tick = () => { if (!inst('commit-poll')) setTimeout(tick, 4); }; tick();" : ''}
 window.__installLate = () => inst('late');
 </script>`;
@@ -58,7 +58,7 @@ for (const mode of modes) {
     await page.goto(`${ORIGIN}/showcase/pin.json`);
     await page.evaluate((t) => localStorage.setItem('qed64.buffer', t), doc);
     const top = mode.startsWith('top');
-    const url = top ? `${ORIGIN}/?snapshots=snapshots/widgets8` : mode === 'gallery' ? `${ORIGIN}/showcase/#hasse-view` : `${ORIGIN}/bringup-parent.html`;
+    const url = top ? `${ORIGIN}/?snapshots=snapshots/${OVERLAY_W8}` : mode === 'gallery' ? `${ORIGIN}/showcase/#hasse-view` : `${ORIGIN}/bringup-parent.html`;
     if (mode === 'gallery' && kase === 'a') throw new Error('gallery mode only runs case hasse');
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     const qw = top ? 'window' : "document.querySelector('iframe').contentWindow";

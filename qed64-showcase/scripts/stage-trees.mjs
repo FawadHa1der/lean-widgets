@@ -5,7 +5,16 @@
 //        --roots QED64.Essential,ChartKit,...  [--root-headers <a.lean,b.lean>]
 //        [--clone W/mathlib4] [--core-src <served core lib>] [--native-core <K/native/stage1/lib/lean>]
 //        [--essential K/mathlib/essential-modules.txt] [--base-n 5004] [--report <json>] [--force]
+//   node scripts/stage-trees.mjs --check-digest baseSlim|coreSrc [--tree <dir>]
+//        only G0 below for one served tree (default: the target pin's servedTrees.<key>; --tree checks a copy of it,
+//        e.g. run-controls.sh's W/tree-stock); exit 0 OK or SKIP (no digest recorded), 1 FAIL, 2 setup error
 //
+// G0 (before anything is cloned; only for a pin whose descriptor records the digest, pins/<id>/pin.json
+//    servedTrees.baseSlimDigest / coreDigest; pins A–H record none): the tree digest of --base (when it is the pin's
+//    servedTrees.baseSlim) and of --core-src (when it is servedTrees.coreSrc) equals the recorded digest, and the recorded
+//    digest equals the pin's QED64 embedding/base-tree.json trees.lib-tree-slim / core-lib-slim digest where that file
+//    exists (QED64 385a1ac on). Rule = QED64's treeDigest (pipeline/release/adopt-helper.mjs): sha256 over the lines
+//    "<relpath>\0<sha256 hex>\n" of every file, relpath /-separated, sorted by byte order. About 5 s per GB.
 // 1. APFS-clone the base tree (`cp -cR`; new inodes, never hard links) to --into.
 // 2. Walk the import closure of --roots (plus the import lines of --root-headers) with QED64's
 //    olean-imports.mjs reader; a module is read from the tree if present, else from its source:
@@ -30,6 +39,7 @@
 //      the base tree does not already have
 //   G6 EXPECTED-N = base-n + |delta| + |own| == |closure|; written to <into>.EXPECTED-N
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,12 +48,60 @@ import { cloneTree } from './lib/platform.mjs';
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): QED64's olean reader at its commit (source dependency) and served trees
 const PINS = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+
+// ---- G0: served-tree digests (see the header); also the --check-digest mode, which needs nothing else ----
+const DIGEST_FIELDS = { baseSlim: { field: 'baseSlimDigest', tree: 'lib-tree-slim' }, coreSrc: { field: 'coreDigest', tree: 'core-lib-slim' } };
+function treeDigest(dir) { // QED64 adopt-helper.mjs treeDigest, same rule
+  const lines = [];
+  let bytes = 0;
+  const walk = (d, prefix) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, e.name), r = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isSymbolicLink()) throw new Error(`${full} is a symlink`);
+      if (e.isDirectory()) walk(full, r);
+      else if (e.isFile()) { const b = fs.readFileSync(full); bytes += b.length; lines.push(`${r}\0${createHash('sha256').update(b).digest('hex')}\n`); }
+    }
+  };
+  walk(dir, '');
+  lines.sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+  return { digest: `sha256:${createHash('sha256').update(lines.join('')).digest('hex')}`, files: lines.length, bytes };
+}
+/** G0 for one served tree of the target pin: {ok, skip, line, ...}. `dir` defaults to the descriptor's (expanded) path. */
+function servedDigest(key, dir) {
+  const id = PINS.targetPinId(), st = PINS.pinDescriptor(id).servedTrees || {};
+  const { field, tree } = DIGEST_FIELDS[key];
+  const want = st[field];
+  if (!want) return { ok: true, skip: true, key, line: `G0 ${key}: pin ${id} records no servedTrees.${field}; not checked` };
+  const t1 = Date.now();
+  const errs = [];
+  const btj = path.join(PINS.storePath('qed64', { id }), 'embedding/base-tree.json');
+  let src = 'no embedding/base-tree.json at the pin\'s QED64 commit';
+  if (fs.existsSync(btj)) {
+    const qd = ((JSON.parse(fs.readFileSync(btj, 'utf8')).trees || {})[tree] || {}).digest;
+    src = `${qd === want ? '==' : '!='} QED64 embedding/base-tree.json trees.${tree}`;
+    if (qd !== want) errs.push(`pins/${id}/pin.json servedTrees.${field} ${want} != QED64 embedding/base-tree.json trees.${tree}.digest ${qd}`);
+  }
+  dir = dir || ENV.expandPath(st[key]);
+  let got = null;
+  if (!dir || !fs.existsSync(dir)) errs.push(`${dir} missing`);
+  else { got = treeDigest(dir); if (got.digest !== want) errs.push(`tree digest ${got.digest} (${got.files} files) != servedTrees.${field} ${want}`); }
+  const what = got ? `${got.files} files, ${got.bytes} B, ${((Date.now() - t1) / 1000).toFixed(1)} s` : 'not computed';
+  return { ok: !errs.length, key, dir, want, got: got && got.digest, line: `G0 ${key} ${dir}: tree digest ${got && got.digest === want ? '==' : '!='} pins/${id}/pin.json servedTrees.${field} ${want.slice(0, 15)}… (${src}; ${what})`, detail: errs.join('; ') };
+}
+const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
+if (process.argv[2] === '--check-digest') {
+  const [, key, flag, tree] = process.argv.slice(2);
+  if (!(key in DIGEST_FIELDS) || (flag !== undefined && (flag !== '--tree' || !tree))) { console.error('usage: stage-trees.mjs --check-digest baseSlim|coreSrc [--tree <dir>]'); process.exit(2); }
+  let r;
+  try { r = servedDigest(key, tree && path.resolve(tree)); } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); }
+  console.log(`${r.skip ? 'SKIP' : r.ok ? 'OK  ' : 'FAIL'} ${r.line}${r.detail ? ' — ' + r.detail : ''}`);
+  process.exit(r.ok ? 0 : 1);
+}
 const OLEAN_IMPORTS = path.join(PINS.storePath('qed64'), 'pipeline/artifacts/olean-imports.mjs');
 const { oleanImportEntries } = await import(OLEAN_IMPORTS);
 const { oleanExtEntryCounts } = await import(path.join(SC, 'scripts/lib/olean-entries.mjs'));
 
 // locations: scripts/lib/env.mjs (W = QED64_SHOWCASE_WORK, K = QED64_KERNEL_BUILD, the read-only trees from the env)
-const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
 const { W, Q, KR, LG, WS } = ENV;
 let K;
 try { K = ENV.need('QED64_KERNEL_BUILD'); } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); }
@@ -96,6 +154,23 @@ function nativeBase(m) { return CORE.has(top(m)) ? opt.nativeCore : srcBase(m); 
 let fails = 0;
 const gate = (cond, msg, detail = '') => { console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${detail ? ' — ' + detail : ''}`); if (!cond) fails++; return cond; };
 const t0 = Date.now();
+
+// ---- G0 served-tree digests (only where the descriptor records them; a tree that is not the pin's served one, e.g.
+// the fat base or an overriding --core-src, is noted and not checked) ----
+const digests = [];
+const samePath = (a, b) => { const r = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } }; return !!a && !!b && r(a) === r(b); };
+for (const [key, dir] of [['baseSlim', opt.base], ['coreSrc', opt.coreSrc]]) {
+  if (!SERVED[DIGEST_FIELDS[key].field]) continue; // pins A–H: no digest recorded
+  if (!samePath(dir, ENV.expandPath(SERVED[key]))) { console.log(`note G0 ${key}: ${dir} is not the pin's servedTrees.${key}; its digest is not checked`); continue; }
+  const r = servedDigest(key, dir);
+  digests.push({ key: r.key, dir: r.dir, want: r.want, got: r.got, ok: r.ok });
+  gate(r.ok, r.line, r.detail);
+}
+if (fails) {
+  if (opt.report) fs.writeFileSync(opt.report, JSON.stringify({ schema: 'qed64-showcase.stage-trees/v1', at: new Date().toISOString(), mode: opt.mode, base: opt.base, into: opt.into, digests, fails }, null, 1) + '\n');
+  console.log(`STAGE-TREES FAILED (${fails} FAIL) before cloning ${opt.into}: a served tree is not the one the pin records`);
+  process.exit(1);
+}
 
 // ---- 1. clone the base tree ----
 if (fs.existsSync(opt.into)) {
@@ -276,7 +351,7 @@ fs.writeFileSync(`${opt.into}.EXPECTED-N`, `${N}\n`);
 
 const report = {
   schema: 'qed64-showcase.stage-trees/v1', at: new Date().toISOString(), mode: opt.mode, base: opt.base, into: opt.into,
-  roots: rootSet, closure: closure.size, baseN: opt.baseN, expectedN: N,
+  roots: rootSet, closure: closure.size, baseN: opt.baseN, expectedN: N, digests,
   delta: { dep: deltaDep, core: deltaCore }, own, facetCounts, facets: facetReport, legacyIr: legacyIrCheck,
   g2: { compared: g2.compared, full: g2.full, tail80: g2.tail80, noNative: g2.noNative, mismatch: g2.mismatch },
   audit: { base: aBase, into: aInto }, fails, seconds: Math.round((Date.now() - t0) / 1000),

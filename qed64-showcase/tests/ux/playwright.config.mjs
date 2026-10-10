@@ -26,7 +26,13 @@ export default defineConfig({
   reporter: [['list'], ['json', { outputFile: path.join(RUN_DIR, 'report.json') }]],
   globalSetup: path.join(here, 'lib', 'global-setup.mjs'),
   globalTeardown: path.join(here, 'lib', 'global-teardown.mjs'),
-  use: { trace: 'retain-on-failure', actionTimeout: 45000, navigationTimeout: 120000, launchOptions: { args: ['--enable-features=SharedArrayBuffer'] } },
+  // tracing is OFF unless UX_TRACE asks for it (e.g. UX_TRACE=retain-on-failure to debug one failure): Playwright's trace
+  // recorder fetches EVERY finished response's body over CDP (Network.getResponseBody, whatever the content mode), and a
+  // QED64 Worker re-fetching the 1.27 GB snapshot on a reload or restart then has it base64'd inside the renderer: a
+  // PartitionAlloc OOM in DevToolsSession::SendProtocolResponse (macOS crash reports of runs i-full2 C10, j-full2 C10,
+  // j-full4 C21; the kernel session's classification, 2026-10-10). It also inflates every renderer-RSS figure (C3, C10).
+  // Users never run DevTools, so the gate measures the page without it.
+  use: { trace: process.env.UX_TRACE || 'off', actionTimeout: 45000, navigationTimeout: 120000, launchOptions: { args: ['--enable-features=SharedArrayBuffer'] } },
   // UX_HEADED_ALL=1 (tests/ux/lib/qed64.mjs HEADED_ALL): the 'headed' project, every launch a real Chrome for Testing window
   projects: [{ name: process.env.UX_HEADED_ALL === '1' ? 'headed' : 'headless-shell' }],
 });

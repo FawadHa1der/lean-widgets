@@ -137,12 +137,16 @@ GitHub runner. A full `lean-ci` run clones Mathlib once per Mathlib-dependent pa
  visitor's browser ── /showcase/ ──► gallery (rail of 8 examples)
                                         │ iframe, same origin
                                         ▼
-                     / ?snapshots=snapshots/widgets8 ──► the STOCK QED64 page, built from deps/qed64, unmodified
+                     / ?snapshots=snapshots/<dir> ──► the STOCK QED64 page, built from deps/qed64, unmodified
                                         │ fetches
                                         ▼
         /runtime/  /profiles/  /snapshots/              QED64's wasm64 runtime, packs and stock snapshots
-        /snapshots/widgets8/ (widgets7)                 our snapshot region: Mathlib + the eight packages
+        /snapshots/<dir>/                               our snapshot region: Mathlib + the eight packages
 ```
+
+`<dir>` is the pin's served overlay directory: `widgets8` (or `widgets7`) on the pins up to H, and
+`widgets8.<runtime id>` from pin I on (`widgets8.f69cca24d0878a58`), so each runtime's region has its own directory and a
+new runtime's upload never replaces the one a live page reads. The gallery's `?overlay=widgets8` maps to it.
 
 * **QED64 is a dependency, never a copy.** Its sources are the submodule `qed64-showcase/deps/qed64` at the served
   pin's commit. Several QED64 commits can be registered as pins (`pins/<id>/`); one is active. Each pin's
@@ -155,9 +159,12 @@ GitHub runner. A full `lean-ci` run clones Mathlib once per Mathlib-dependent pa
   before navigating, and fills the editor and moves the cursor through the page. On the QED64 pins up to E `33b0967`
   (what the live site serves) it uses the page's internal hooks and installs a small bridge for three InfoView defects
   of the shipped page (D1, D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins,
-  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure) and H `bf9d947`
-  (QED64 main: G plus QED64's keep-alive fix; the active pin of a local checkout since 2026-10-06 and gated in the
-  browser, with G and F staged; none is deployed), it uses QED64's declared embedding API v1
+  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure), H `bf9d947`
+  (QED64 main: G plus QED64's keep-alive fix; gated in the browser), I `385a1ac` (QED64 main on the kernel fork's
+  release `lean-v4.34.0-e1a79c1`, a new runtime, with QED64's fixes #62–#64; superseded after a kernel-0036 regression in
+  Chrome) and J `5e63edd` (QED64 main: I plus QED64's interim for that regression, the same runtime; the active pin of a
+  local checkout since 2026-10-09, gated in the browser 2026-10-09/10; none of F–J is deployed), it uses QED64's
+  declared embedding API v1
   (`qed64.api`, `?embed=1`, `#code=`); those defects are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1").
 * **Tests:** a static gate (`showcase.sh gallery`), headless wasm checks in Node, and the Playwright UX suite.
   Every full `ux` run is recorded with the gallery, lock and overlay hashes it ran on. A run is a VERDICT only if it
@@ -177,7 +184,10 @@ needs. A release has two steps:
 1. **Artifacts to R2**, from the machine that has them: `scripts/upload-artifacts.sh` (rclone, copy only, never sync;
    the bucket is shared with QED64 and lean4game, so it refuses QED64's root and their prefixes, and any prefix other
    than `qed64-showcase/` needs an explicit override). CI never uploads artifacts, so no R2 key is ever stored in
-   GitHub.
+   GitHub. The upload runs in three phases (digest-named objects, then manifests, then the shared indexes); a pin on
+   a new runtime replaces the live stock and profile indexes only in the last phase, and `PHASES=` can hold that phase
+   back until the new shell is live (by hand; the CI deploy's published check does not allow it yet:
+   [DEPLOY-CLOUDFLARE.md](qed64-showcase/docs/DEPLOY-CLOUDFLARE.md) §3.2).
 2. **The shell to the Worker**, either locally with `scripts/deploy-app.sh`, or from GitHub Actions:
    [`qed64-deploy.yml`](.github/workflows/qed64-deploy.yml) runs on pushes to `main` that touch `qed64-showcase/` and
    on manual dispatch. It builds QED64's page from the submodule (byte-identical to the lock), runs the gallery gate,

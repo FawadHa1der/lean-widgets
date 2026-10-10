@@ -1,7 +1,9 @@
 # `scripts/headless/` — headless wasm verifiers (BUILD-PLAN §6: E1, E3, E3b)
 
 These tools check a snapshot pairing *before* any browser is opened. They run the
-pinned QED64 runtime (`wasm64-2c18773ecfba45bb` since the 2026-10-01 re-pin; previously `wasm64-4b025db7729c5f89`) in Node, using only:
+target pin's QED64 runtime (`node scripts/lib/pins.mjs target-bid`; pin I `385a1ac`: `wasm64-f69cca24d0878a58`, active
+since 2026-10-09; earlier `wasm64-3ab1c6a9da03bc29` for D–H, `wasm64-2c18773ecfba45bb` for B, `wasm64-4b025db7729c5f89`
+for A and C) in Node, using only:
 
 * QED64's sources at the pin's commit: the git submodule `deps/qed64` (a staged pin: its worktree
   `$W/qed64-pins/<id>`; `scripts/lib/qed64-src.mjs`), never a copy, and
@@ -25,24 +27,32 @@ Each of these is created once, and each creation is idempotent.
 
 ```bash
 . scripts/lib/env.sh   # W (QED64_SHOWCASE_WORK) and Q (QED64_REPO), from the environment or .env.local
-# runtime (plan X6): APFS clone of the served stage1 bin; buildIdOf must be the lock buildId (wasm64-2c18773ecfba45bb)
-mkdir -p $W/stage1 && cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin $W/stage1/bin
+# runtime (plan X6): the served stage1 bin in the runtime's store, $W/runtimes/<bid>/stage1/bin ($W/stage1 is the active
+# pin's link to it); buildIdOf must be the lock buildId. Pin I on, from the kernel fork's release that QED64's
+# toolchain/lean4-wasm64-release.json names (T = its unpacked tools package, REL = the release directory):
+node $T/cli.mjs fetch --from $REL --id lean-v4.34.0-e1a79c1 --digest <record digest> --out $W/toolchains/lean-v4.34.0-e1a79c1 --only runtime
+mkdir -p $W/runtimes/wasm64-f69cca24d0878a58/stage1 && cp -Rc $W/toolchains/lean-v4.34.0-e1a79c1/bin $W/runtimes/wasm64-f69cca24d0878a58/stage1/bin
+# pins up to H: APFS clone of QED64's own build
+#   mkdir -p $W/runtimes/<bid>/stage1 && cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin $W/runtimes/<bid>/stage1/bin
 # raw stock snapshots (122,364,117 and 1,127,272,685 bytes; .snapz digests checked against the index,
 # raw sha256 recorded in $W/raw/<name>.snap.provenance.json and re-verified on every rerun)
 scripts/headless/derive-raw.sh
 # olean tree for the stock controls: the tree the served mathlib region was baked from (5,004 .olean;
-# bump-0035's is byte-identical to bump-51's, docs/REPIN-LOG.md)
+# bump-0035's is byte-identical to bump-51's, docs/REPIN-LOG.md; pin I's is digest-identical to H's)
 cp -Rc $Q/work/bump-0035/slim/lib-tree-slim $W/tree-stock
 ```
 
-Every wasm tool refuses to run when `buildIdOf(--artifact)` is not the pinned buildId.
+Every wasm tool refuses to run when `buildIdOf(--artifact)` is not the pinned buildId. `run-controls.sh` also runs
+`stage-trees.mjs --check-digest baseSlim --tree $W/tree-stock` (G0) for a pin whose descriptor records
+`servedTrees.baseSlimDigest`; pin I records none, so it prints `SKIP G0 baseSlim` (`$W/logs/pinI-hl-controls.log`).
 
-*Note (2026-10-08).* The `stage1/bin` copy above reads QED64's `pipeline/toolchain/work/` tree, which is how every pin
-up to H was set up. The kernel fork's toolchain release
-[`lean-v4.34.0-a8817d0`](https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0) also ships the runtime:
-`node <pkg dir>/cli.mjs fetch --only runtime` (with `node`, never `npx`) fetches and verifies the runtime's
-`bin/{lean.js,lean.wasm}` (the release's e2e log: `FETCH VERIFIED`). It is the planned source once we re-pin onto a QED64 release (docs/NEXT-STEPS.md); the
-buildId check above applies to it unchanged. Not yet run here.
+*Note (2026-10-08, updated 2026-10-09).* The `$Q/pipeline/toolchain/work/` copy is how every pin up to H was set up;
+QED64 `385a1ac` (pin I) has no such tree. The kernel fork's toolchain releases ship the runtime instead
+([`lean-v4.34.0-a8817d0`](https://github.com/FawadHa1der/lean4/releases/tag/lean-v4.34.0-a8817d0) for D–H,
+`lean-v4.34.0-e1a79c1` for I): `node <pkg dir>/cli.mjs fetch --only runtime` (with `node`, never `npx`) fetches and
+verifies the runtime's `bin/`. Pin I's stage1 came that way (`$W/logs/pinI-stage1-fetch.log`: `FETCH VERIFIED`; the
+`bin/` byte-identical to QED64's own adopted copy), and its controls passed on it (`CONTROLS PASS`,
+`$W/logs/pinI-hl-controls.log`).
 
 ## Raw snapshot provenance (E1 and E3)
 

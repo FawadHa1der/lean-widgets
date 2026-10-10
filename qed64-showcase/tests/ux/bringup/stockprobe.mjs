@@ -4,11 +4,12 @@
 // Decides whether a renderer crash is the gallery's doing or the page's own.
 // Usage: scripts/with-browser-lock.sh bringup node tests/ux/bringup/stockprobe.mjs --tag t --seq chart-kit,hasse-view
 //          [--bridge none|init] [--cursor 0|1] [--overlay widgets8] [--restart 0|1]
+//   --overlay: a logical name (widgets7|widgets8) is served as the pin's directory (gallery/pin.json overlays); any other is used as given
 //   --restart 1: switch by relay.restart({snapshots:['init','mathlib']}) + setValue (fresh worker per example)
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, lockHeld, watchConsole, rssSampler, writeJson, sleep, chromeRss, ivSettled } from './lib.mjs';
+import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, overlayDirOf, lockHeld, watchConsole, rssSampler, writeJson, sleep, chromeRss, ivSettled } from './lib.mjs';
 
 lockHeld();
 const argv = process.argv.slice(2);
@@ -17,7 +18,7 @@ const tag = opt('tag', 'stockprobe');
 const seq = opt('seq', 'chart-kit,hasse-view').split(',');
 const bridge = opt('bridge', 'init');
 const cursor = opt('cursor', '1') === '1';
-const overlay = opt('overlay', 'widgets8');
+const overlay = overlayDirOf(opt('overlay', 'widgets8'));
 const restart = opt('restart', '0') === '1';
 const allCursors = opt('cursors', 'first') === 'all';
 const SPECS = Object.fromEntries(EXAMPLES.map((e) => [e.id, JSON.parse(fs.readFileSync(path.join(SC, 'lean/examples', `${e.id}.json`), 'utf8'))]));

@@ -173,9 +173,10 @@ browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing' 2>/d
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
 # docker_image_guard: `native` must run in the toolchain image the lock records (QED64.lock.json
 # toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by
-# whoever builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; its
-# release lean-v4.34.0-a8817d0 records the image identity), and QED64's pipeline/toolchain/build.sh until QED64 retires
-# its toolchain lane to the fork. So it can move under us; then `native` refuses until the image is re-pinned (README
+# whoever builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; each of
+# its releases lean-v4.34.0-<kernel7> records the image identity in release.json docker.imageId: a8817d0 for pins up to
+# bf9d947, e1a79c1 for 385a1ac, whose QED64 sources pin it as toolchain/lean4-wasm64-release.json). QED64 no longer builds
+# the toolchain itself. So it can move under us; then `native` refuses until the image is re-pinned (README
 # "Re-pin": Docker tag drift). verify reports it as DRIFT.
 # toolchain.docker.equivalent lists further image ids shown to build the SAME oleans byte for byte (docs/BUILD-FROM-SOURCE.md
 # "Docker image drift"); they are accepted too.
@@ -422,27 +423,52 @@ process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log(`FAIL pin constants: ${e.message}`); process.exit(1); });
 EOF
 }
+# where the ACTIVE pin's runtime bin comes from: the kernel fork's release that carries it. QED64 sources from 385a1ac on
+# pin it (toolchain/lean4-wasm64-release.json: id + digest); older pins only name the kernel commit (lean-v4.34.0-<kernel7>).
+# One line, for check_stage1's FAIL message.
+stage1_hint() {
+  local q rec; q="$(SHOWCASE_PIN= node "$SC/scripts/lib/pins.mjs" store qed64 2>/dev/null)"; rec="$q/toolchain/lean4-wasm64-release.json"
+  if [ -n "$q" ] && [ -f "$rec" ]; then
+    node -e 'const r = require(process.argv[1]), w = process.argv[2], id = r.id, bid = r.runtime.buildId;
+console.log(`release ${id} (runtime ${bid}, named by QED64'"'"'s toolchain/lean4-wasm64-release.json): unpack its tools/lean4-wasm64-*.tgz, then \`node <package>/cli.mjs fetch --from <release dir> --id ${id} --digest ${r.digest} --out ${w}/toolchains/${id} --only runtime\` (FETCH VERIFIED) and \`cp -Rc ${w}/toolchains/${id}/bin ${w}/runtimes/${bid}/stage1/bin\`; always node, never npx`)' "$rec" "$W" 2>/dev/null && return 0
+  fi
+  local k; k="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).qed64.kernel.slice(0,7)' "$SC/QED64.lock.json" 2>/dev/null)"
+  echo "the kernel fork's release lean-v4.34.0-${k:-<kernel7>}: \`node <lean4-wasm64 package dir>/cli.mjs fetch --only runtime\`, its bin/ into $W/stage1/bin"
+}
 check_stage1() {
   local bid got; bid="$(lock_buildid)"
   if [ "$(node "$SC/scripts/lib/pins.mjs" built 2>/dev/null)" = no ] && [ ! -e "$W/stage1" ]; then
     echo "ABSENT $W/stage1: no build stores of runtime $bid in this checkout (it serves fetched artifacts; the runtime is checked by pin-verify #2/#3). Bakes and the headless verifiers need it: README \"Re-pin\" step 4"; return 0
   fi
-  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (the pinned runtime's bin: \`node <lean4-wasm64 package dir>/cli.mjs fetch --only runtime\` from the fork's release lean-v4.34.0-a8817d0, or QED64's pipeline/toolchain/work/build/stage1/bin while QED64 still builds it; into $W/stage1/bin)"; return 1; }
+  [ -f "$W/stage1/bin/lean.wasm" ] || { echo "FAIL $W/stage1/bin/lean.wasm missing (the pinned runtime's bin, from $(stage1_hint))"; return 1; }
   got="wasm64-$(sha256sum_ "$W/stage1/bin/lean.wasm" | cut -c1-16)"
   if [ "$got" = "$bid" ]; then echo "OK   $W/stage1 buildId $got == lock"; else echo "FAIL $W/stage1 buildId $got != lock $bid"; return 1; fi
 }
+# the ACTIVE pin's overlays: each logical store out/overlay/snapshots/<o> (the active link) holds a well-formed index of
+# the active runtime, and the active lock's overlays.<o>.url is the pin's SERVED directory (scripts/lib/pins.mjs overlayUrl:
+# /snapshots/widgets8/ for pins A–H, /snapshots/widgets8.<bid16>/ for a per-runtime pin)
 check_overlays_cheap() {   # [widgets7|widgets8 …] (default both)
-  node - "$SC/out/overlay/snapshots" "$(lock_buildid)" "$@" <<'EOF'
-const fs = require('fs'), path = require('path');
-const [root, bid, ...only] = process.argv.slice(2);
+  node - "$SC/out/overlay/snapshots" "$(lock_buildid)" "$SC/QED64.lock.json" "$SC/scripts/lib/pins.mjs" "$@" <<'EOF'
+(async () => {
+const fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
+const [root, bid, lockFile, pinsMjs, ...only] = process.argv.slice(2);
+const P = await import(pathToFileURL(pinsMjs).href);
+const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8')), id = P.activePinId();
 let bad = 0, seen = 0;
-for (const dir of only.length ? only : ['widgets7', 'widgets8']) {
+for (const dir of only.length ? only : P.OVERLAYS) {
   const d = path.join(root, dir), ix = path.join(d, 'index.json');
   if (!fs.existsSync(ix)) { console.log(`FAIL overlay ${dir}: no index.json`); bad++; continue; }
   seen++;
   const j = JSON.parse(fs.readFileSync(ix, 'utf8'));
   const names = j.snapshots.map((s) => s.name).sort().join(',');
   const errs = [];
+  let url = '?';
+  try {
+    url = P.overlayUrl(dir, id);
+    const lo = (lock.overlays || {})[dir];
+    if (!lo) errs.push(`lock has no overlays.${dir}`);
+    else if (lo.url !== url) errs.push(`lock overlays.${dir}.url ${lo.url} != ${url} (pins.mjs overlayUrl of pin ${id})`);
+  } catch (e) { errs.push(e.message); }
   if (j.schema !== 'qed64.snapshot-index/v1') errs.push(`schema ${j.schema}`);
   if (names !== 'init,mathlib') errs.push(`entries ${names}`);
   for (const s of j.snapshots) {
@@ -452,10 +478,11 @@ for (const dir of only.length ? only : ['widgets7', 'widgets8']) {
     if (fs.statSync(f).size !== s.transfer) errs.push(`${s.name}: size ${fs.statSync(f).size} != transfer ${s.transfer}`);
   }
   const m = j.snapshots.find((s) => s.name === 'mathlib');
-  console.log(`${errs.length ? 'FAIL' : 'OK  '} overlay ${dir}: runtime == ${bid}, {init, mathlib}, sizes == transfer; mathlib imports [${m ? m.imports.join(', ') : '?'}]${errs.length ? ' — ' + errs.join('; ') : ''}`);
+  console.log(`${errs.length ? 'FAIL' : 'OK  '} overlay ${dir}: runtime == ${bid}, {init, mathlib}, sizes == transfer, served as ${url} == lock; mathlib imports [${m ? m.imports.join(', ') : '?'}]${errs.length ? ' — ' + errs.join('; ') : ''}`);
   bad += errs.length ? 1 : 0;
 }
 process.exit(bad ? 1 : 0);
+})().catch((e) => { console.log(`FAIL overlays: ${e.message}`); process.exit(1); });
 EOF
 }
 cmd_verify() {
@@ -752,7 +779,8 @@ cmd_all() {
     if [ $rebuild = 0 ] && node "$SC/scripts/judge-bake.mjs" "$t" > "$LOGS/showcase-$LANE_TAG-all-judge-$t.log" 2>&1; then say "SKIP bake $t: judge-bake $t is GREEN on the existing bake ($(tail -1 "$LOGS/showcase-$LANE_TAG-all-judge-$t.log"))"
     else cmd_bake "$t"; redone=1; fi
     # an overlay is skipped only when its cheap check passes (index schema, {init, mathlib}, runtime == lock, every
-    # snapz present with size == transfer), not merely because index.json exists
+    # snapz present with size == transfer, lock url == the pin's served directory), not merely because index.json exists.
+    # A wrong lock url is not repaired by rebuilding the overlay: verify stays red until pin-qed64.mjs record-overlays.
     if [ $rebuild = 0 ] && check_overlays_cheap "widgets${t#w}" > "$LOGS/showcase-$LANE_TAG-all-overlay-$t.log" 2>&1; then say "SKIP overlay $t: out/overlay/snapshots/widgets${t#w} passes the overlay check ($(head -1 "$LOGS/showcase-$LANE_TAG-all-overlay-$t.log" | cut -c1-90)…)"
     else [ $rebuild = 0 ] && say "overlay $t: $(grep -m1 FAIL "$LOGS/showcase-$LANE_TAG-all-overlay-$t.log" | cut -c1-160) — rebuilding it"; cmd_overlay "$t"; redone=1; fi
   done

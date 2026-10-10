@@ -5,17 +5,19 @@
 //   2. build-gallery.mjs --check (examples.json / pin.json up to date with lean/examples and QED64.lock.json)
 //   3. examples.json against the specs: all eight present, text byte-equal to the .lean file, header/title/blurb,
 //      first cursor = spec cursors[0], every hint position lands on a cursor/selection command line
-//   4. pin.json against QED64.lock.json
+//   4. pin.json against QED64.lock.json (incl. overlays == scripts/lib/pins.mjs overlayDirs == the lock's overlays.<o>.url)
 //   5. HTML structure: unique ids; every id gallery.js looks up exists; label[for] / aria-* targets exist;
 //      classes gallery.js queries exist in the template; local script/link files exist; tag balance;
 //      iframe title, html lang, button types
 //   6. CSS: every var(--x) is defined on :root; the dark block redefines only known tokens
-//   7. lib.js unit tests (parseMem, rerootUrl, classifyStatus, preflight + chooseOverlay on a mock server)
+//   7. lib.js unit tests (parseMem, rerootUrl, classifyStatus, preflight + chooseOverlay on a mock server, the served overlay
+//      directories: alias / explicit / literal / legacy, and a per-runtime pin whose site serves only the bare names)
 //   8. qed64-bridge.js in a vm sandbox: idempotent install (one listener), D1 abortSignal strip + re-dispatch,
 //      D2 applyEdit applied to the open model + reply
 //   9. scripts/sim-gallery.mjs: the real gallery.js against a fake DOM and a modelled QED64 page
 //  10. --live: start scripts/serve.mjs on a spare port (QUIET, Node only — no browser) and run the real preflight
-//      against the served overlays, plus MIME/COOP/COEP checks on the gallery files.
+//      against the served overlays (each logical store at its pin.json directory), plus MIME/COOP/COEP checks on the
+//      gallery files; on a per-runtime pin the bare /snapshots/<name>/index.json must answer 404 (no silent legacy path).
 // Usage: node scripts/check-gallery.mjs [--live] [--port 5199]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,6 +40,29 @@ const section = (t) => console.log(`\n== ${t}`);
 /** ok() on fn()'s result; a throw is reported as a named FAIL line, never as a crash of the whole gate. */
 const okTry = (fn, msg) => { let v; try { v = fn(); } catch (e) { return ok(false, `${msg} — threw ${e && e.name}: ${e && e.message}`); } return ok(v, msg); };
 const read = (p) => fs.readFileSync(p, 'utf8');
+/**
+ * QED64's Memory64 probe bytes in a QED64 source tree `qsrc`. From 385a1ac on, public/workers/memory64-probe.js is the one
+ * source (EMBEDDING.md §7.0): a classic script that publishes globalThis.Qed64Memory64 {MEMORY64_PROBE, …}; it runs here in an
+ * empty vm context. Earlier pins inline `const MEMORY64_PROBE = new Uint8Array([…])` in public/workers/lean.worker.js.
+ * Returns {bytes: number[]|null, source, error}.
+ */
+function memory64ProbeOf(qsrc) {
+  const probeFile = path.join(qsrc, 'public', 'workers', 'memory64-probe.js');
+  if (fs.existsSync(probeFile)) {
+    const source = 'public/workers/memory64-probe.js (Qed64Memory64.MEMORY64_PROBE)';
+    try {
+      const ctx = vm.createContext({});
+      vm.runInContext(read(probeFile), ctx, { filename: probeFile, timeout: 2000 });
+      const p = ctx.Qed64Memory64 && ctx.Qed64Memory64.MEMORY64_PROBE;
+      return p && typeof p.length === 'number' ? { bytes: Array.from(p, Number), source, error: null } : { bytes: null, source, error: 'no globalThis.Qed64Memory64.MEMORY64_PROBE' };
+    } catch (e) { return { bytes: null, source, error: `threw ${e && e.name}: ${e && e.message}` }; }
+  }
+  const source = 'public/workers/lean.worker.js (const MEMORY64_PROBE)';
+  let worker;
+  try { worker = read(path.join(qsrc, 'public', 'workers', 'lean.worker.js')); } catch (e) { return { bytes: null, source, error: e && e.message }; }
+  const wp = /const MEMORY64_PROBE = new Uint8Array\(\[([\s\S]*?)\]\)/.exec(worker);
+  return wp ? { bytes: wp[1].replace(/\/\/[^\n]*/g, '').split(',').map((x) => x.trim()).filter(Boolean).map(Number), source, error: null } : { bytes: null, source, error: 'no MEMORY64_PROBE literal' };
+}
 
 // ---------------------------------------------------------------- 1. syntax
 section('1. node --check');
@@ -84,6 +109,7 @@ for (const ex of data.examples) {
   ok(badHints.length === 0 && countsOk, `${ex.id}: ${ex.tryThis.length} hints (${n.cursor} cursor, ${n.click} click, ${n.select} select, ${n.hover} hover) all on command lines`);
 }
 
+const L = await import(pathToFileURL(path.join(G, 'lib.js')).href);
 // ---------------------------------------------------------------- 4. pin.json
 section('4. pin.json vs QED64.lock.json');
 const pin = JSON.parse(read(path.join(G, 'pin.json')));
@@ -100,6 +126,20 @@ ok(JSON.stringify(pin.bundleBuildIds) === JSON.stringify([pin.buildId]), `releas
   ok('apiRevision' in pin && 'shell' in pin && pin.apiRevision === wantApi && pin.shell === wantShell && (!b || (b.schema === 'qed64.build/v1' && b.buildId === pin.buildId)),
     `pin.json apiRevision ${JSON.stringify(pin.apiRevision)} / shell ${JSON.stringify(pin.shell)} == ${b ? `release/${pin.pin}/dist/qed64-build.json (${b.schema}, buildId ${b.buildId})` : 'null (no qed64-build.json: legacy page)'}`);
   console.log(`info  gallery mode on this pin: ${pin.apiRevision != null ? `V1 (page API ${pin.apiRevision})` : 'legacy (qed64.buffer seed, relay waits)'}`);
+}
+{ // the served overlay directories: pin.json overlays == pins.mjs overlayDirs(pin) (the naming contract) == the lock's URLs
+  let want = null; let why = null;
+  try { want = PINS.overlayDirs(pin.pin); } catch (e) { why = e && e.message || String(e); }
+  const parsed = L.parseOverlayDirs(pin.overlays);
+  ok(want && pin.overlays && JSON.stringify(pin.overlays) === JSON.stringify(want) && parsed.ok && parsed.dirs !== null
+    && Object.values(pin.overlays).every((d) => L.OVERLAY_RE.test(d) && PINS.OVERLAY_DIR_RE.test(d)) && String(L.OVERLAY_RE) === String(PINS.OVERLAY_DIR_RE),
+    `pin.json overlays ${JSON.stringify(pin.overlays)} == pins.mjs overlayDirs(${pin.pin}) ${want ? JSON.stringify(want) : `(threw: ${why})`}; lib.js parseOverlayDirs ${parsed.ok ? 'accepts it' : `rejects it: ${parsed.error}`}`);
+  const lo = lock.overlays && typeof lock.overlays === 'object' ? lock.overlays : {};
+  if (Object.keys(lo).length === 0) console.log(`info  QED64.lock.json records no overlays yet: pin.json overlays not cross-checked against the lock`);
+  else {
+    const bad = PINS.OVERLAYS.filter((o) => !lo[o] || !pin.overlays || lo[o].url !== `/snapshots/${pin.overlays[o]}/`);
+    ok(bad.length === 0, `the lock's overlays.<o>.url == /snapshots/<pin.json dir>/: ${PINS.OVERLAYS.map((o) => `${o} ${lo[o] ? lo[o].url : '(missing)'}`).join(', ')}${bad.length ? ` (mismatch: ${bad.join(', ')})` : ''}`);
+  }
 }
 
 // ---------------------------------------------------------------- 5. HTML structure
@@ -173,7 +213,6 @@ section('6. gallery.css tokens');
 
 // ---------------------------------------------------------------- 7. lib.js
 section('7. lib.js unit tests');
-const L = await import(pathToFileURL(path.join(G, 'lib.js')).href);
 {
   const GiB = 2 ** 30;
   const m = (x) => L.parseMem(x);
@@ -223,12 +262,10 @@ const L = await import(pathToFileURL(path.join(G, 'lib.js')).href);
   okTry(() => L.parseHash('#nope', ids).bad === 'nope', 'parseHash: unknown id #nope -> bad "nope"');
   okTry(() => L.parseHash('', ids).bad === null && L.parseHash('', ids).id === null, 'parseHash: empty hash -> no id, no notice');
   ok(L.memPlaceholder(3).split('\n').every((l) => !/^\s*import\s/.test(l)) && L.memPlaceholder(3).startsWith(L.MEM_PLACEHOLDER_PREFIX), 'mem placeholder has no import lines (boots [init] at 256 MiB)');
-  { // checkCapabilities (the card before anything boots); the probe module is QED64's own (lean.worker.js MEMORY64_PROBE)
-    const worker = read(path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'public', 'workers', 'lean.worker.js')) // the source dependency at the active pin;
-    const wp = /const MEMORY64_PROBE = new Uint8Array\(\[([\s\S]*?)\]\)/.exec(worker);
-    const wbytes = wp ? wp[1].replace(/\/\/[^\n]*/g, '').split(',').map((x) => x.trim()).filter(Boolean).map(Number) : null;
-    ok(wbytes && wbytes.join() === L.MEMORY64_PROBE.join() && WebAssembly.validate(new Uint8Array(L.MEMORY64_PROBE)),
-      `MEMORY64_PROBE equals the active pin's lean.worker.js probe (${L.MEMORY64_PROBE.length} bytes) and validates in this Node`);
+  { // checkCapabilities (the card before anything boots); the probe module is QED64's own
+    const pr = memory64ProbeOf(PINS.storePath('qed64', { id: PINS.activePinId() })); // the source dependency at the active pin
+    ok(pr.bytes && pr.bytes.join() === L.MEMORY64_PROBE.join() && WebAssembly.validate(new Uint8Array(L.MEMORY64_PROBE)),
+      `MEMORY64_PROBE equals the active pin's probe in ${pr.source} (${L.MEMORY64_PROBE.length} bytes${pr.bytes ? '' : `; not read: ${pr.error}`}) and validates in this Node`);
     const full = { crossOriginIsolated: true, SharedArrayBuffer, WebAssembly, BigInt };
     const cc = (o) => L.checkCapabilities({ ...full, ...o });
     const all = cc({ deviceMemory: 8 }); const none = cc({ deviceMemory: undefined });
@@ -305,6 +342,63 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   ok(!c3.ok && c3.attempts.length === 1, 'chooseOverlay: explicit ?overlay= never falls back');
   const c4 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch({ ...site('widgets8', { runtime: 'wasm64-0000000000000000' }) }), modules });
   ok(!c4.ok && c4.overlay === 'widgets8', 'chooseOverlay: reports the unpaired widgets8 over the absent widgets7');
+}
+{ // the SERVED overlay directories (gallery/pin.json overlays = scripts/lib/pins.mjs overlayDirs): pins A–H the identity map
+  // (bare /snapshots/widgets8/), a per-runtime pin (pin/v3) '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's
+  // directory, any other value a literal directory; an older pin.json without the map means the bare names
+  const D = { widgets7: 'widgets7.0123456789abcdef', widgets8: 'widgets8.0123456789abcdef' };
+  const ID = { widgets7: 'widgets7', widgets8: 'widgets8' };
+  okTry(() => L.overlayDirOf('widgets8', null) === 'widgets8' && L.overlayDirOf('widgets8', undefined) === 'widgets8' && L.overlayDirOf('widgets8', ID) === 'widgets8'
+    && L.overlayDirOf('widgets8', D) === D.widgets8 && L.overlayDirOf('widgets7', D) === D.widgets7 && L.overlayDirOf(D.widgets8, D) === D.widgets8
+    && L.overlayDirOf('nope', D) === 'nope' && L.overlayDirOf('toString', D) === 'toString' && L.overlayDirOf('__proto__', D) === '__proto__'
+    && L.overlayNameOf(D.widgets8, D) === 'widgets8' && L.overlayNameOf(D.widgets7, D) === 'widgets7' && L.overlayNameOf('widgets8', D) === 'widgets8'
+    && L.overlayNameOf('nope', D) === 'nope' && L.overlayNameOf('widgets8.0123456789abcdef', null) === 'widgets8.0123456789abcdef' && L.overlayNameOf('widgets8', ID) === 'widgets8',
+  'overlayDirOf / overlayNameOf: own-property alias under the map (no prototype names), literal otherwise, the bare name without a map; reverse lookup');
+  const pod = (v) => L.parseOverlayDirs(v);
+  okTry(() => pod(undefined).ok && pod(undefined).dirs === null && pod(null).ok && pod(ID).ok && JSON.stringify(pod(D).dirs) === JSON.stringify(D)
+    && !pod([]).ok && !pod('widgets8').ok && !pod({}).ok && !pod({ ...D, widgets8: '../x' }).ok && !pod({ ...D, widgets8: 7 }).ok && !pod({ widgets8: D.widgets8 }).ok
+    && !pod({ widgets7: 'same', widgets8: 'same' }).ok && !pod({ widgets7: 'widgets8', widgets8: 'widgets7' }).ok && !pod({ ...D, 'bad/key': 'x' }).ok,
+  `parseOverlayDirs: absent = bare names; accepts the identity and a per-runtime map; rejects non-objects, empty, unsafe or non-string dirs, a missing default name, duplicate dirs, a dir naming another logical overlay, an unsafe key ("${pod({ ...D, widgets8: '../x' }).error}")`);
+  okTry(() => L.frameUrl(D.widgets8, { embed: true }) === '/?embed=1&snapshots=snapshots/widgets8.0123456789abcdef' && L.frameUrl(D.widgets8) === '/?snapshots=snapshots/widgets8.0123456789abcdef'
+    && L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', D.widgets8) === '/snapshots/widgets8.0123456789abcdef/init.35c8c5f5419e0c33.snapz',
+  'frameUrl / rerootUrl take the served directory: /?embed=1&snapshots=snapshots/widgets8.0123456789abcdef');
+  const logged = (files) => { const log = []; const f = mockFetch(files); return { log, fetch: (u, i = {}) => { log.push(`${i.method || 'GET'} ${new URL(u, 'http://mock').pathname}`); return f(u, i); } }; };
+  const both = { ...site(D.widgets7), ...site(D.widgets8, { imports: ['QED64.Essential', 'DistLens'] }) };
+  const bare = { ...site('widgets7'), ...site('widgets8', { imports: ['QED64.Essential', 'DistLens'] }) };
+  { // preflight under the directory: fetches the index and HEADs the re-rooted .snapz there, reports the logical name
+    const m = logged(both);
+    const r = await L.preflightOverlay({ overlay: 'widgets8', dir: D.widgets8, buildId: BID, fetch: m.fetch, modules });
+    const snaps = m.log.filter((x) => x.includes('/snapshots/'));
+    ok(r.ok && r.overlay === 'widgets8' && r.dir === D.widgets8 && snaps.length === 3 && snaps.every((x) => x.includes(`/snapshots/${D.widgets8}/`)) && snaps.filter((x) => x.startsWith('HEAD ')).length === 2
+      && r.checks.some((c) => c.id === 'index-http' && c.detail.includes(`/snapshots/${D.widgets8}/index.json`)) && r.checks[0].detail.includes('"widgets8" directory "widgets8.0123456789abcdef" is valid'),
+    `preflightOverlay({overlay: widgets8, dir: ${D.widgets8}}): ${snaps.join(', ')}`);
+    const bd = await L.preflightOverlay({ overlay: 'widgets8', dir: '../x', buildId: BID, fetch: mockFetch(both), modules });
+    ok(!bd.ok && bd.checks.length === 1 && bd.checks[0].id === 'overlay-name' && bd.dir === '../x', 'preflightOverlay validates the DIRECTORY (an unsafe dir is refused before any fetch)');
+    const legacy = await L.preflightOverlay({ overlay: 'widgets8', buildId: BID, fetch: mockFetch(bare), modules });
+    ok(legacy.ok && legacy.dir === 'widgets8' && legacy.checks[0].detail === 'overlay name "widgets8" is valid', 'preflightOverlay without dir: dir = overlay (the pins A–H call, unchanged text)');
+  }
+  const ch = (o, files) => L.chooseOverlay({ buildId: BID, fetch: mockFetch(files), modules, ...o });
+  const a1 = await ch({ requested: null, dirs: D }, both);
+  ok(a1.ok && a1.overlay === 'widgets8' && a1.dir === D.widgets8 && !a1.fellBack && a1.attempts.length === 1 && a1.attempts[0].dir === D.widgets8 && a1.result.availability['dist-lens'] === true,
+    `chooseOverlay per-runtime map, site serves the directories: widgets8 at /snapshots/${a1.dir}/, no fallback`);
+  const a2 = await ch({ requested: null, dirs: D }, bare);
+  ok(!a2.ok && a2.result.notFound && a2.attempts.length === 2 && a2.attempts.every((a) => a.result.notFound && !a.ok) && a2.attempts.map((a) => a.dir).join() === `${D.widgets8},${D.widgets7}` && a2.attempts.map((a) => a.overlay).join() === 'widgets8,widgets7',
+    'chooseOverlay per-runtime map, site serves ONLY the bare widgets8/ widgets7/: not ok, notFound on both directories (never a silent legacy path)');
+  const a3 = await ch({ requested: null, dirs: D }, site(D.widgets7));
+  ok(a3.ok && a3.overlay === 'widgets7' && a3.dir === D.widgets7 && a3.fellBack && a3.attempts[0].dir === D.widgets8 && a3.attempts[0].result.notFound, 'chooseOverlay per-runtime map: widgets8 directory 404 → falls back to the widgets7 directory');
+  const a4 = await ch({ requested: 'widgets8', dirs: D }, both);
+  ok(a4.ok && a4.requested === 'widgets8' && a4.overlay === 'widgets8' && a4.dir === D.widgets8 && a4.attempts.length === 1, '?overlay=widgets8 is the alias of the pin\'s widgets8 directory');
+  const a5 = await ch({ requested: D.widgets8, dirs: D }, both);
+  ok(a5.ok && a5.overlay === 'widgets8' && a5.dir === D.widgets8 && a5.requested === D.widgets8, `?overlay=${D.widgets8} (explicit directory) reads as widgets8`);
+  const a6 = await ch({ requested: 'nope', dirs: D }, both);
+  ok(!a6.ok && a6.overlay === 'nope' && a6.dir === 'nope' && a6.result.notFound && a6.attempts.length === 1, '?overlay=nope stays a literal directory (404, no fallback)');
+  const a7 = await ch({ requested: 'widgets8', dirs: D }, bare);
+  ok(!a7.ok && a7.dir === D.widgets8 && a7.result.notFound, '?overlay=widgets8 on a per-runtime pin never reaches the bare widgets8/ (404 at the directory)');
+  const a8 = await ch({ requested: null, dirs: null }, bare);
+  const a9 = await ch({ requested: null }, bare);
+  const a10 = await ch({ requested: null, dirs: ID }, bare);
+  ok(a8.ok && a8.overlay === 'widgets8' && a8.dir === 'widgets8' && a9.ok && a9.dir === 'widgets8' && a10.ok && a10.dir === 'widgets8' && a10.overlay === 'widgets8',
+    'legacy: no map (older pin.json) and the identity map (pins A–H) frame the bare /snapshots/widgets8/');
 }
 
 // ---------------------------------------------------------------- 8. bridge in a sandbox
@@ -523,6 +617,12 @@ section('8c. tests/ux/bringup/console.mjs classifyConsole against selectors.json
   const prefetch = { type: 'warning', text: '[qed64] raw prefetch error: network error — the checker will stream it instead', url: MAIN_BUNDLE, line: 1317 };
   const cut = { type: 'error', text: 'Failed to load resource: net::ERR_INTERNET_DISCONNECTED', url: null, line: null };
   ok(!classifyConsole(W({ messages: [prefetch, cut] }), A).ok && classifyConsole(W({ messages: [prefetch, cut] }), A, { scenarios: ['networkCut'] }).ok, 'network-cut messages only in the networkCut scenario');
+  // QED64 #63 (385a1ac on): a short body is named 'the transfer of <file> ended early: received <n> of <m> bytes'
+  const prefetchShort = { ...prefetch, text: '[qed64] raw prefetch error: the transfer of widgets.0880fd91b58098c0.snapz ended early: received 1000000 of 361234567 bytes — the checker will stream it instead' };
+  const prefetchOther = { ...prefetch, text: '[qed64] raw prefetch error: the transfer of widgets.snapz failed — the checker will stream it instead' };
+  ok(!classifyConsole(W({ messages: [prefetchShort] }), A).ok && classifyConsole(W({ messages: [prefetchShort, cut] }), A, { scenarios: ['networkCut'] }).ok
+    && !classifyConsole(W({ messages: [prefetchOther] }), A, { scenarios: ['networkCut'] }).ok,
+  'the #63 "transfer … ended early: received <n> of <m> bytes" prefetch warning only in the networkCut scenario; another wording still fails');
   const exactFail = { type: 'warning', text: "[qed64] exact import failed: lean_wasm_compile returned an IO error: uncaught exception: object file '/lib/packs/essential/Mathlib.olean' of module Mathlib does not exist; serving the header from the preloaded library", url: MAIN_BUNDLE, line: 1322 };
   ok(!classifyConsole(W({ messages: [exactFail] }), A).ok && classifyConsole(W({ messages: [exactFail] }), A, { scenarios: ['exactImportsFallback'] }).ok, 'the exact-import fallback warning only in the exactImportsFallback scenario');
   const restartErr = { type: 'error', text: 'QED64: restarting with exact imports', url: MAIN_BUNDLE, line: 627 };
@@ -640,18 +740,30 @@ if (LIVE) {
     // an overlay on disk must preflight OK iff its index was baked by THIS pin's runtime; one baked for another runtime (a stale
     // rehearsal bake, an unswitched pin) must be refused by the runtime check, never served to the page (lib.js preflightOverlay)
     const indexRuntimes = (ov) => { try { return (JSON.parse(fs.readFileSync(path.join(SC, 'out', 'overlay', 'snapshots', ov, 'index.json'), 'utf8')).snapshots || []).map((e) => e && e.runtime); } catch { return null; } };
+    // a logical store (out/overlay/snapshots/widgets8) is SERVED at pin.json's directory for it (pins A–H: the same name;
+    // a per-runtime pin: widgets8.<bid16>); any other on-disk name (a fixture) is served under its own name
+    const dirs = L.parseOverlayDirs(pin.overlays).dirs;
     for (const ov of [...new Set([...overlays, 'widgets8', 'widgets7', 'nope'])]) {
-      const r = await L.preflightOverlay({ overlay: ov, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
+      const dir = L.overlayDirOf(ov, dirs);
+      const r = await L.preflightOverlay({ overlay: ov, dir, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
       const rts = overlays.includes(ov) ? indexRuntimes(ov) : null;
       const paired = !!(rts && rts.length && rts.every((x) => x === pin.buildId));
       const expectOk = overlays.includes(ov) && paired;
-      if (overlays.includes(ov) && !paired) { const failed = r.checks.filter((c) => !c.ok).map((c) => c.id); ok(!r.ok && failed.length > 0 && failed.every((id) => /-runtime$/.test(id)) && failed.length >= 1, `live preflight ${ov}: baked by [${[...new Set(rts || ['?'])].join(', ')}], not ${pin.buildId}: refused by the runtime checks only (${failed.join(', ')})`); continue; }
+      const at = dir !== ov ? ` at /snapshots/${dir}/` : '';
+      if (overlays.includes(ov) && !paired) { const failed = r.checks.filter((c) => !c.ok).map((c) => c.id); ok(!r.ok && failed.length > 0 && failed.every((id) => /-runtime$/.test(id)) && failed.length >= 1, `live preflight ${ov}${at}: baked by [${[...new Set(rts || ['?'])].join(', ')}], not ${pin.buildId}: refused by the runtime checks only (${failed.join(', ')})`); continue; }
       const avail = r.availability ? Object.entries(r.availability).filter(([, v]) => v).map(([k]) => k) : null;
-      ok(r.ok === expectOk, `live preflight ${ov}: ${r.ok ? 'OK' : `refused (${r.checks.filter((c) => !c.ok).map((c) => c.id).join(', ')})`}${r.notFound ? ' [index 404]' : ''}${avail ? `; packages in region: [${avail.join(', ')}]` : ''}`);
+      ok(r.ok === expectOk, `live preflight ${ov}${at}: ${r.ok ? 'OK' : `refused (${r.checks.filter((c) => !c.ok).map((c) => c.id).join(', ')})`}${r.notFound ? ' [index 404]' : ''}${avail ? `; packages in region: [${avail.join(', ')}]` : ''}`);
       for (const c of r.checks) if (/head|runtime/.test(c.id)) console.log(`        ${c.ok ? '✓' : '✗'} ${c.detail}`);
     }
-    const choice = await L.chooseOverlay({ requested: null, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
-    console.log(`info  default overlay choice: ${choice.ok ? choice.overlay : 'none'} (attempts ${choice.attempts.map((a) => `${a.overlay}:${a.ok ? 'ok' : a.result.notFound ? '404' : 'bad'}`).join(' ')})`);
+    // F7 guard: on a per-runtime pin the bare logical directories are NOT served locally (serve.mjs never maps a logical name to
+    // the active stores there), so a gallery that still framed /snapshots/widgets8/ fails here as it would in production
+    for (const o of Object.keys(dirs || {}).filter((k) => dirs[k] !== k)) {
+      const r = await fetch(`${origin}/snapshots/${o}/index.json`, { cache: 'no-store' });
+      await r.arrayBuffer().catch(() => null);
+      ok(r.status === 404, `per-runtime pin: GET /snapshots/${o}/index.json → ${r.status} (want 404; ${o} is served at /snapshots/${dirs[o]}/)`);
+    }
+    const choice = await L.chooseOverlay({ requested: null, dirs, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
+    console.log(`info  default overlay choice: ${choice.ok ? `${choice.overlay} at /snapshots/${choice.dir}/` : 'none'} (attempts ${choice.attempts.map((a) => `${a.overlay}${a.dir !== a.overlay ? `[${a.dir}]` : ''}:${a.ok ? 'ok' : a.result.notFound ? '404' : 'bad'}`).join(' ')})`);
   } finally { child.kill('SIGTERM'); }
 }
 

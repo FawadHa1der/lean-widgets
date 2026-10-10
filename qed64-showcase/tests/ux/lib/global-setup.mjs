@@ -6,10 +6,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { SC, RUN_DIR, RUN_ID, ORIGIN, UX_PIN, HEADED_ALL, CHANNEL, GALLERY_PIN, API, API_REVISION, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
+import { W, SC, RUN_DIR, RUN_ID, ORIGIN, ORIGIN_PORT, UX_PIN, HEADED_ALL, CHANNEL, GALLERY_PIN, API, API_REVISION, PIN, HARD, OVERLAY_W8, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
 export default async function globalSetup() {
   const lock = lockHeld();
   const meta = { run: RUN_ID, startedAt: new Date().toISOString(), lock, origin: ORIGIN, uxPin: UX_PIN, headed: HEADED_ALL, ...(CHANNEL ? { channel: CHANNEL } : {}), startedServer: false, reclaimableGiB: +reclaimableGiB().toFixed(1) };
+  // the serve.mjs log of ORIGIN and its size now (serve-start.sh appends): C14 scans the whole run's requests from here
+  // (QED64 ask 1: no per-build index copy reached the server, independent of what Playwright saw)
+  const serveLog = path.join(W, 'logs', `serve-${ORIGIN_PORT}.log`);
+  meta.serveLog = { path: serveLog, offset: fs.existsSync(serveLog) ? fs.statSync(serveLog).size : 0 };
+  // the hardening flags the new assertions branch on (absent = today's assertions) and the served widgets8 directory
+  meta.hardening = HARD; meta.overlayW8 = OVERLAY_W8; meta.testedPin = PIN.id;
   if (process.env.UX_ORIGIN) {
     if (!serverUp(ORIGIN)) throw new Error(`UX_ORIGIN=${ORIGIN} does not answer /showcase/pin.json; start it first (e.g. SHOWCASE_PIN=<id> PORT=<port> scripts/serve-start.sh)`);
   } else if (!serverUp()) {

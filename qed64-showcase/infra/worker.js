@@ -9,7 +9,12 @@
  *     /runtime/          runtime manifests + lean.wasm/lean.js chunks of the pinned buildId
  *     /profiles/         core + mathlib-essential packs
  *     /snapshots/        the stock pair (index.json, init, mathlib) and our overlays
- *     /snapshots/widgets8/, /snapshots/widgets7/   overlay index.json + init + widgets.<d16>.snapz
+ *     /snapshots/<dir>/  overlay index.json + init + widgets.<d16>.snapz, <dir> = scripts/lib/pins.mjs overlayDir:
+ *                        widgets8/ and widgets7/ for pins A–H (pin.json v2), widgets8.<bid16>/ and widgets7.<bid16>/
+ *                        from pin I on (v3, "per-runtime"), so a new runtime's overlays never replace the bare
+ *                        directories an older live shell reads. Routing is generic: no alias, no rewrite here
+ *                        (the gallery maps ?overlay=widgets8 to the pin's directory); the index.json revalidates and
+ *                        the digest-named .snapz are immutable in either form (QED64's isImmutable).
  *
  * One origin, so COEP needs no CORS: cross-origin isolation headers go on every response (without
  * COOP/COEP the browser refuses SharedArrayBuffer/Memory64 and QED64 cannot start). Caching mirrors
@@ -22,8 +27,8 @@
  *     gallery's pairing preflight HEADs every overlay .snapz and requires content-length == the
  *     index's transfer size (gallery/lib.js preflightOverlay).
  *   - ROOT_REDIRECT (wrangler [vars], default unset): when set, a bare "/" (no query) redirects there
- *     (e.g. "/showcase/"). The gallery always iframes "/?snapshots=snapshots/<overlay>", which has a
- *     query and is never redirected.
+ *     (e.g. "/showcase/"). The gallery always iframes "/?snapshots=snapshots/<dir>" (the served overlay
+ *     directory, bare or per-runtime), which has a query and is never redirected.
  *   - Single-range GETs on artifacts (ported from wasm64-lean4game/infra/worker.js, 2026-10-01): every
  *     artifact response carries Accept-Ranges: bytes; one "bytes=a-b" / "a-" / "-n" range is answered
  *     206 with Content-Range and the partial Content-Length; If-Range is compared with the object's
@@ -36,8 +41,13 @@
  */
 
 // QED64's cache rule, imported (not copied) from the served pin's QED64 sources: every manifest and index revalidates,
-// INCLUDING the per-build runtime-manifest.wasm64-<16hex>.json; digest- or size-named files never change under the same
-// name. Re-exported for infra/worker.test.mjs.
+// INCLUDING the per-build runtime-manifest.wasm64-<16hex>.json (and, from 385a1ac on, the per-build index copies
+// snapshots/index.<bid>.json and profiles-index.<bid>.json); digest- or size-named files never change under the same
+// name. Imported from QED64's infra/worker.js because that file exports isImmutable at EVERY pin (A–E define it
+// there; from 84d594e on it re-exports edge-worker.js's function object), so this Worker bundles and
+// infra/worker.test.mjs runs with any pin active. From 385a1ac on QED64's worker.js also imports
+// toolchain/lean4-wasm64-release.json (`with { type: "json" }`, bundled by wrangler's esbuild) and builds QED64's own
+// Worker at load; that default export is unused here. Re-exported for infra/worker.test.mjs.
 import { isImmutable } from "../deps/qed64/infra/worker.js";
 export { isImmutable };
 

@@ -1,0 +1,35 @@
+{
+  "schema": "qed64-showcase.pin/v3",
+  "id": "385a1ac",
+  "buildId": "wasm64-f69cca24d0878a58",
+  "overlayDirs": "per-runtime",
+  "registeredAt": "2026-10-09T00:00:00Z",
+  "label": "I: QED64 385a1ac (main: the lean-v4.34.0-e1a79c1 adoption, kernel patch 0037, HARDENING #61-#66), runtime f69cca24 (kernel e1a79c1ce9)",
+  "status": "staged 2026-10-09: registered from our own worktree $W/qed64-pins/385a1ac; overlays rebaked against f69cca24",
+  "qed64": {
+    "commit": "385a1ac5f3bc33cd607c1cc2d03f4d8979ef4684",
+    "promote": "fc945e4726ad68e1fc5fcfe745ec924eca8f02a7",
+    "kernel": "e1a79c1ce9f8db856ea572078b52e441e484dd55"
+  },
+  "mainBundle": "/assets/index-DDUZGVEB.js",
+  "consoleSites": {
+    "627": "28b8d70efab0c14c93b05b3045effec173c76b25339790cd10d848ad3c7ca395"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_SHOWCASE_WORK}/core-lib-slim.f69cca24d0878a58",
+    "baseN": 5004
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "As in H: the page API projects the #52 worker liveness (status().liveness, the `liveness` event); the gallery's own probe stands down on capabilities.liveness."
+  },
+  "hardening": {
+    "earlyUnpaired": true,
+    "networkPreboot": true,
+    "pinnedIndexes": true,
+    "note": "QED64's fixes for the showcase's reports: #62 an unpaired snapshot is refused before the runtime starts (9045b86); #63 a network failure before boot is one named death, not a reboot loop (e10454b, 3524618); #64 per-build index copies, read only when the mutable index names another runtime (5952e32, 3bd5521). The UX suite enforces each only through these flags (C9, C11, C1/C14)."
+  },
+  "knownLimitations": [],
+  "notes": "First schema-v3 pin: overlays are served from per-runtime directories /snapshots/widgets{7,8}.f69cca24d0878a58/ (pins A-H keep the bare widgets7/widgets8), so a runtime change never overwrites the overlay the live shell reads. Base trees are digest-identical to H's (lib-tree-slim 8c247f41, lib-tree 57adeb5f; QED64 embedding/base-tree.json); the core library is the release's own lean-lib slim tree (e442c951, 10,074 files) unpacked into our work dir. Runtime binaries from the kernel fork release lean-v4.34.0-e1a79c1 (SHA256SUMS 140/140), byte-identical to QED64's public/runtime/chunks."
+}

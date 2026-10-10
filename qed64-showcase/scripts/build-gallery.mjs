@@ -7,7 +7,10 @@
 //                          derived from the spec's cursors / clicks / selections / hovers.
 //   gallery/pin.json       the runtime pairing the gallery's JS preflight checks, derived from QED64.lock.json:
 //                          buildId, QED64 commit/promote, Lean version — after checking that the pinned release
-//                          bundle (release/<pin id>/dist/assets/*.js) names exactly that buildId (plan S0.5 #6).
+//                          bundle (release/<pin id>/dist/assets/*.js) names exactly that buildId (plan S0.5 #6);
+//                          and `overlays` {widgets7, widgets8: <served dir>} = scripts/lib/pins.mjs overlayDirs(<pin>)
+//                          (the identity for pins A–H, '<name>.<bid16>' for a per-runtime pin/v3), checked against
+//                          the lock's overlays.<o>.url == /snapshots/<dir>/ (no recorded overlays yet: a warning).
 //
 // Gates (exit 1 on any failure): exactly the eight known packages; header == the document's first lines and
 // names `import Mathlib` + `import <Pkg>` (plan D2); every cursor/selection command occurs on its line at its
@@ -22,6 +25,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { abbrevTerm, cursorLabel } from './lib/term-labels.mjs';
+import { OVERLAYS, overlayDirs } from './lib/pins.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EX_DIR = path.join(SC, 'lean', 'examples');
@@ -87,6 +91,20 @@ if (fs.existsSync(rtManifest)) {
   if (m.buildId !== BID) fail(`${rtManifest} names ${m.buildId}, want ${BID}`);
   leanVersion = m.leanVersion || null;
 } else warnings.push(`no ${rtManifest}; leanVersion unknown`);
+// The SERVED overlay directories (the naming contract in scripts/lib/pins.mjs; the gallery maps ?overlay=<name> through
+// this map and frames /?snapshots=snapshots/<dir>). The lock records the same URL (pin-qed64.mjs record-overlays): they
+// must agree, or the gallery would frame a directory the deploy never uploads.
+let overlays = null;
+try { overlays = overlayDirs(PIN_ID); } catch (e) { fail(`overlay directories of pin ${PIN_ID}: ${e && e.message || e}`); }
+if (overlays) {
+  const lo = lock.overlays;
+  if (!lo || typeof lo !== 'object' || Object.keys(lo).length === 0) warnings.push(`QED64.lock.json records no overlays yet: gallery/pin.json overlays ${JSON.stringify(overlays)} not cross-checked (run scripts/pin-qed64.mjs record-overlays)`);
+  else for (const o of OVERLAYS) {
+    const want = `/snapshots/${overlays[o]}/`;
+    if (!lo[o]) fail(`QED64.lock.json overlays.${o} missing (the lock records [${Object.keys(lo).join(', ')}]); want url ${want}`);
+    else if (lo[o].url !== want) fail(`QED64.lock.json overlays.${o}.url ${JSON.stringify(lo[o].url)} != ${want} (pins.mjs overlayDir ${o} for pin ${PIN_ID})`);
+  }
+}
 const pin = {
   schema: 'qed64-showcase.gallery-pin/v1',
   derivedFrom: 'QED64.lock.json',
@@ -97,6 +115,7 @@ const pin = {
   leanVersion,
   apiRevision, // release/<pin>/dist/qed64-build.json apiRevision (embedding contract v1), else null (legacy page)
   shell,       // its shell id ("shell-" + 16 hex over the dist listing), else null
+  overlays,    // logical overlay → served directory (/snapshots/<dir>/): pins.mjs overlayDirs, == the lock's overlays.<o>.url
   qed64: { commit: lock.qed64.commit, promote: lock.qed64.promote },
   widgetsSourceHash: lock.WIDGETS_SOURCE_HASH || null,
   mathlib: lock.toolchain && lock.toolchain.mathlib ? lock.toolchain.mathlib.commit || null : null,
@@ -469,5 +488,6 @@ for (const [name, body] of Object.entries(files)) {
 for (const e of examples)
   console.log(`ok    ${e.id.padEnd(19)} ${e.title.padEnd(19)} phase ${e.phase} module ${e.module.padEnd(17)} ${String(e.lineCount).padStart(3)} lines  first cursor L${e.firstCursor.lineNumber}:${e.firstCursor.column}  ${e.tryThis.length} hints  thumb ${e.thumb ? `${e.thumb.width}x${e.thumb.height} ${e.thumb.bytes} B` : 'none'}  golden ${e.golden.present ? (e.golden.ok && e.golden.exampleSha256Matches ? 'ok' : 'STALE') : 'none'}`);
 console.log(`pin   buildId ${pin.buildId} (bundle ${pin.bundleBuildIds.join(',')} in ${bundleFiles} js files) lean ${pin.leanVersion} qed64 ${String(pin.qed64.commit).slice(0, 12)} api ${pin.apiRevision ?? 'none (legacy page)'} shell ${pin.shell ?? '-'}`);
+console.log(`pin   overlays ${Object.entries(pin.overlays || {}).map(([o, d]) => `${o} -> /snapshots/${d}/`).join(', ')}`);
 console.log(`BUILD-GALLERY ${CHECK ? (stale ? 'STALE' : 'CHECK OK') : 'OK'} ${examples.length} examples`);
 process.exit(stale ? 1 : 0);

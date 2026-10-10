@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // make-overlay.mjs — BUILD-PLAN §5 C7: the ?snapshots= overlay the STOCK page boots from.
 //
-//   node scripts/make-overlay.mjs w7|w8     -> out/overlay/snapshots/widgets7|widgets8/
+//   node scripts/make-overlay.mjs w7|w8     -> out/runtimes/<bid>/overlay/widgets7|widgets8/ (the store; the active
+//                                              pin's link out/overlay/snapshots/widgets7|widgets8 points at it)
 //
+// The store keeps the LOGICAL name widgets7|widgets8; the pin SERVES it as /snapshots/<dir>/ with
+// <dir> = scripts/lib/pins.mjs overlayDir (widgets8 for pins A–H, widgets8.<bid16> for a per-runtime pin), printed below.
 // index.json has exactly two entries:
 //   init     copied verbatim from the bake-out index (itself the served entry, see bake.sh / judge J5)
 //   mathlib  the bake's `widgets` entry with name "mathlib"; url stays "/snapshots/widgets.<d16>.snapz",
-//            which the page re-roots to /snapshots/widgets7/… (qed64-boot.ts:96-106)
+//            which the page re-roots to the directory it was booted with, /snapshots/<dir>/… (qed64-boot.ts:96-106);
+//            so the same files serve under either name and the index does not depend on <dir>
 // The stock page only loads the names init and mathlib (resident-session.ts:85,127; main.ts:361,386);
 // its OPFS key becomes mathlib.<d16> and never collides with the stock mathlib.bf13acc4… key.
 // Both .snapz files are copy-on-write clones (scripts/lib/platform.mjs cloneFile: APFS clonefile / reflink) of the
@@ -17,7 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { targetPinId, targetBuildId, storePath } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { targetPinId, targetBuildId, storePath, overlayUrl } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const tag = process.argv[2];
 if (!['w7', 'w8'].includes(tag)) { console.error('usage: make-overlay.mjs w7|w8'); process.exit(2); }
@@ -26,7 +30,8 @@ if (!['w7', 'w8'].includes(tag)) { console.error('usage: make-overlay.mjs w7|w8'
 // would replace the pin link with a real directory (`pin current` FAIL "real"; found in the pin D lane)
 const src = storePath(`bake-out-${tag}`);
 const dst = storePath(`overlay/widgets${tag.slice(1)}`, { real: true });
-console.log(`  pin ${targetPinId()}, runtime ${targetBuildId()}: ${src} -> ${dst}`);
+const url = overlayUrl(`widgets${tag.slice(1)}`, targetPinId()); // the served directory (pins.mjs overlayDir)
+console.log(`  pin ${targetPinId()}, runtime ${targetBuildId()}: ${src} -> ${dst} (served as ${url})`);
 const idx = JSON.parse(fs.readFileSync(path.join(src, 'index.json'), 'utf8'));
 const init = idx.snapshots.find((s) => s.name === 'init');
 const wg = idx.snapshots.find((s) => s.name === 'widgets');
@@ -40,4 +45,4 @@ for (const f of fs.readdirSync(dst)) {
   const st = fs.statSync(path.join(dst, f));
   console.log(`  ${f}  ${st.size} B  nlink ${st.nlink}`);
 }
-console.log(`OVERLAY ${dst}: init ${init.url} + mathlib ${wg.url} (raw ${wg.bytes} B, imports ${wg.imports.join(',')})`);
+console.log(`OVERLAY ${dst} served as ${url}: init ${init.url} + mathlib ${wg.url} (raw ${wg.bytes} B, imports ${wg.imports.join(',')})`);

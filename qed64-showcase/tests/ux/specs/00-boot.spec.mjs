@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, ORIGIN, API, API_REVISION, GALLERY_PIN, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
+import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, ORIGIN, API, API_REVISION, GALLERY_PIN, PIN, PINS, OVERLAY_W8, RUN_DIR, reEscape, slug, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, serverLines, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
 const GiB = 1073741824;
@@ -11,8 +11,10 @@ const GiB = 1073741824;
 // the origin before the gallery navigates and requires it untouched once ready (the gallery no longer seeds the buffer either)
 const BUFFER_SENTINEL = '-- UX C1 sentinel: embed mode must neither read nor write qed64.buffer\n';
 // The overlay the gallery boots by default (widgets8): its two snapshots, from the served index (the transfer sizes and
-// digests change with every rebake; they were constants until the 2026-10-01 re-pin, docs/REPIN-LOG.md)
-const W8 = JSON.parse(fs.readFileSync(path.join(SC, 'out/overlay/snapshots/widgets8/index.json'), 'utf8')).snapshots;
+// digests change with every rebake; they were constants until the 2026-10-01 re-pin, docs/REPIN-LOG.md), read from the
+// tested pin's own runtime store (scripts/lib/pins.mjs storePath; the store keeps the logical name, the served directory is
+// OVERLAY_W8: widgets8 on pins A-H, widgets8.<bid16> on a per-runtime pin)
+const W8 = JSON.parse(fs.readFileSync(path.join(PINS.storePath('overlay/widgets8', { id: PIN.id, real: true }), 'index.json'), 'utf8')).snapshots;
 const W8_TRANSFER = W8.reduce((a, x) => a + x.transfer, 0);
 const W8_KEY = W8.map((x) => x.digest).join(' ');
 /** Phase timeline: poll the gallery + QED64 status every 100 ms and record each transition. */
@@ -52,6 +54,13 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
   const b = await g.waitGallery();
   tl.stop();
   m.readyMs = b.ms; m.timeline = tl.tl; m.bytes = s.bytes; m.server = serverBytes(g.tNav);
+  // QED64 ask 1: this boot's network log. The session's own record is tests/C1.cold.network.jsonl (lib/qed64.mjs Session);
+  // beside it the serve.mjs log slice since navigation (network truth: what reached the server), and the summary the
+  // network oracle judges (lib/fixtures.mjs; enforced on a hardening.pinnedIndexes pin)
+  fs.writeFileSync(path.join(RUN_DIR, 'tests', `${slug(test.info())}.${s.label}.server.log`), `${serverLines(g.tNav, { method: null }).join('\n')}\n`);
+  m.network = s.networkSummary();
+  // VERIFY (ask 1): Playwright's record must see the workers' .snapz fetches too: compared with the serve log, recorded
+  m.network.snapzGetsServer = serverLines(g.tNav, { re: /\.snapz$/ }).length;
   m.panel = await firstPanel(g, 'chart-kit').then((r) => ({ equal: r.equal, ms: r.ms, diffs: r.diffs.slice(0, 3) }));
   m.status = { phase: b.s.phase, bootMs: b.s.bootMs, overlay: b.s.overlay, preflightOk: b.s.preflight && b.s.preflight.ok };
   m.rssAtReady = chromeRss();
@@ -79,7 +88,7 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
     // the round-5 fields (selectors.json _status_v1): a clean cold boot holds no document, has storage, and lost nothing
     expect(b.s.seed, 'embed mode: the gallery seeds no buffer, displaces nothing, and storage is neither blocked nor failing').toEqual({ saved: false, action: 'embed', error: null, blocked: false, keepFailed: null, unsaved: null });
     expect(frame.search, 'the frame runs in embed mode on the widgets8 overlay').toMatch(/(^\?|&)embed=1(&|$)/);
-    expect(frame.search).toMatch(/(^\?|&)snapshots=snapshots\/widgets8(&|$)/);
+    expect(frame.search, `the frame boots the pin's widgets8 directory (${OVERLAY_W8})`).toMatch(new RegExp(`(^\\?|&)snapshots=snapshots\\/${reEscape(OVERLAY_W8)}(&|$)`));
     expect(frame.hash, '#code= was read once and dropped (§3.1)').not.toMatch(/code=/);
     expect(frame.buffer, 'localStorage qed64.buffer neither read nor written by the embedded page or the gallery').toBe(BUFFER_SENTINEL);
     expect(frame.embedExamplesHidden, 'embed mode hides the examples menu').toBe(true);
@@ -132,7 +141,10 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
   const g = await Gallery.open(s, { hash: IDS[0] });
   expect(g.boot.s.phase).toBe('ready');
   await sleep(1000);
-  m.atReady = { rss: chromeRss(), heap: await g.telemetry() };
+  // the page's JS heap (top window: one isolate for the gallery, the QED64 frame and the InfoView; workers excluded), beside
+  // the renderer RSS and the wasm heap, so a growth can be told apart (data only; QED64's C3 A/B request, 2026-10-09)
+  const jsHeap = () => g.page.evaluate(() => (performance.memory ? { usedMiB: +(performance.memory.usedJSHeapSize / 1048576).toFixed(1), totalMiB: +(performance.memory.totalJSHeapSize / 1048576).toFixed(1) } : null)).catch(() => null);
+  m.atReady = { rss: chromeRss(), heap: await g.telemetry(), js: await jsHeap() };
   m.widgets = {};
   const fail = [];
   for (const id of IDS) {
@@ -140,15 +152,19 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
     const sel = (await g.status()).shown === id ? { ok: true } : await g.selectUI(id); // a real click on the card
     const p = await firstPanel(g, id);
     const st = await g.status(); const q = await g.qstatus();
+    // UX_C3_DIAGS=1 (the C3 memory A/B only, never a verdict run): the panel's diagnostics, so a stack-guard rejection that
+    // reached the user is visible beside the memory it may have cost (kernel 0036 question, 2026-10-09)
+    const diags = process.env.UX_C3_DIAGS === '1' ? await g.diagnosticsOf(q.version, { settleMs: 300, timeoutMs: 10000 }).catch(() => null) : undefined;
     const action = await g.qframe.locator('button, a').filter({ hasText: 'Load exact imports' }).count();
     // v1: the offer is a structured fact (api.status().offer, EMBEDDING.md §2.2) that the gallery mirrors in status().qed64.offer
     const apiOffer = API ? (st.qed64 ? st.qed64.offer : undefined) : null;
-    const w = { selectOk: sel.ok, ms: Date.now() - t, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), header: q.header && q.header.mode, collision: q.collision, galleryCollision: st.qed64 && st.qed64.collision, exactImportsOffer: action, apiOffer, rss: chromeRss(), heap: await g.telemetry(), pool: q.pool };
+    const w = { selectOk: sel.ok, ms: Date.now() - t, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), header: q.header && q.header.mode, collision: q.collision, galleryCollision: st.qed64 && st.qed64.collision, exactImportsOffer: action, apiOffer, rss: chromeRss(), heap: await g.telemetry(), js: await jsHeap(), pool: q.pool,
+      ...(diags !== undefined ? { errors: diags ? diags.filter((d) => d.sev === 1).length : null, stackErrors: diags ? diags.filter((d) => d.sev === 1 && /stack is exhausted|maximum recursion depth/.test(d.msg)).map((d) => `${d.line}: ${d.msg.slice(0, 100)}`) : null } : {}) };
     m.widgets[id] = w;
     if (!sel.ok || !p.equal) fail.push(`${id}: select ${sel.ok} panel ${p.equal} ${w.diffs}`);
     if (w.collision !== null || w.galleryCollision !== null || action) fail.push(`${id}: collision offer (C16) ${JSON.stringify(w.collision)} action ${action}`);
     if (API && apiOffer !== null) fail.push(`${id}: v1 status().qed64.offer is ${JSON.stringify(apiOffer)}, not null (no exact-imports offer for a gallery example)`);
-    console.log(`C3 ${id} panel ${p.equal} ${w.ms} ms header ${w.header} collision ${JSON.stringify(w.collision)} rss renderer ${w.rss.rendererGiB} GiB (${w.rss.rendererGB} GB) heap ${w.heap && w.heap.currentBytes}`);
+    console.log(`C3 ${id} panel ${p.equal} ${w.ms} ms header ${w.header} collision ${JSON.stringify(w.collision)} rss renderer ${w.rss.rendererGiB} GiB (${w.rss.rendererGB} GB) heap ${w.heap && w.heap.currentBytes} js ${w.js ? `${w.js.usedMiB}/${w.js.totalMiB} MiB` : '-'} pool ${JSON.stringify(w.pool)}${w.errors !== undefined ? ` errors ${w.errors} stack ${JSON.stringify(w.stackErrors)}` : ''}`);
   }
   await sleep(1500);
   m.afterAll = { rss: chromeRss(), heap: await g.telemetry() };

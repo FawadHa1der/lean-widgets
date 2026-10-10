@@ -129,7 +129,7 @@ try {
   // 3. the frame URL and the page's own view of things (read from the TEST; the gallery itself never touches them)
   const fr = await frame();
   const frameUrl = fr ? fr.url() : null;
-  check('frame URL: embed=1, #code= consumed', !!frameUrl && /[?&]embed=1(&|$)/.test(frameUrl) && /[?&]snapshots=snapshots\/widgets8/.test(frameUrl) && !/#code=/.test(frameUrl) && !/#/.test(frameUrl), `frame url ${frameUrl}`);
+  check('frame URL: embed=1, #code= consumed', !!frameUrl && /[?&]embed=1(&|$)/.test(frameUrl) && new RegExp(`[?&]snapshots=snapshots\\/${H.reEscape(H.OVERLAY_W8)}(&|$)`).test(frameUrl) && !/#code=/.test(frameUrl) && !/#/.test(frameUrl), `frame url ${frameUrl}`);
   const pageFacts = fr ? await fr.evaluate(() => {
     const a = globalThis.qed64 && globalThis.qed64.api;
     const ex = document.getElementById('examples');
@@ -207,6 +207,11 @@ try {
   // interrupted (a signal): the handler closes the browser and exits 3; never take a verdict on a half-run (exit 1 would read as a failure)
   if (report.interrupted) { save(); process.exit(3); }
   if (s) {
+    // 8b. the network (QED64 ask 1, #64): the session's request record holds no per-build index copy and no 404; asserted on a
+    //     pin with hardening.pinnedIndexes (one more check than pin H's 22), recorded on every pin
+    const ns = s.networkSummary(); const nv = H.networkVerdict(ns);
+    report.network = { ...ns, ...nv };
+    if (H.HARD.pinnedIndexes) check('network: no per-build index copy, no 404', nv.ok, nv.ok ? `${ns.requests} requests, 0 index copies, 0 404s` : nv.reasons.join(' | '));
     // 9. the console, classified against the suite's allowlist (the LSP tap pairs the empty console.error with its -32800 reply),
     //    in TWO windows: before step 8's frame reload strictly (no scenario: nothing may dispose a session during boot, the
     //    InfoView edit, reset() or the switch), after it with relayRestartOrReboot (the reload disposes a session, as C25).

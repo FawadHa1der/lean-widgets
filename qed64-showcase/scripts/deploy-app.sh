@@ -21,6 +21,9 @@
 #                                                   sha256 of every manifest and index). Unset with DEPLOY_FROM_LOCK=1 =
 #                                                   the very first deploy (no origin yet): skipped with a log line; the
 #                                                   post-deploy `--smoke --all` then checks every R2 key.
+#   ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh    deploy although this remote's newest release records for exactly these R2
+#                                                   keys uploaded only some phases (PHASES=1-objects,2-manifests: the split
+#                                                   upload of decision E1, whose 3-indexes go up right after this deploy)
 #   WRANGLER_BIN=<path>                             another wrangler executable (the local CI rehearsal's stand-in,
 #                                                   scripts/deploy-rehearsal/wrangler-shim.sh); default the pinned
 #                                                   infra/node_modules/.bin/wrangler (npx --prefix infra wrangler)
@@ -28,7 +31,8 @@
 # Steps: regenerate + check the manifest with the target's prefix (scripts/lib/deploy-common.sh: G1 must pass, G2
 # must name a verdict UX run unless ALLOW_NO_UX_VERDICT=1); compare it with the newest release record of R2_REMOTE
 # under $DEPLOY_OUT/published (bucket, prefix and every R2 key + sha256 must be what that upload or rollback
-# published; ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately); `--stage-assets` into $DEPLOY_OUT/assets (S1/S2: exactly
+# published, and those records must have uploaded all three phases unless ALLOW_PARTIAL_UPLOAD=1;
+# ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately); `--stage-assets` into $DEPLOY_OUT/assets (S1/S2: exactly
 # the manifest's files, sha256-checked); refuse any file over the 25 MiB Workers asset cap, any artifact directory
 # in the tree, or a missing required file; write wrangler.toml from wrangler.toml.example when absent (same
 # bucket/prefix as the upload; WRANGLER_CONFIG to use another path) or refuse one that disagrees; then deploy.
@@ -73,7 +77,27 @@ const diff = [...new Set([...a.keys(), ...b.keys()])].filter((k) => a.get(k) !==
 if (diff.length) bad.push(`${diff.length} R2 key(s) differ from what that upload published, e.g. ${diff.slice(0, 3).join(', ')} (pin ${cur.pin.buildId} vs uploaded ${up.pin.buildId})`);
 const label = `${path.basename(rec)}${t.rollback_of ? ` (rollback to ${t.rollback_of})` : ''}`;
 if (bad.length) { for (const x of bad) console.error(`RECORD MISMATCH vs ${label}: ${x}`); console.error('run scripts/upload-artifacts.sh with the same target and MANIFEST_ARGS first'); process.exit(1); }
-console.log(`RECORD OK: this shell's ${a.size} R2 keys (pin ${cur.pin.buildId}, prefix '${prefix}') are what release record ${label} published to ${remote}:${bucket}`);
+// PHASES (upload-artifacts.sh): the phases uploaded by the newest consecutive records of this remote with these same keys
+// (a record without phases= — written before PHASES existed, or a rollback — published all of its lists)
+const ALL = ['1-objects', '2-manifests', '3-indexes']; const have = new Set(); const used = [];
+const envOf = (d) => Object.fromEntries(fs.readFileSync(path.join(d, 'target.env'), 'utf8').trim().split('\n').map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+for (const n of fs.readdirSync(path.dirname(rec)).sort().reverse()) {
+  const d = path.join(path.dirname(rec), n);
+  if (n > path.basename(rec) || !fs.existsSync(path.join(d, 'target.env')) || !fs.existsSync(path.join(d, 'manifest.json'))) continue;
+  const e = envOf(d); if (e.remote !== remote) continue;
+  const s = sig(JSON.parse(fs.readFileSync(path.join(d, 'manifest.json'), 'utf8')));
+  if (e.bucket !== bucket || e.prefix !== prefix || [...a.keys()].some((k) => a.get(k) !== s.get(k)) || s.size !== a.size) break;
+  for (const p of (e.phases || ALL.join(',')).split(',')) have.add(p);
+  used.push(n);
+  if (ALL.every((p) => have.has(p))) break;
+}
+const gap = ALL.filter((p) => !have.has(p));
+if (gap.length) {
+  const msg = `RECORD PARTIAL: release record(s) ${used.join(', ')} uploaded phase(s) ${ALL.filter((p) => have.has(p)).join(', ')} of these R2 keys; NOT ${gap.join(', ')}`;
+  if (process.env.ALLOW_PARTIAL_UPLOAD !== '1') { console.error(`${msg}: upload them first (PHASES=${gap.join(',')} scripts/upload-artifacts.sh), or set ALLOW_PARTIAL_UPLOAD=1 for a split upload (decision E1) and upload them right after this deploy`); process.exit(1); }
+  console.log(`${msg} — proceeding because ALLOW_PARTIAL_UPLOAD=1; next: PHASES=${gap.join(',')} scripts/upload-artifacts.sh right after the deploy`);
+}
+console.log(`RECORD OK: this shell's ${a.size} R2 keys (pin ${cur.pin.buildId}, prefix '${prefix}') are what release record ${label} published to ${remote}:${bucket}${used.length > 1 || gap.length ? ` (phases ${ALL.filter((p) => have.has(p)).join(', ')} by ${used.join(', ')})` : ''}`);
 JS
 then
   [ "${ALLOW_UNRECORDED_UPLOAD:-0}" = 1 ] || die "the shell does not match the newest upload of '$R2_REMOTE' (see above); set ALLOW_UNRECORDED_UPLOAD=1 only if you know that bucket holds exactly this manifest's objects"
@@ -101,6 +125,12 @@ for f in index.html workers/lean.worker.js workers/lsp-front-door.js workers/lsp
          showcase/index.html showcase/gallery.js showcase/lib.js showcase/qed64-bridge.js showcase/examples.json showcase/pin.json; do
   [ -f "$ASSETS/$f" ] || die "deploy tree incomplete: $f missing"
 done
+# QED64 385a1ac on: lean.worker.js loads the Memory64 probe with importScripts("memory64-probe.js") (a classic script that
+# sets globalThis.Qed64Memory64); older workers inline it. Required only where the staged worker names it, so pins A–H
+# deploy unchanged.
+if grep -q 'memory64-probe\.js' "$ASSETS/workers/lean.worker.js"; then
+  [ -f "$ASSETS/workers/memory64-probe.js" ] || die "deploy tree incomplete: workers/memory64-probe.js missing (workers/lean.worker.js loads it)"
+fi
 node - "$ASSETS" <<'EOF' || exit 3
 // the gallery's pin and the bundle must name the same runtime (deploy-manifest A4 checked the sources; this is the staged tree)
 const fs = require('fs'), path = require('path'); const a = process.argv[2];

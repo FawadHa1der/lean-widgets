@@ -2,8 +2,10 @@
 
 A two-pane page that shows the eight widget examples **inside the stock QED64 page**. QED64 is not
 changed. The right pane is QED64's own `dist/index.html`, iframed from the same origin at
-`/?snapshots=snapshots/<overlay>`. The left rail drives it through the page's embedding API when the pin has one
-(`globalThis.qed64.api`, QED64 embedding contract v1, pins F, G and H: "Embedding API v1 (pins F, G and H)" below; the frame URL is then
+`/?snapshots=snapshots/<dir>`, where `<dir>` is the overlay's **served directory** from `pin.json` `overlays`
+(`widgets8` on pins A–H, `widgets8.f69cca24d0878a58` on pins I and J; "Overlay names and served directories" under "Run it").
+The left rail drives it through the page's embedding API when the pin has one
+(`globalThis.qed64.api`, QED64 embedding contract v1, pins F to J: "Embedding API v1 (pins F, G and H)" below; the frame URL is then
 `/?embed=1&snapshots=…#code=…`) and, on older pins, through the
 hooks the page already exposed (`globalThis.qed64`, the `qed64.buffer` boot document).
 
@@ -22,11 +24,20 @@ gallery and a passing 10 Mbit/s first visit ("Timeouts"; `out/ux/pin-e/RESULTS.m
 ("Embedding API v1 (pins F, G and H)"), keeping the legacy flow for pins A–E. The pin-G lane (2026-10-06) made pin G
 `5c327c2` (F plus QED64's edit back-pressure, `e4cffcc`; API revision still `1.0.0`) the active pin and F a staged one;
 its first full run found QED64's keep-alive starvation, and G got one VERDICT (`g-full1c`) on gallery `931c33a7…`.
-**Since 2026-10-06 ~20:03Z the active pin is H `bf9d947`** (QED64 main: G plus QED64's keep-alive fix), and the
-gallery is `d8a5bb6d…` (`pin use` regenerated `pin.json`). On it: VERDICTs `h-full1b`, `h-full3` and `h-full4`, the
+From 2026-10-06 ~20:03Z the active pin was H `bf9d947` (QED64 main: G plus QED64's keep-alive fix), on gallery
+`d8a5bb6d…` (`pin use` regenerated `pin.json`). On it: VERDICTs `h-full1b`, `h-full3` and `h-full4`, the
 headed sign-off `h-headed2` (35/35), `C20` 135/135 in three runs, and three runs that each lost one test to a renderer
-crash during a QED64 boot ("QED64 limitations found", L9; docs/REPIN-LOG.md, pin H entry). F and G are staged; the live
-site still serves E, and pushing and deploying are the user's decisions. **Browsers:** a Chromium-based desktop browser on a
+crash during a QED64 boot ("QED64 limitations found", L9; docs/REPIN-LOG.md, pin H entry). From 2026-10-09 ~13:10Z the
+active pin was I `385a1ac` (QED64 main on the new runtime `wasm64-f69cca24d0878a58`, with QED64's #62, #63 and #64;
+docs/REPIN-LOG.md, pin I entry). The gallery code changed for it: `pin.json` carries the `overlays` map and the gallery
+frames the pin's per-runtime directory (gallery `3da79ea2…` after `pin use`; `check-gallery` live 170/0, sim-gallery
+244/0); I's first full run found a kernel-0036 regression in Chrome, so I is superseded and kept as that record. **Since
+2026-10-09 ~18:55Z the active pin is J `5e63edd`** (QED64 main: I plus QED64's interim for 0036, the same runtime and
+overlays; gallery `65279b0b…`). On it (2026-10-09/10): VERDICTs `j-full1` and `j-full5`, `C20` 135/135 in three runs, the
+headed sign-off `j-headed2` (35/35), the 10 Mbit/s first visit PASS (ready at 565.1 s, no card) and QED64's C11 ×3 ask
+3/3; three crashes in red runs were an artifact of the UX harness's tracing, now off (docs/REPIN-LOG.md, pin I entry,
+"Pin J" and "The crash classification and tracing"). F, G and H are staged; the live site still serves E, and pushing and deploying are
+the user's decisions. **Browsers:** a Chromium-based desktop browser on a
 computer with 16 GB of RAM or more, one showcase tab at a time (measured: 8.2–9.0 GiB per tab at ready, transient peaks
 of about 12 GB on a reload, about 17 GB or more for two tabs or for QED64's "Load exact imports"; README.md "Browsers
 and memory"); anything without cross-origin isolation, SharedArrayBuffer or WebAssembly Memory64 gets the capability
@@ -75,7 +86,7 @@ Any other value, `invalid` included, counts as absent, and the gallery then asks
 suite's `API` follows the same rule (`tests/ux/lib/qed64.mjs` `GALLERY_PIN`), except that it refuses a server sending
 `X-Showcase-Api: invalid` (the served page's mode is unknown), as it refuses a `qed64-build.json` of another schema.
 
-* **V1 (`pin.apiRevision != null`, pins F `84d594e`, G `5c327c2` and H `bf9d947`, all `apiRevision` `1.0.0`).** The gallery drives the page through its
+* **V1 (`pin.apiRevision != null`, pins F `84d594e`, G `5c327c2`, H `bf9d947`, I `385a1ac` and J `5e63edd`, all `apiRevision` `1.0.0`).** The gallery drives the page through its
   declared API only. Next section.
 * **Legacy (`pin.apiRevision == null`, pins A–E; E `33b0967` is what the live site serves).** Exactly the flow described
   in the rest of this document: the `qed64.buffer` seed, relay waits, the bridge, the liveness probe, the `?mem` session
@@ -89,16 +100,19 @@ internal; `check-gallery.mjs` runs it.
 
 The contract is QED64's `deps/qed64/docs/EMBEDDING.md` (§1–§5, §7.8, §8, §9). The code is `gallery.js`, whose helpers
 (`api()`, `apiStatus()`, `docText()`, `placeCursor()`, `restartLean()`, …) branch on `S.v1` at the lowest level, so the
-driver, the waits, the cards, the keyboard handling and the test API are shared by both modes. *Status (2026-10-08):* H
-`bf9d947` is the active pin of this checkout only (G `5c327c2` and F `84d594e` are staged), browser-gated with three
-VERDICTs and a headed sign-off (docs/REPIN-LOG.md, pin H entry; current counts: `scripts/showcase.sh pin list`). G
+driver, the waits, the cards, the keyboard handling and the test API are shared by both modes. *Status (2026-10-10):* J
+`5e63edd` is the active pin of this checkout only, browser-gated with two VERDICTs and a headed sign-off (I `385a1ac`
+superseded; H `bf9d947`, G `5c327c2` and F `84d594e` are staged); H is browser-gated with three VERDICTs and a headed
+sign-off (docs/REPIN-LOG.md, pin H and pin I entries; current counts: `scripts/showcase.sh pin list`). I's and J's page
+API is H's (`1.0.0`); what changed for the
+gallery is the overlay's served directory ("Overlay names and served directories" under "Run it"). G
 differs from F only inside the page (QED64's `e4cffcc`: the edit coalescer holds full-text changes while the worker pool
 is under pressure, `?edithold=<n>`, at most 6 requests in flight, a `$/cancelRequest` for a still-queued request answered
 locally; EMBEDDING.md §7.8). H differs from G only in that coalescer: `$/lean/rpc/keepAlive` never waits for a request
 slot (QED64's fix for the starvation our C22 found on G). The gallery code is the same on all three; the console oracle
 allows G's and H's cancel reply text, and on G only the keep-alive starvation lines ("Console messages").
 
-* **The frame URL.** `/?embed=1&snapshots=snapshots/<overlay>[&memory=<GiB>]#code=<encodeURIComponent(example)>`
+* **The frame URL.** `/?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<encodeURIComponent(example)>` (`<dir>`: the overlay's served directory)
   (`lib.js` `frameUrl`). `embed=1` makes the gallery the owner of the document: the page neither reads nor writes
   `localStorage['qed64.buffer']` (a visitor's own buffer on the plain page is never touched) and hides its examples menu.
   The old page is still sent to `about:blank` first: that releases its runtime (one QED64 per page), and a change of
@@ -190,11 +204,25 @@ node scripts/build-gallery.mjs && node scripts/check-gallery.mjs --live
 
 | Parameter | Meaning |
 |---|---|
-| `?overlay=<dir>` | Snapshot overlay under `/snapshots/<dir>/`. Default: `widgets8`, and if that fails its preflight, `widgets7`. An explicit value is preflighted alone and never falls back. `rehearsal` works for wiring tests, but QED64 then refuses the widget headers. |
+| `?overlay=<name\|dir>` | Snapshot overlay. A logical name (`widgets8`, `widgets7`) is an **alias** of the pin's served directory from `pin.json` `overlays` (`widgets8` on pins A–H, `widgets8.f69cca24d0878a58` on pins I and J); any other value is a literal directory under `/snapshots/<dir>/` (an explicit `widgets8.<bid16>` is shown as `widgets8`). Default: `widgets8`, and if that fails its preflight, `widgets7`. An explicit value is preflighted alone and never falls back. `rehearsal` works for wiring tests, but QED64 then refuses the widget headers. |
 | `?mem=<GiB>` | Memory knob (stage A X5): the initial memory commit for the session that loads the widgets region. Rounded to 256 MiB and clamped to [1, 6] GiB. See "Memory knob". |
 | `?stack=0\|1` | Narrow screens: stack the page's editor above its InfoView. The default is automatic at ≤ 720 px; `0` turns it off and `1` forces it on. |
 | `?pagebar=full` | Keep the QED64 page's own example menu (`#examples`). By default the gallery hides it: it swaps in a stock document behind the gallery's back and its label ("Mathlib — real numbers") reads as if it named the current example. |
 | `#<pkg>` | Deep link, e.g. `#simp-lens`. The gallery keeps the hash updated (`replaceState`), and editing it switches the example. |
+
+**Overlay names and served directories.** The gallery names overlays logically (`widgets8`, `widgets7`: `?overlay=`,
+the badge, the chips, the notices, `status().overlay`) and serves each from the directory `pin.json` `overlays` maps it
+to, written by `scripts/build-gallery.mjs` from `scripts/lib/pins.mjs` `overlayDirs` (the identity on pins A–H, schema
+`qed64-showcase.pin/v2`; `widgets{7,8}.<bid16>` for a v3 `"overlayDirs": "per-runtime"` pin such as I or J). A `pin.json`
+without the map (an older build) means the bare names; a malformed map (not an object, a value that is not a safe
+directory name, two names on one directory, a missing default name) stops `start()` with the data card. `lib.js`
+`overlayDirOf` / `overlayNameOf` / `parseOverlayDirs` translate; the frame URL, the badge's title, the preflight's URLs
+and `status().overlayDir` carry the directory, and each preflight attempt records both (`status().preflight.attempts[]
+{overlay, dir}`). The alias exists only in the gallery: the Worker serves `/snapshots/*` as it is, so on a per-runtime
+pin the bare `/snapshots/widgets8/` is not this pin's overlay (on our origin, after I is deployed, it is the previous
+runtime's), and `serve.mjs` answers 404 for it (`check-gallery` §10). A bookmark of the stock page
+`/?snapshots=snapshots/widgets8` therefore stops after a runtime change with QED64's named unpaired error, while the
+gallery's `?overlay=widgets8` keeps working.
 
 ## Boot flow (`gallery.js` `boot()`)
 
@@ -222,15 +250,17 @@ node scripts/build-gallery.mjs && node scripts/check-gallery.mjs --live
    is absent or not a revision or `none`, from a fetch of the served `/qed64-build.json`.
 2. **Pairing preflight** (`lib.js` `preflightOverlay`, run before any navigation). It mirrors lean4game
    `game-boot.ts:113-145` and plan §7.3, and every check appears in the error card:
-   * the overlay name is safe (`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`);
+   * the overlay's served directory `<dir>` (the logical name mapped through `pin.json` `overlays`) is safe
+     (`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`; QED64's own `?snapshots=` segment rule, which `widgets8.f69cca24d0878a58`,
+     25 characters, meets);
    * `/runtime/runtime-manifest.<buildId>.json` is JSON and names `pin.buildId`. This is the manifest the
      bundle fetches first (`qed64-boot.ts:62-66`);
-   * `/snapshots/<overlay>/index.json` returns 200, is not HTML, parses, and has
+   * `/snapshots/<dir>/index.json` returns 200, is not HTML, parses, and has
      `schema == qed64.snapshot-index/v1`;
    * entries `init` and `mathlib` are both present. These are exactly the names the stock page boots for
      a Mathlib header (`resident-session.ts:85`);
    * every entry has `runtime == pin.buildId`, a `sha256:` digest, and an integer `transfer`;
-   * `HEAD` on each re-rooted `.snapz` (`/snapshots/<overlay>/<file>`, re-rooted exactly as
+   * `HEAD` on each re-rooted `.snapz` (`/snapshots/<dir>/<file>`, re-rooted exactly as
      `qed64-boot.ts:96-106` does) returns 200, with `content-length == transfer`, a non-HTML content
      type and no `content-encoding`.
    * Availability: the `mathlib` entry's `imports` list says which packages the region contains. That
@@ -257,8 +287,8 @@ node scripts/build-gallery.mjs && node scripts/check-gallery.mjs --live
    **V1:** nothing is written to `qed64.buffer` (`status().seed.action` `'embed'`); the example travels in `#code=`. The
    text the boot displaces from the gallery's own key `qed64-showcase:document` goes through the same `planSave` (action
    `saved`, `history` or `example` when something was kept). The `about:blank` step stays.
-4. **Navigate.** `iframe.src = /?snapshots=snapshots/<overlay>`. **V1:**
-   `/?embed=1&snapshots=snapshots/<overlay>[&memory=<GiB>]#code=<example>`.
+4. **Navigate.** `iframe.src = /?snapshots=snapshots/<dir>`. **V1:**
+   `/?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<example>`.
 5. **Bridge.** `qed64-bridge.js` is installed on the page window as early as possible. See below. **V1:** not
    installed (`status().bridge.stoodDown`).
 6. **Ready.** Wait for `globalThis.qed64`, then for `qed64.status().phase === 'ready'` with
@@ -719,7 +749,17 @@ node scripts/sim-gallery.mjs               # gallery.js against a fake DOM + mod
   * header, title and blurb match;
   * the first cursor equals `cursors[0]` and sits on its command;
   * every hint lands on a cursor or selection line.
-* `pin.json` against the lock.
+* `pin.json` against the lock, including (§4, 2026-10-09) its `overlays` map: equal to `scripts/lib/pins.mjs`
+  `overlayDirs` of the pin and to the lock's `overlays.<o>.url`, and accepted by `lib.js` `parseOverlayDirs`.
+* Section 7 also covers the overlay names: `overlayDirOf`/`overlayNameOf` with and without a map; `chooseOverlay` with a
+  per-runtime map (served at the directories → no fallback; a site that serves only the bare `widgets8/`/`widgets7/` →
+  not ok, `notFound`, never a silent legacy path; `?overlay=widgets8` as an alias, an explicit `widgets8.<bid16>`, a
+  literal `nope`; the legacy case without a map). The Memory64 probe bytes are compared with the active pin's worker
+  source: `public/workers/memory64-probe.js` evaluated in a `vm` context where it exists (QED64 385a1ac on), else the
+  `lean.worker.js` literal.
+* `--live` (§10): each logical overlay is preflighted at the pin's served directory, and on a per-runtime pin
+  `GET /snapshots/widgets{7,8}/index.json` must be a 404 (pin I, `$W/logs/pinI-check-gallery-live.log`:
+  `CHECK-GALLERY OK 170 ok, 0 failed`).
 * Section 8b: every gallery id/class in `tests/ux/selectors.json` exists; `window.__showcase` implements
   the `showcaseApi` contract; all eight `thumbs/<pkg>.png` exist, are 480 px wide, ≤ 60 KB, and match the
   size and sha256 recorded in `examples.json`; every cursor hint has a position-bound `expectPanel`; every
@@ -1057,7 +1097,7 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
 | pageerror `Session disposed.` (stack through `….dispose (`) | QED64 N2 (every pin): the page's heap meter races `session.request('telemetry')` against 800 ms every 12 s with no rejection handler, so a session disposed while that request is pending (a death, reboot, restart or halt) leaves an unhandled rejection; seen once in 18 C12 stock runs (`multipin-C-full1`) | allow **only** in the scenarios in which a session is disposed (`bootFailure`, `crashBreakerTripped`, `relayRestartOrReboot`, `stallRestart`, `qed64WedgedReboot`), and only with that stack |
 | pageerror and `console.error` `QED64: the Lean checker died (wedged)` (the main bundle) | QED64 9fdf9b8+'s own liveness declared a session wedged (an L7 occurrence it handles itself): its relay answers every request still in flight with this text (`lsp-relay.ts` `onDied` → `failInFlight`), logged at the same site as the restart replies | allow **only** in the UX suite's `qed64WedgedReboot` scenario (C20 and W1–W8, only when `status().liveness.qed64.wedgedReboots` > 0; never seen so far) |
 | `console.warn` `[qed64] exact import failed: … serving the header from the preloaded library` | QED64's designed fallback after "Load exact imports" when the exact import cannot be compiled (`resident-session.ts:209-224`) | allow **only** in the UX suite's `exactImportsFallback` scenario (C16) |
-| `console.error` `Failed to load resource: net::ERR_…` (aborted / truncated); `console.warn` `[qed64] raw prefetch error: network error — the checker will stream it instead` | Chromium reporting a resource the test cut on purpose; QED64's snapshot prefetcher falling back to streaming after a cut | allow **only** in the UX suite's `networkCut` scenario (C11 CHAOS cuts, C12 aborted routes) |
+| `console.error` `Failed to load resource: net::ERR_…` (aborted / truncated); `console.warn` `[qed64] raw prefetch error: network error — the checker will stream it instead`, or since QED64 #63 (pin I) `[qed64] raw prefetch error: the transfer of <file> ended early: received <n> of <m> bytes — the checker will stream it instead` | Chromium reporting a resource the test cut on purpose; QED64's snapshot prefetcher falling back to streaming after a cut | allow **only** in the UX suite's `networkCut` scenario (C11 CHAOS cuts, C12 aborted routes) |
 | `console.error` `QED64: the document changed before this request reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pins F, G and H (v1) only**: QED64's edit coalescing (EMBEDDING.md §7.8, HARDENING #59) answers a semantic-tokens or completion request queued behind a full-text change that a newer change replaced with `ContentModified` (-32801, `error.data.qed64.kind` `'superseded'`); lean4monaco logs each such reply (typing with the suggest widget open prints one per superseding change) | **allow**, anchored to that exact text and site, and only PAIRED, like the `-32800` entry: each needs its own LSP `-32801` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. Pins A–E print no such text, so the entry matches nothing there |
 | `console.error` `QED64: the client cancelled this request before it reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pin G (5c327c2) and later**: QED64's back-pressure (EMBEDDING.md §7.8, e4cffcc) answers a request still queued in its edit coalescer whose `$/cancelRequest` arrives with RequestCancelled (`-32800`, `error.data.qed64.kind` `'cancelled'`), through the relay's `toClient` (the LSP tap records it). The site logs every Error-severity notification, but an LSP reply reaches it only on the paths that hand the error to the notification service (the path that logs Lean's own empty `-32800` message, entry above). Added before any run on G, fail-closed; observed since in every full run on G and H (37–71 lines per run, e.g. 38 in 7 tests of g-full1b, 50 in h-full4), in tests such as C3, C4, C13a, C20, C22, W2, W4 and W7 | **allow**, anchored to that exact text and site, and only PAIRED: each needs its own LSP `-32800` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. The `-32800` replies form ONE pool shared with the empty-text entry above (`console.mjs` `classifyConsole`: one pool per `lspErrorCode`, paired in wall order), so one reply never explains both an empty line and a cancel line. `tests/ux/lib/qed64.mjs` `classify()` also keeps QED64's local cancel replies (`qed64Kind` `'cancelled'`) out of the pool that explains empty errors. `check-gallery.mjs` unit-tests the entry and the shared pool. Pins A–F print no such text; G and H do |
 | `console.warn` `[showcase] the server serves QED64 pin … but gallery/pin.json describes …: following the served page (… mode)` (`/showcase/gallery.js`); `Failed to load resource: … 404` for `/qed64-build.json` | the gallery following a staged pin's release whose mode differs from `pin.json` ("Two modes"); the 404 is that probe on a legacy release | allow at most once per page load, **only** under `UX_PIN` when the served mode differs (the warning) and on a staged legacy release (the 404); never in an ordinary run |
@@ -1160,7 +1200,14 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
     the new one starts; it never reloads a booting page itself, except the card's **Restart Lean** when QED64 refuses
     `api.restart()` because a boot is in flight (`restartLean`'s page-reload fallback). A visitor's own reload (F5)
     during a boot is the exposed path. The margin has to come from QED64's kernel side (a pool-size knob, a smaller
-    glue); QED64's #62 and #63 (in progress) change the boot-failure paths of C9 and C11.
+    glue); QED64's #62 and #63 change the boot-failure paths of C9 and C11. Both landed in pin I `385a1ac` (with #64)
+    and are in J `5e63edd`, where the UX suite asserts them through the descriptor's `hardening` flags (C9: no runtime
+    start and no `.snapz` on an unpaired overlay; C11: one runtime start per network cut). They held in I's first full
+    run and in all seven full-suite runs on J, and C11 headed ×3 (`j-c11h3`) passed 3/3 with no crash in the recovery
+    reloads; C10 ×20 (`j-c10x20`) is running. *2026-10-10:* the renderer crashes of `i-full2` C10, `j-full2` C10 and
+    `j-full4` C21 were not this residual but an artifact of the UX harness (Playwright's tracing fetched every response
+    body over CDP, QED64's 1.27 GB snapshot included; tracing is now off); the two crashes of the C3 memory A/B were V8
+    OOMs with 31 Workers alive, this residual (docs/REPIN-LOG.md, pin I entry, "The crash classification and tracing").
   * **C `5ac5d00` (served until 2026-10-04), A `1859b83` (runtime 0034) and D `3b42714` (QED64's 0035b candidate):** no V1, and no
     crash in the UX suite (C10: 0 crashes in 9 full runs on C, 4 on D, 11 runs on A). **A second form V2** (`MarkCompactCollector: young
     object promotion failed`, after reload 2–4) hits all of them: first in headed desktop Chrome (C 4/19, A 1/5, B 2/8,

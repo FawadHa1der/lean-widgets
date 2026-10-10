@@ -6,13 +6,18 @@ dependency of four kinds. None of them is a copy of QED64's code:
 | Kind | What | How it is pinned | How a clone gets it | Checked by |
 |---|---|---|---|---|
 | **Source** | QED64's git tree at the served pin's commit | the git **submodule** `qed64-showcase/deps/qed64`; its gitlink *is* the served pin's source pin. Each staged pin uses a `git worktree` of the submodule's own repository at `$QED64_SHOWCASE_WORK/qed64-pins/<id>` | `git clone --recursive`; `showcase.sh bootstrap` runs `git submodule update --init` and adds worktrees if they are missing | `pin-qed64.mjs verify` #8: HEAD == the lock's commit, no tracked file modified, and for the active pin gitlink == HEAD == lock |
-| **Binary** | QED64's runtime chunks, library packs and stock snapshots. Their names are content addresses, and they are not in QED64's git | `release.files` in `pins/<id>/QED64.lock.json`: the sha256 and size of each of its files (145 for E, 146 for F, G and H: their `dist/` adds `qed64-build.json`) | `scripts/fetch-artifacts.mjs` fetches them from an artifact origin by URL path, checking sha256 against the lock. The tracked manifests come from git instead | verify #1–#6 and #10 (every byte, plus the manifests' own digests) |
-| **Toolchain** (heavy path only) | the kernel fork's native64 Lean/Lake, the Docker image it runs in, the Mathlib tree it built, and QED64's slim base olean tree | `toolchain` in the lock (native64 commits and binary sha256s, Docker image id and recorded equivalents, Mathlib and ProofWidgets commits, Node version) | You build them yourself: [BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md) | verify #7 when `QED64_KERNEL_BUILD` is set, and N/A otherwise. `showcase.sh native` refuses a Docker image the lock does not record |
-| **Page tier** (runtime) | the page's JavaScript globals, DOM and query knobs that the gallery drives (on F, G and H, the v1 pins: the declared embedding API v1, `qed64.api`) | the pinned bundle itself. The gallery reads `gallery/pin.json` (generated from the lock), and the UX suite resolves the bundle name per pin | it arrives with the page, which is built from source | the gallery's static gate and the UX suite; the full list is under [Integration points](#integration-points) below |
+| **Binary** | QED64's runtime chunks, library packs and stock snapshots. Their names are content addresses, and they are not in QED64's git | `release.files` in `pins/<id>/QED64.lock.json`: the sha256 and size of each of its files (145 for E, 146 for F, G and H: their `dist/` adds `qed64-build.json`; 147 for I: its `dist/` adds `workers/memory64-probe.js`) | `scripts/fetch-artifacts.mjs` fetches them from an artifact origin by URL path, checking sha256 against the lock. The tracked manifests come from git instead | verify #1–#6 and #10 (every byte, plus the manifests' own digests) |
+| **Toolchain** (heavy path only) | the kernel fork's native64 Lean/Lake, the Docker image it runs in, the Mathlib tree it built, QED64's slim base olean tree, and the runtime's `stage1/bin` (from pin I on fetched from the kernel fork's release that QED64's `toolchain/lean4-wasm64-release.json` names) | `toolchain` in the lock (native64 commits and binary sha256s, Docker image id and recorded equivalents, Mathlib and ProofWidgets commits, Node version) | You build or fetch them yourself: [BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md) | verify #7 when `QED64_KERNEL_BUILD` is set, and N/A otherwise. `showcase.sh native` refuses a Docker image the lock does not record |
+| **Page tier** (runtime) | the page's JavaScript globals, DOM and query knobs that the gallery drives (on F, G, H and I, the v1 pins: the declared embedding API v1, `qed64.api`) | the pinned bundle itself. The gallery reads `gallery/pin.json` (generated from the lock), and the UX suite resolves the bundle name per pin | it arrives with the page, which is built from source | the gallery's static gate and the UX suite; the full list is under [Integration points](#integration-points) below |
 
 Our own additions sit on top: the native widget oleans, the baked widget overlays `widgets7`/`widgets8`, the gallery
-at `/showcase/` (with its same-origin bridge on pins A–E; on F, G and H (the v1 pins) the gallery uses the page API instead), the
-Cloudflare Worker, and the tests.
+at `/showcase/` (with its same-origin bridge on pins A–E; on F, G, H and I (the v1 pins) the gallery uses the page API instead), the
+Cloudflare Worker, and the tests. The overlays keep the logical names `widgets7`/`widgets8` everywhere except in URLs:
+they are **served** at `/snapshots/<dir>/` with `<dir>` = `scripts/lib/pins.mjs` `overlayDir`, the bare name for a
+`qed64-showcase.pin/v2` descriptor (pins A–H) and `<name>.<bid16>` for a v3 descriptor with `"overlayDirs":
+"per-runtime"` (pin I: `widgets8.f69cca24d0878a58`), so a new runtime's overlays never replace the ones an older live
+shell reads. The lock records the URL (`overlays.<o>.url`), `gallery/pin.json` the map (`overlays`), and the gallery
+maps `?overlay=widgets8` to the directory; the Worker routes `/snapshots/*` generically, with no alias.
 
 ```
                       github.com/FawadHa1der/QED64 (public)
@@ -27,19 +32,24 @@ Cloudflare Worker, and the tests.
                                    │                                                          or nothing is installed)
    fetch-artifacts.mjs ◄── git show <commit>:public/{runtime,profiles,snapshots}/*.json (tracked manifests)
           ▲            ◄── ARTIFACT ORIGIN (our Worker / serve.mjs of a built checkout / QED64's own site for its files)
-          │                  /runtime/chunks/*  /profiles/*.part-*  /snapshots/*.snapz  /snapshots/widgets{7,8}/*
+          │                  /runtime/chunks/*  /profiles/*.part-*  /snapshots/*.snapz  <lock overlays.<o>.url>* (/snapshots/<dir>/*)
           └─────────────────► release/<id>/public/…   +   out/runtimes/<buildId>/overlay/widgets{7,8}/  (sha256 == lock)
 
-   imports from the source:  serve.mjs, infra/worker.js, deploy-manifest.mjs ── QED64 infra/worker.js isImmutable
+   imports from the source:  infra/worker.js ── QED64 infra/worker.js isImmutable (exported at every pin)
+                             serve.mjs, deploy-manifest.mjs ── QED64 infra/edge-worker.js isImmutable (84d594e on; else infra/worker.js)
                              bake.sh ── pipeline/snapshot/bake-snapshot.mjs        stage-trees.mjs ── pipeline/artifacts/olean-imports.mjs
                              pair-check.mjs, headless/lib.mjs ── pipeline/toolchain/artifact-paths.mjs
                              headless/exact-header.mjs ── pipeline/snapshot/snapshot-probe.mjs   run-e2.sh ── supervised-run.mjs → node-runner.mjs
-                             headless/wasm-lsp.mjs ── public/workers/lsp-frames.js   check-gallery.mjs ── public/workers/lean.worker.js (probe bytes)
-                             preflight-overlays.sh, tests/experiments/x1 ── tests/adversarial/preflight.mjs
+                             headless/wasm-lsp.mjs ── public/workers/lsp-frames.js
+                             check-gallery.mjs ── public/workers/memory64-probe.js (385a1ac on; else lean.worker.js): the probe bytes
+                             preflight-overlays.sh, tests/experiments/x1 ── pipeline/release/preflight.mjs (385a1ac on; else tests/adversarial/preflight.mjs)
+                             pin-qed64.mjs ── toolchain/lean4-wasm64-release.json (4f46477 on; else pipeline/toolchain/KERNEL-PIN): the kernel
+                             stage-trees.mjs --check-digest ── embedding/base-tree.json (385a1ac on): the served trees' digests
 
  one origin (serve.mjs locally, infra/worker.js on Cloudflare):  /  = release/<id>/dist (the stock page)   /runtime|profiles|snapshots/ = release/<id>/public
-                                                                  /snapshots/widgets8/ = our overlay        /showcase/ = gallery/ (iframes "/?snapshots=snapshots/widgets8";
-                                                                  on F/G "/?embed=1&snapshots=snapshots/widgets8#code=…")
+                                                                  /snapshots/<dir>/ = our overlay (<dir> = widgets8 on A–H, widgets8.<bid16> from I on)
+                                                                  /showcase/ = gallery/ (iframes "/?snapshots=snapshots/<dir>";
+                                                                  on the v1 pins F–I "/?embed=1&snapshots=snapshots/<dir>#code=…")
 ```
 
 ## Source dependency
@@ -53,13 +63,19 @@ Cloudflare Worker, and the tests.
   $W/qed64-pins/<id> <commit>`). If the commit is not present, it is fetched from the submodule's origin. No other QED64
   checkout on the machine is read or written. `node scripts/qed64-src.mjs ensure|check|dir [<id>|--all]`.
 * **What is read from the sources.** QED64's page build (`frontend/`, `npm run build:site`); the five tracked manifests
-  and indexes under `public/`; `pipeline/toolchain/KERNEL-PIN` (verify #9); `infra/worker.js` (`isImmutable`, which
-  `serve.mjs`, `deploy-manifest.mjs` and our Worker import; `wrangler deploy --dry-run` bundles just that function
-  into the Worker, `$W/logs/r2/wrangler-dry-run.log`); `pipeline/snapshot/*` (bake,
+  and indexes under `public/`; the kernel the pin serves (verify #9): `toolchain/lean4-wasm64-release.json`
+  `kernel.commit` from QED64 `4f46477` on (pin I), which retired `pipeline/toolchain/KERNEL-PIN` (pins A–H); QED64's
+  cache rule `isImmutable`: our Worker imports it from `infra/worker.js`, which exports it at every pin
+  (`wrangler deploy --dry-run` bundled just that function into the Worker, `$W/logs/r2/wrangler-dry-run.log`; from
+  385a1ac on that file also imports the toolchain release record and builds QED64's own Worker at load, which wrangler's
+  esbuild bundles too, the default export unused), while `serve.mjs` and `deploy-manifest.mjs` import it from
+  `infra/edge-worker.js` where the pin has it (84d594e on), else `infra/worker.js`; `pipeline/snapshot/*` (bake,
   probes, runner); `pipeline/artifacts/olean-imports.mjs`; `pipeline/toolchain/artifact-paths.mjs`;
-  `public/workers/lsp-frames.js`; `public/workers/lean.worker.js` (the gallery gate compares the Memory64 probe bytes
-  with it); `tests/adversarial/preflight.mjs`. `verify` #8 fails if a vendored copy (`pins/*/QED64-PIN`,
-  `pins/*/vendor-qed64`, `vendor/qed64`) reappears.
+  `public/workers/lsp-frames.js`; the Memory64 probe bytes the gallery gate compares (`public/workers/memory64-probe.js`
+  from 385a1ac on, evaluated in a `vm` context; `public/workers/lean.worker.js` before); QED64's preflight
+  (`pipeline/release/preflight.mjs` from 385a1ac on, where `tests/adversarial/preflight.mjs` is a one-cycle shim;
+  `tests/adversarial/preflight.mjs` before); `embedding/base-tree.json` (the served trees' digests, 385a1ac on).
+  `verify` #8 fails if a vendored copy (`pins/*/QED64-PIN`, `pins/*/vendor-qed64`, `vendor/qed64`) reappears.
 * **History.** Until 2026-10-04 these files were a vendored `git archive` per pin, hashed in `pins/<id>/QED64-PIN`. All
   128 vendored files were byte-identical to `git show <commit>:<path>` in the submodule repository at their pins
   (`$W/logs/r2/vendor-vs-submodule.log`). The copies were moved to `$W/r2-moved-aside/vendor-qed64/` and are no longer
@@ -104,8 +120,10 @@ own bakes. `scripts/fetch-artifacts.mjs` installs a pin's binaries as follows:
   sha256 and size before it is renamed into place. A mismatch is kept as `<file>.rejected-<time>` and the run fails.
   The fetch is resumable. A complete, verified file is kept. An interrupted download continues from `<file>.partial`
   with a `Range` request when the origin answers 206 (our Worker does); otherwise that one file restarts. The overlays
-  (`/snapshots/widgets{7,8}/{index.json, init.<d>.snapz, widgets.<d>.snapz}`) are installed into
-  `out/runtimes/<buildId>/overlay/` and checked against the lock's `overlays` section.
+  (`{index.json, init.<d>.snapz, widgets.<d>.snapz}` under the lock's `overlays.<o>.url`: `/snapshots/widgets{7,8}/` on
+  pins A–H, `/snapshots/widgets{7,8}.f69cca24d0878a58/` on pin I; a url that disagrees with `scripts/lib/pins.mjs`
+  `overlayUrl` is refused before anything is fetched) are installed into `out/runtimes/<buildId>/overlay/widgets{7,8}/`
+  and checked against the lock's `overlays` section.
 * **Origins:** `--origin` (`ARTIFACT_ORIGIN`) is the showcase's own origin. It serves QED64's files and our overlays at
   exactly these paths: the deployed Worker, or `scripts/serve.mjs` of a checkout that has the files. `--qed64-origin`
   (`QED64_ARTIFACT_ORIGIN`) serves QED64's files only; QED64's live site serves the same paths. These are plain GETs
@@ -167,10 +185,13 @@ macOS Chromium.
 ## Integration points
 
 Every QED64 interface the gallery, the tools and the tests touch, in two states. **Pins A–E** (E `33b0967` is what the
-live site serves) have no page API: the gallery runs in **legacy mode** on QED64 internals. **F, G and H (the v1 pins)**,
-F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G = F + `e4cffcc`, the edit back-pressure) and H `bf9d947`
-(QED64 main; H = G + the keep-alive fix: `$/lean/rpc/keepAlive` never waits for a request slot; **H active locally since
-2026-10-06 and browser-gated**, G and F staged; none deployed: docs/REPIN-LOG.md, pin H entry), implement the
+live site serves) have no page API: the gallery runs in **legacy mode** on QED64 internals. **F to J (the v1
+pins)**, F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G = F + `e4cffcc`, the edit back-pressure), H
+`bf9d947` (QED64 main; H = G + the keep-alive fix: `$/lean/rpc/keepAlive` never waits for a request slot;
+browser-gated 2026-10-06/07), I `385a1ac` (QED64 main on runtime `wasm64-f69cca24d0878a58` with #62, #63 and #64;
+superseded on 2026-10-09 after a kernel-0036 regression in Chrome) and J `5e63edd` (QED64 main: I + the worker's
+engine-stack probe at 8192 slots, HARDENING #67; the same runtime; **active locally since 2026-10-09**, browser-gated
+2026-10-09/10; H, G and F staged; none deployed: docs/REPIN-LOG.md, pin H and pin I entries), implement the
 embedding contract v1 (`deps/qed64/docs/EMBEDDING.md`, revision `1.0.0`), and the gallery runs in **v1 mode** on its
 declared API. The mode comes from `gallery/pin.json` `apiRevision`, which `scripts/build-gallery.mjs` reads from the pin
 release's `dist/qed64-build.json` (`null` without one), except that a server serving another pin's release than
@@ -212,11 +233,11 @@ its table. The gallery's side of v1 is described in gallery/README.md "Embedding
 | the LSP tap on `relay.toClient/fromClient` | `tests/ux/lib/lsp-tap.mjs` (console pairing of `-32800` and, on F, G and H, `-32801` replies; on G and H also QED64's local `-32800` cancel replies, `qed64Kind` `'cancelled'`; on G Lean's `-32900` replies for C22's keep-alive scenario; frame counts) | unchanged; on F, G and H it wraps the page's own taps (`relay-taps.ts`). `qed64.test.lsp.on()` is the sanctioned replacement, not yet adopted | 42, 55 |
 | worker globals (`__emscripten_check_mailbox`, `PThread`, `__qed64TestExports`) | hang capture, `tools/qed64-liveness.mjs` | unchanged (§9 names `__qed64TestExports` the worker's test hook) | 49, 52 |
 | page DOM and Monaco/InfoView DOM | UX specs (pill, boot card, action button, `.monaco-editor`, the InfoView iframe), throttled first visit, visual baselines | unchanged; the stock-page tests still seed `qed64.buffer` on the plain page | 46, 47, 48 |
-| console labels and the main bundle's notify line (`@qed64-main-bundle`, line0 627, sha256 per pin in `pins/<id>/pin.json` `consoleSites`) | UX console oracle (`selectors.json`), `pin check` | unchanged, plus the v1 pins' `-32801` ContentModified entry (edit coalescing, §7.8) and, for G and H (`e4cffcc`, §7.8), the `-32800` entry `QED64: the client cancelled this request before it reached the checker`, paired from one `-32800` reply pool shared with the empty-text entry; on G only, C22's `rpcKeepAliveStarved` scenario; the notify line is line0 627 sha256 `46b0155c…` on G and `fc6ad361…` on H | 56 |
+| console labels and the main bundle's notify line (`@qed64-main-bundle`, line0 627, sha256 per pin in `pins/<id>/pin.json` `consoleSites`) | UX console oracle (`selectors.json`), `pin check` | unchanged, plus the v1 pins' `-32801` ContentModified entry (edit coalescing, §7.8) and, for G and H (`e4cffcc`, §7.8), the `-32800` entry `QED64: the client cancelled this request before it reached the checker`, paired from one `-32800` reply pool shared with the empty-text entry; on G only, C22's `rpcKeepAliveStarved` scenario; the notify line is line0 627 sha256 `46b0155c…` on G, `fc6ad361…` on H and `28b8d70e…` on I (`/assets/index-DDUZGVEB.js`); on I the `networkCut` warning also accepts #63's wording `the transfer of <file> ended early: received <n> of <m> bytes` | 56 |
 | the wasm runtime ABI (`_lean_wasm_load_snapshot_mem`, the input ring, `$/qed64/headerStatus`) and `Qed64LspFrames` | headless/wasm-lsp.mjs, exact-header.mjs, hang-repro.mjs | unchanged | 57 |
-| pipeline CLIs and env (`bake-snapshot.mjs …` with `QED64_ALLOW_LEGACY_IMPORTS=1`, `snapshot-probe.mjs --via-mem`, `supervised-run.mjs`, `olean-imports.mjs --audit`, `artifact-paths.mjs`, `tests/adversarial/preflight.mjs`) | bake.sh, stage-trees.mjs, pair-check.mjs, headless/*, preflight-overlays.sh | unchanged (§6 ships `./pipeline/*` as files, not their flags) | 41, 57 |
+| pipeline CLIs and env (`bake-snapshot.mjs …` with `QED64_ALLOW_LEGACY_IMPORTS=1`, `snapshot-probe.mjs --via-mem`, `supervised-run.mjs`, `olean-imports.mjs --audit`, `artifact-paths.mjs`, the preflight: `pipeline/release/preflight.mjs` on I, `tests/adversarial/preflight.mjs` before) | bake.sh, stage-trees.mjs, pair-check.mjs, headless/*, preflight-overlays.sh | unchanged (§6 ships `./pipeline/*` as files, not their flags); at 385a1ac `bake-snapshot.mjs` also writes `index.<buildId>.json` into `--out`, which `make-overlay.mjs` and judge J5 ignore | 41, 57 |
 | repository and dist layout; the build identity | build-shell.mjs, fetch-artifacts.mjs, pin-qed64.mjs, deploy-manifest.mjs, build-gallery.mjs | `dist/qed64-build.json` (`buildId`, `leanVersion`, `sourceRevision`, `commit`, `shell`, `apiRevision`) gives `gallery/pin.json` its `apiRevision` and `shell`; the buildId is still also checked in `dist/assets/*.js`; the layout is not declared | 38, 39 |
-| `infra/worker.js` `isImmutable` and the hosting headers | serve.mjs, infra/worker.js, deploy-manifest.mjs | unchanged; §5 now states the hosting facts (no Content-Encoding on chunks and `.snapz`, Range recommended, 404 not HTML) | 32 |
+| `isImmutable` (`infra/worker.js`; `infra/edge-worker.js` from 84d594e on) and the hosting headers | serve.mjs, deploy-manifest.mjs (edge-worker.js where present), infra/worker.js (worker.js) | unchanged; §5 now states the hosting facts (no Content-Encoding on chunks and `.snapz`, Range recommended, 404 not HTML); at 385a1ac the rule also revalidates the per-build index copies (`index.<bid>.json`, `profiles-index.<bid>.json`) | 32 |
 
 ## What still mirrors QED64 behaviour (each kept for a stated reason)
 
@@ -225,8 +246,8 @@ behaviour. Each has the reason it cannot import the original:
 
 | Ours | What it mirrors | Why it is ours |
 |---|---|---|
-| `gallery/lib.js` `MEMORY64_PROBE` | the Memory64 probe bytes of `public/workers/lean.worker.js` | the gallery must refuse an incapable browser *before* loading QED64; `check-gallery` asserts byte equality with the source dependency |
-| `gallery/lib.js` pairing preflight (`?snapshots=` re-root rule, snapshot index schema, `BUFFER_KEY`) | `qed64-boot.ts`, `resident-session.ts`, `main.ts` | QED64 fails silently on a bad overlay index on pins A–E; the gallery checks before navigating. F, G and H name the failure (§4, §7.2; the console entry `bootFailure[4]`), but the gallery still preflights, so a broken overlay never boots; `BUFFER_KEY` is legacy-only |
+| `gallery/lib.js` `MEMORY64_PROBE` | the Memory64 probe bytes of `public/workers/lean.worker.js` (pins A–H) or of `public/workers/memory64-probe.js` (`globalThis.Qed64Memory64.MEMORY64_PROBE`, pin I on) | the gallery must refuse an incapable browser *before* loading QED64; `check-gallery` asserts byte equality with the source dependency (on I by evaluating `memory64-probe.js` in a `vm` context) |
+| `gallery/lib.js` pairing preflight (`?snapshots=` re-root rule, snapshot index schema, `BUFFER_KEY`) | `qed64-boot.ts`, `resident-session.ts`, `main.ts` | QED64 fails silently on a bad overlay index on pins A–E; the gallery checks before navigating. F, G, H and I name the failure (§4, §7.2; the console entry `bootFailure[4]`; on I #62 refuses an unpaired overlay before the runtime boots), but the gallery still preflights, so a broken overlay never boots; `BUFFER_KEY` is legacy-only |
 | `gallery/qed64-bridge.js` | lean4monaco's InfoView message handling | repairs defects D1/D2/D3 of the shipped page on pins A–E (docs/UPSTREAM-REPORT-QED64.md); on F, G and H all three are fixed upstream (`editorRpc`, HARDENING #56; `widgetSourceCache`, EMBEDDING §2.5) and the bridge is not installed |
 | `infra/worker.js` `withHeaders`, routing | QED64's `infra/worker.js` | QED64's Worker has no R2 key prefix, no HEAD with Content-Length (the gallery preflight needs it) and no Range. Its cache rule is imported, not copied. Candidate for a QED64 export (`createArtifactWorker({prefix, range, head})`) |
 | `scripts/serve.mjs` | QED64's `scripts/serve-dist.mjs` + the Worker's headers | one local origin for the page, our overlays and the gallery, with the pin header (`X-Showcase-Pin`), the served release's API revision (`X-Showcase-Api`: revision, `none` or `invalid`, on every response) and `Cache-Control: no-store` for `/showcase/pin.json` |

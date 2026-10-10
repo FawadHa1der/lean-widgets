@@ -1,6 +1,6 @@
 # QED64: defects and limitations found while building the widget showcase
 
-**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06 and 2026-10-08).
+**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06, 2026-10-08, 2026-10-09 and 2026-10-10).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
 pin current`):** since 2026-10-04 the showcase **serves E `33b0967`** (your main with #55 and #54, on runtime
 `wasm64-3ab1c6a9da03bc29`; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
@@ -20,15 +20,31 @@ the user's decision (docs/REPIN-LOG.md, pin F entry).
 on 2026-10-06 and was the active pin of our local checkout until H replaced it the same day (one VERDICT, `g-full1c`;
 docs/REPIN-LOG.md, pin G entry). Its first full run found K1 below.
 **H `bf9d947`** (your **main** since you fast-forwarded it over `5c327c2`: G plus your keep-alive fix for K1; API
-revision `1.0.0`, the same runtime) was registered on 2026-10-06 and is the **active pin of our local checkout**, gated
-in the browser on 2026-10-06/07 (VERDICTs `h-full1b`, `h-full3`, `h-full4`, headed sign-off `h-headed2`; three renderer
+revision `1.0.0`, the same runtime) was registered on 2026-10-06 and was the active pin of our local checkout until
+2026-10-09, gated in the browser on 2026-10-06/07 (VERDICTs `h-full1b`, `h-full3`, `h-full4`, headed sign-off `h-headed2`; three renderer
 crashes in other runs, the #55 residual below; docs/REPIN-LOG.md, pin H entry). It is committed on our local branch
 `qed64-embedding-v1`, not pushed and not deployed; the live site still serves E.
+**I `385a1ac`** (your **main**: the `lean-v4.34.0-e1a79c1` adoption, runtime `wasm64-f69cca24d0878a58`, with your
+#62, #63 and #64; API revision `1.0.0`) was registered on 2026-10-09 and was the active pin of our local checkout
+until J replaced it the same day: overlays rebaked against the new runtime, verify, the headless gate and the overlay
+preflight green; its first full run found the kernel-0036 regression (last sections). It stays registered as that
+regression's record, not deployed. Its overlays are served from per-runtime directories
+(`/snapshots/widgets8.f69cca24d0878a58/`), for the reason your HARDENING #64 gives for your own indexes.
+**J `5e63edd`** (your **main** since 2026-10-09 ~20:30Z, the fast-forward of `fix/stack-probe-headroom`: I plus
+`lean.worker.js` setting `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, your HARDENING #67; the same runtime, overlays,
+main bundle and stock snapshots) is the **active pin of our local checkout** since ~18:55Z (first as a staged test pin)
+and is **gated in the browser** (VERDICTs `j-full1`, `j-full5`, headed sign-off `j-headed2`, C20 405/405, the 10 Mbit/s
+first visit; "2026-10-10: pin J" at the end). Not deployed; the live site still serves E.
 
 **Status as of H `bf9d947` (2026-10-08).** **K1** (the keep-alive starvation our C22 found in `5c327c2`) is **fixed in
 your `bf9d947`**, confirmed by our strict C22 (0 lines against 9). **#55 is reopened by you as a residual**: one booted
 runtime leaves too little of the renderer's pointer cage for a second one, which our C9, C10 and C11 each hit once on H
 ("#55 residual" below). Your **#62** and **#63** are in progress; our C9 and C11 assertions stay as they are.
+*Since 2026-10-09:* #62, #63 and #64 are in your `385a1ac`, our pin I, and in `5e63edd`, our pin J, which enforce them
+(update at the end of "#62 and #63" below; I's first full run confirmed #62, #63 and #64 and found the kernel 0036
+regression; J held all three in every full-suite run and in C11 ×3, and your #67 interim recovers every 0036 case we hit: "2026-10-10: pin J"
+at the end). *2026-10-10:* three renderer crashes on I and J (`i-full2` C10, `j-full2` C10, `j-full4` C21) were an
+artifact of our harness (Playwright's tracing), not of your page; the same section.
 *Earlier status (G `5c327c2`, 2026-10-06):* **D1 and D2 are fixed upstream** by your HARDENING #56 (the InfoView's RPC
 wrapped inside the webview, `capabilities.editorRpc`; `applyEdit`/`insertText`/`showDocument` implemented on the one
 model). **D3**, our `getWidgetSource` coalescing (the workaround for L2, gallery/README.md "QED64 limitations"), **is
@@ -81,7 +97,7 @@ and L1 were not re-tested in a browser on the new pin; the front end and the pac
 | N3 | the stock page has no favicon: headed desktop Chrome logs one 404 for `/favicon.ico` per load | cosmetic: breaks strict console checks in a real browser | allowed once per load in our headed run only | ship a favicon or `<link rel="icon" href="data:,">` |
 | #59 | **your HARDENING #59**: typing at a normal pace (150 ms/char) above a long uncancellable command (`#eval (IO.sleep 3000 : IO Unit)`, a long kernel check) with the InfoView open grew the pthread pool until the tab crashed, on every build up to F `84d594e`; the edit coalescing window (§7.8) caps bursts, not a sustained pace | medium for the gallery: a visitor who edits above a slow line can lose the tab; none of our eight examples has such a line | none from outside the page | yours (HARDENING #59). **Fixed in G `5c327c2` by your `e4cffcc` per your measurement** (back-pressure keyed on the worker's pool sample, at most 6 requests in flight, a queued request's cancel answered locally); **not yet measured by us**; also in H (#59 below) |
 | K1 | **new in G `5c327c2`** (your `e4cffcc`): the cap of 6 requests in flight queues the InfoView's `$/lean/rpc/keepAlive` behind requests waiting on a slow snapshot, so a checker busy for more than Lean's 30 s keep-alive window expires the InfoView's RPC session; the queued calls then get `-32900` "Outdated RPC session" from Lean and the InfoView reconnects | low–medium: console errors (9 in C22's two long phases in g-full1b, 5 in g-full1c) and an InfoView RPC reconnect after each elaboration longer than 30 s; panels come back | our C22 allowed the lines on `5c327c2` only, paired and timed (scenario `rpcKeepAliveStarved`) | **fixed in your `bf9d947`** (`keepAlive` never waits for a slot); your A/B 7 → 0, ours 9 → 0 (K1 below) |
-| #55r | **your #55, reopened as a residual** (2026-10-07): one booted runtime's ~25 glue isolates (~129 MiB each) fill most of the renderer's 4 GiB pointer cage, so a reload or reboot that starts a new runtime before the old isolates are gone can crash the renderer | medium for visitors who reload during a boot; the gallery's own boots go through `about:blank` | none from outside the page; our share of the heap is about 65 MiB (measured) | yours: a pool-size knob or a smaller glue; #62 and #63 (in progress) change the paths of our C9 and C11 crashes ("#55 residual" below) |
+| #55r | **your #55, reopened as a residual** (2026-10-07): one booted runtime's ~25 glue isolates (~129 MiB each) fill most of the renderer's 4 GiB pointer cage, so a reload or reboot that starts a new runtime before the old isolates are gone can crash the renderer | medium for visitors who reload during a boot; the gallery's own boots go through `about:blank` | none from outside the page; our share of the heap is about 65 MiB (measured) | yours: a pool-size knob or a smaller glue; #62 and #63 (in your `385a1ac`, our pin I, since 2026-10-09) change the paths of our C9 and C11 crashes ("#55 residual" below). *2026-10-10:* three crashes on I and J were our harness's tracing (PA-OOM-CDP), not this; the two C3 A/B crashes were V8 OOMs at 31 Workers, in line with it ("2026-10-10: pin J") |
 | S1 | slow first visits: the boot card is removed 120 s after an idle `ready…` status while the mathlib download still runs, so a 10 Mbit/s visitor sees only elapsed timers for minutes; the card says "~3 GB of memory" while a tab measures 8–9 GB | low–medium: slow links and small machines | none (our gallery has its own boot-timeout defect on such links) | keep the card while bytes arrive; update the memory figure. **Fixed in your 3e182ff (#54), in 33b0967; confirmed by us at 10 Mbit/s** (S1 below) |
 
 ---
@@ -1044,6 +1060,31 @@ C11 report a renderer crash as such.
 
 Neither is in H. We will register the commit you name, as for H, and re-run the full gate.
 
+**Update (2026-10-09): both landed, with #64, in your main at `385a1ac`, our pin I.** Your fix commits (#62 `9045b86`;
+#63 `e10454b`, `3524618`; #64 `5952e32`, `3bd5521`) are ancestors of `385a1ac` and of none of our earlier pins. Pin I's
+descriptor carries one flag per fix (`hardening.earlyUnpaired`, `networkPreboot`, `pinnedIndexes`), our `verify` checks
+each flag against your history (`git merge-base --is-ancestor`, all three OK on I), and the UX suite enforces each ask
+only through its flag, so the pins up to H keep the assertions above:
+
+* **C9 (#62):** the relay halts within 30 s of the navigation; 0 `[mem] runtime-initialized` lines; 0 `.snapz` GETs in
+  our server's log and in the browser; 0 `lean.wasm` chunk requests; at most 3 checker deaths; no renderer crash.
+* **C11 (#63):** exactly one runtime start for the single and for the lasting cut, `lastDeath` `{reason: 'bootFailed',
+  cause: {kind: 'network'}}`, relay `halted`; the recovery reload's `[boot] waited` lines, runtime starts and any crash are
+  recorded with their timing.
+* **Network log (#64):** every session records its requests (`<test>.<label>.network.jsonl`); a per-build index copy
+  requested on a paired boot, or an unexpected 404, fails the test, and C14 checks the whole run's server log for copy
+  requests. C1's cold boot writes `C1.cold.network.jsonl` and `C1.cold.server.log`, the one-boot network log you asked
+  for. We also upload your per-build copies (`snapshots/index.<buildId>.json`, `snapshots/profiles-index.<buildId>.json`)
+  beside the stock indexes.
+
+**First evidence (run `i-full2`, 2026-10-09).** #62, #63 and #64 held (C9: halted 4.9 s after navigation, 0 runtime
+starts, 0 `.snapz`; C11: one runtime start per lasting cut, `cause.kind` network, recovery reload ready in 13.7 s; C1: 0
+per-build index copies, 0 404s, browser `.snapz` count = serve log). The same run found a regression in the runtime
+(kernel patch 0036), below. The remaining evidence runs went to J `5e63edd` (the same fixes): **#62, #63 and #64 held in
+all seven J full-suite runs** (C1, C9 and C11 passed in `j-full1`…`j-full5`, `j-headed1`, `j-headed2`; the network
+oracle 0 per-build index copies and 0 unexpected 404s in each), and **C11 headed ×3 (`j-c11h3`) passed 3/3**; C10 ×20
+is running ("2026-10-10: pin J" at the end).
+
 ---
 
 ## How to re-check any of this
@@ -1068,3 +1109,91 @@ runs). No test's console verdict failed, and that verdict includes the InfoView-
 D1 error text (the scan that fails C17 on the bridge-less mutant above).
 
 **Caveat (added 2026-10-03).** The mechanism probe's worker timings are Playwright Worker `close` events, i.e. CDP target detach, not proof that the worker's V8 isolate was freed. Blink force-terminates a worker that is busy in wasm only after a ~2 s grace (`worker_thread.cc`, per the QED64 V2 session), and every V2 hit lands 2.0–2.16 s after a reload. So this negative result rules out only the page-side teardown ORDER we tried (relay.unload + removing the iframe on pagehide); it does not rule out late isolate death as the mechanism.
+
+## 2026-10-09: kernel patch 0036's engine-stack probe rejects proofs Chrome ran before (pin I, runtime f69cca24)
+
+Draft for the kernel and QED64 owners (sent to both sessions on 2026-10-09; nothing posted publicly).
+
+- **What:** on runtime `wasm64-f69cca24d0878a58` (release `lean-v4.34.0-e1a79c1`, QED64 `385a1ac`), in Chrome
+  (headless-shell, Playwright 1.62.1), 9 of the 21 DistLens click-all examples fail: every inserted
+  `example : twoDice k = … := by unfold Showcase.DistLens.twoDice Showcase.DistLens.die; pmf_num` (k = 1..9) ends with
+  "maximum recursion depth has been reached: the WebAssembly runtime's stack is exhausted (…)" (the fork's
+  `src/Lean/CoreM.lean:513`). A weather example fails as `ennreal_num: cannot close this ℝ≥0∞ goal`, which reads as the
+  probe's error caught inside a tactic.
+- **Before:** on runtime `wasm64-3ab1c6a9da03bc29` (kernel `a8817d0`, no 0036) the same 21 clicks pass 21/21 in four
+  runs on the same host and browser. In Node (larger stack) they pass on f69cca24 too.
+- **Why (reading of `41ec56530d`):** `Core.checkSystem` requires 16384 free argument slots (128 KiB) of the Worker's
+  engine stack (~500 KiB in Chrome) on every 16th call, so an elaboration needing roughly 370–500 KiB of engine stack —
+  which completed before — now fails. It is not specific to the widgets: any user proof of that depth regresses.
+- **Repro:** `$W/pinI/repro-0036/TwoDice.lean` (the DistLens example plus the inserted line; needs the showcase's
+  `widgets8.f69cca24d0878a58` overlay) and its README; evidence `out/ux/i-full2/tests/{C20,W8,C22}.json`.
+- **Asks:** calibrate the headroom against Chrome's real Worker budget (or probe only past a measured depth), or let an
+  embedder set `LEAN_WASM_STACK_PROBE_SLOTS`; add a gate case at Chrome's budget with a proof of this depth.
+- **Kernel session's findings (2026-10-09):** confirmed as a 0036 regression. Headlessly (snapshot-probe, Workers at
+  Chrome's 0.68 MB, `Elab.async` on, our widgets8 snapshot) the TwoDice proofs compile at every guard setting, so the
+  browser's FileWorker path starts deeper than the compile path and only a Chrome gate sees it. An Init-only miniature:
+  `∀ n m : Fin K, n * m = m * n := by decide` at Chrome's budget passes for K = 20/24 without the guard and is rejected
+  with it (K ≥ 26 really overflows). The guard cannot just shrink (at 4096 slots the kernel's own probe overflows
+  between probes). Interim option for QED64: `LEAN_WASM_STACK_PROBE_SLOTS=8192` at the worker's preRun (recovers about
+  half of the band: K = 20 passes, 22/24 still rejected) — a new QED64 commit on the same runtime. Fix: runtime patch
+  0038 (probe four times as often with a quarter of the headroom), pending the owner's OK; TwoDice stays a browser
+  regression case for it.
+
+
+## 2026-10-10: pin J (5e63edd) — your #67 interim confirmed, the asks held, the C3 memory A/B, and a harness artifact behind three crashes
+
+For the kernel and QED64 owners; nothing posted publicly. Pin J is your main `5e63edd` (I plus `lean.worker.js` setting
+`LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, HARDENING #67) on runtime `wasm64-f69cca24d0878a58`; evidence in
+docs/REPIN-LOG.md, pin I entry, "Pin J" (logs `$W/logs/pinJ-*.log`, chain log `pinJ-chain.log`).
+
+- **#67, the interim for 0036, recovers every case we hit.** `j-dl1` (W8, C20, C22): C20 135/135 with DistLens 21/21
+  (I: 12/21), W8's clicks clean (the weather `ennreal_num` failure gone too), C22's slow `twoDice 5` click ok. Then
+  `j-c20-1/2/3` 135/135 each (**405/405**), DistLens 21/21 each, and W8/C20/C22 green in every full run on J. The 0036
+  fix itself is still patch 0038 (waiting for the owner's OK); `TwoDice` stays a browser regression case for it
+  (`$W/pinI/repro-0036/`).
+- **The gate on J:** VERDICTs `j-full1` and `j-full5` (34 passed, C19 skipped each), the headed sign-off `j-headed2`
+  (35/35), and the 10 Mbit/s / 40 ms first visit shaped outside the browser (`RESULT PASS`, ready at 565.1 s against
+  H's 565.6 s; 693.1 MB at 9.8 Mbit/s; your boot card's progress visible in 563 of 564 samples, no error card, no
+  crash). Red: `j-full2` (C10 crash), `j-full3` (C3 10.67 GB against our 10.5 GB line), `j-full4` (C3 10.50 GB, C21
+  crash), `j-headed1` (C3 10.51 GB, C10 crash); the crashes and the C3 figures are explained below.
+- **#62, #63, #64 held** in all seven J full-suite runs (C1, C9 and C11 passed in each; the network oracle 0 per-build
+  index copies and 0 unexpected 404s in each), and **C11 headed ×3** (`j-c11h3`, 2026-10-10 03:51–03:53Z) passed 3/3:
+  per repeat the single cut was absorbed (1 runtime start, ready in 13.5–13.9 s); the lasting cut made 1 runtime start
+  and 3 deaths, `lastDeath.cause.kind` network, relay halted at 10.8–10.9 s; the recovery reload, 0.51–0.52 s after the
+  halt, never crashed and was ready in 11.7–12.2 s with the right panel. **C10 ×20** (`j-c10x20`, the #55-residual
+  tally) is **running** (`$W/logs/pinJ-ux-c10x20.log`); nothing here claims its result.
+- **Three of our crashes were our harness, not your page.** macOS ReportCrash writes
+  `~/Library/Logs/DiagnosticReports/chrome-headless-shell-*.ips` for every renderer crash; the kernel session's
+  classifier (copy `$W/pinI/crash/crash-sig.py`) reads the faulting stack:
+
+  | Crash | Class | DedicatedWorker threads |
+  |---|---|---|
+  | `i-full2` C10 (2026-10-09 17:52:57Z) | PA-OOM-CDP | 26 |
+  | `j-full2` C10 (19:57:32Z) | PA-OOM-CDP | 26 |
+  | `j-full4` C21 (2026-10-10 00:15:03Z) | PA-OOM-CDP | 26 |
+  | C3 A/B, I round 1 (01:49:31Z) | V8-OOM | 31 |
+  | C3 A/B, J round 5 (02:58:19Z) | V8-OOM | 31 |
+  | `j-headed1` C10 (headed Chrome for Testing) | no `.ips` left | – |
+
+  **PA-OOM-CDP** is a PartitionAlloc OOM in `DevToolsSession::SendProtocolResponse` serializing a
+  `Network.getResponseBody` reply. Our Playwright config had `trace: 'retain-on-failure'`, and Playwright's trace
+  recorder fetches every response body over CDP (its HarTracer, whatever the content mode), so a Worker of yours
+  re-fetching the 1.27 GB snapshot on a reload or restart had it base64'd inside the renderer. Users never run DevTools,
+  so this is an artifact of our harness; it also inflated every renderer-RSS figure we took with tracing on (C3's 10.5 GB
+  line failures, C10's transient peaks of 12.6–14.3 GB in the full runs on I and J). Tracing is off in our suite since
+  2026-10-10 (`UX_TRACE` opts in to debug one failure); `j-c11h3`, `j-c10x20` and all later runs are tracing-off. This
+  withdraws our earlier reading that the crashes concentrated on f69cca24 with the guard on.
+- **The C3 memory A/B** (the kernel's design: 5 interleaved rounds of H `bf9d947` (runtime 3ab1c6a9, no guard), I
+  `385a1ac` (guard 16384), your measurement-only `58ae6d2` (guard off) and J (guard 8192), C3 only, 2026-10-10
+  01:44–03:08Z; all arms before the tracing change, so the figures include its cost equally). Renderer GB at ready →
+  after the 8 panels: **H 9.55 → 10.50, I 9.52 → 10.45, `58ae6d2` 9.44 → 10.25, J 9.48 → 10.39**. Interleaved there is
+  **no runtime offset**: our earlier "+0.3 GB on f69cca24" compared against H runs from days before (host drift), and
+  every arm crosses the 10.5 GB line on some runs. The two crashes (I r1, J r5) are **V8-OOM**: a Scavenge could not
+  grow the heap after the pool had grown to 31 DedicatedWorkers (the #55 cage). Pool growth past 24 Workers happens in
+  every arm (H, I, `58ae6d2`, J), so the guard-on 2/10 vs off 0/10 split reads as chance, not as a 0036 effect. Logs
+  `$W/logs/pinAB-c3-{h,i,d,j}-{1..5}.log`.
+- **Next on our side (running/queued, no results yet):** after `j-c10x20`, a pool-growth chain (`$W/pinI/chainPG.sh`;
+  8 interleaved rounds, C3 + one C10 storm each, tracing off) on three local measurement pins: `27a4ba6` (your branch
+  `fix/own-predecessor-wait`: `5e63edd` + #68, a page that replaces its own runtime waits for all of its Workers, + the
+  `[pool]` growth/lifetime diagnostic; not on your main), `0ff314c` and `3b804ea` (the same with
+  `LEAN_WASM_PARKED_DEDICATED` 8 and 4). Its results go here when they exist.

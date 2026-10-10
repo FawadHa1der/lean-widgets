@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, lockHeld, watchConsole, writeJson, sleep, chromeRss } from './lib.mjs';
+import { SC, ORIGIN, LAUNCH_ARGS, EXAMPLES, OVERLAY_W8, lockHeld, watchConsole, writeJson, sleep, chromeRss } from './lib.mjs';
 
 lockHeld();
 const argv = process.argv.slice(2);
@@ -23,7 +23,7 @@ const res = { tag, id: ex.id, line, bridge };
 try {
   await page.goto(`${ORIGIN}/showcase/pin.json`);
   await page.evaluate((t) => localStorage.setItem('qed64.buffer', t), ex.text);
-  await page.goto(`${ORIGIN}/?snapshots=snapshots/widgets8`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${ORIGIN}/?snapshots=snapshots/${OVERLAY_W8}`, { waitUntil: 'domcontentloaded' });
   for (;;) { const s = await page.evaluate(() => globalThis.qed64 && globalThis.qed64.status()).catch(() => null); if (s && s.phase === 'ready') break; await sleep(200); }
   await sleep(1500);
   await page.evaluate(() => {

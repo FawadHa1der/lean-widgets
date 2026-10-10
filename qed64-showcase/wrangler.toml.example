@@ -25,7 +25,8 @@ not_found_handling = "none"
 # "/showcase" -> "/showcase/" and "/showcase/" -> showcase/index.html.
 html_handling = "auto-trailing-slash"
 
-# Artifacts: /runtime/ /profiles/ /snapshots/ (incl. our overlays /snapshots/widgets8/, /snapshots/widgets7/).
+# Artifacts: /runtime/ /profiles/ /snapshots/ (incl. our overlays /snapshots/<dir>/: widgets8/ and widgets7/ for pins
+# A-H, widgets8.<bid16>/ and widgets7.<bid16>/ from pin I on, scripts/lib/pins.mjs overlayDir; no alias here).
 # Default: SHARED with QED64 (bucket qed64-artifacts, which already holds QED64's objects at the root and
 # lean4game's under lean4game/); the showcase's objects live under R2_PREFIX, so the three mutable manifest
 # sets never collide and the existing bucket-scoped upload token (rclone remote qed64-r2) serves all three.
@@ -38,6 +39,6 @@ bucket_name = "qed64-artifacts"
 [vars]
 R2_PREFIX = "qed64-showcase/"
 # A bare "/" (no query) redirects to the gallery. The gallery's own iframe URL
-# "/?snapshots=snapshots/<overlay>" carries a query and is never redirected. Remove to serve the
+# "/?snapshots=snapshots/<dir>" carries a query and is never redirected. Remove to serve the
 # stock QED64 page at "/" (needs the stock snapshots, which deploy-manifest uploads by default).
 ROOT_REDIRECT = "/showcase/"

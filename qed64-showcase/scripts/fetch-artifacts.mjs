@@ -9,10 +9,13 @@
 //                              QED64's git at the pin (`git show`, the source dependency deps/qed64 or the pin's
 //                              worktree); every other public/ file is FETCHED: URL path /<p> on the origin.
 //                  dist/<p>    QED64's page: built from source by scripts/build-shell.mjs, never fetched.
-//   overlays       our widget snapshot regions (index.json + init + widgets .snapz) at /snapshots/<overlay>/<file>,
-//                              installed into out/runtimes/<buildId>/overlay/<overlay>/ (the per-runtime overlay store).
+//   overlays       our widget snapshot regions (index.json + init + widgets .snapz) at <overlays.<o>.url><file>, i.e.
+//                              /snapshots/<dir>/<file> with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin): widgets8 for
+//                              pins A–H, widgets8.<bid16> for a per-runtime pin (pin.json v3); the lock's url must say
+//                              exactly that (else the run refuses before fetching anything). Installed into
+//                              out/runtimes/<buildId>/overlay/<o>/ (the per-runtime overlay store, by logical name).
 //
-// Origins (an origin serves the deployed layout: /runtime/…, /profiles/…, /snapshots/…, /snapshots/widgets8/…):
+// Origins (an origin serves the deployed layout: /runtime/…, /profiles/…, /snapshots/…, /snapshots/<dir>/…):
 //   --origin <url>         (ARTIFACT_ORIGIN)        the showcase's own origin: our deployed Worker, or scripts/serve.mjs
 //                                                   of a checkout that has the files. Serves QED64's files AND overlays.
 //   --qed64-origin <url>   (QED64_ARTIFACT_ORIGIN)  an origin serving QED64's own files only (QED64's live site serves
@@ -89,7 +92,11 @@ if (ONLY !== 'public') {
   for (const [o, rec] of Object.entries(LOCK.overlays)) {
     const want = path.join('out', 'runtimes', BID, 'overlay', o);
     if (rec.dir !== want) { console.error(`fetch-artifacts: lock overlays.${o}.dir ${rec.dir} != ${want}`); process.exit(2); }
-    for (const [f, m] of Object.entries(rec.files)) plan.push({ dest: path.join(SC, rec.dir, f), rel: `${rec.dir}/${f}`, url: `/snapshots/${o}/${f}`, bytes: m.bytes, sha256: m.sha256, from: 'origin', kind: 'overlay' });
+    // the served URL comes from the lock, checked against the one naming rule (fail closed: never guess a directory)
+    let wantUrl = null;
+    try { wantUrl = PINS.overlayUrl(o, ID); } catch (e) { console.error(`fetch-artifacts: overlay ${o}: ${e.message}`); process.exit(2); }
+    if (rec.url !== wantUrl) { console.error(`fetch-artifacts: lock overlays.${o}.url ${rec.url} != ${wantUrl} (scripts/lib/pins.mjs overlayUrl for pin ${ID})`); process.exit(2); }
+    for (const [f, m] of Object.entries(rec.files)) plan.push({ dest: path.join(SC, rec.dir, f), rel: `${rec.dir}/${f}`, url: `${rec.url}${f}`, bytes: m.bytes, sha256: m.sha256, from: 'origin', kind: 'overlay' });
   }
 }
 if (argv.includes('--git-only')) { if (ONLY === 'overlays') usage('--git-only installs public/ manifests; not with --only overlays'); plan.splice(0, plan.length, ...plan.filter((x) => x.from !== 'origin')); }

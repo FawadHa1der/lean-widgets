@@ -126,6 +126,40 @@ export const API = GALLERY_PIN.apiRevision != null;
 export const API_REVISION = API ? GALLERY_PIN.apiRevision : null;
 /** How the gallery records a restart it made (stall events' `how`, liveness events' `action`): api.restart() in V1 mode, relay.restart in legacy mode. */
 export const RESTART_HOW = API ? 'api.restart' : 'relay.restart';
+export { PINS };
+/**
+ * The tested pin's QED64 hardening flags (pins/<id>/pin.json `hardening`, checked against QED64's history by
+ * scripts/pin-qed64.mjs verify): earlyUnpaired (#62, 9045b86), networkPreboot (#63, e10454b + 3524618), pinnedIndexes (#64,
+ * 5952e32 + 3bd5521). The specs ENFORCE the asks' assertions only where the flag is true (C9, C11, the network oracle, C14);
+ * pins <= bf9d947 carry no flags, so they keep exactly today's assertions and only RECORD the new fields.
+ */
+export const HARD = PIN.hardening || {};
+/** A per-build index copy (QED64 #64: /snapshots/index.<bid>.json, /snapshots/profiles-index.<bid>.json), in any directory. */
+export const COPY_RE = /\/(?:profiles-)?index\.wasm64-[0-9a-f]{16}\.json(?:[?#]|$)/;
+/** One runtime start: the worker's memCheckpoint('runtime-initialized') as the page logs it (console.debug '[lean:stderr] …', worker null). */
+export const RUNTIME_START_RE = /^\[lean:stderr\] \[mem\] runtime-initialized: (\d+) MiB$/;
+/** lean.worker.js's boot wait for stopping runtimes (printed only when some were stopping). */
+export const BOOT_WAITED_RE = /^\[lean:stderr\] \[boot\] waited (\d+) ms for (\d+) stopping runtime\(s\) \(([^)]*) Workers alive\)( — budget spent, booting anyway)?/;
+/**
+ * The served directory of the widgets8 overlay (scripts/lib/pins.mjs overlayDir): what the gallery puts into the frame's
+ * ?snapshots= and what a stock page must ask for. gallery/pin.json carries it as `overlays` (scripts/build-gallery.mjs);
+ * a pin.json without it (built before per-runtime directories) means the bare name, as on pins A-H.
+ */
+export const OVERLAY_W8 = (GALLERY_PIN.overlays || {}).widgets8 || 'widgets8';
+if (PINS.OVERLAY_DIR_RE && !PINS.OVERLAY_DIR_RE.test(OVERLAY_W8)) throw new Error(`gallery/pin.json overlays.widgets8 ${JSON.stringify(OVERLAY_W8)} is not a served overlay directory name`);
+// the served gallery must name the directory pins.mjs derives for the TESTED pin, whichever pin that gallery was built for:
+// a stale gallery/pin.json on a per-runtime pin (no `overlays`), or the active pin's gallery over a staged pin of the other
+// naming (UX_PIN), would make every stock page and frame assertion ask for a directory the tested pin's server does not
+// serve (a 404 that reads like a QED64 fault). Refused at import (global-setup then refuses the run), with the fix. On pins
+// A-H the directory is the bare name, as every gallery of theirs names it.
+if (typeof PINS.overlayDir === 'function') {
+  const want = PINS.overlayDir('widgets8', PIN.id);
+  if (OVERLAY_W8 !== want) throw new Error(`the served gallery/pin.json (built for pin ${GALLERY_PIN.pin}) serves widgets8 as '${OVERLAY_W8}' but the tested pin ${PIN.id} serves it as '${want}' (scripts/lib/pins.mjs overlayDir): ${GALLERY_PIN.pin === PIN.id ? 'rebuild the gallery (scripts/showcase.sh gallery)' : `a pin with another overlay directory naming needs a gallery built for it: serve one with GALLERY_DIR, or 'scripts/showcase.sh pin use ${PIN.id}' + 'scripts/showcase.sh gallery'`}`);
+}
+/** `s` with every RegExp metacharacter escaped (a served directory name carries dots). */
+export const reEscape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** The port of ORIGIN: its serve.mjs log is $W/logs/serve-<port>.log (scripts/serve-start.sh). */
+export const ORIGIN_PORT = Number(new URL(ORIGIN).port) || 5190;
 export const EXAMPLES = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/examples.json'), 'utf8')).examples;
 export const BY_ID = Object.fromEntries(EXAMPLES.map((e) => [e.id, e]));
 export const IDS = EXAMPLES.map((e) => e.id);
@@ -246,10 +280,32 @@ export function serverBytes(sinceMs, port = 5190) {
     const m = /^(\S+Z) (GET|HEAD) (\S+) (\d{3}) (\d+)\/(\d+)/.exec(l); if (!m) continue;
     const t = Date.parse(m[1]); if (!(t >= sinceMs)) continue;
     const p = m[3].split('?')[0];
-    const k = p.startsWith('/snapshots/') ? (/\.snapz$/.test(p) ? `snapz${m[2] === 'HEAD' ? '-HEAD' : ''}` : 'snapshots-index') : (p.split('/')[1] || 'root');
+    // a per-build index copy (#64) is its own key: on a pinned-index pin there must be none
+    const k = COPY_RE.test(p) ? 'index-copy' : p.startsWith('/snapshots/') ? (/\.snapz$/.test(p) ? `snapz${m[2] === 'HEAD' ? '-HEAD' : ''}` : 'snapshots-index') : (p.split('/')[1] || 'root');
     const b = out[k] || (out[k] = { n: 0, bytes: 0, s304: 0 }); b.n++; b.bytes += Number(m[5]); if (m[4] === '304') b.s304++;
   }
   return out;
+}
+/**
+ * serve.mjs log lines (network truth: browser HTTP-cache and OPFS hits never reach it) logged at or after `sinceMs` (epoch)
+ * whose path (query stripped) matches `re`, of `method` (GET by default; null = GET and HEAD) and `status` (null = any).
+ * Lines are written at response END, so a response still streaming is not there yet. Reads the last 32 MiB of the log.
+ */
+export function serverLines(sinceMs, { port = ORIGIN_PORT, re = /./, method = 'GET', status = null } = {}) {
+  const f = path.join(W, 'logs', `serve-${port}.log`); if (!fs.existsSync(f)) return [];
+  const size = fs.statSync(f).size; const n = Math.min(size, 32 << 20); const buf = Buffer.alloc(n);
+  const fd = fs.openSync(f, 'r'); try { fs.readSync(fd, buf, 0, n, size - n); } finally { fs.closeSync(fd); }
+  return buf.toString('utf8').split('\n').filter((l) => {
+    const m = /^(\S+Z) (GET|HEAD) (\S+) (\d{3}) /.exec(l);
+    return !!m && Date.parse(m[1]) >= sinceMs && (!method || m[2] === method) && (status === null || +m[4] === status) && re.test(m[3].split('?')[0]);
+  });
+}
+/**
+ * The page-context console lines (worker null: the QED64 page logs its worker's stderr as console.debug '[lean:stderr] …')
+ * of every page of session `s` whose text matches `re`, in [sinceWall, untilWall) (epoch ms). Returns [{wall, text}].
+ */
+export function pageLines(s, re, { sinceWall = 0, untilWall = Infinity } = {}) {
+  return s.watches.flatMap((w) => w.messages).filter((m) => m.worker === null && m.wall >= sinceWall && m.wall < untilWall && re.test(m.text)).map((m) => ({ wall: m.wall, text: m.text })).sort((a, b) => a.wall - b.wall);
 }
 export function serverUp(origin = ORIGIN) {
   const r = spawnSync('curl', ['-sf', '-o', '/dev/null', '-w', '%{http_code}', `${origin}/showcase/pin.json`], { encoding: 'utf8' });
@@ -294,7 +350,7 @@ const IV_SRC = `(() => {
 
 // ------------------------------------------------------------------ console watcher (all frames, workers, loads)
 export function watchConsole(page, t0, sink) {
-  const w = { messages: [], pageErrors: [], crashed: false, workers: [], loads: { top: 0, qed64: 0, infoview: 0 } };
+  const w = { messages: [], pageErrors: [], crashed: false, crashedAt: null, workers: [], loads: { top: 0, qed64: 0, infoview: 0 } };
   const emit = (kind, rec) => { if (sink) sink(kind, rec); };
   page.on('console', (m) => {
     let loc = null; try { loc = m.location(); } catch { /* ignore */ }
@@ -303,7 +359,10 @@ export function watchConsole(page, t0, sink) {
     w.messages.push(rec); emit('console', rec);
   });
   page.on('pageerror', (e) => { const rec = { t: Date.now() - t0, wall: Date.now(), message: String(e && e.message || e).slice(0, 400), name: e && e.name, stack: String(e && e.stack || '').split('\n').slice(0, 8).join('\n') }; w.pageErrors.push(rec); emit('pageerror', rec); });
-  page.on('crash', () => { w.crashed = true; emit('crash', { t: Date.now() - t0, rss: chromeRss() }); });
+  // crashedAt = the first crash; crashTimes = every crash; lastNavAt = the last top-document commit (a reload after a crash
+  // revives the page, so 'crashed now' is a crash after the last navigation: Gallery.waitGallery)
+  page.on('crash', () => { const at = Date.now(); w.crashed = true; w.crashedAt ??= at; (w.crashTimes ||= []).push(at); emit('crash', { t: at - t0, wall: at, rss: chromeRss() }); });
+  page.on('framenavigated', (f) => { if (f === page.mainFrame()) w.lastNavAt = Date.now(); });
   page.on('worker', (wk) => { const rec = { t: Date.now() - t0, url: wk.url().replace(/^https?:\/\/localhost:\d+/, '').slice(0, 120), closed: null }; w.workers.push(rec); wk.on('close', () => { rec.closed = Date.now() - t0; }); });
   // loads (selectors.json consoleAllowlist per-load limits), counted exactly like tests/ux/bringup/lib.mjs
   const depth = (f) => { let d = 0; for (let p = f.parentFrame(); p; p = p.parentFrame()) d++; return d; };
@@ -397,17 +456,29 @@ export async function launch(testInfo, { profile = 'fresh', viewport = { width: 
   // (last-mile lane: the same build gives the headed baselines on a 1x display and a 6.7 % different gallery on the 2x
   // Retina panel; tests/ux/tools/c13-dsf-probe.mjs, out/ux/last-mile/RESULTS.md). Headed launches therefore pin the
   // display scale to 1, so the headed baselines hold on any display. Headless launches are unchanged.
-  const args = headed ? [...LAUNCH_ARGS, '--force-device-scale-factor=1'] : LAUNCH_ARGS;
+  // UX_CRASH_DIAG=1 (crash-signature runs for the kernel, 2026-10-10; never a verdict run): Chrome logs to stderr
+  // (--enable-logging=stderr --v=0, printed with the suite's output under DEBUG=pw:browser; the OOM handler logs
+  // "V8 javascript OOM (<where>)"). No crashpad: macOS ReportCrash already writes ~/Library/Logs/DiagnosticReports/
+  // chrome-headless-shell-*.ips for every renderer crash, and a crash reporter could stop that forwarding.
+  const crashDiag = process.env.UX_CRASH_DIAG === '1';
+  const args = [...(headed ? [...LAUNCH_ARGS, '--force-device-scale-factor=1'] : LAUNCH_ARGS),
+    ...(crashDiag ? ['--enable-logging=stderr', '--v=0'] : [])];
+  label = label || `s${++launchSeq}`;
+  // UX_HAR=<regex> (or 1 = every session): also record a HAR of the sessions whose '<test id>.<label>' matches (e.g.
+  // UX_HAR=C1.cold), written to out/ux/<run>/tests/<id>.<label>.har when the context closes (bodies omitted). Diagnostics
+  // for QED64's ask 1 (one boot's network log); the suite's own record is the .network.jsonl of every session.
+  const harRe = process.env.UX_HAR ? new RegExp(process.env.UX_HAR === '1' ? '.' : process.env.UX_HAR) : null;
+  const recordHar = harRe && harRe.test(`${slug(testInfo)}.${label}`) ? { path: path.join(RUN_DIR, 'tests', `${slug(testInfo)}.${label}.har`), content: 'omit', mode: 'full' } : undefined;
   let browser = null; let context;
   if (profile === 'fresh') {
     browser = await chromium.launch({ args, headless: !headed, channel });
-    context = await browser.newContext(opts);
+    context = await browser.newContext({ ...opts, ...(recordHar ? { recordHar } : {}) });
   } else {
     const dir = profile === 'warm' ? WARM_PROFILE : profile;
     fs.mkdirSync(dir, { recursive: true });
-    context = await chromium.launchPersistentContext(dir, { args, headless: !headed, channel, ...opts });
+    context = await chromium.launchPersistentContext(dir, { args, headless: !headed, channel, ...opts, ...(recordHar ? { recordHar } : {}) });
   }
-  const s = new Session({ testInfo, browser, context, t0, label: label || `s${++launchSeq}`, profile, cool });
+  const s = new Session({ testInfo, browser, context, t0, label, profile, cool });
   await s.init();
   return s;
 }
@@ -417,6 +488,9 @@ export class Session {
     Object.assign(this, { testInfo, browser, context, t0, label, profile, cool });
     this.reports = []; this.watches = []; this.pages = []; this.closed = false; this.bytes = {}; this.requests = [];
     this.stream = fs.openSync(path.join(RUN_DIR, 'tests', `${slug(testInfo)}.${label}.console.jsonl`), 'w');
+    // every request of the context (pages, frames and, where Playwright reports them, workers): request / response / finished /
+    // failed records, one JSON per line (QED64 ask 1: copies and 404s attributed per session; the C1 cold boot's is the log sent upstream)
+    this.net = fs.openSync(path.join(RUN_DIR, 'tests', `${slug(testInfo)}.${label}.network.jsonl`), 'w');
   }
   log(kind, rec) { try { fs.writeSync(this.stream, `${JSON.stringify({ kind, ...rec })}\n`); } catch { /* ignore */ } }
   async init() {
@@ -428,6 +502,20 @@ export class Session {
     await this.context.addInitScript({ content: IV_SRC });
     this.context.on('page', (p) => this.adopt(p));
     for (const p of this.context.pages()) this.adopt(p);
+    // the network record (networkSummary / networkVerdict): paths relative to the local origin, the frame that asked
+    // ('worker?' when Playwright gives none: service-worker requests, and possibly dedicated workers), status and failure
+    const ids = new WeakMap();
+    const relUrl = (u) => { try { const x = new URL(u); return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(x.hostname) ? x.pathname + x.search : u; } catch { return u; } };
+    // never after close(): a late requestfinished (sizes() resolves asynchronously) must not write into a reused descriptor
+    const net = (o) => { if (this.net === null) return; try { fs.writeSync(this.net, `${JSON.stringify(o)}\n`); } catch { /* ignore */ } };
+    this.context.on('request', (rq) => {
+      let fr; try { fr = relUrl(rq.frame().url()); } catch { fr = 'worker?'; }
+      const r = { id: this.requests.length + 1, wall: Date.now(), t: Date.now() - this.t0, method: rq.method(), path: relUrl(rq.url()), type: rq.resourceType(), nav: rq.isNavigationRequest(), frame: fr, status: null, failure: null };
+      ids.set(rq, r); this.requests.push(r); net({ kind: 'request', ...r });
+    });
+    this.context.on('response', (rs) => { const r = ids.get(rs.request()); if (!r) return; r.status = rs.status(); net({ kind: 'response', id: r.id, wall: Date.now(), status: r.status, sw: rs.fromServiceWorker() }); });
+    this.context.on('requestfinished', (rq) => { const r = ids.get(rq); if (!r) return; rq.sizes().then((z) => net({ kind: 'finished', id: r.id, wall: Date.now(), bodyBytes: z.responseBodySize, timing: rq.timing() }), () => {}); });
+    this.context.on('requestfailed', (rq) => { const r = ids.get(rq); if (!r) return; r.failure = (rq.failure() && rq.failure().errorText) || 'failed'; net({ kind: 'failed', id: r.id, wall: Date.now(), failure: r.failure }); });
     // Tracing: @playwright/test instruments every context created during a test (also through the `playwright`
     // library), so the config's trace: 'retain-on-failure' already records these contexts and keeps the zip only for
     // failed tests (attached to the test, under out/ux/<run>/test-results/). Nothing to start here.
@@ -440,7 +528,7 @@ export class Session {
     p.on('response', (r) => {
       try {
         const u = new URL(r.url()); if (!/^localhost$/.test(u.hostname)) return;
-        const pre = u.pathname.startsWith('/snapshots/') ? (/\.snapz$/.test(u.pathname) ? 'snapz' : 'snapshots-index') : (u.pathname.split('/')[1] || 'root');
+        const pre = COPY_RE.test(u.pathname) ? 'index-copy' : u.pathname.startsWith('/snapshots/') ? (/\.snapz$/.test(u.pathname) ? 'snapz' : 'snapshots-index') : (u.pathname.split('/')[1] || 'root');
         if (r.request().method() !== 'GET') return; // the gallery preflight HEADs each .snapz (no body)
         r.request().sizes().then((sz) => { const b = this.bytes[pre] || (this.bytes[pre] = { n: 0, bytes: 0, s304: 0 }); b.n++; b.bytes += Math.max(0, sz.responseBodySize || 0); if (r.status() === 304) b.s304++; }).catch(() => {});
       } catch { /* ignore */ }
@@ -449,6 +537,20 @@ export class Session {
   async newPage() { const p = await this.context.newPage(); this.adopt(p); return p; }
   page() { return this.pages[0] || null; }
   watchOf(page) { return this.watches[this.pages.indexOf(page)]; }
+  /**
+   * What this session asked the network for (its request record): per-build index copies (#64), 404 responses, .snapz GETs
+   * and lean.wasm chunk requests. Cache-served requests are in it too (the serve.mjs log is the network-truth counterpart).
+   */
+  networkSummary() {
+    const q = this.requests;
+    return {
+      requests: q.length,
+      indexCopies: q.filter((r) => COPY_RE.test(r.path)).map((r) => ({ t: r.t, method: r.method, path: r.path, status: r.status })),
+      notFound: q.filter((r) => r.status === 404).map((r) => ({ t: r.t, path: r.path, type: r.type, frame: r.frame })),
+      snapzGets: q.filter((r) => r.method === 'GET' && /\.snapz(?:\?|$)/.test(r.path)).length,
+      wasmChunkGets: q.filter((r) => /\/runtime\/chunks\/lean\.wasm\./.test(r.path)).length,
+    };
+  }
   /** Console verdict over every page of this session. */
   verdict({ scenarios = [] } = {}) {
     const merged = { messages: [], pageErrors: [], crashed: false, loads: { top: 0, qed64: 0, infoview: 0 } };
@@ -460,9 +562,27 @@ export class Session {
     await this.context.close().catch(() => {});
     if (this.browser) await this.browser.close().catch(() => {});
     try { fs.closeSync(this.stream); } catch { /* ignore */ }
+    try { if (this.net !== null) fs.closeSync(this.net); } catch { /* ignore */ }
+    this.net = null;
   }
 }
-export const slug = (testInfo) => testInfo.title.split(' ')[0].replace(/[^A-Za-z0-9._-]/g, '_');
+/**
+ * The network oracle of one session (QED64 ask 1): no per-build index copy on a paired boot (#64), and no 404 except the
+ * headed /favicon.ico, an overlay a bootFailure test breaks on purpose (C8's /snapshots/nope/), and the staged-legacy
+ * /qed64-build.json probe (allowlist() STAGED_LEGACY_404). `enforced` only on a pin with hardening.pinnedIndexes; older
+ * pins record the result.
+ */
+export function networkVerdict(n, scenarios = []) {
+  const reasons = [];
+  if (n.indexCopies.length && !scenarios.includes('mispairedIndex')) reasons.push(`#64: per-build index copy requested on a paired boot: ${n.indexCopies.map((x) => x.path).join(', ')}`);
+  const ok404 = (p) => (HEADED_ALL && p === '/favicon.ico') || (scenarios.includes('bootFailure') && p.startsWith('/snapshots/')) || (GALLERY_PIN.servedVia === 'probe' && !API && p === '/qed64-build.json');
+  const bad = n.notFound.filter((x) => !ok404(x.path.split('?')[0]));
+  if (bad.length) reasons.push(`404: ${bad.map((x) => x.path).join(', ')}`);
+  return { ok: !reasons.length, enforced: !!HARD.pinnedIndexes, reasons };
+}
+// the test id: the first word of the title, plus '.rNN' for a --repeat-each repeat (repeatEachIndex > 0), so repeats do not
+// overwrite each other's metrics (tools pass a plain {title, file}: no repeat index, unchanged)
+export const slug = (testInfo) => testInfo.title.split(' ')[0].replace(/[^A-Za-z0-9._-]/g, '_') + (testInfo.repeatEachIndex ? `.r${String(testInfo.repeatEachIndex).padStart(2, '0')}` : '');
 
 // ------------------------------------------------------------------ page drivers
 /** Evaluate `fn(arg)` inside the QED64 page window (gallery: the iframe; stock: the page itself). */
@@ -616,6 +736,10 @@ export class Gallery extends QedDriver {
   async waitGallery({ timeoutMs = 400000 } = {}) {
     const t0 = Date.now();
     for (;;) {
+      // a crashed renderer never answers again: return at once instead of polling it until the timeout (5 min in C10/C11)
+      const w = this.session.watchOf(this.page);
+      const lastCrash = w && w.crashTimes && w.crashTimes[w.crashTimes.length - 1];
+      if (lastCrash && !(w.lastNavAt > lastCrash)) return { s: null, ms: Date.now() - t0, crashed: true };
       const s = await this.status();
       if (s && ['ready', 'refused', 'error', 'halted', 'unsupported'].includes(s.phase)) return { s, ms: Date.now() - t0 };
       if (Date.now() - t0 > timeoutMs) return { s, ms: Date.now() - t0, timedOut: true };
@@ -714,7 +838,7 @@ export class Stock extends QedDriver {
    * §3.1 rule 3) then open /?snapshots=… — the stock page, never the gallery's embed-mode frame. The key is internal to
    * QED64 (§9); the harness uses it as the stock page's documented boot input, which the gallery no longer touches in V1.
    */
-  static async open(session, { buffer = null, query = '?snapshots=snapshots/widgets8', page = null, origin = ORIGIN } = {}) {
+  static async open(session, { buffer = null, query = `?snapshots=snapshots/${OVERLAY_W8}`, page = null, origin = ORIGIN } = {}) {
     const p = page || session.page() || await session.newPage();
     await p.goto(`${origin}/showcase/pin.json`);
     await p.evaluate((b) => { if (b === null) localStorage.removeItem('qed64.buffer'); else localStorage.setItem('qed64.buffer', b); }, buffer);

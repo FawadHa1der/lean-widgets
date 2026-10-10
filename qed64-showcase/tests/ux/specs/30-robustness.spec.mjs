@@ -3,13 +3,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { W, Gallery, Stock, BY_ID, EXAMPLES, SC, API, chromeRss, screenPath, serverBytes, startServer, stopServer, sleep, until, errorsWarnings, rssSampler, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
+import { W, Gallery, Stock, BY_ID, EXAMPLES, SC, API, PIN, PINS, HARD, OVERLAY_W8, RUNTIME_START_RE, BOOT_WAITED_RE, reEscape, pageLines, serverLines, chromeRss, screenPath, serverBytes, startServer, stopServer, sleep, until, errorsWarnings, rssSampler, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
 // v1 (lib/qed64.mjs API): the stock page's failed boot is read as api.status().boot {failed, message} (EMBEDDING.md §2.2, §4:
 // a missing overlay index is a named failure "?snapshots=<dir>: …"); on a legacy page as the boot card's "failed" class and
 // its label (Stock.pageInfo bootFailed is that same fact in either mode). C25 (v1 persistence through the `document` event
 // and an adopted frame reload) is new; on a legacy pin it asserts the page's own qed64.buffer restore the gallery adopts.
+// QED64's hardening asks (pin.json `hardening`, lib/qed64.mjs HARD): C9 asserts the early unpaired refusal (#62) only with
+// earlyUnpaired, C11 one runtime start per cut and a network-caused halt (#63) only with networkPreboot; C10 records the
+// [boot] waited lines, runtime starts and crash timing (#55 residual) on every pin. Pins <= bf9d947 have no flags: they
+// record the new fields and keep exactly the assertions they had.
 const firstAt = (id) => ({ line: BY_ID[id].firstCursor.line, character: BY_ID[id].firstCursor.character });
 const firstGolden = (id) => goldenCursor(id, firstAt(id).line, firstAt(id).character).panels[0];
 const allConsole = (s) => s.watches.flatMap((w) => [...w.messages.map((m) => `${m.type} ${m.text}`), ...w.pageErrors.map((e) => `pageerror ${e.message}`)]);
@@ -135,12 +139,15 @@ test('C9 unpaired fixture (temp overlay with an altered runtime): the gallery re
   ux.scenarios.push('crashBreakerTripped', 'bootFailure');
   const name = `ux-unpaired-${process.pid}`;
   const dir = path.join(SC, 'out/overlay/snapshots', name);
-  const w8 = path.join(SC, 'out/overlay/snapshots/widgets8');
+  // the tested pin's widgets8 store itself (not the active link, not the served directory name): absolute symlinks to it
+  const w8 = PINS.storePath('overlay/widgets8', { id: PIN.id, real: true });
   fs.mkdirSync(dir, { recursive: true });
   try {
     const idx = JSON.parse(fs.readFileSync(path.join(w8, 'index.json'), 'utf8'));
-    for (const e of idx.snapshots) { e.runtime = 'wasm64-0000000000000000'; const f = path.basename(e.url); if (!fs.existsSync(path.join(dir, f))) fs.symlinkSync(path.join('..', 'widgets8', f), path.join(dir, f)); }
+    for (const e of idx.snapshots) { e.runtime = 'wasm64-0000000000000000'; const f = path.basename(e.url); if (!fs.existsSync(path.join(dir, f))) fs.symlinkSync(path.join(w8, f), path.join(dir, f)); }
     fs.writeFileSync(path.join(dir, 'index.json'), JSON.stringify(idx, null, 1));
+    // a per-build copy the shell might read is unpaired too, never a 404 (as QED64's own unpaired lane writes since e38cf51)
+    fs.writeFileSync(path.join(dir, `index.${PIN.buildId}.json`), JSON.stringify(idx, null, 1));
     m.fixture = { dir: path.relative(SC, dir), runtime: 'wasm64-0000000000000000', files: fs.readdirSync(dir) };
     // gallery
     const s = await ux.launch({ profile: 'fresh', label: 'gallery' });
@@ -152,12 +159,38 @@ test('C9 unpaired fixture (temp overlay with an altered runtime): the gallery re
     const s2 = await ux.launch({ profile: 'fresh', label: 'stock' });
     const st = await Stock.open(s2, { buffer: BY_ID['hasse-view'].text, query: `?snapshots=snapshots/${name}` });
     await st.settle({ timeoutMs: 180000 });
+    // #62: the relay halts early (about 3 s after construction on 385a1ac); then 3 s for stragglers, as QED64's unpaired lane.
+    // Without earlyUnpaired there is no wait at all: the page is read right after settle(), as before (QED64's reboot loop
+    // still runs there and can crash the renderer, #55 residual), and a halt is only recorded from that same read
+    const haltedEarly = HARD.earlyUnpaired ? await until(async () => { const q0 = await st.qstatus(); return q0 && q0.relay === 'halted' ? Date.now() : null; }, { timeoutMs: 30000, intervalMs: 200 }) : null;
+    if (haltedEarly) await sleep(3000);
     const info = await st.pageInfo(); const q = await st.qstatus();
+    const halted = haltedEarly || (q && q.relay === 'halted' ? Date.now() : null);
     const all = allConsole(s2);
+    const early = () => {
+      const msgs = s2.watches.flatMap((w) => w.messages); const n = s2.networkSummary();
+      // one death fails every request still pending (lsp-relay failInFlight: one "died (bootFailed)" console line each), so
+      // the line count depends on how many the client had sent; deaths are counted by the relay (stats.workerDeaths), and
+      // the lines are grouped into bursts (a gap > 50 ms starts a new one) as a cross-check when the relay is unreadable
+      const died = msgs.filter((x) => x.type === 'error' && /^QED64: the Lean checker died \(bootFailed\)$/.test(x.text)).map((x) => x.wall).sort((a, b) => a - b);
+      return {
+        haltedAfterMs: halted ? halted - st.tNav : null,
+        runtimeStarts: pageLines(s2, RUNTIME_START_RE, { sinceWall: st.tNav }).length,
+        snapzGetsServer: serverLines(st.tNav, { re: /\.snapz$/ }).length,
+        // positive control for the serve-log zero checks: the stock page must have fetched the fixture's index from serve.mjs
+        fixtureIndexGetsServer: serverLines(st.tNav, { re: new RegExp(`^/snapshots/${reEscape(name)}/index\\.json$`) }).length,
+        snapzGetsBrowser: n.snapzGets, wasmChunkGets: n.wasmChunkGets, indexCopies: n.indexCopies,
+        diedLines: died.length, diedBursts: died.filter((t, i) => i === 0 || t - died[i - 1] > 50).length,
+        workerDeaths: q && q.stats ? q.stats.workerDeaths : null,
+        diedPageErrors: s2.watches.flatMap((w) => w.pageErrors).filter((e) => /^QED64: the Lean checker died \(bootFailed\)/.test(e.message)).length,
+        crashed: s2.watches.some((w) => w.crashed),
+      };
+    };
     // a renderer crash during QED64's reboot loop leaves no page to read (run h-full1 on pin H: QED64 HARDENING #55 residual,
     // the cost #62 removes): say so instead of failing on a null read; the crash itself is also the console oracle's CRASHED
-    if (!info) { m.stock = { crashed: s2.watches.some((w) => w.crashed), phase: q && q.phase }; console.log(`C9 ${JSON.stringify(m)}`); throw new Error(`C9: the stock page is gone (renderer crashed: ${m.stock.crashed}) during QED64's unpaired reboot loop`); }
-    m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, boot: info.boot, bootFailed: info.bootFailed, lastDeath: q && q.lastDeath, unpairedInUi: /SNAPSHOT_UNPAIRED|baked for runtime/.test(`${info.bootlabel} ${info.pill} ${JSON.stringify(q && q.lastDeath)}`), unpairedInConsole: all.filter((x) => /SNAPSHOT_UNPAIRED|baked for runtime/.test(x)).slice(0, 3), snapzGets: serverBytes(st.tNav).snapz || null };
+    // (on an earlyUnpaired pin the crash is a plain #62 failure; the early-refusal record is written first)
+    if (!info) { m.stock = { crashed: s2.watches.some((w) => w.crashed), phase: q && q.phase, early: early() }; console.log(`C9 ${JSON.stringify(m)}`); throw new Error(`C9: the stock page is gone (renderer crashed: ${m.stock.crashed}) during QED64's unpaired reboot loop`); }
+    m.stock = { phase: q && q.phase, bootcard: info.bootcard, bootlabel: info.bootlabel, boot: info.boot, bootFailed: info.bootFailed, lastDeath: q && q.lastDeath, unpairedInUi: /SNAPSHOT_UNPAIRED|baked for runtime/.test(`${info.bootlabel} ${info.pill} ${JSON.stringify(q && q.lastDeath)}`), unpairedInConsole: all.filter((x) => /SNAPSHOT_UNPAIRED|baked for runtime/.test(x)).slice(0, 3), snapzGets: serverBytes(st.tNav).snapz || null, early: early() };
     await st.page.screenshot({ path: screenPath('C9-stock-unpaired.png') });
     console.log(`C9 ${JSON.stringify(m)}`);
     expect(m.gallery.phase).toBe('error');
@@ -172,6 +205,21 @@ test('C9 unpaired fixture (temp overlay with an altered runtime): the gallery re
       expect(m.stock.lastDeath.reason).toBe('bootFailed');
       expect(typeof m.stock.boot.message === 'string' && m.stock.boot.message.length > 0, `api.status().boot.message names the failure (${JSON.stringify(m.stock.boot.message)})`).toBe(true);
     } else expect(m.stock.bootcard).toMatch(/failed/);
+    if (HARD.earlyUnpaired) {
+      // QED64 #62 (9045b86): an unpaired entry is refused before any pack, boot or snapshot fetch
+      const e = m.stock.early;
+      expect(e.crashed, '#62: no renderer crash').toBe(false);
+      expect(e.haltedAfterMs, '#62: the relay halts').not.toBeNull();
+      // timed from the navigation, not from settle(): a refusal that came only after a slow pre-boot step must fail here
+      expect(e.haltedAfterMs, '#62: the relay halts within 30 s of the navigation (about 3 s after construction on 385a1ac)').toBeLessThanOrEqual(30000);
+      expect(e.runtimeStarts, '#62: 0 runtime starts ([mem] runtime-initialized)').toBe(0);
+      expect(e.fixtureIndexGetsServer, 'serve.mjs logged the stock page\'s fixture index GET (else its zero counts prove nothing: QUIET=1, or another server on the port)').toBeGreaterThanOrEqual(1);
+      expect(e.snapzGetsServer, '#62: 0 .snapz GETs reached serve.mjs').toBe(0);
+      expect(e.snapzGetsBrowser, '#62: 0 .snapz requests in the browser').toBe(0);
+      expect(e.wasmChunkGets, '#62: 0 lean.wasm chunk requests').toBe(0);
+      // at most 3 DEATHS (the breaker's count), not 3 lines: each death logs one line per request it failed
+      expect(e.workerDeaths ?? e.diedBursts, `#62: at most 3 checker deaths (relay stats.workerDeaths ${e.workerDeaths}; ${e.diedBursts} burst(s) of ${e.diedLines} "died (bootFailed)" line(s))`).toBeLessThanOrEqual(3);
+    }
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   m.fixtureRemoved = !fs.existsSync(dir);
 });
@@ -201,11 +249,21 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   await cdp.send('Page.enable');
   let onCommit = null;
   cdp.on('Page.frameNavigated', (e) => { if (!e.frame.parentId && onCommit) { const f = onCommit; onCommit = null; f(e); } });
+  const w = s.watches[0];
+  // a crashed renderer never commits: the commit wait also gives up within 250 ms of the crash (not 120 s per reload)
   const reloadViaCdp = async () => {
-    let timer = null;
-    const committed = new Promise((resolve, reject) => { onCommit = resolve; timer = setTimeout(() => reject(new Error('C10: a storm reload did not commit within 120 s')), 120000); });
+    let timer = null; let crashPoll = null;
+    const committed = new Promise((resolve, reject) => {
+      onCommit = resolve; timer = setTimeout(() => reject(new Error('C10: a storm reload did not commit within 120 s')), 120000);
+      crashPoll = setInterval(() => { if (w.crashed) reject(new Error('C10: the renderer crashed during the storm')); }, 250);
+    });
     committed.catch(() => {}); // awaited below; never an unhandled rejection if the send itself throws
-    try { await cdp.send('Page.reload'); return await committed; } finally { clearTimeout(timer); onCommit = null; }
+    // raced with the commit wait: a send to a crashed renderer must not hold the storm either
+    // the send is raced with the commit: when the commit wins and the renderer then crashes, the send rejects ('Target
+    // crashed') with nobody awaiting it, an unhandled rejection that failed the test before its crash record was written
+    // (runs j-full2, j-headed1); a rejection of the send that loses the race is not this reload's failure
+    const sent = cdp.send('Page.reload'); sent.catch(() => {});
+    try { await Promise.race([sent, committed]); return await committed; } finally { clearTimeout(timer); clearInterval(crashPoll); onCommit = null; }
   };
   let last = null; let gen = 0; let stopPoll = false; const evals = { n: 0, maxMs: 0, failed: 0 };
   const poll = (async () => {
@@ -220,24 +278,37 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
       await sleep(100);
     }
   })();
-  for (let i = 0; i < 5; i++) {
+  // the storm stops at a renderer crash (QED64 #55 residual): the crash is recorded with its timing and fails below
+  for (let i = 0; i < 5 && !w.crashed; i++) {
     if (i) await sleep(Math.max(0, i * 3000 - (Date.now() - t))); // reloads at 0, 3, 6, 9, 12 s
     const before = last; const at = Date.now() - t;
     gen++; last = null;
-    await reloadViaCdp();
+    try { await reloadViaCdp(); } catch (e) {
+      // CDP can report the crash ('Target crashed', run j-full2) before the page's crash event: give that event 2 s, so the
+      // crash is recorded with its timing below instead of the test throwing without its #55 record
+      if (!w.crashed && /Target crashed|Target closed|Session closed/i.test(String(e && e.message))) await until(async () => w.crashed || null, { timeoutMs: 2000, intervalMs: 50 });
+      if (!w.crashed) throw e; m.reloads.push({ at, crashedBeforeCommit: true }); break;
+    }
     const committedMs = Date.now() - t - at;
     m.reloads.push({ at, committedMs, landedAt: at + committedMs, phaseBefore: before && before.phase, qed64Before: before && before.qed64, phaseAgeMs: before ? at - before.at : null, heapBefore: before && before.mem ? { usedMiB: +(before.mem.used / 1048576).toFixed(1), totalMiB: +(before.mem.total / 1048576).toFixed(1) } : null });
   }
   stopPoll = true; await poll;
-  await cdp.detach().catch(() => {});
+  await Promise.race([cdp.detach().catch(() => {}), sleep(5000)]);
   m.stormMs = Date.now() - t;
   m.stormProbe = evals; // the longest status evaluate during the storm: how long the page could not answer (a QED64 boot observation)
-  const b = await g.waitGallery({ timeoutMs: 300000 });
-  const p = await g.expectPanel(firstAt(id), firstGolden(id), { timeoutMs: 120000 });
+  const b = await g.waitGallery({ timeoutMs: 300000 }); // returns at once on a crashed renderer
+  const p = b.crashed || !b.s ? { equal: false } : await g.expectPanel(firstAt(id), firstGolden(id), { timeoutMs: 120000 });
   await sleep(3000);
   await rss.stop(); // waits for the ps in flight and keeps its reading
-  const w = s.watches[0];
-  m.after = { phase: b.s.phase, ms: Date.now() - t, panelEqual: p.equal, crashed: w.crashed, rss: chromeRss(), peak: rss.peak, workersAlive: g.page.workers().length, workersCreated: w.workers.length, workersClosed: w.workers.filter((x) => x.closed !== null).length, loads: w.loads, bridgeLate: b.s.bridge.late, api: b.s.api, bridge: b.s.bridge };
+  m.after = { phase: b.s && b.s.phase, ms: Date.now() - t, panelEqual: p.equal, crashed: w.crashed, rss: chromeRss(), peak: rss.peak, workersAlive: g.page.workers().length, workersCreated: w.workers.length, workersClosed: w.workers.filter((x) => x.closed !== null).length, loads: w.loads, bridgeLate: b.s && b.s.bridge.late, api: b.s && b.s.api, bridge: b.s && b.s.bridge };
+  // the #55 residual's timeline (recorded on every pin): each [boot] waited line and runtime start, and the crash, relative to
+  // the storm's start and to the reload that had landed last before it
+  const landed = m.reloads.filter((r) => r.landedAt !== undefined).map((r) => t + r.landedAt);
+  const near = (wall) => { let k = -1; landed.forEach((x, i) => { if (x <= wall) k = i; }); return k < 0 ? { reload: null, msAfterLanded: null } : { reload: k, msAfterLanded: wall - landed[k] }; };
+  m.bootWaited = pageLines(s, BOOT_WAITED_RE, { sinceWall: t }).map((x) => { const g2 = BOOT_WAITED_RE.exec(x.text); return { atMs: x.wall - t, ...near(x.wall), waitedMs: +g2[1], stopping: +g2[2], workers: g2[3], budgetSpent: !!g2[4] }; });
+  m.runtimeStarts = pageLines(s, RUNTIME_START_RE, { sinceWall: t }).map((x) => ({ atMs: x.wall - t, ...near(x.wall), mib: +RUNTIME_START_RE.exec(x.text)[1] }));
+  const sinceLast = (list, at) => { const e = list.filter((x) => x.atMs <= at).pop(); return e ? at - e.atMs : null; };
+  m.crash = w.crashedAt ? { atMs: w.crashedAt - t, ...near(w.crashedAt), msSinceLastBootWaited: sinceLast(m.bootWaited, w.crashedAt - t), msSinceLastRuntimeStart: sinceLast(m.runtimeStarts, w.crashedAt - t) } : null;
   // the renderer RSS timeline (0.5 s) and the transient peak against the plan's fail line, in bytes (UX audit minor 1).
   // The transient overlap of a dying page and the next boot is QED64's (L8 in docs/UX-RESULTS.md): recorded and
   // reported, with the fail line asserted on the settled state; a crash fails the test.
@@ -245,9 +316,11 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   m.samples = rss.samples.map((x) => ({ t: x.t, GB: x.rendererGB, renderers: x.renderers, psMs: x.psMs }));
   m.sampler = { n: rss.samples.length, skipped: rss.skipped, lagMaxMs: rss.lagMaxMs, maxPsMs: Math.max(0, ...rss.samples.map((x) => x.psMs || 0)), maxGapMs: rss.samples.reduce((a, x, i) => (i ? Math.max(a, x.t - rss.samples[i - 1].t) : a), 0) };
   m.transient = { peakGB: rss.peak.rendererGB, peakGiB: rss.peak.rendererGiB, peakAtMs: rss.peak.t, overFailLine: rss.peak.rendererBytes >= MEM_FAIL_BYTES, msOverFailLine: rss.samples.reduce((a, x, i) => (x.rendererBytes >= MEM_FAIL_BYTES ? a + rss.spanMs(i) : a), 0) }; // each sample stands for the time until the next one started (samples can be skipped behind a slow ps)
-  await g.page.screenshot({ path: screenPath('C10-after-storm.png') });
+  if (!w.crashed) await g.page.screenshot({ path: screenPath('C10-after-storm.png') });
   console.log(`C10 ${JSON.stringify({ ...m, samples: undefined })}`);
   console.log(`C10 renderer: first ready ${m.atFirstReady.rss.rendererGB} GB, transient peak ${m.transient.peakGB} GB at ${m.transient.peakAtMs} ms (${m.transient.msOverFailLine} ms over ${MEM_FAIL_BYTES / 1e9} GB), settled ${m.after.rss.rendererGB} GB`);
+  // a crash ends the storm early (fewer than 5 reloads): it fails here, with its timing recorded above (m.crash)
+  expect(w.crashed, `no renderer crash during the storm (QED64 #55 residual): ${JSON.stringify(m.crash)}`).toBe(false);
   // the storm's density is asserted on when the reloads LANDED (committed), not when they were stamped (the legacy test
   // asserted the stamp of the 5th reload <= 15 s; a commit is later than its stamp, so this is the stricter form)
   expect(m.reloads[4].at + m.reloads[4].committedMs, `5 reloads committed within 15 s: ${JSON.stringify(m.reloads.map((r) => [r.at, r.committedMs]))}`).toBeLessThanOrEqual(15000);
@@ -294,6 +367,8 @@ test('C11 network cut mid-.snapz (serve.mjs CHAOS on our own :5191 server): a si
     m.once = { phase: A.b.s.phase, ms: A.b.ms, deaths: A.seen.maxDeaths, lastDeath: A.seen.lastDeath, cards: A.seen.cards, phases: A.seen.phases, cuts: cutsSince(A.g.tNav), prefetchWarning: A.s.watches[0].messages.some((x) => /raw prefetch error/.test(x.text)) };
     const pA = await A.g.expectPanel(firstAt('chart-kit'), firstGolden('chart-kit'), { timeoutMs: 60000 });
     m.once.panelEqual = pA.equal;
+    // #63: the absorbed cut boots one runtime (the page's '[mem] runtime-initialized' lines)
+    m.once.runtimeStarts = pageLines(A.s, RUNTIME_START_RE, { sinceWall: A.g.tNav }).length;
     await A.page.screenshot({ path: screenPath('C11-cut-once.png') });
     await ux.close(A.s);
     stopServer(port);
@@ -301,6 +376,12 @@ test('C11 network cut mid-.snapz (serve.mjs CHAOS on our own :5191 server): a si
     m.serverB = startServer(port, { CHAOS: '\\.snapz$:1000000:100000' });
     const B = await bootWatched('cut-lasting');
     m.lasting = { phase: B.b.s.phase, ms: B.b.ms, deaths: B.seen.maxDeaths, lastDeath: B.seen.lastDeath, cards: B.seen.cards, phases: B.seen.phases, cuts: cutsSince(B.g.tNav).length, errorTitle: await B.page.locator('#error-title').textContent().catch(() => null), cardVisible: await B.page.locator('#error-card:not([hidden])').isVisible() };
+    // #63: the lasting cut halts the relay with a network-caused boot failure; wait for the halt only with networkPreboot.
+    // Without it there is no wait (the screenshot, layout and recovery reload keep their timing): relay and lastDeath are
+    // recorded from one read of the page
+    const halt = HARD.networkPreboot ? await until(async () => { const q = await B.g.qstatus(); return q && q.relay === 'halted' ? { q, wall: Date.now() } : null; }, { timeoutMs: 120000, intervalMs: 200 }) : null;
+    const qL = halt ? halt.q : await B.g.qstatus();
+    Object.assign(m.lasting, { relay: (qL && qL.relay) || null, haltedAtMs: halt ? halt.wall - B.g.tNav : null, lastDeathQ: (qL && qL.lastDeath) || null });
     await B.page.screenshot({ path: screenPath('C11-cut-lasting.png') });
     // UX audit minor 3d: the gallery's card must not cover QED64's own failed boot card (compact mode while it shows)
     const cardBox = await B.page.locator('#error-card').boundingBox().catch(() => null);
@@ -313,11 +394,23 @@ test('C11 network cut mid-.snapz (serve.mjs CHAOS on our own :5191 server): a si
     stopServer(port);
     m.serverC = startServer(port, {});
     const tR = Date.now();
+    m.lasting.runtimeStarts = pageLines(B.s, RUNTIME_START_RE, { sinceWall: B.g.tNav, untilWall: tR }).map((x) => x.wall - B.g.tNav);
     await B.page.reload({ waitUntil: 'domcontentloaded' });
     const b2 = await B.g.waitGallery({ timeoutMs: 300000 });
+    // the recovery reload (#55 residual: it lands while the halted page's runtimes are torn down): when, relative to the halt,
+    // a crash came, and the [boot] waited lines and runtime starts after it; recorded before any throw below
+    const wB = B.s.watches[0];
+    const rC = (wB.crashTimes || []).find((x) => x >= tR) ?? null; // the first crash after the recovery reload
+    m.recovery = {
+      // a crash before the reload (during the lasting cut) is kept apart from one after it
+      crashedBeforeReload: (wB.crashTimes || []).filter((x) => x < tR).map((x) => x - tR),
+      reloadAfterHaltMs: halt ? tR - halt.wall : null, crashed: (wB.crashTimes || []).some((x) => x >= tR), crashMsAfterReload: rC != null ? rC - tR : null, crashMsAfterHalt: rC != null && halt ? rC - halt.wall : null,
+      bootWaited: pageLines(B.s, BOOT_WAITED_RE, { sinceWall: tR }).map((x) => ({ atMs: x.wall - tR, text: x.text.slice(14) })),
+      runtimeStarts: pageLines(B.s, RUNTIME_START_RE, { sinceWall: tR }).map((x) => x.wall - tR),
+    };
     // the reload lands while the halted page's runtimes are still being torn down; on a tight renderer that can crash it (run
     // h-headed1 on pin H: QED64 HARDENING #55 residual, the cost #63 removes): say so instead of failing on a null read
-    if (!b2 || !b2.s) { m.recovered = { crashed: B.s.watches.some((w) => w.crashed), gallery: null }; console.log(`C11 ${JSON.stringify(m)}`); throw new Error(`C11: the gallery did not come back after the recovery reload (renderer crashed: ${m.recovered.crashed})`); }
+    if (!b2 || !b2.s) { m.recovered = { crashed: m.recovery.crashed, crashedBeforeReload: m.recovery.crashedBeforeReload.length > 0, gallery: null }; console.log(`C11 ${JSON.stringify(m)}`); throw new Error(`C11: the gallery did not come back after the recovery reload (renderer crashed after the reload: ${m.recovered.crashed}; before it: ${m.recovered.crashedBeforeReload})`); }
     const p = await B.g.expectPanel(firstAt('chart-kit'), firstGolden('chart-kit'), { timeoutMs: 60000 });
     m.recovered = { phase: b2.s.phase, ms: Date.now() - tR, panelEqual: p.equal, errorCard: b2.s.error };
     await B.page.screenshot({ path: screenPath('C11-recovered.png') });
@@ -329,6 +422,13 @@ test('C11 network cut mid-.snapz (serve.mjs CHAOS on our own :5191 server): a si
     expect(m.lasting.cards.length > 0 || m.lasting.cardVisible, 'and the gallery shows it on a card').toBe(true);
     if (m.lasting.cardVisible && m.lasting.layout.pageBootCardFailed) expect(m.lasting.layout, 'the gallery card is compact and does not cover QED64\'s own boot card').toMatchObject({ compact: 1, overlap: false });
     expect(m.recovered).toMatchObject({ phase: 'ready', panelEqual: true, errorCard: null });
+    if (HARD.networkPreboot) {
+      // QED64 #63 (e10454b, 3524618): only the first attempt boots a runtime; the retries fail before LeanSession.boot
+      expect(m.once.runtimeStarts, '#63: the single cut boots one runtime').toBe(1);
+      expect(m.lasting.runtimeStarts.length, `#63: exactly one runtime start for the lasting cut (was 3): ${JSON.stringify(m.lasting.runtimeStarts)}`).toBe(1);
+      expect(m.lasting.relay, '#63: the relay halts').toBe('halted');
+      expect(m.lasting.lastDeathQ, '#63: lastDeath bootFailed, cause network').toMatchObject({ reason: 'bootFailed', cause: { kind: 'network' } });
+    }
   } finally { m.serverStop = stopServer(port); }
 });
 
@@ -355,7 +455,7 @@ test('C12 offline warm reload: snapshots come from the warm profile (no .snapz d
   await ux.close(s2, { scenarios: ['networkCut'] });
   ux.scenarios.push('crashBreakerTripped', 'bootFailure', 'networkCut');
   const s3 = await ux.launch({ profile: 'warm', label: 'overlay-offline-stock' });
-  await s3.context.route('**/snapshots/widgets8/**', (rt) => rt.abort('internetdisconnected'));
+  await s3.context.route(`**/snapshots/${OVERLAY_W8}/**`, (rt) => rt.abort('internetdisconnected'));
   const st3 = await Stock.open(s3, { buffer: BY_ID[id].text });
   await st3.settle({ timeoutMs: 180000 });
   const i3 = await st3.pageInfo(); const q3 = await st3.qstatus();
@@ -370,7 +470,7 @@ test('C12 offline warm reload: snapshots come from the warm profile (no .snapz d
   if (API) {
     // v1 (EMBEDDING.md §4): an unreachable overlay index is a NAMED boot failure (api.status().boot.failed, the message names ?snapshots=)
     expect(m.stockOverlayOffline.boot, 'api.status().boot reports the failed boot').toMatchObject({ failed: true });
-    expect(m.stockOverlayOffline.boot.message).toMatch(/\?snapshots=snapshots\/widgets8/);
+    expect(m.stockOverlayOffline.boot.message).toMatch(new RegExp(`\\?snapshots=snapshots\\/${reEscape(OVERLAY_W8)}`));
     expect(m.stockOverlayOffline.bootFailed).toBe(true);
   } else expect(m.stockOverlayOffline.bootcard).toMatch(/failed/);
 });

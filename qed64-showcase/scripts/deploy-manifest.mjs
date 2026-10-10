@@ -4,13 +4,18 @@
 //
 //   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8,widgets7] [--no-stock-snapshots]
 //                                    [--no-essential-pack] [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
+//       --overlays takes LOGICAL names (widgets7, widgets8; any other name is a literal directory). Each is uploaded under
+//       its SERVED directory, /snapshots/<dir>/ with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin): the bare name
+//       for pins A–H (pin.json v2), '<o>.<bid16>' for a per-runtime pin (v3, pin I on); options.overlayDirs records the
+//       map, and every lookup of an overlay index goes through it.
 //       Enumerate every file, hash it (sha256), validate the invariants below, and write
 //       <out>/manifest.json (deterministic: no timestamps) plus one rclone file list per upload group
 //       (<out>/rclone/<group>.<immutable|mutable>.files, paths relative to that group's local root).
 //       --from-lock: the SHELL-ONLY manifest of a checkout without the artifacts (CI, a fresh clone): the assets are
 //       hashed as usual (release/<id>/dist from scripts/build-shell.mjs + gallery/), but every R2 entry's size and
-//       sha256 come from the committed lock (release.files public/*, overlays.*.files) instead of local files. Same
-//       keys, sizes and sha256 as the full manifest (options.source = "lock" is the only addition). R1, R2 and the stock
+//       sha256 come from the committed lock (release.files public/*, overlays.*.files; overlays.*.url must be
+//       /snapshots/<dir>/) instead of local files. Same keys, sizes and sha256 as the full manifest (options.source =
+//       "lock" is the only addition). R1, R2 and the stock
 //       R3 read the five manifests/indexes QED64 tracks in git (scripts/fetch-artifacts.mjs --git-only installs them;
 //       their sha256 must equal the lock's); the overlay indexes are not in git, so their R3 runs in --published.
 //       Such a manifest can stage and deploy the shell; scripts/upload-artifacts.sh refuses it.
@@ -56,9 +61,15 @@
 //   R2 every profile the index lists has its manifest and every transport part present with its digest
 //      and size (with --no-essential-pack the essential profile is reported as deliberately absent)
 //   R3 every snapshot index uploaded (stock + overlays): schema, runtime == BID, every entry's URL (re-rooted
-//      to /snapshots/<overlay>/ for overlays, as qed64-boot.ts:96-106 does) present with sha256 == digest
+//      to /snapshots/<dir>/ for overlays, as qed64-boot.ts:96-106 does) present with sha256 == digest
 //      and size == transfer; overlays hold exactly {init, mathlib}
 //   R4 R2 keys unique; objects > 300 MiB are flagged multipart (wrangler's single put cannot take them)
+//   R6 (a pin with hardening.pinnedIndexes, QED64 HARDENING #64) this runtime's per-build index copies
+//      /snapshots/index.<BID>.json and /snapshots/profiles-index.<BID>.json are uploaded, mutable (upload phase 2),
+//      byte-identical to the stock /snapshots/index.json and /profiles/index.json, and name only BID
+//   R5 each logical overlay's served directory (options.overlayDirs) == pins.mjs overlayDir(<o>, pin) == the lock's
+//      overlays.<o>.url, and a per-runtime pin uploads nothing under the bare /snapshots/<o>/ (an older live shell
+//      reads that directory)
 //   G1 (generate and --check) the gallery's own static gate, scripts/check-gallery.mjs, exits 0 (600 s watchdog):
 //      a manifest is never written for, and --check never passes on, a gallery that fails its own gate
 //   G2 (info) is there a VERDICT `scripts/showcase.sh ux` run (out/ux/showcase-ux-runs.jsonl; the rule is
@@ -74,6 +85,7 @@ import { cloneFile } from './lib/platform.mjs';
 import { galleryContentHash, isShippedGalleryFile } from './lib/gallery-hash.mjs';
 import { verdictFor, laterFailures, readRuns } from './lib/ux-record.mjs';
 import { loadDeployEnv, checkSharedBucket } from './lib/deploy-env.mjs';
+import { OVERLAYS, overlayDir, pinIdOf, pinDescriptor } from './lib/pins.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MiB = 1024 * 1024;
@@ -150,15 +162,21 @@ function contentTypeProblem(url, ct) {
   if (/(\.snapz|\.part-\d+|\.wasm|\.gz)$/.test(p) && (!ct || /text\/html|json/.test(ct))) return `content-type ${ct} (binary artifact must not be HTML/JSON)`;
   return null;
 }
-// QED64's cache rule, not a copy: imported from infra/worker.js of the active pin's QED64 sources (the submodule
-// deps/qed64; scripts/lib/qed64-src.mjs). If the sources are not checked out, every use fails with the reason.
-let qedIsImmutable = null, qedSrcError = null;
+// QED64's cache rule, not a copy: imported from the active pin's QED64 sources (the submodule deps/qed64;
+// scripts/lib/qed64-src.mjs): infra/edge-worker.js, QED64's dependency-free library (84d594e on), where the pin has it
+// (from 385a1ac on QED64's infra/worker.js also imports the toolchain release record and builds its Worker at load),
+// else infra/worker.js (pins A–E). If the sources are not checked out, every use fails with the reason.
+let qedIsImmutable = null, qedSrcError = null, qedIsImmutableSrc = 'deps/qed64/infra/edge-worker.js';
 try {
   const PINS = await import('./lib/pins.mjs');
-  ({ isImmutable: qedIsImmutable } = await import(pathToFileURL(path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'infra', 'worker.js')).href));
-} catch (e) { qedSrcError = e; }
+  const infra = path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'infra');
+  const f = fs.existsSync(path.join(infra, 'edge-worker.js')) ? 'edge-worker.js' : 'worker.js';
+  qedIsImmutableSrc = `${rel(infra)}/${f}`;
+  ({ isImmutable: qedIsImmutable } = await import(pathToFileURL(path.join(infra, f)).href));
+  if (typeof qedIsImmutable !== 'function') throw new Error(`${qedIsImmutableSrc} exports no isImmutable`);
+} catch (e) { qedIsImmutable = null; qedSrcError = e; }
 function isImmutable(pathname) {
-  if (!qedIsImmutable) throw new Error(`QED64's isImmutable (deps/qed64/infra/worker.js) is not available: ${qedSrcError && qedSrcError.message}`);
+  if (!qedIsImmutable) throw new Error(`QED64's isImmutable (${qedIsImmutableSrc}) is not available: ${qedSrcError && qedSrcError.message}`);
   return qedIsImmutable(pathname);
 }
 
@@ -168,6 +186,9 @@ function build(opts) {
   const BID = lock.qed64.buildId;
   const R = path.join(SC, lock.release.dir);
   const lockFiles = lock.release.files;
+  const pinId = pinIdOf(lock.qed64.commit);
+  // the SERVED directory of each overlay (pins.mjs overlayDir; a non-logical name is a literal directory)
+  const overlayDirs = Object.fromEntries(opts.overlays.map((o) => [o, OVERLAYS.includes(o) ? overlayDir(o, pinId) : o]));
   const assets = []; const r2 = [];
   const addAsset = (src, apath) => { const st = fs.statSync(src); assets.push({ path: apath, src: rel(src), size: st.size, sha256: sha256File(src) }); };
   // Local mode hashes the file; --from-lock takes size + sha256 from the lock (`known`) and never reads the binary.
@@ -197,16 +218,42 @@ function build(opts) {
     addR2(f, `/${path.relative(pub, f)}`, 'profiles', path.join(pub, 'profiles'), k);
   }
   if (opts.stockSnapshots) for (const [f, k] of pubFiles('snapshots')) addR2(f, `/${path.relative(pub, f)}`, 'snapshots-stock', path.join(pub, 'snapshots'), k);
+  // QED64 HARDENING #64 (a pin whose descriptor sets hardening.pinnedIndexes): this runtime's per-build index copies, as
+  // QED64's own upload writes them (its scripts/upload-artifacts.sh step 2): /snapshots/index.<BID>.json = the stock
+  // snapshot index's bytes, /snapshots/profiles-index.<BID>.json = profiles/index.json's. This runtime's shell reads a copy
+  // only while the served mutable index names another runtime (a split upload's window, decision E1; a later runtime's
+  // indexes once that is deployed), so the copies go up with the manifests (upload phase 2) and stay. QED64's git tracks
+  // neither, so they are materialized under <out>/pinned-indexes/snapshots (rclone --files-from needs source name == key
+  // name); --from-lock takes size + sha256 from the lock's entry of the index they copy. Pins A–H have no flag: unchanged.
+  const pinnedIndexes = !!(pinDescriptor(pinId).hardening || {}).pinnedIndexes;
+  if (pinnedIndexes) {
+    const pdir = path.join(OUT, 'pinned-indexes', 'snapshots');
+    const copies = [['profiles/index.json', `profiles-index.${BID}.json`], ...(opts.stockSnapshots ? [['snapshots/index.json', `index.${BID}.json`]] : [])];
+    for (const [from, name] of copies) {
+      if (r2.some((o) => o.url === `/snapshots/${name}`)) continue;   // the release ships the copy itself (R6 checks it)
+      const known = opts.fromLock ? lockFiles[`public/${from}`] : null;
+      if (opts.fromLock && !known) throw new Error(`hardening.pinnedIndexes: public/${from} is not in QED64.lock.json release.files`);
+      if (!opts.fromLock) {
+        const src = path.join(pub, from); const to = path.join(pdir, name);
+        if (!fs.existsSync(src)) throw new Error(`hardening.pinnedIndexes: ${rel(src)} missing (the per-build copy ${name} is made from it)`);
+        fs.mkdirSync(pdir, { recursive: true });
+        if (!fs.existsSync(to) || !fs.readFileSync(to).equals(fs.readFileSync(src))) fs.copyFileSync(src, to);
+      }
+      addR2(path.join(pdir, name), `/snapshots/${name}`, 'snapshots-pinned', pdir, known);
+    }
+  }
   for (const o of opts.overlays) {
-    const d = path.join(SC, 'out/overlay/snapshots', o);
+    const d = path.join(SC, 'out/overlay/snapshots', o);   // the store (active link), always by its logical name
+    const dir = overlayDirs[o];                             // the served directory: /snapshots/<dir>/
     if (opts.fromLock) {
       const lo = lock.overlays && lock.overlays[o];
       if (!lo || !lo.files || !lo.files['index.json']) throw new Error(`overlay ${o}: not recorded in QED64.lock.json overlays (scripts/pin-qed64.mjs record-overlays)`);
-      for (const n of Object.keys(lo.files).sort()) addR2(path.join(d, n), `/snapshots/${o}/${n}`, `overlay-${o}`, d, lo.files[n]);
+      if (lo.url !== `/snapshots/${dir}/`) throw new Error(`overlay ${o}: lock overlays.${o}.url ${lo.url} != /snapshots/${dir}/ (pins.mjs overlayDir for pin ${pinId}; re-record with scripts/pin-qed64.mjs record-overlays)`);
+      for (const n of Object.keys(lo.files).sort()) addR2(path.join(d, n), `/snapshots/${dir}/${n}`, `overlay-${o}`, d, lo.files[n]);
       continue;
     }
     if (!fs.existsSync(path.join(d, 'index.json'))) throw new Error(`overlay ${o}: ${rel(d)}/index.json missing (scripts/showcase.sh overlay)`);
-    for (const f of walk(d)) addR2(f, `/snapshots/${o}/${path.relative(d, f)}`, `overlay-${o}`, d);
+    for (const f of walk(d)) addR2(f, `/snapshots/${dir}/${path.relative(d, f)}`, `overlay-${o}`, d);
   }
   assets.sort((a, b) => (a.path < b.path ? -1 : 1)); r2.sort((a, b) => (a.key < b.key ? -1 : 1));
   const sum = (xs) => xs.reduce((s, x) => s + x.size, 0);
@@ -218,11 +265,11 @@ function build(opts) {
       note: 'Generated by scripts/deploy-manifest.mjs. Nothing is uploaded by this tool; publishing needs the owner\'s Cloudflare account and explicit go-ahead (docs/DEPLOY.md).',
       pin: { id: String(lock.qed64.commit).slice(0, 7), buildId: BID, qed64Commit: lock.qed64.commit, lockSha256: sha256File(path.join(SC, 'QED64.lock.json')), releaseDir: lock.release.dir },
       gallery: galleryContentHash(path.join(SC, 'gallery')),
-      options: { overlays: opts.overlays, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
+      options: { overlays: opts.overlays, overlayDirs, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
       totals: { assets: assets.length, assetBytes: sum(assets), r2Objects: r2.length, r2Bytes: sum(r2), r2Multipart: r2.filter((o) => o.multipart).length, groups },
       assets, r2,
     },
-    ctx: { lock, BID, R, lockFiles, fromLock: !!opts.fromLock },
+    ctx: { lock, BID, R, lockFiles, fromLock: !!opts.fromLock, pinnedIndexes },
   };
 }
 
@@ -296,12 +343,47 @@ function validate({ manifest: m, ctx }) {
     if (j) r3Index(m, BID, ix, j);
   }
   ok(indexes.length === m.options.overlays.length + (m.options.stockSnapshots ? 1 : 0), `R3 ${indexes.length} snapshot index(es) uploaded (stock: ${m.options.stockSnapshots}, overlays: ${m.options.overlays.join(', ')})`);
+  // R6 the per-build index copies of a pinnedIndexes pin (QED64 HARDENING #64): present, mutable (phase 2 of
+  // upload-artifacts.sh; QED64's isImmutable revalidates them), the bytes of the index they copy, naming only BID
+  if (ctx.pinnedIndexes) {
+    for (const [from, name, runtimesOf] of [['/profiles/index.json', `profiles-index.${BID}.json`, (j) => [j.runtime && j.runtime.buildId]],
+      ...(m.options.stockSnapshots ? [['/snapshots/index.json', `index.${BID}.json`, (j) => (Array.isArray(j.snapshots) ? j.snapshots.map((e) => e.runtime) : [])]] : [])]) {
+      const c = byUrl.get(`/snapshots/${name}`); const src = byUrl.get(from);
+      if (!ok(!!c && !!src, `R6 /snapshots/${name} uploaded (hardening.pinnedIndexes) beside ${from}`)) continue;
+      const j = jsonOf(src, `R6 ${from}`);
+      const rts = j ? runtimesOf(j) : [];
+      ok(c.sha256 === src.sha256 && c.size === src.size && !c.immutable && j && rts.length > 0 && rts.every((r) => r === BID),
+        `R6 /snapshots/${name}: mutable, == ${from} (size + sha256), names only ${BID}`,
+        [c.sha256 !== src.sha256 || c.size !== src.size ? 'bytes differ' : '', c.immutable ? 'immutable under QED64\'s isImmutable (a pin before HARDENING #64?)' : '', j && !(rts.length > 0 && rts.every((r) => r === BID)) ? `runtimes ${JSON.stringify(rts)}` : ''].filter(Boolean).join('; '));
+    }
+  } else {
+    const stray = m.r2.filter((o) => o.group === 'snapshots-pinned').map((o) => o.url);
+    if (stray.length) ok(false, 'R6 no per-build index copy uploaded (no hardening.pinnedIndexes)', stray.join(', '));
+  }
   // R4
   ok(new Set(m.r2.map((o) => o.key)).size === m.r2.length, `R4 ${m.r2.length} R2 keys unique`);
   const mp = m.r2.filter((o) => o.multipart);
   info(`R4 ${mp.length} object(s) > 300 MiB need a multipart upload (rclone): ${mp.map((o) => `${o.key} ${(o.size / MiB).toFixed(0)} MiB`).join(', ') || 'none'}`);
+  // R5 served overlay directories (scripts/lib/pins.mjs is the one naming rule; the lock records the URL it gave)
+  for (const o of m.options.overlays) {
+    const dir = (m.options.overlayDirs || {})[o];
+    const ixs = m.r2.filter((x) => x.group === `overlay-${o}`);
+    const under = ixs.every((x) => x.url.startsWith(`/snapshots/${dir}/`));
+    if (!OVERLAYS.includes(o)) { ok(dir === o && under, `R5 overlay ${o}: not a logical overlay, served at its literal directory /snapshots/${dir}/ (${ixs.length} objects)`); continue; }
+    let want = null, why = '';
+    try { want = overlayDir(o, m.pin.id); } catch (e) { why = e.message; }
+    const lockUrl = ctx.lock.overlays && ctx.lock.overlays[o] && ctx.lock.overlays[o].url;
+    const bare = dir !== o ? m.r2.filter((x) => x.url.startsWith(`/snapshots/${o}/`)).map((x) => x.url) : [];
+    ok(dir === want && lockUrl === `/snapshots/${dir}/` && under && !bare.length,
+      `R5 overlay ${o}: served at /snapshots/${dir}/ == pins.mjs overlayDir(${o}, ${m.pin.id}) == lock overlays.${o}.url (${ixs.length} objects${dir !== o ? `; nothing under the bare /snapshots/${o}/` : ''})`,
+      [why, dir !== want ? `overlayDir ${want}` : '', lockUrl !== `/snapshots/${dir}/` ? `lock url ${lockUrl}` : '', under ? '' : 'an object outside the directory', bare.length ? `bare keys ${bare.slice(0, 3).join(', ')}` : ''].filter(Boolean).join('; '));
+  }
   info(`totals: ${m.totals.assets} assets ${(m.totals.assetBytes / MiB).toFixed(1)} MiB; ${m.totals.r2Objects} R2 objects ${(m.totals.r2Bytes / 1e9).toFixed(3)} GB`);
 }
+
+// The URL of logical overlay o's index in manifest m: /snapshots/<dir>/index.json with the directory the manifest
+// recorded (options.overlayDirs; a manifest written before it existed served the bare name).
+const ovIndexUrl = (m, o) => `/snapshots/${(m.options.overlayDirs || {})[o] || o}/index.json`;
 
 // R3 on one snapshot index (parsed JSON j of the R2 entry ix): schema, runtime, entries present with digest and size.
 function r3Index(m, BID, ix, j) {
@@ -345,8 +427,9 @@ function galleryGate(m) {
     r.error ? `${r.error.code || r.error.message}${r.signal ? ` ${r.signal}` : ''} (600 s watchdog)` : failed.slice(0, 4).join(' | '));
   // the verdict rule is scripts/lib/ux-record.mjs whyNotVerdict (full suite, rc 0, clean report with expected + skipped
   // == listed and only C19 skipped, no UX_ORIGIN, the local gallery served from start to end), and the run must have
-  // tested THIS manifest's gallery, lock (pin.lockSha256) and overlay indexes (the uploaded /snapshots/<o>/index.json)
-  const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === `/snapshots/${o}/index.json`) || {}).sha256 || null]));
+  // tested THIS manifest's gallery, lock (pin.lockSha256) and overlay indexes (the uploaded /snapshots/<dir>/index.json,
+  // keyed by the logical name: the directory is bound through the lock's overlays.<o>.url, i.e. lockSha256)
+  const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === ovIndexUrl(m, o)) || {}).sha256 || null]));
   const runs = readRuns();
   const inputsNow = { gallery: m.gallery.contentSha256, lockSha256: m.pin.lockSha256, overlays };
   const { match, last: lastV, recorded } = verdictFor(inputsNow, runs);
@@ -406,7 +489,11 @@ if (MODE === 'check') {
     const was = new Map([...written.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...written.r2.map((o) => [`r2 ${o.key}`, o.sha256])]);
     const now = new Map([...b.manifest.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...b.manifest.r2.map((o) => [`r2 ${o.key}`, o.sha256])]);
     const diff = [...new Set([...was.keys(), ...now.keys()])].filter((k) => was.get(k) !== now.get(k));
-    console.log(`     ${diff.length} entries differ: ${diff.slice(0, 8).join(' | ')}${diff.length ? '' : ' (pin/options/totals)'}`);
+    // and the non-entry sections that differ (e.g. options.overlayDirs, new with the per-runtime overlay contract)
+    const sect = [...new Set([...Object.keys(written), ...Object.keys(b.manifest)])].filter((k) => k !== 'assets' && k !== 'r2')
+      .flatMap((k) => (k === 'options' ? [...new Set([...Object.keys(written.options || {}), ...Object.keys(b.manifest.options || {})])].map((o) => `options.${o}`) : [k]))
+      .filter((k) => { const g = (m) => k.split('.').reduce((v, x) => (v == null ? v : v[x]), m); return JSON.stringify(g(written)) !== JSON.stringify(g(b.manifest)); });
+    console.log(`     ${diff.length} entries differ: ${diff.slice(0, 8).join(' | ')}${sect.length ? `; ${sect.join(', ')} differ` : diff.length ? '' : ' (totals or formatting)'}`);
   }
   for (const [k, list] of Object.entries(b.manifest.r2.reduce((a, o) => ((a[`${o.group}.${o.phase}`] ||= []).push(o.relPath), a), {}))) {
     const p = path.join(OUT, 'rclone', `${k}.files`);
@@ -469,7 +556,7 @@ if (MODE === 'record-verdict') {
   // the manifest must describe the checkout as it is now: same gallery content and the same lock bytes
   const g = galleryContentHash(path.join(SC, 'gallery')).contentSha256; const l = sha256File(path.join(SC, 'QED64.lock.json'));
   if (g !== m.gallery.contentSha256 || l !== m.pin.lockSha256) { console.error(`record-verdict refused: ${rel(path.join(OUT, 'manifest.json'))} is stale (gallery ${g.slice(0, 16)}… vs ${m.gallery.contentSha256.slice(0, 16)}…, lock ${l.slice(0, 12)}… vs ${m.pin.lockSha256.slice(0, 12)}…): regenerate it first`); process.exit(1); }
-  const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === `/snapshots/${o}/index.json`) || {}).sha256 || null]));
+  const overlays = Object.fromEntries(m.options.overlays.map((o) => [o, (m.r2.find((x) => x.url === ovIndexUrl(m, o)) || {}).sha256 || null]));
   const runs = readRuns(); const inputsNow = { gallery: g, lockSha256: l, overlays };
   const { match } = verdictFor(inputsNow, runs);
   if (!match) { console.error(`record-verdict refused: no verdict 'showcase.sh ux' run on this gallery + lock + overlays in out/ux/showcase-ux-runs.jsonl (run scripts/showcase.sh ux)`); process.exit(1); }
@@ -507,7 +594,7 @@ if (MODE === 'published') {
   ok(!bad, `PUBLISHED-OBJECTS ${origin}: ${n - bad}/${n} R2 objects of this manifest are published (immutable: HEAD status 200 + content-length; manifests and indexes: GET sha256 == manifest) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   // R3 on the overlay indexes, which a --from-lock manifest could not read locally (they are not tracked in git)
   for (const o of m.options.overlays) {
-    const ix = m.r2.find((x) => x.url === `/snapshots/${o}/index.json`);
+    const ix = m.r2.find((x) => x.url === ovIndexUrl(m, o));
     if (ix && fetched.has(ix.url)) r3Index(m, BID, ix, JSON.parse(fetched.get(ix.url).toString('utf8')));
   }
   console.log(fails ? `PUBLISHED FAILED: ${origin} does not serve this manifest's artifacts; upload them first (scripts/upload-artifacts.sh)` : `PUBLISHED OK ${origin}`);
