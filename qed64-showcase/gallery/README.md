@@ -36,7 +36,7 @@ frames the pin's per-runtime directory (gallery `3da79ea2…` after `pin use`; `
 overlays; gallery `65279b0b…`). On it (2026-10-09/10): VERDICTs `j-full1` and `j-full5`, `C20` 135/135 in three runs, the
 headed sign-off `j-headed2` (35/35), the 10 Mbit/s first visit PASS (ready at 565.1 s, no card) and QED64's C11 ×3 ask
 3/3; three crashes in red runs were an artifact of the UX harness's tracing, now off (docs/REPIN-LOG.md, pin I entry,
-"Pin J" and "The crash classification and tracing"). F, G and H are staged; the live site still serves E, and pushing and deploying are
+"Pin J" and "The crash classification and tracing"). E, F and G are staged; the live site serves H `bf9d947` (deployed 2026-10-08), and pushing and deploying are
 the user's decisions. **Browsers:** a Chromium-based desktop browser on a
 computer with 16 GB of RAM or more, one showcase tab at a time (measured: 8.2–9.0 GiB per tab at ready, transient peaks
 of about 12 GB on a reload, about 17 GB or more for two tabs or for QED64's "Load exact imports"; README.md "Browsers

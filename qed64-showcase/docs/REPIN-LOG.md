@@ -21,7 +21,7 @@ on the local branch `qed64-embedding-v1`, which is not pushed. **I `385a1ac`** (
 kernel-0036 regression in Chrome. **J `5e63edd`** (QED64 main since 2026-10-09 ~20:30Z: I plus the worker's engine-stack
 probe at 8192 slots, HARDENING #67, the interim for 0036; same runtime and overlays) is the **active pin locally**
 since ~18:55Z and is gated in the browser (two VERDICTs, a headed sign-off, C20 405/405, the 10 Mbit/s first visit;
-last entry, "Pin J"). The live site still serves E.
+last entry, "Pin J"). The live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded).
 
 Current verdict and sign-off counts per pin: `scripts/showcase.sh pin list` (this table's "Browser gates" column is
 dated history: as of the final gate, 2026-10-02, for E as of the pin-e lane, 2026-10-04, for F–H as of
@@ -1401,7 +1401,7 @@ Lane: the pin-I re-pin (plan `$W/pinI/plan.md`, investigations `$W/pinI/map-{reg
 `$W/logs/pinI-*.log`, gate chain `$W/pinI/chain1.sh` logging to `$W/logs/pinI-chain1.log`; `$W` =
 `/Users/fawadhaider/code/qed64-showcase-work`). **I is the active pin of this checkout since 2026-10-09 ~13:10Z**
 (`pinI-use.log`); H `bf9d947` is staged and is the last pin with a complete browser gate. The live site
-(`qed64-showcase.fawadworkaddress.workers.dev`) still serves E `33b0967`. The work is on the local branch `qed64-pin-i`,
+(`qed64-showcase.fawadworkaddress.workers.dev`) serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded) (corrected 2026-10-10: this entry first said E). The work is on the local branch `qed64-pin-i`,
 not pushed. A push to `main` that touches `qed64-showcase/` **is** a deploy (`.github/workflows/qed64-deploy.yml`), so
 the upload, the push and the deploy are each the user's decision ("Open decisions" below).
 
@@ -1694,7 +1694,7 @@ for memory, other sessions' bakes and headless Chrome OUTSIDE the host lock; tim
 | `deploy-manifest --check` | 03:50Z | `DEPLOY-MANIFEST CHECK OK`: G2 `verdict run j-full5 … on THIS gallery 65279b0b…, lock a6d481b782d9… and overlays widgets8, widgets7`; 77 assets 17.7 MiB, 95 R2 objects 2.420 GB; R5 and R6 OK; G1 157 ok | `pinJ-dm-check.log` |
 | `deploy-manifest --record-verdict` | 03:50:44Z | `infra/ux-verdict.json` names `j-full5` (gallery `65279b0b…`, lock `a6d481b7…`, both overlays, pin `5e63edd`); not yet committed | `infra/ux-verdict.json` |
 | `j-c11h3` (C11 headed ×3, QED64's #63 ask; tracing off) | 03:51–03:53Z | 3/3 passed: the single cut absorbed each time (1 runtime start, ready 13.5–13.9 s); the lasting cut 1 runtime start, 3 deaths, `cause.kind` network, relay halted at 10.8–10.9 s; the recovery reload (0.51–0.52 s after the halt) never crashed and was ready in 11.7–12.2 s with the panel equal | `pinJ-ux-c11h3.log` |
-| `j-c10x20` (C10 ×20, the #55-residual tally; tracing off, `DEBUG=pw:browser`) | started 03:55:39Z | **running** | `pinJ-ux-c10x20.log` |
+| `j-c10x20` (C10 ×20, the #55-residual tally; tracing off, `DEBUG=pw:browser`) | 03:55–04:05Z | **20/20 green, 0 renderer crashes**: renderer peak 10.00–11.64 GB (median 11.18; the tracing-on full runs peaked at 12.57–14.29), ready 21.8–22.7 s after the storm start, panel equal every time, 3–4 runtime starts and 2–5 `[boot] waited` lines per storm. The C10 crashes counted before (2 in 4 on f69cca24, about 1 in 9 on H) were the tracing artifact (`h-full2b`'s C10 crash on 2026-10-06 also classifies as PA-OOM-CDP) | `pinJ-ux-c10x20.log`, `out/ux/j-c10x20/tests/C10*.json` |
 
 **The C3 memory A/B (the kernel's design; 5 interleaved rounds of H `bf9d947`, I `385a1ac` (guard 16384), D `58ae6d2`
 (QED64's measurement-only commit: guard off, registered here as an uncommitted staged pin) and J (guard 8192), C3 only,
@@ -1782,18 +1782,51 @@ on an unhandled rejection from the raced `Page.reload` send.
 
 ### Not done / running (pin J, 2026-10-10 ~03:55Z)
 
-1. **Running:** QED64's evidence run `j-c10x20` (C10 ×20, tracing off; `$W/logs/pinJ-ux-c10x20.log`, chain
-   `$W/pinI/chainJ5.sh`, started 03:55:39Z). `j-c11h3` (C11 headed ×3) is done: 3/3 (table above).
-2. **Queued after `chainJ5`:** the pool-growth chain `$W/pinI/chainPG.sh` (logs to `$W/logs/pinJ-chain.log`): 8
-   interleaved rounds of the measurement pins `27a4ba6` (5e63edd + #68 + a `[pool]` growth/lifetime diagnostic; a ship
-   candidate, not on main), `0ff314c` and `3b804ea` (the same with parking 8 and 4), each C3 + one C10 storm, tracing off.
-   No results yet. The measurement pins (these three, `58ae6d2` = guard off, used in the C3 A/B, and `349b1b7` = probe
-   256 slots, registered for a crash-rate A/B that this chain superseded) are registered locally only, never committed,
-   and removed after their runs.
-3. **The commit** of this work on `qed64-pin-i`, `infra/ux-verdict.json` (→ `j-full5`), `pins/385a1ac/` and
-   `pins/5e63edd/` included (not the measurement pins);
-   then on that commit the qed64-static CI mirror (`node ci/run-local.mjs --job qed64-static`) and
-   `ci/rehearse-deploy.sh` with the `old-shell` scenario (E1's evidence). Not run yet.
+1. **Done:** QED64's evidence runs `j-c11h3` (3/3) and `j-c10x20` (20/20, 0 crashes, tracing off; table above).
+2. **Done: the pool-growth measurement** (`$W/pinI/chainPG.sh`, 2026-10-10 04:05–05:21Z; analysis
+   `$W/pinI/pg-analysis.txt`, script `$W/pinI/pg-analyze.py`): 8 interleaved rounds of `27a4ba6` (G: 5e63edd + #68 + the
+   `[pool]` growth/lifetime diagnostic; a ship candidate, not on main), `0ff314c` (P8: parking 8) and `3b804ea` (P4:
+   parking 4), each one fresh C3 + one C10 storm, tracing off: **0 crashes in 24 runs, no `.ips`**; pool growths G 11, P8
+   8, P4 9, every one a burst with F = 0 (finished-unreturned 0) to N = 25 or 26, none during any reload storm; growth
+   threads returned after a median 515 ms (G), 5.9 s (P8: parked), 579 ms (P4); thread starts by the end of C3 G ~1,230,
+   P8 ~45, P4 ~90 (parking cuts the churn about 25×); renderer peak in the C10 storm G 10.94–11.81 GB vs P8 9.84–10.18
+   and P4 9.99–10.17; C10 reload-to-ready medians G 22.26 s, P8 21.82 s, P4 21.88 s. (QED64's accounting note: `parked` is
+   a subset of `running`, so a per-panel unused + running + parked double-counts parked threads.) Sent to QED64, which
+   asked the kernel about parking 8 as QED64's default. The measurement pins (`27a4ba6`, `0ff314c`, `3b804ea`, `58ae6d2` =
+   guard off, `349b1b7` = probe 256) stay registered locally, never committed, until QED64 says they can go.
+3. **Done: the commit** `f6f2c8c` on `qed64-pin-i` (60 files; `infra/ux-verdict.json` → `j-full5`, `pins/385a1ac/`,
+   `pins/5e63edd/`; not the measurement pins), local only. **qed64-static CI mirror on `f6f2c8c`** (fresh clone,
+   2026-10-10 05:15Z; `$W/logs/pinJ-ci-local.log`, run dir `$W/pinJ/ci-local-J1`): **JOB SUCCESS**, 12/12 steps (the shell
+   from source byte-identical to J's lock, the Worker tests, CHECK-GALLERY + SIM-GALLERY). **Deploy rehearsal on `f6f2c8c`** (`$W/pinI/chainRH.sh`, 2026-10-10 05:26–08:21Z, fresh clones, local fakes only;
+   J's rehearsal state `$W/deploy-rehearsal-J` (95 objects), run dir `$W/pinJ/rehearse-deploy-J1`, log
+   `$W/logs/pinJ-rehearse-deploy.log`): **`REHEARSE-DEPLOY OK: skip dry-run unpublished deploy first no-verdict tamper
+   old-shell`** (tamper on the per-runtime index `widgets8.f69cca24d0878a58/index.json`: 93/95 published, FAIL as it must).
+   **`old-shell` against the LIVE shell (H, `d60b15e`; OLD_STATE = the live objects) measured decision E1**
+   (`old-shell/e1-measure.txt`): phases 1–2 under the live shell: its published check OK without the one replaced
+   phase-2 key (`REPLACED-KEYS OK 1`), every bare `snapshots/widgets{7,8}/` object untouched, the old gallery and stock
+   boots OK. **Order A** (phase 3 BEFORE the deploy, today's order): in the window the OLD shell's bare `/` stock boot
+   FAILS (it reads the replaced `snapshots/index.json` and `profiles/index.json`), **the OLD gallery boots OK** (its
+   overlays are the untouched bare directories); then the new workflow, its published check, deploy and smoke, and the new
+   gallery + stock boots are OK. **Order B** (phase 3 AFTER the deploy): the CI published check REFUSES the deploy before
+   phase 3 (rc 1), as predicted; a Worker deployed without that check smokes OK, and in the window the NEW gallery and the
+   NEW shell's `/` stock boot are both OK (QED64's per-build index copies, #64); after phase 3 everything is OK. **So the
+   showcase gallery has no window in either order**; only the plain QED64 page at our origin's `/` fails between the
+   indexes' upload and the deploy in order A (minutes), and order B removes that too but needs the CI published check
+   to skip phase-3 keys (or a manual deploy).
+3b. **Done: the thread-budget / sync-elaboration timing A/B for QED64** (`$W/pinI/chainTB2.sh`, `chainTB3.sh`;
+   analysis `$W/pinI/tb2-analysis.txt`, script `$W/pinI/tb-analyze.py`; tracing off; C3 + the full C20 per run). **J
+   5e63edd vs `8f29630`** (QED64's fix/own-predecessor-wait: #68 restart wait + pool diagnostics + #69 thread budget, task
+   manager min(cores, 8) and 4 parked threads + #70 `-DElab.async=false`, probe 8192), 5 interleaved rounds: DistLens
+   21/21 in all 10 runs, no crash; C20 wall median J vs 8f29630 hasse-view 117.6 / 107.7 s, graph-scope 102.8 / 97.7 s,
+   DistLens 63.3 / 59.5 s; DistLens click→ready median 1259 / 998 ms; C3 renderer peak 10.04–10.37 / 9.46–9.70 GB; the
+   pool never grew past 24 on 8f29630 (J 26). So n = 8 + sync elaboration is not slower on the showcase and uses less
+   memory. **`6fa2a16`** (= 8f29630 + #71, the probe back to the runtime's 16384), 2 rounds before QED64 decided:
+   **DistLens 13/21 and 14/21**, every failure (`twoDice 1…8`) ending in `ennreal_num: cannot close this ℝ≥0∞ goal …` —
+   under sync elaboration the stack guard's error is caught inside the tactic, so the user sees a false mathematical
+   failure instead of "stack is exhausted". QED64 therefore recommends keeping 8192 (branch fix/keep-probe-8192, tip
+   `ebfb039`, code byte-identical to `8f29630`; not shipped: the user's decision). `8f29630` stays registered locally
+   (uncommitted) as the staged candidate; `eb49fe7` and `6fa2a16` were removed. The per-item results are in the kernel's
+   0038 calibration corpus `$W/pinI/corpus-0038/INDEX.md` (read in place by the kernel session).
 4. The user's decisions above; the upload, the push and the deploy each need an explicit yes.
 5. `.env.local` still names the deleted kernel build dir (`QED64_KERNEL_BUILD`, removed by another session on
    2026-10-09 ~12:48Z): verify on this host needs `QED64_KERNEL_BUILD=` (then `#7` prints N/A) until it is rebuilt or the

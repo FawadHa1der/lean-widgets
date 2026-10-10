@@ -2,8 +2,8 @@
 
 **To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06, 2026-10-08, 2026-10-09 and 2026-10-10).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
-pin current`):** since 2026-10-04 the showcase **serves E `33b0967`** (your main with #55 and #54, on runtime
-`wasm64-3ab1c6a9da03bc29`; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
+pin current`):** since 2026-10-08 19:20Z the showcase **serves H `bf9d947`** (your main with the v1 page API and the keep-alive fix, runtime
+`wasm64-3ab1c6a9da03bc29`), and from 2026-10-04 to then it served E `33b0967` (your main with #55 and #54; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
 `wasm64-4b025db7729c5f89`, `sourceRevision` `qed64-wasm64@9fbb45afcb`, with the #52 worker). A `1859b83` (the first pin, same runtime, old worker) is the fallback; B `9fdf9b8` (runtime
 `wasm64-2c18773ecfba45bb`, `sourceRevision` `qed64-wasm64@3ae65d36f9`, kernel 0035) stays registered as L9 evidence;
 **D `3b42714`** (your 0035b promote: runtime `wasm64-3ab1c6a9da03bc29`, kernel `a8817d01f9`, parked dedicated threads off)
@@ -34,7 +34,7 @@ regression's record, not deployed. Its overlays are served from per-runtime dire
 `lean.worker.js` setting `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, your HARDENING #67; the same runtime, overlays,
 main bundle and stock snapshots) is the **active pin of our local checkout** since ~18:55Z (first as a staged test pin)
 and is **gated in the browser** (VERDICTs `j-full1`, `j-full5`, headed sign-off `j-headed2`, C20 405/405, the 10 Mbit/s
-first visit; "2026-10-10: pin J" at the end). Not deployed; the live site still serves E.
+first visit; "2026-10-10: pin J" at the end). Not deployed; the live site serves H `bf9d947`.
 
 **Status as of H `bf9d947` (2026-10-08).** **K1** (the keep-alive starvation our C22 found in `5c327c2`) is **fixed in
 your `bf9d947`**, confirmed by our strict C22 (0 lines against 9). **#55 is reopened by you as a residual**: one booted

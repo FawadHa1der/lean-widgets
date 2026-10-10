@@ -502,8 +502,7 @@ The order is the reverse of a release: put the old names back first, then the ol
 
 A re-pin (README "Re-pin: adding a pin when QED64 sends a new commit") usually changes the runtime buildId. That has
 these consequences:
-* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves E `33b0967`, deployed
-  2026-10-05; the active pin locally is J `5e63edd` since 2026-10-09, on I's runtime). `pin use <id>` regenerates
+* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded); the active pin locally is J `5e63edd` since 2026-10-09, on I's runtime). `pin use <id>` regenerates
   `out/deploy` for the new active pin, and `deploy-manifest --check` G2 then needs a verdict run on that pin's gallery.
 * **Snapshots are binary-paired to the runtime.** The overlays must be rebaked against the new runtime before
   anything is uploaded. The R3 gate refuses an index entry whose `runtime` is not the lock's buildId, and the gallery

@@ -13,8 +13,9 @@ figures below are history. **Status 2026-10-10** (the bullets after the first th
 to 2026-10-08):
 
 * **Open it:** `scripts/showcase.sh verify && scripts/showcase.sh serve`, then <http://localhost:5190/showcase/>.
-* **Live site: pin E `33b0967`; active locally: pin J `5e63edd` (since 2026-10-09 ~18:55Z), gated in the browser; I
-  `385a1ac` superseded (kept as the record of the kernel-0036 regression); staged: H `bf9d947` (E's runtime), G and F.**
+* **Live site: pin H `bf9d947` (deployed 2026-10-08 from `d60b15e` on main); active locally: pin J `5e63edd` (since
+  2026-10-09 ~18:55Z), gated in the browser; I `385a1ac` superseded (kept as the record of the kernel-0036 regression);
+  staged: E `33b0967`, G and F.**
   J is QED64 main since 2026-10-09 ~20:30Z: I plus the worker's engine-stack probe at 8192 slots
   (`LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, QED64 HARDENING #67, the interim for kernel patch 0036, whose probe made
   DistLens `pmf_num` clicks fail "stack is exhausted" in Chrome on I). It serves I's runtime `wasm64-f69cca24d0878a58`

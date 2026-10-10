@@ -5,7 +5,7 @@ and docs/HISTORY.md.
 
 ## Pin J `5e63edd`: active and gated; the evidence runs, the commit, then the user's decisions
 
-**Where it stands (2026-10-10 ~03:55Z).** The live site serves E `33b0967`. This checkout's active pin is J `5e63edd`
+**Where it stands (2026-10-10 ~05:30Z).** The live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded). This checkout's active pin is J `5e63edd`
 (since 2026-10-09 ~18:55Z, first as a staged test pin): QED64 main since ~20:30Z, a fast-forward of
 `fix/stack-probe-headroom` = I `385a1ac` plus `lean.worker.js` setting `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun
 (HARDENING #67, QED64's interim for the kernel-0036 regression). Same runtime `wasm64-f69cca24d0878a58`, overlays
@@ -72,6 +72,14 @@ tracing").
 7. **Optional:** record `servedTrees.baseSlimDigest` and `coreDigest` in `pins/385a1ac/pin.json` and
    `pins/5e63edd/pin.json` so the G0 tree check runs instead of printing SKIP; the Docker tag's `DRIFT #7` (now
    `0de79b891eb9`, the e1a79c1 release's image) stays unacted on while nothing native runs.
+
+
+**Next pin (2026-10-10):** QED64's recommended next main is `ebfb039` (branch fix/keep-probe-8192; its code is
+byte-identical to `8f29630`, which the showcase already timed: DistLens 21/21 ×5, C20 5–8 % faster, ~0.6 GB less
+renderer memory, no pool growth; docs/REPIN-LOG.md pin I entry, item 3b). Same runtime f69cca24, so the re-pin needs no
+rebake: register the main SHA once the user ships it, the shell from source, `pin check --full`, then the browser gate.
+The alternative QED64 measured, `6fa2a16` (probe back to 16384), would cost 8 of the 21 DistLens examples with misleading
+`ennreal_num` errors.
 
 ## Pin I `385a1ac`: superseded by J on 2026-10-09 (the kernel-0036 regression record)
 
