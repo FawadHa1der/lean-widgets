@@ -128,16 +128,18 @@ the breakdown had counted the four `def` lines. The totals above (44 and
    squiggle, so every suggestion-emitting widget should compile its own
    suggestions in tests (DistLens does: `VerifyTests`, `SuggestTests`,
    `ClickE2E`, `Demo`).
-2. **Tactic macros are not linted for unused simp args.**  The
+2. **Recipe tactics are not linted for unused simp args.**  The
    `linter.unusedSimpArgs` warning (present since before v4.32.2) fires on a
-   user-written `simp [...]` but not on the `simp` inside the `pmf_num`
-   macro, so inserted `by unfold …; pmf_num` lines stay warning-free
-   (`ClickE2E`'s `checkClean` fixtures prove it at v4.34.0).  Keep tactic
-   recipes behind a macro if their simp set is deliberately over-complete.
+   user-written `simp [...]` but not on the `simp` that `pmf_num` runs (first
+   as a macro, since 2026-10-12 from its elaborator; see the last section),
+   so inserted `by unfold …; pmf_num` lines stay warning-free (`ClickE2E`'s
+   `checkClean` fixtures prove it at v4.34.0).  Keep tactic recipes behind a
+   tactic of their own if their simp set is deliberately over-complete.
 3. **`PMF.bernoulli`/`PMF.binomial` are deprecated-but-present** at Mathlib
    `v4.34.0` (since 2026-04-07).  Any widget that names them needs
-   `set_option linter.deprecated false in` *inside* its macros (as `pmf_num`
-   does), or every inserted proof will warn.  Successors are Measure-valued
+   `linter.deprecated` set to false *inside* its tactic (as `pmf_num` does:
+   `set_option … in` in the macro, `withOptions` in the elaborator), or every
+   inserted proof will warn.  Successors are Measure-valued
    (`ProbabilityTheory.bernoulliMeasure`, `ProbabilityTheory.binomial`) and
    need a different lemma set and `MeasurableSet` side goals.
 4. **No Probability module moves between v4.32.2 and v4.34.0** for the
@@ -225,3 +227,29 @@ warnings). The exit-137 attempt is kept in the transcript on purpose: it is
 the reproducible out-of-memory kill described in gotcha 6 (ClickE2E loads a
 full Mathlib environment in-process) and goes away when the suite runs
 alone — run `lake test` serially in CI.
+
+## 2026-10-12: `pmf_num` / `ennreal_num` became elaborators (browser stack depth)
+
+In the browser (QED64: a WebAssembly Lean whose engine stack is about 500 KiB per Worker, guarded by a probe that
+raises "maximum recursion depth has been reached: the WebAssembly runtime's stack is exhausted" when headroom runs
+low), the click examples `example : twoDice k = … := by unfold …; pmf_num` failed for k = 1…9 at QED64's default probe
+(16384 slots), while the SAME steps typed as one flat tactic sequence passed on the same build: the extra stack came
+from the nested tactic-framework layers of the two macros (macro expansion, `first`, `<;>`, `try`, parenthesised
+sequences, `set_option … in`), each adding engine frames. Worse, when the guard tripped inside a converting layer
+(instance synthesis rethrows runtime errors as "failed to synthesize"), `first` restored the state and the user saw
+the misleading "ennreal_num: cannot close this ℝ≥0∞ goal" for a TRUE claim.
+
+Both tactics are now `@[tactic]` elaborators in `DistLens/Verify.lean` that run the same recipe, in the same branch
+order, as flat `evalTactic` steps with the options set programmatically (`withOptions` with the typed option
+constants) and the goals iterated directly (`<;>` and `first` reimplemented as loops with the same restore semantics;
+runtime errors propagate unchanged). Measured natively for `twoDice 5` (`lean --tstack=N -DElab.async=false`): the old
+macros need 265 KB of thread stack, the elaborators 197 KB — the same as the hand-written flat sequence, so the
+remaining depth is inside `simp`/`finiteness`/`norm_num` themselves. A false or unsupported goal still fails with the
+byte-identical "ennreal_num: cannot close this ℝ≥0∞ goal" + goals (`VerifyTests`, `ClickE2E` unchanged); if a failed
+branch's error or logged messages mention the WebAssembly stack guard, the failure says "ennreal_num: Lean ran out of
+stack while checking this goal, so it could not decide it (the claim may well be true): …" instead (pinned by the new
+`DistLensTests/StackGuardTests.lean`). Limit: a guard trip converted by instance synthesis and then swallowed inside
+`finiteness` (Aesop) or `norm_num` without a trace still shows "cannot close"; only a QED64/kernel-side trip counter
+would catch that. Background: the showcase's `qed64-showcase/docs/REPIN-LOG.md` (pin K) and
+`docs/UPSTREAM-REPORT-QED64.md`.
+
