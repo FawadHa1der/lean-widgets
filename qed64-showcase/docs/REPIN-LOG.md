@@ -1944,11 +1944,26 @@ selections' outcomes at that instant; each early selection must be SUPERSEDED ex
 next click arrived, `ok` otherwise, at least 4 of 7 must be SUPERSEDED (the storm overlapped), the last `ok` and shown.
 `k-c4a-b`, `k-full5` and `k-headed1` each saw tree-scope `ok` before the third click and 6/7 SUPERSEDED.
 
-### Not done / running (pin K, 2026-10-13 ~02:25Z)
+**Commit, CI mirror, deploy rehearsal.** K is committed as **`3b6c385`** on `qed64-pin-i` (a fast-forward of the live
+`d60b15e`; not pushed). **CI mirror on `3b6c385`** (`node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job
+qed64-static --job packages --matrix package=dist-lens`, fresh clone, 2026-10-13 02:23–02:40Z; `$W/logs/pinK-ci-local.log`,
+run dir `$W/pinK/ci-local-K1`): **qed64-static JOB SUCCESS** (the shell from source == K's lock, the Worker tests,
+BUILD-GALLERY CHECK OK, SIM-GALLERY 244 ok, CHECK-GALLERY 157 ok); **packages(dist-lens) JOB SUCCESS** (`lake build`, every
+test module but ClickE2E, the showcase probe), and the regenerated `showcase/dumps/dist-lens.json` is **byte-identical** to
+the committed one (`721c3406…`), so the `showcase` job's DUMPS check holds for the DistLens change. **Deploy rehearsal on
+`3b6c385`** (`$W/pinI/chainRHK.sh`, 02:43–04:23Z; K's rehearsal state `$W/deploy-rehearsal-K`, 95 objects 2.420 GB; run
+dir `$W/pinK/rehearse-deploy-K1`, log `$W/logs/pinK-rehearse-deploy.log`): **`REHEARSE-DEPLOY OK: skip dry-run unpublished
+deploy first no-verdict tamper old-shell`**; `old-shell` against the live H (`d60b15e`) measured E1 exactly as for J: order
+A, the OLD shell's bare `/` stock boot FAILS in the window and the OLD gallery boots OK; order B, the CI published check
+REFUSES the deploy before phase 3, and in the window the NEW gallery and the NEW shell's `/` both boot OK
+(`old-shell/e1-measure.txt`). (Its old-gallery boot waited ~33 min in the lock's cooldown at 15.0–15.2 GiB reclaimable,
+no one queued, then ran.)
 
-1. **Done:** the gate (chains `$W/pinI/chainK4..8.sh`; K4–K7 were stopped by hand for the three test fixes above).
-2. The commit (`pins/62a06e2/`, the active pin state, `infra/ux-verdict.json`, the harness and doc changes), then the
-   qed64-static CI mirror on it and the deploy rehearsal (a new rehearsal state: K's `widgets8` object differs from J's;
-   `old-shell` against the live H as for J).
+### Not done / running (pin K, 2026-10-13 ~04:30Z)
+
+1. **Done:** the gate (chains `$W/pinI/chainK4..8.sh`; K4–K7 were stopped by hand for the three test fixes above), the
+   commit `3b6c385`, the CI mirror and the deploy rehearsal (above).
+2. Nothing runs. Pushing `qed64-pin-i` deploys K (H's bare overlay objects stay; K uploads its per-runtime directories and
+   the two per-build index copies, then replaces the stock indexes, decision E1).
 3. The user's decisions are unchanged from J's list above (E1, the push, alias policy, stale tabs, R2 growth, kernel
    0038), plus `.env.local`'s `QED64_KERNEL_BUILD` (suggested: `$W/kernel-build-native64`).
