@@ -22,7 +22,11 @@
 //   busy elsewhere: (1) the slowest DistLens declared click (twoDice); (2) a ~38 s silent `#eval IO.sleep` appended to the
 //   example, which keeps QED64 'elaborating' with no progress far past the probe's threshold, so the probe is exercised;
 //   (3) a SATURATED task pool (final audit, major): 24 parallel `theorem … := by sleep 55000; trivial` keep every Lean
-//   task thread busy, so the hover probe waits for a free thread and goes unanswered although Lean is healthy. The
+//   task thread busy, so the hover probe waits for a free thread and goes unanswered although Lean is healthy. The block
+//   opts in with `set_option Elab.async true`: since QED64 HARDENING #70 (62a06e2, pin K) the resident worker runs
+//   `-DElab.async=false`, so without it the 24 proofs elaborate one after another (24 x 55 s) and no pool saturates; a
+//   file may still opt in (#70: "at its own risk"), and that is the configuration this case needs. On a pin without #70
+//   the line restates Lean's server default. The
 //   gallery must take QED64's own probe answers (its FileWorker main loop answers them without a pool thread), its own
 //   main-loop probe's answers ($/showcase/liveness, sent with every hover; hardening lane) or any server frame as proof
 //   of life (probe settled 'alive'), restart nothing, and word a 45 s card "Lean is still working". On a page WITHOUT
@@ -505,10 +509,13 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     pe.connectsAfter = await connects();
   }
   const SAT_N = 24; const SAT_MS = 55000;
+  // the sleeping proofs run in waves of the task manager's standard workers: J (n = 14) took 2 waves (111 s), a pin with
+  // QED64's thread budget (#69: min(cores, 8)) takes 3 (K: 166 s)
+  const SAT_WAVES = 3;
   const lv3 = (await g.status()).liveness; const q3 = await g.qstatus(); const st3 = (await g.status()).stall;
   const via3 = { ...lv3.aliveVia }; const ml3 = { ...lv3.mainLoop };
   // (Mathlib's unusedTactic linter warns that `sleep` "does nothing"; a user silencing it is part of the scenario)
-  const sat = Array.from({ length: SAT_N }, (_, i) => `set_option linter.unusedTactic false in\ntheorem showcaseSat${i} : True := by sleep ${SAT_MS}; trivial`).join('\n');
+  const sat = ['set_option Elab.async true', ...Array.from({ length: SAT_N }, (_, i) => `set_option linter.unusedTactic false in\ntheorem showcaseSat${i} : True := by sleep ${SAT_MS}; trivial`)].join('\n');
   if (API) ka.phases.saturated = { connectsBefore: await connects() };
   await g.setCursor(ex.text.split('\n').length - 1, 0);
   await g.focusEditor();
@@ -520,13 +527,13 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
     if (st.stall.active && !shot) { shot = true; await g.page.screenshot({ path: screenPath('C22-still-working-card.png') }).catch(() => {}); }
     s3.push({ t: Date.now() - t3, phase: q.phase, version: q.version, session: q.session, pool: q.pool || null, idleMs: st.stall.idleMs, sent: st.liveness.sent - lv3.sent, answered: st.liveness.answered - lv3.answered, alive: st.liveness.alive - lv3.alive, card: st.stall.active, variant: st.stall.variant, title: st.error && st.error.kind === 'stalled' ? st.error.title : null, qed64Answered: st.liveness.qed64.totals.answered - lv3.qed64.totals.answered });
     return q.phase === 'ready' && q.version > q3.version && Date.now() - t3 > 2000 ? { st, q } : null;
-  }, { timeoutMs: SAT_MS + 180000, intervalMs: 500 });
+  }, { timeoutMs: SAT_WAVES * SAT_MS + 180000, intervalMs: 500 });
   expect(done3, 'the saturated elaboration finished').not.toBeNull();
   if (API) Object.assign(ka.phases.saturated, { start: t3, end: Date.now() });
   const lvS = done3.st.liveness; const frameAgoAfterReady3 = API ? (await g.status()).liveness.qed64.lastFrameAgoMs : null; const d3 = await g.diagnosticsOf(done3.q.version); const q4 = await g.qstatus();
   const cards = s3.filter((x) => x.card);
   m.saturated = {
-    theorems: SAT_N, sleepMs: SAT_MS, editToReadyMs: Date.now() - t3, maxIdleMs: Math.max(...s3.map((x) => x.idleMs)),
+    theorems: SAT_N, sleepMs: SAT_MS, elabAsync: 'opt-in', editToReadyMs: Date.now() - t3, maxIdleMs: Math.max(...s3.map((x) => x.idleMs)),
     poolSaturated: s3.some((x) => x.pool && x.pool.unused === 0), poolMax: s3.reduce((a, x) => (x.pool ? { running: Math.max(a.running, x.pool.running || 0), unusedMin: Math.min(a.unusedMin, x.pool.unused) } : a), { running: 0, unusedMin: Infinity }),
     probes: lvS.sent - lv3.sent, answered: lvS.answered - lv3.answered, alive: lvS.alive - lv3.alive, aliveVia: Object.fromEntries(Object.keys(lvS.aliveVia).map((k) => [k, lvS.aliveVia[k] - (via3[k] || 0)])), missed: lvS.missed - lv3.missed, wedged: lvS.wedged - lv3.wedged, restarts: lvS.restarts - lv3.restarts,
     // the gallery's main-loop probe over (3): sent with every hover, answered by the FileWorker main loop (MethodNotFound)
@@ -539,8 +546,10 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
   };
   m.saturatedSamples = s3.filter((x, i) => i % 6 === 0);
   console.log(`C22 (3) ${JSON.stringify(m.saturated)}`);
-  expect(m.saturated.poolSaturated, 'every Lean task thread was busy at some point (pool unused 0): the premise of this case').toBe(true);
-  expect(m.saturated.editToReadyMs, 'it really was slow').toBeGreaterThanOrEqual(SAT_MS);
+  // the premise: every Lean task thread was busy, so proofs queued for one. All 24 at once would take one SAT_MS; a queue
+  // takes at least two waves. (Up to J the 24-thread pthread pool also ran out, `unused` 0; with QED64 #69's task budget,
+  // n = 8 standard workers, it no longer does (k-dl3: running 21, unused 3 at least), so `poolSaturated` is data only.)
+  expect(m.saturated.editToReadyMs, 'every Lean task thread was busy: the proofs queued (at least 2 waves of SAT_MS): the premise of this case').toBeGreaterThanOrEqual(2 * SAT_MS);
   if (API) {
     // v1: no probe of the gallery's own (hover or main-loop) went out; QED64's own liveness (its probe is answered by the
     // FileWorker main loop without a pool thread) saw no stall and rebooted nothing, and is not stalled at the end

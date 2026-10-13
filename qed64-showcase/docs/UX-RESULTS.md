@@ -1279,6 +1279,9 @@ be done.
 7. C4 can race in headed mode (the first card switch can finish before Playwright's slower headed second click). With
    the window on the 2x display the clicks came about 420 ms apart; with headed launches pinned to
    `--force-device-scale-factor=1` all 7 were `SUPERSEDED` again (`lastmile-chrome-headed2`). The assertion stays strict.
+   *Changed 2026-10-12 for pin K* (faster switches: the race in 2 of 3 headless full runs): C4 now reads, at each click,
+   what the page saw and requires SUPERSEDED exactly for the selections still loading when the next click arrived
+   (docs/REPIN-LOG.md, pin K, "C4's storm on K").
    The plan's new-headless project is still not configured; headed is a project (`UX_HEADED_ALL=1`).
 8. Visual baselines are specific to this host's fonts and Chrome for Testing 151 (headless and headed sets); headed
    ones assume device scale 1 (now pinned).

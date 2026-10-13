@@ -1839,3 +1839,116 @@ on an unhandled rejection from the raced `Page.reload` send.
 Back to I (the 0036 regression; evidence only): `scripts/showcase.sh stop && scripts/showcase.sh pin use 385a1ac`.
 Back to H: `pin use bf9d947` (bare overlay directories; a redeploy of H needs new UX verdicts on the regenerated
 gallery, decision 5). Back to E (legacy mode, live): `pin use 33b0967`.
+
+## 2026-10-12: pin K (62a06e2 / wasm64-f69cca24d0878a58, QED64 main) — QED64 #68–#72, DistLens's tactics as elaborators; K active
+
+*Status 2026-10-13 ~02:25Z:* **K is the active pin of this checkout and fully gated**: DistLens 21/21 in the browser at
+QED64's default probe, two VERDICTs (`k-full1`, `k-full5`), C20 405/405, the headed sign-off `k-headed1` 35/35, the
+10 Mbit/s first visit PASS, `DEPLOY-MANIFEST CHECK OK`, `infra/ux-verdict.json` → `k-full5` ("Gates (K)" below). J `5e63edd` stays registered (gated,
+committed in `f6f2c8c`) but **shares K's runtime and therefore its per-runtime overlay directories**: the `widgets8`
+overlay there is now K's (the DistLens change), so `pin use 5e63edd` would need J's artifacts back from
+`$W/backup-J-20261012` (a CoW copy of mathlib4, widgets-src, the staged trees, runtime f69cca24's bake-out/bake-work/raw/
+BAKE-KEY/bake-logs for w8, `out/runtimes/…/overlay/widgets8` and `…/headless`; 145,883 files). The live site still serves
+H `bf9d947`; nothing is pushed. Lane: chains `$W/pinI/chainK{1..7}.sh`, notes in `$W/logs/pinK-chain.log`, step logs
+`$W/logs/pinK-*.log`.
+
+**What K is.** `62a06e2632b5` is QED64 main as pushed on 2026-10-12, on the same runtime and promote as I and J
+(`wasm64-f69cca24d0878a58`, `fc945e4`, kernel `e1a79c1ce9`). Since J: **#68** a page that replaces its own runtime waits
+for all of its Workers; the `[pool]` growth diagnostic; **#69** a thread budget (task manager min(cores, 8), 4 parked
+dedicated threads); **#70** the resident worker runs `-DElab.async=false` (a file of ~20 Mathlib theorems crashed the tab
+under async elaboration: blocked pool tasks start standard workers that never exit); **#71** Lean's stack probe back at
+the runtime default 16384 (#67's 8192 withdrawn); **#72** the stack backstop: on a real engine-stack death the relay
+pauses after the FIRST death, `lastDeath.cause.code = "ENGINE_STACK_OVERFLOW"`, one note diagnostic from source "QED64",
+any edit resumes (the strings are in `$W/pinI/backstop-62a06e2.md`). Main bundle `/assets/index-DMfixaZP.js`, console
+notify site line0 627 `d5c84e1f…`; release set 147 files; lock `9e041ead…`; gallery content `1454d28e…`.
+
+**Why the widgets changed (the user's choice (b), NEXT-STEPS 2026-10-12).** At 16384 the DistLens click examples
+`twoDice 1…8 … := by unfold …; pmf_num` failed in the browser (13/21 on `6fa2a16`), each with DistLens's own fallback
+"ennreal_num: cannot close this ℝ≥0∞ goal" for a TRUE claim: the WebAssembly stack guard (kernel patch 0036) tripped
+inside instance synthesis, which converts runtime errors into "failed to synthesize", and `first` restored the state and
+printed the fixed fallback (`$W/pinI/why-ennreal-num.md`; a flat hand-written sequence of the same steps passed at 16384,
+`$W/pinI/stackexp/`). The depth came from the nested macro layers (`pmf_num` → `<;>` → `ennreal_num` → `first` → branch).
+**`6b31bba`** rewrites both as `@[tactic]` elaborators running the same recipe in the same branch order as flat
+`evalTactic` steps (`packages/dist-lens/DistLens/Verify.lean`; PORT-NOTES 2026-10-12): native stack for `twoDice 5`
+(`lean --tstack`, `Elab.async=false`) 265 → 197 KB, the same as the flat sequence. False goals keep the byte-identical
+"cannot close" message; a branch whose error or logged messages carry the guard's text now ends in "ennreal_num: Lean ran
+out of stack while checking this goal, so it could not decide it (the claim may well be true)" with the guard's message
+quoted (`DistLensTests/StackGuardTests.lean`, 6 `#guard_msgs` cases). Natively: `lake build`, VerifyTests, ClickE2E,
+StackGuardTests green.
+
+**Native toolchain.** The kernel build directory named by `.env.local` (`QED64_KERNEL_BUILD`) was deleted on this host
+by another session (2026-10-09); it was rebuilt at `$W/kernel-build-native64` from the kernel release's
+`native64.tar.gz` (`bin/lean` `42a5c2b0…` and `lake` `5b44c751…` == the lock) plus NATIVE-COMMIT, BUILT-COMMIT,
+`mathlib/MATHLIB-COMMIT`, `mathlib/mathlib4` → `$W/mathlib4`, and `mathlib/essential-modules.txt` from the release lists
+(`2194a774…`, identical across releases). The chains export that path; `.env.local` is the user's to update. The Docker
+tag `qed64-toolchain:emsdk-6.0.5` now names `0de79b891eb9` (the kernel release's `docker.imageId`): the r3 drift proof
+rebuilt 512 modules in it with 7,616 files byte-IDENTICAL (`$W/pinI/r3-drift.sh`, `$W/r3-drift/`), recorded as
+`toolchain.docker.equivalent[1]` in K's lock.
+
+**Build (2026-10-12; `pinK-*.log`).** `pin use 62a06e2`; export of the widgets at `6b31bba` (223 files, hash `b81f1b75…`,
+the history keeps `c2efe78f…` at `90e415c`); native incremental rebuild: 5 new oleans (DistLens, its Demo, Verify,
+Widget, LeanWidgetKit), header gate OK (`showcase.sh` `native_gate` now skips an incremental step that built no new
+oleans: its oleans were gated when built); stage `all --force` (the J trees are backed up): STAGE-TREES OK, slim w8 5684
+modules, fat 5685; **bake w8** `JUDGE w8: GREEN N=5684 raw=1272279733 /snapshots/widgets.557ea1a8a9d806c9.snapz`,
+PAIRING GREEN, `CMP widgets` `cd6e6304…` (w7 is not rebuilt: DistLens is w8-only, the w7 overlay stays
+`widgets.9eb6987f…`); overlay w8 (`widgets8.f69cca24d0878a58/`: `index.json` 874 B, `widgets.557ea1a8…snapz` 364.8 MB);
+preflight OK (ready in 13.3 s); headless controls PASS; stage 4 30/30 PASS (DistLens E1 9/9, E3 129/129, E3b clean);
+e2 7/8 (tree-scope `Demo.lean:104`, L1, as on every pin; dist-lens PASS in 80 s); record-overlays; `VERIFY OK`;
+**`pin check 62a06e2 --full` FAILED once** on `raw/widgets8.snap size == bake-work-w8/widgets.snap`: `raw/widgets{7,8}.snap`
+were by-hand APFS clones of the bake (pins D and I), so a rebake on the same runtime left J's copy behind. Re-cloned
+(J's copy is in the backup), then `PIN CHECK OK 62a06e2 (full)`; `cmd_bake` now refreshes `raw/widgetsN.snap` itself.
+Gallery gate GREEN `1454d28e…`, `CHECK-GALLERY OK 157 ok`.
+
+**The DistLens validation in the browser (W8 + C20 + C22, `--grep "W8 DistLens|C20 |C22 "`).**
+
+| Run | Result | Notes |
+|---|---|---|
+| `k-dl1` | refused (rc 3) | another session's precompile jobs held the lock; 15 GiB < 16 inside it |
+| `k-dl1-b` | W8 ✓, C20 ✓ **135/135, DistLens 21/21 clean in 60.4 s**, C22 ✘ in (3) | (3)'s 24 `sleep 55000` proofs never reached ready in 235 s: under #70 they elaborate one after another (24 × 55 s) |
+| `k-dl3` | W8 ✓, C20 ✓ 135/135 (DistLens 21/21, 57.7 s), C22 ✘ on its premise only | with `set_option Elab.async true`: 3 waves, 166.4 s, 0 probes, 0 restarts, card "Lean is still working"; `poolSaturated` false (running ≤ 21, unused ≥ 3) |
+| **`k-dl5`** | **3/3** | DistLens 21/21 in 58.7 s; C20 135/135; C22 (3) 166.7 s |
+| **`k-dl6`** | **3/3** | DistLens 21/21 in 64.4 s; C20 135/135; C22 (3) 166.7 s |
+
+**C22 (3) on a sync-elaboration pin.** The case needs every Lean task thread busy. `tests/ux/specs/25-stall.spec.mjs`
+now (a) opens the block with `set_option Elab.async true`, QED64 #70's documented opt-in (on a pin without #70 it
+restates the server's default), (b) waits `SAT_WAVES = 3` sleeps plus 180 s (J at n = 14: 2 waves, 111 s; #69's n = 8: 3
+waves), and (c) takes the queue as the premise, `editToReadyMs ≥ 2 × SAT_MS`, since with #69's budget the 24-thread
+pthread pool no longer runs out (`poolSaturated` stays in the record as data). Every liveness assertion is unchanged.
+Measured for QED64 (sent): even with async elaboration opted back in, 24 blocked proofs never grew the pool (J: running
+26–27, unused 0).
+
+### Gates (K)
+
+| Run | When | Result | Evidence |
+|---|---|---|---|
+| `v1-smoke` | 10-12 21:19–21:33Z | 23/23; ready 14.8 s | `pinK-smoke.log` |
+| `k-full1` | 21:35–21:55Z | **VERDICT** (34 passed, C19 skipped) | `pinK-ux-full1.log` |
+| `k-full2` | 22:00–22:31Z | red: C4 only (below) | `pinK-ux-full2.log` |
+| `k-full3` | 22:33–23:27Z (lock held by the kernel's 0039b gate until ~23:07Z) | red: C4 only | `pinK-ux-full3.log` |
+| `k-c4a-b` (C4 only, the new assertion; `k-c4a` refused at 15 GiB) | 10-13 00:42–00:52Z | 1/1; tree-scope `ok` before the 3rd click, 6/7 SUPERSEDED | `pinK-ux-c4a.log` |
+| `k-full5` | 00:54–01:14Z | **VERDICT** (34 passed, C19 skipped); the recorded verdict | `pinK-ux-full5.log` |
+| `k-c20-1/2/3` | 01:15–01:40Z | 135/135 each (405/405), DistLens 21/21 each (57.5, 58.8, 58.8 s) | `pinK-ux-c20-{1,2,3}.log` |
+| `k-headed1` (headed Chrome for Testing) | 01:41–02:02Z | **HEADED SIGN-OFF** 35/35 (C19 included) | `pinK-ux-headed1.log` |
+| `k-throttle-t10p`: 10 Mbit/s / 40 ms, `throttle-proxy.mjs --listen 5298 --upstream 5297` | 02:02–02:14Z | **`RESULT PASS`**, ready at **565.1 s** (J 565.1, H 565.6); progress visible in 563 of 564 samples, error card in 0, longest unchanged progress 6.0 s; 693.3 MB at 9.8 Mbit/s | `pinK-tp-t10.log`, `pinK-tp-proxy.log` |
+| `deploy-manifest --check` | 02:16Z | FAILED: `out/deploy/manifest.json` was still J's (C1: `widgets.ebd0fc1b…` vs K's `widgets.557ea1a8…`; C2 the overlay-widgets8 list). Regenerated (`generate --overlays widgets8,widgets7`: `DEPLOY-MANIFEST OK 77 assets, 95 R2 objects`), then **`DEPLOY-MANIFEST CHECK OK`**, G2 `verdict run k-full5 … on THIS gallery 1454d28e…, lock 9e041ead… and overlays widgets8, widgets7`; 95 R2 objects 2.420 GB | `pinK-dm-check.log`, `pinK-dm-generate.log`, `pinK-dm-check2.log` |
+| `deploy-manifest --record-verdict` | 02:22:52Z | `infra/ux-verdict.json` names `k-full5` (gallery `1454d28e…`, lock `9e041ead…`, overlays widgets8 `21c48b5c…` and widgets7, pin `62a06e2`) | `pinK-dm-record.log` |
+
+**C4's storm on K.** C4 clicks 8 cards 250 ms apart and required the first 7 selections to settle SUPERSEDED. Playwright's
+third click has always come ~400 ms after the second (its actionability wait; `h-full4` 693 ms, `j-full1` 679 ms, every K
+run ~690 ms), and K's switches are faster: tree-scope (clicked at ~285 ms) finished inside that gap in `k-full2` and
+`k-full3`, a correct `ok` (the gallery settles a selection `ok` only if it is still the wanted one when its switch ends)
+that the premise called a failure; `k-full1` passed by a margin. Before K the race was a rare headed flake (5 of 84 runs;
+docs/UX-RESULTS.md kept the assertion strict). `tests/ux/specs/00-boot.spec.mjs` now records what the page saw: a
+capture-phase click listener on the document runs synchronously before the card's own handler and reads the earlier storm
+selections' outcomes at that instant; each early selection must be SUPERSEDED exactly when it was still loading as the
+next click arrived, `ok` otherwise, at least 4 of 7 must be SUPERSEDED (the storm overlapped), the last `ok` and shown.
+`k-c4a-b`, `k-full5` and `k-headed1` each saw tree-scope `ok` before the third click and 6/7 SUPERSEDED.
+
+### Not done / running (pin K, 2026-10-13 ~02:25Z)
+
+1. **Done:** the gate (chains `$W/pinI/chainK4..8.sh`; K4–K7 were stopped by hand for the three test fixes above).
+2. The commit (`pins/62a06e2/`, the active pin state, `infra/ux-verdict.json`, the harness and doc changes), then the
+   qed64-static CI mirror on it and the deploy rehearsal (a new rehearsal state: K's `widgets8` object differs from J's;
+   `old-shell` against the live H as for J).
+3. The user's decisions are unchanged from J's list above (E1, the push, alias policy, stale tabs, R2 growth, kernel
+   0038), plus `.env.local`'s `QED64_KERNEL_BUILD` (suggested: `$W/kernel-build-native64`).

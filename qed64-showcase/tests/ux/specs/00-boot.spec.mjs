@@ -227,11 +227,26 @@ test('C4 switching through the UI: 8 sequential card clicks, then a storm of 8 c
     m.sequential.push(rec);
     if (!r.ok || !p.equal || rec.noConnection) fail.push(`sequential ${id}: ${JSON.stringify(rec)}`);
   }
-  // storm: 8 real card clicks 250 ms apart (2 s); the last wins, the first 7 settle SUPERSEDED (read from the gallery's
-  // selection log). The sequential pass ended on dist-lens, so the storm starts elsewhere (re-selecting is a no-op).
+  // storm: 8 real card clicks 250 ms apart (2 s); the last wins, and an earlier selection settles SUPERSEDED unless it had
+  // already finished when the next click reached the gallery, then `ok` (read from the gallery's selection log). The
+  // sequential pass ended on dist-lens, so the storm starts elsewhere (re-selecting is a no-op).
   const storm = ['graph-scope', 'tree-scope', 'expr-xray', 'dist-lens', 'simp-lens', 'interval-inspector', 'hasse-view', 'chart-kit'];
   const s0 = await g.status();
   const tok0 = s0.selections.length ? s0.selections[s0.selections.length - 1].token : 0;
+  // what the page saw at each click: a capture listener on the document runs synchronously BEFORE the card's own click
+  // handler (choose), so `before` is exactly the earlier storm selections' state when this click reached the gallery.
+  // (Playwright's third click has always come ~400 ms after the second, its actionability wait; on pin K's faster switches
+  // tree-scope finished inside that gap in k-full2/k-full3, a correct `ok` the old all-SUPERSEDED premise called a failure.)
+  await g.page.evaluate((tok) => {
+    const rec = []; window.__c4storm = rec;
+    window.__c4stormHandler = (e) => {
+      const c = e.target && e.target.closest ? e.target.closest('[id^="card-"]') : null;
+      if (!c) return;
+      const sel = window.__showcase.status().selections.filter((l) => l.token > tok && l.source === 'rail');
+      rec.push({ id: c.id.slice(5), t: Math.round(performance.now()), before: sel.map((l) => ({ id: l.id, outcome: l.outcome })) });
+    };
+    document.addEventListener('click', window.__c4stormHandler, true);
+  }, tok0);
   const t = Date.now();
   m.stormClicks = [];
   for (let i = 0; i < storm.length; i++) {
@@ -242,6 +257,11 @@ test('C4 switching through the UI: 8 sequential card clicks, then a storm of 8 c
   const settled = await until(async () => { const st = await g.status(); const mine = st.selections.filter((l) => l.token > tok0 && l.source === 'rail'); return mine.length === storm.length && mine.every((l) => l.outcome) ? mine : null; }, { timeoutMs: 330000, intervalMs: 150 });
   const results = settled ? settled.map((l) => l.outcome) : ['TIMEOUT'];
   m.stormIds = settled ? settled.map((l) => l.id) : null;
+  const seen = await g.page.evaluate(() => { document.removeEventListener('click', window.__c4stormHandler, true); return window.__c4storm; });
+  m.stormSeen = seen;
+  // selection i's outcome as the page saw it when click i + 1 arrived (null: still loading)
+  const beforeNext = storm.slice(0, 7).map((id, i) => { const b = seen[i + 1] && seen[i + 1].before.find((x) => x.id === id); return b ? b.outcome : null; });
+  m.stormBeforeNext = beforeNext;
   const p = await firstPanel(g, 'chart-kit');
   const st = await g.status(); const q1 = await g.qstatus(); const iv = await g.ivText();
   m.storm = { results, ms: Date.now() - t, shown: st.shown, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), staleText: /bipartite|Hasse|poset:|X-Ray|Simp Lens|dist: 6 outcomes/.test(iv), noConnection: /No connection to Lean/.test(iv), workerDeaths: q1.stats.workerDeaths - q0.stats.workerDeaths, reboots: q1.stats.reboots - q0.stats.reboots, textIsChartKit: (await g.currentText()) === EXAMPLES.find((e) => e.id === 'chart-kit').text };
@@ -250,7 +270,13 @@ test('C4 switching through the UI: 8 sequential card clicks, then a storm of 8 c
   expect(fail).toEqual([]);
   expect(m.stormClicks[7].at, '8 clicks within 2 s').toBeLessThanOrEqual(2100);
   expect(m.stormIds).toEqual(storm);
-  expect(results.slice(0, 7).every((r) => r === 'SUPERSEDED')).toBe(true);
+  expect(seen.map((x) => x.id), 'the gallery saw the 8 card clicks, in order').toEqual(storm);
+  for (let i = 0; i < 7; i++) {
+    if (beforeNext[i] === null) expect(results[i], `${storm[i]} was still loading when the next click came: superseded`).toBe('SUPERSEDED');
+    else expect(results[i], `${storm[i]} had settled before the next click came`).toBe(beforeNext[i]);
+  }
+  expect(beforeNext.filter((o) => o !== null), 'a selection that settled before the next click settled ok').toEqual(beforeNext.filter((o) => o !== null).map(() => 'ok'));
+  expect(results.slice(0, 7).filter((r) => r === 'SUPERSEDED').length, 'the storm overlapped (the premise): most earlier selections were superseded').toBeGreaterThanOrEqual(4);
   expect(results[7]).toBe('ok');
   expect(m.storm).toMatchObject({ shown: 'chart-kit', panelEqual: true, staleText: false, noConnection: false, workerDeaths: 0, reboots: 0, textIsChartKit: true });
 });

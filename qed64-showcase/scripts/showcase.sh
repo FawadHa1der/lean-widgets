@@ -521,7 +521,10 @@ oleans_to_modules() { sed -nE 's#^(\.lake/packages/[^/]+/)?\.lake/build/lib/lean
 native_gate() { # native_gate <label> <build step whose new oleans to gate>
   local label="$1" src="$LOGS/$2.new-oleans.txt" mods="$LOGS/$2.new-modules.txt"
   if [ "$DRY" = 0 ]; then
-    [ -s "$src" ] || die "no $src (run the build step first)"
+    [ -f "$src" ] || die "no $src (run the build step first)"
+    # an incremental rebuild (e.g. only the DistLens sources changed) leaves earlier steps with no new oleans: nothing to
+    # gate for that step (its oleans were gated when they were built)
+    if [ ! -s "$src" ]; then say "gate-$label: $2 built no new oleans (incremental rebuild): nothing to gate"; return 0; fi
     oleans_to_modules "$src" > "$mods"
   fi
   step "gate-$label" ${AWAKE[@]+"${AWAKE[@]}"} bash "$SC/scripts/build-native.sh" header-gate --clone "$W/mathlib4" --core "$K/native/stage1/lib/lean" \
@@ -580,6 +583,12 @@ cmd_bake() {
   locked_run "bake-$which" bake bash "$SC/scripts/bake.sh" "$which" || exit 1
   must "judge-$which" node "$SC/scripts/judge-bake.mjs" "$which"
   must "pair-$which-bakeout" node "$SC/scripts/pair-check.mjs" "$(store "bake-out-$which")" --cmp "widgets=$(store "bake-work-$which")/widgets.snap"
+  # raw/widgetsN.snap is a clone of this bake's widgets.snap (`pin check` compares the sizes; the headless tools may read it):
+  # refresh it, or a rebake on the same runtime leaves the previous bake's copy behind (pin K, 2026-10-12)
+  local n="${which#w}" raw; raw="$(store raw)"
+  clone_file "$(store "bake-work-$which")/widgets.snap" "$raw/widgets$n.snap.new" && mv -f "$raw/widgets$n.snap.new" "$raw/widgets$n.snap" \
+    || die "bake: could not refresh $raw/widgets$n.snap from bake-work-$which/widgets.snap"
+  say "raw/widgets$n.snap refreshed from bake-work-$which/widgets.snap ($(file_size "$raw/widgets$n.snap") B)"
 }
 
 cmd_overlay() {

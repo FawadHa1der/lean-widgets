@@ -74,6 +74,25 @@ tracing").
    `0de79b891eb9`, the e1a79c1 release's image) stays unacted on while nothing native runs.
 
 
+**Next pin, revised (2026-10-12, the user's decision relayed by QED64):** stack-limit failures will be handled by a
+QED64 library backstop (on a real engine-stack crash: the relay pauses after the FIRST death, `lastDeath.cause.code =
+"ENGINE_STACK_OVERFLOW"`, one note diagnostic from source "QED64" at the line being checked, a stock-page pill, any edit
+resumes), not by tuning Lean's stack: QED64 withdraws #67's 8192 probe and leaves the runtime default 16384. For the
+showcase that means C20/W8/C22's DistLens links fall back to about 13/21 (the `twoDice 1…8` examples end in misleading
+`ennreal_num: cannot close …` errors under sync elaboration, measured on `6fa2a16`), which the user accepted ("sometimes
+it's better not to solve every issue so that the overall architecture is simpler"). The new candidate tip comes from
+QED64 once gated; stay on J until then. **Our side needs a decision before that pin can get a VERDICT**, because C20, W8
+and C22 require every DistLens link to elaborate cleanly and the descriptor's `knownLimitations` is text only (nothing
+reads it): (a) a per-pin list of expected-failing links (descriptor field, read by C20/W8/C22, fail-closed: exactly
+those links may fail, with a matching message, and nothing else), or (b) change the DistLens demo's generated examples to
+stay under the stack limit (for example a shallower tactic than `unfold …; pmf_num` for `twoDice`), which keeps the suite
+strict but changes the widget package. Also: the gallery's soft card may key on `ENGINE_STACK_OVERFLOW`, and
+`tests/ux/selectors.json` needs the new note text (QED64 will send the exact strings).
+**Resolved the same day with (b)** (the user: "go ahead with the DistLens tactic change"): `pmf_num`/`ennreal_num` became
+elaborators (`6b31bba`), and on pin K (`62a06e2`, QED64 main with #71's 16384 and #72's backstop) DistLens is 21/21 in
+the browser (`k-dl5`, `k-dl6`; no #72 pause in any run, so no soft card or allowlist entry was needed). K's entry in
+docs/REPIN-LOG.md has the build, the C22 (3) change for sync elaboration and the gate.
+
 **Next pin (2026-10-10):** QED64's recommended next main is `ebfb039` (branch fix/keep-probe-8192; its code is
 byte-identical to `8f29630`, which the showcase already timed: DistLens 21/21 ×5, C20 5–8 % faster, ~0.6 GB less
 renderer memory, no pool growth; docs/REPIN-LOG.md pin I entry, item 3b). Same runtime f69cca24, so the re-pin needs no
