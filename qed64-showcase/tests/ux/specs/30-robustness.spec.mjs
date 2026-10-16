@@ -280,7 +280,15 @@ test('C10 reload storm: 5 reloads in 15 s, then ready with the right panel; no c
   })();
   // the storm stops at a renderer crash (QED64 #55 residual): the crash is recorded with its timing and fails below
   for (let i = 0; i < 5 && !w.crashed; i++) {
-    if (i) await sleep(Math.max(0, i * 3000 - (Date.now() - t))); // reloads at 0, 3, 6, 9, 12 s
+    if (i) {
+      // each reload interrupts the previous one's boot: 200 ms after that page's runtime initialized (its RUNTIME_START_RE
+      // line after it landed), i.e. during its snapshot load; at most 3 s after the landing (the old 0/3/6/9/12 s cadence).
+      // Pins up to K initialized ~2.7 s after a warm reload landed, so 3 s hit a booting page; pin L (runtime 5650321f)
+      // initializes in ~0.5 s and is ready before 3 s, so the fixed schedule reloaded ready pages (l-full1).
+      const landedWall = t + m.reloads[i - 1].landedAt; const cap = landedWall + 3000;
+      while (Date.now() < cap && !w.crashed && !pageLines(s, RUNTIME_START_RE, { sinceWall: landedWall }).length) await sleep(50);
+      await sleep(Math.max(0, Math.min(200, cap - Date.now())));
+    }
     const before = last; const at = Date.now() - t;
     gen++; last = null;
     try { await reloadViaCdp(); } catch (e) {

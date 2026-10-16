@@ -627,8 +627,9 @@ test('C22 liveness probe, negative: a legitimately slow elaboration (the slowest
 // wedged session (died "wedged") about 22-25 s after its last server frame; the relay reboots it and replays the text.
 // No real L7 has reached that path in 15+ C20 runs, so this FIXTURE forces it: inside QED64's own lean.worker.js (the
 // Emscripten main-thread worker, classic script, so its top-level functions are worker globals) it runs exactly what the
-// worker's livenessStep runs when its detector decides "dead" — livenessLog(...) then die(null, "wedged", ...) — about
-// 0.8 s after a declared click. Everything downstream is QED64's and the suite's real code: the relay's onDied ->
+// worker's livenessStep runs when its detector decides "dead" — livenessLog(...) then die(null, "wedged", ...) — as soon
+// as a declared click's edit is in the document (its elaboration in flight; clickLink's afterEdit hook). Until pin K it
+// ran 0.8 s after arming; on pin L (runtime 5650321f) the click was ready in 668 ms, before the death (l-full1). Everything downstream is QED64's and the suite's real code: the relay's onDied ->
 // failInFlight -> reboot('wedged') and replay, the gallery's observeQed64 (status().liveness.qed64, the qed64-wedged /
 // qed64-rebooted events, the notice), and the harness's clickLink -> captureQed64Reboot (tests/ux/lib/actions.mjs), the
 // very path C20 and W1-W8 take on a real QED64-handled hang. The record is labelled SYNTHETIC (window.__uxFixture): it
@@ -678,18 +679,17 @@ test('C23 QED64-handled wedged reboot (fixture): the gallery reports it, the tex
     elabTimeoutMs: 180000,
     beforeClick: async () => {
       await g.q((f) => { window.__uxFixture = { at: Date.now(), fixture: f }; }, FIXTURE);
-      return rw.evaluate((f) => {
-        setTimeout(() => {
-          livenessLog(`[fixture] ${f}: the Lean side stopped (forced by the test; not a real stall)`);
-          die(null, 'wedged', `the Lean runtime stopped answering (${f})`);
-        }, 800);
-        return { armed: true, died: typeof died === 'boolean' ? died : null };
-      }, FIXTURE);
+      return rw.evaluate(() => ({ armed: typeof die === 'function' && typeof livenessLog === 'function', died: typeof died === 'boolean' ? died : null }));
     },
+    afterEdit: () => rw.evaluate((f) => {
+      livenessLog(`[fixture] ${f}: the Lean side stopped (forced by the test; not a real stall)`);
+      die(null, 'wedged', `the Lean runtime stopped answering (${f})`);
+      return { fired: true, died: typeof died === 'boolean' ? died : null };
+    }, FIXTURE),
   });
   const sa = await g.status(); const qa = await g.qstatus(); const lv = sa.liveness;
   const cap = (r.captures || []).find((c) => /-qed64-wedged\.json$/.test(c.file));
-  m.click = { ok: r.ok, error: r.error || null, editExact: r.editExact, nativeSha: r.nativeSha, errors: r.errors, warnings: r.warnings, clickToReadyMs: r.clickToReadyMs, beforeClick: r.beforeClick, qed64WedgedReboots: r.qed64WedgedReboots || 0, lastReboot: r.qed64LastReboot || null, captures: (r.captures || []).map((c) => c.file), stalls: (r.stalls || []).length };
+  m.click = { ok: r.ok, error: r.error || null, editExact: r.editExact, nativeSha: r.nativeSha, errors: r.errors, warnings: r.warnings, clickToReadyMs: r.clickToReadyMs, beforeClick: r.beforeClick, afterEdit: r.afterEdit || null, qed64WedgedReboots: r.qed64WedgedReboots || 0, lastReboot: r.qed64LastReboot || null, captures: (r.captures || []).map((c) => c.file), stalls: (r.stalls || []).length };
   m.gallery = { wedgedReboots: lv.qed64.wedgedReboots - lv0.qed64.wedgedReboots, events: lv.events.filter((e) => String(e.source).startsWith('qed64-')).map((e) => e.source), notice: sa.notice, galleryWedged: lv.wedged - lv0.wedged, galleryRestarts: lv.restarts - lv0.restarts, cardShown: sa.stall.shown };
   m.relay = { sessionBefore: q0.session, sessionAfter: qa.session, workerDeaths: qa.stats.workerDeaths - q0.stats.workerDeaths, reboots: qa.stats.reboots - q0.stats.reboots, userRestarts: qa.stats.userRestarts - q0.stats.userRestarts, lastDeath: qa.lastDeath };
   console.log(`C23 ${JSON.stringify({ click: m.click, gallery: m.gallery, relay: m.relay })}`);

@@ -28,7 +28,7 @@ export async function checkCursor(g, id, cur, { timeoutMs = 60000 } = {}) {
  * Returns a record; ok = text after == applyEdit(example) (== native sha256 when given), version re-checked with
  * 0 errors / 0 warnings, workerDeaths unchanged.
  */
-export async function clickLink(g, ex, link, at, goldenPanel, { elabTimeoutMs = 300000, reset = true, beforeClick = null } = {}) {
+export async function clickLink(g, ex, link, at, goldenPanel, { elabTimeoutMs = 300000, reset = true, beforeClick = null, afterEdit = null } = {}) {
   const r = { kind: link.kind, linkText: link.linkText, title: link.title || null, at: `${at.line}:${at.character}`, ok: false };
   const t0 = Date.now();
   r.stalls = [];
@@ -117,6 +117,7 @@ export async function clickLink(g, ex, link, at, goldenPanel, { elabTimeoutMs = 
   const want = applyEdit(before, link.edit.range, link.edit.newText);
   r.editExact = after === want;
   if (link.editedSha256) r.nativeSha = sha256(after) === link.editedSha256;
+  if (afterEdit) r.afterEdit = await afterEdit(); // C23: the click's edit is in the document, its elaboration in flight
   // Ready, or the gallery's stall card (QED64 L7: the checker stops making progress, docs/UX-RESULTS.md). A stall is
   // answered through the card ("Restart Lean": a fresh checker on the SAME post-click text), and the link is then
   // judged on that re-check exactly as before; every stall is recorded (r.stalls) and reported by the caller.

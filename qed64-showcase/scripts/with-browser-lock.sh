@@ -22,7 +22,9 @@
 # path they invoked the script by. FAIR=0 disables the queue (take the lock as soon as it is free).
 #
 # Before running <cmd> it also requires >= MIN_FREE_GB (default 6) reclaimable memory (scripts/lib/platform.sh: macOS
-# free+inactive+speculative pages from vm_stat, Linux MemAvailable) and no chrome-headless-shell, waiting up to
+# free+inactive+speculative pages from vm_stat, Linux MemAvailable) and no stray Playwright browser (chrome-headless-shell,
+# or Playwright's Firefox: its binary lives under ms-playwright/firefox-<build>/; QED64's harness uses the same pattern),
+# waiting up to
 # COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out,
 # 76 cooldown refused, 2 usage; otherwise the command's own exit code.
 set -u
@@ -108,20 +110,20 @@ trap release EXIT
 trap 'exit 130' INT TERM
 echo "browser-lock: acquired by $LANE pid $$ ($LOCK)"
 
-# Cooldown: wait (default up to COOLDOWN_WAIT_S=3600 s) for memory and for any other headless Chrome on the host
+# Cooldown: wait (default up to COOLDOWN_WAIT_S=3600 s) for memory and for any other Playwright browser on the host
 # (other sessions share this machine), logging the reason once a minute; exit 76 only after the full wait.
 COOLDOWN_WAIT_S="${COOLDOWN_WAIT_S:-3600}"; c0=$(date +%s); last=0
 # Test-only escape hatch: honoured ONLY when the lock is not the default host lock, so real runs always get the cooldown.
 if [ "$LOCK" != "$DEFAULT_DIR/browser.lock" ] && [ "${SKIP_COOLDOWN_FOR_TEST:-0}" = 1 ]; then COOLDOWN_WAIT_S=-1; fi
 while :; do
-  strays="$(pgrep -fl chrome-headless-shell || true)"; free="$(reclaimable_gb)"
+  strays="$(pgrep -fl 'chrome-headless-shell|ms-playwright/firefox-' || true)"; free="$(reclaimable_gb)"
   if [ "$COOLDOWN_WAIT_S" = -1 ] || { [ -z "$strays" ] && awk -v f="$free" -v m="$MIN_FREE_GB" 'BEGIN{exit !(f>=m)}'; }; then
-    echo "browser-lock: cooldown ok: ${free} GiB reclaimable, no chrome-headless-shell"; break
+    echo "browser-lock: cooldown ok: ${free} GiB reclaimable, no chrome-headless-shell or Playwright Firefox"; break
   fi
   el=$(( $(date +%s) - c0 ))
   [ "$el" -ge "$COOLDOWN_WAIT_S" ] && { echo "browser-lock: cooldown refused after ${el}s: ${free} GiB reclaimable; strays: ${strays:-none}" >&2; exit 76; }
   if [ $(( el - last )) -ge 60 ] || [ "$last" = 0 ]; then last=$el; [ "$last" = 0 ] && last=1
-    echo "browser-lock: cooldown waiting (${el}s): ${free} GiB reclaimable (need ${MIN_FREE_GB}); other headless Chrome: $(echo "$strays" | grep -vc '^$')"; fi
+    echo "browser-lock: cooldown waiting (${el}s): ${free} GiB reclaimable (need ${MIN_FREE_GB}); other Playwright browser processes: $(echo "$strays" | grep -vc '^$')"; fi
   sleep 5
 done
 

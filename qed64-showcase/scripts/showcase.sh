@@ -169,7 +169,7 @@ vstep() {
 # ---------------------------------------------------------------- guards (read-only)
 free_gib() { free_inactive_gib; }   # scripts/lib/platform.sh: macOS free+inactive (vm_stat), Linux MemAvailable
 bake_pids() { pgrep -f '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs' 2>/dev/null || true; }
-browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing' 2>/dev/null || true; }
+browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-' 2>/dev/null || true; }
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
 # docker_image_guard: `native` must run in the toolchain image the lock records (QED64.lock.json
 # toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by
@@ -586,6 +586,7 @@ cmd_bake() {
   # raw/widgetsN.snap is a clone of this bake's widgets.snap (`pin check` compares the sizes; the headless tools may read it):
   # refresh it, or a rebake on the same runtime leaves the previous bake's copy behind (pin K, 2026-10-12)
   local n="${which#w}" raw; raw="$(store raw)"
+  mkdir -p "$raw"   # a new runtime: its raw store is otherwise made later, by headless controls (derive-raw.sh)
   clone_file "$(store "bake-work-$which")/widgets.snap" "$raw/widgets$n.snap.new" && mv -f "$raw/widgets$n.snap.new" "$raw/widgets$n.snap" \
     || die "bake: could not refresh $raw/widgets$n.snap from bake-work-$which/widgets.snap"
   say "raw/widgets$n.snap refreshed from bake-work-$which/widgets.snap ($(file_size "$raw/widgets$n.snap") B)"
