@@ -1967,3 +1967,103 @@ no one queued, then ran.)
    the two per-build index copies, then replaces the stock indexes, decision E1).
 3. The user's decisions are unchanged from J's list above (E1, the push, alias policy, stale tabs, R2 growth, kernel
    0038), plus `.env.local`'s `QED64_KERNEL_BUILD` (suggested: `$W/kernel-build-native64`).
+
+## 2026-10-16: pins L (37ff491) and N (58ebbad), runtime wasm64-5650321f3f58aeb0 (the kernel release lean-v4.34.0-53cb11e: native Wasm exceptions + 0041) — N active and gated
+
+*Status 2026-10-16 ~19:15Z:* **N `58ebbad` is the active pin of this checkout and fully gated** (two VERDICTs `n-full1`,
+`n-full2`; C20 405/405; headed `n-headed1` 35/35; the 10 Mbit/s first visit PASS; `DEPLOY-MANIFEST CHECK OK`;
+`infra/ux-verdict.json` → `n-full2`). L `37ff491` is registered as the record of the first pin on this runtime (no
+VERDICT, below). K `62a06e2` stays committed and gated (`3b6c385`); its f69cca24 stores are untouched (a new runtime has
+its own per-runtime stores and overlay directories). The live site still serves H `bf9d947`; nothing is pushed. Lane:
+chains `$W/pinI/chainL1*.sh`, `chainL2.sh`, `chainL3.sh`, `chainN1b.sh`, `chainN2.sh`, `chainNS*.sh`; notes in
+`$W/logs/pinL-chain.log` and `pinN-chain.log`.
+
+**The runtime.** The kernel published `lean-v4.34.0-53cb11e` (digest `sha256:61628fa4…`; patch 0040, the C++ runtime on
+the engine's own Wasm exception handling instead of Emscripten's JS trampolines, plus 0041, the `lean_apply_16`/
+`lean_apply_m` stack fix; it replaced `64d6ebb`, which never shipped). Packs, native64 and the lists are e1a79c1's bytes;
+only `runtime/`, `lean-lib` and the tools are new. QED64 adopted it in `d1646ae` (L's promote). Measured here against K
+(f69cca24): w8 bake peak tree RSS 8.9 GB (16–17 GB), boot smoke 8.2 s (13.3 s), DistLens 21/21 in 41–42 s (58–64 s), C20
+135/135 in 4.2 min (5.3), v1-smoke ready 9.1 s (14.8), the 10 Mbit/s first visit ready at 519.0 s (565.1 s), C10's
+renderer peak 4.2 GB (10–11 GB).
+
+**Registration (both pins by hand, from our own worktrees).** QED64's commits were fetched read-only into the submodule's
+repository (`git -C deps/qed64 fetch <QED64 checkout> <full sha>`; `qed64-src.mjs ensure` fetches only from GitHub, where
+`37ff491` was not yet), the page built in `$W/qed64-pins/<id>` (`npm ci --prefix frontend && npm run build:site`), the
+binaries cloned into its gitignored paths: the 8 runtime chunks from the kernel release directory (its `SHA256SUMS`
+11/11 OK and QED64's runtime manifest 8/8; QED64's own checkout no longer holds runtime chunks: it serves the runtime from
+the shared R2 prefix), the per-build runtime manifest copy (== the tracked one), the 69 pack parts from K's release (the
+pack manifests are unchanged; only `profiles/index.json`'s buildId moved) and QED64's stock `init.ecf69553…` /
+`mathlib.b1ffb871…` snapz (digests == the index). `QED64_REPO=<worktree> pin-qed64.mjs pin --pin <id>`: 145 release files
+(K: 147, the new runtime has 1 JS chunk instead of 3); `SHELL-FROM-SOURCE OK` 60/60; verify OK with one DRIFT (#7: the
+`qed64-toolchain:emsdk-6.0.5` tag now names `208b22bcfd16`, the kernel's 0040 image; rebuild-only, no native rebuild was
+needed). Stage1 and the core library came from the release's tools (`lean4-wasm64-4.34.0-53cb11e.tgz`, sha512 ==
+QED64's): `cli.mjs fetch --only runtime` / `--only lean-lib` (`FETCH VERIFIED`), `unpack --slim` into
+`$W/core-lib-slim.5650321f3f58aeb0` (10,074 files; tree digest `87d3af25…` == QED64's `embedding/base-tree.json`, now
+recorded as `servedTrees.coreDigest`). `servedTrees.baseSlimDigest` is not recorded: the `baseSlim` path every
+descriptor since I names (`${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim`) is an old QED64 scratch tree that now
+holds three Finder `.DS_Store` files (20,017 files against base-tree.json's 20,014; the oleans unchanged); a future
+restage should point `baseSlim` at a tree unpacked from the published packs. No native rebuild, no restage (the fat and
+slim base trees are byte-identical to e1a79c1's).
+
+**Bakes etc. (L, `SHOWCASE_PIN=37ff491`, 13:55–14:58Z).** `JUDGE w7: GREEN N=5107 raw=1163620685
+widgets.740686ccc783ec13.snapz` (334 s, peak 8.7 GB), `JUDGE w8: GREEN N=5684 raw=1272243125
+widgets.58629e25172586e9.snapz` (334 s, peak 8.9 GB), PAIRING GREEN; overlays `widgets{7,8}.5650321f3f58aeb0/`; preflight
+OK (8.3 / 8.2 s); headless controls PASS, stage 4 30/30 (DistLens E1 9/9, E3 129/129), E2 7/8 (tree-scope L1 as always;
+dist-lens 71 s); record-overlays; verify OK. Two harness fixes on the way: `cmd_bake` creates the runtime's raw store
+before cloning `raw/widgetsN.snap` (a new runtime's is otherwise made later, by headless controls), and the chains'
+prewait now measures free+inactive (`free_inactive_gib`, what `showcase.sh`'s in-lock check uses: with speculative pages
+counted the prewait passed at 16 GiB while `showcase.sh` saw 14 and refused stage 4 twice) and `gated` retries rc 3
+(showcase.sh's "refused").
+
+**L: what the gate found.** `l-dl1`/`l-dl2` (W8 + C20 + C22 + C4) 4/4 each. `l-full1` and `l-full2` red on three tests:
+
+* **C3** (`api.status().memory` `{initialBytes 2 GiB, currentBytes null, maximumBytes null}`): a QED64 defect. The page fed
+  `pageApi.memory()` only from the heap meter's 12 s `setInterval`, so the projection stayed null until the first tick;
+  boots on f69cca24 took 13+ s, so C3 read after the tick, while 5650321f is ready in ~8 s. (My first diagnosis,
+  `M.wasmMemory` missing, was wrong; QED64 measured it.) Fixed upstream as **HARDENING #76**: the sampler also runs on the
+  relay's transition into ready (`58ebbad`, with a page-api lane assertion).
+* **C10** (reload storm, "no reload of the storm waited for ready"): on 5650321f a warm reload's runtime initializes
+  ~0.5 s after the commit (f69cca24 ~2.7 s) and the page is ready before 3 s, so the 0/3/6/9/12 s storm reloaded ready pages.
+  C10 now reloads each page 200 ms after its `[mem] runtime-initialized` line (at most 3 s after it landed): `l-fix1`
+  reloads at 0, 0.72, 1.49, 2.31, 3.10 s, each `booting`.
+* **C23** (QED64-handled wedged reboot, fixture): the synthetic death fired 800 ms after arming, but the hasse-view click
+  was ready in 668 ms. It now fires once the click's edit is in the document (new `clickLink` `afterEdit` hook): `l-fix1`
+  recorded the reboot (`wedged`) during the click.
+
+The C10/C23 fixes and the lock's Playwright-Firefox stray pattern (`chrome-headless-shell|ms-playwright/firefox-`, QED64
+#75's Firefox lane) are `d8fe1c6`. C4's page-observed storm held on the faster switches (5 of 7 SUPERSEDED, graph-scope
+and tree-scope settled before the next click).
+
+**N `58ebbad`** = QED64 main with #74 (a lost own chunk during a deploy is a stale page), #75 (Firefox: the install no
+longer waits for `navigator.storage.persist()`), #76 and the adversarial `--browser` switch; same runtime, packs,
+snapshots and overlays as L (no rebake). A first registration `180b223` (the fix before QED64's rebase; the served page
+byte-identical) was dropped once `58ebbad` was on GitHub. Main bundle `/assets/index-D_GaJuPp.js`; the console notify site
+line 627 changed content (`fa255508…`); the allowlist still matches (every CONSOLE OK).
+
+| Run | When | Result | Evidence |
+|---|---|---|---|
+| `m-t1` (on `180b223`, byte-identical page) | 16:49–16:58Z | 7/7: C3 `{2 GiB, 2 GiB, 6 GiB}` at ready, C10 every reload `booting` (renderer peak 4.24 GB), C23 reboot recorded, DistLens 21/21 in 41.4 s | `pinM-ux-t1.log` |
+| `n-t1` (C3, C4, C10, C23, W8, C20, C22) | 17:09–17:18Z | 7/7 | `pinN-ux-t1.log` |
+| `v1-smoke` | 17:19–17:22Z | 21/23: at the FIRST ready QED64's liveness projection was still empty (`probeAfterMs` null, `status().qed64.liveness` absent) | `pinN-smoke.log` |
+| smoke A/B (N, L via `SHOWCASE_PIN`, N) | 17:23–17:30Z | 23/23 each (`lastFrameAgoMs` 51–81, `probeAfterMs` 6000) | `out/ux/v1-smoke.{N1,L1,N2}` |
+| `n-full1` | 17:32–17:47Z | **VERDICT** (34 passed, C19 skipped; 14.8 min) | `pinN-ux-full1.log` |
+| `n-full2` | 17:49–18:04Z | **VERDICT**; the recorded verdict | `pinN-ux-full2.log` |
+| `n-c20-1/2/3` | 18:04–18:23Z | 135/135 each (405/405), 4.2–4.3 min | `pinN-ux-c20-{1,2,3}.log` |
+| `v1-smoke` (the liveness read waits for the projection) | 18:24–18:26Z | 23/23; the projection present 2 ms after ready | `out/ux/v1-smoke.N3` |
+| `n-headed1` | 18:28–18:44Z | **HEADED SIGN-OFF** 35/35 (C19 included) | `pinN-ux-headed1.log` |
+| `n-throttle-t10p` (10 Mbit/s / 40 ms) | 18:57–19:06Z | **`RESULT PASS`**, ready at **519.0 s**; progress visible in 517 of 518 samples, error card in 0, longest unchanged progress 6.0 s; 640.9 MB at 9.9 Mbit/s | `pinN-tp-t10.log` |
+| `deploy-manifest --check` / `--record-verdict` | 19:09–19:12Z | `DEPLOY-MANIFEST CHECK OK`, G2 `verdict run n-full2 … on THIS gallery bf85fcb5…, lock 0be2db46…`; 77 assets 17.8 MiB, **93 R2 objects 2.368 GB**; `infra/ux-verdict.json` → `n-full2` | `pinN-dm-check.log`, `pinN-dm-record.log` |
+
+**The smoke's liveness read.** QED64's `status().liveness` is null until the page has seen the worker's first liveness
+counters (EMBEDDING: `liveness: LivenessInfo | null`, null until the session's loop is open), which can land a tick after
+the first ready status (1 smoke in 3 on `58ebbad`, a pre-existing race per QED64). `tests/ux/tools/v1-smoke.mjs` now
+reads the two checks that need it once it is present (at most 10 s after ready) and records the delay.
+
+### Not done (pins L/N, 2026-10-16 ~19:15Z)
+
+1. The commit (`pins/58ebbad/`, `pins/37ff491/`, the active pin state, `infra/ux-verdict.json`, the smoke change, these
+   docs), then the qed64-static CI mirror on it and the deploy rehearsal (a new rehearsal state: runtime 5650321f,
+   93 objects; `old-shell` against the live H).
+2. The user's decisions: the push (it would deploy N; R2 gains runtime 5650321f's per-runtime overlay directories and
+   the stock objects), and the E1 upload order. Whether kernel patch 0038 is still wanted after 0040/0041 is the kernel
+   session's question, not this log's.

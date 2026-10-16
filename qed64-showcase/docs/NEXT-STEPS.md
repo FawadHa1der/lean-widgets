@@ -74,6 +74,10 @@ tracing").
    `0de79b891eb9`, the e1a79c1 release's image) stays unacted on while nothing native runs.
 
 
+**Current (2026-10-16): pin N `58ebbad` (runtime 5650321f, the kernel release lean-v4.34.0-53cb11e) is active and
+gated** (docs/REPIN-LOG.md, pins L and N). K `62a06e2` stays committed and gated on runtime f69cca24. Open: the push
+(the user's; it deploys N), the E1 upload order, a `baseSlim` that does not point into QED64's scratch work dir.
+
 **Next pin, revised (2026-10-12, the user's decision relayed by QED64):** stack-limit failures will be handled by a
 QED64 library backstop (on a real engine-stack crash: the relay pauses after the FIRST death, `lastDeath.cause.code =
 "ENGINE_STACK_OVERFLOW"`, one note diagnostic from source "QED64" at the line being checked, a stock-page pill, any edit

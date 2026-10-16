@@ -114,6 +114,13 @@ try {
   check('mode: v1 through the frame-api', st && st.mode === 'v1' && st.api && st.api.present === true && st.api.embed === true && st.api.via === 'frame-api' && st.api.revision === H.API_REVISION && st.api.capabilities && st.api.capabilities.editorRpc === true && st.api.capabilities.widgetSourceCache === true && st.api.capabilities.liveness === true,
     `status().api ${JSON.stringify(st && st.api && { present: st.api.present, embed: st.api.embed, via: st.api.via, revision: st.api.revision, docs: st.api.docs, events: st.api.events, capabilities: st.api.capabilities })}`);
   check('bridge stood down', st && st.bridge && st.bridge.stoodDown === true && st.bridge.installed === false && st.bridge.installs.length === 0 && st.bridge.late === 0 && st.bridge.capabilityMismatch === null, `status().bridge ${JSON.stringify(st && st.bridge)}`);
+  // QED64's liveness projection is null until the page has seen the worker's first liveness counters (EMBEDDING:
+  // `liveness: LivenessInfo | null`, null until the session's loop is open), which can land a tick after the first ready
+  // status (QED64 58ebbad, 1 smoke in 3): the two checks that read it wait for it, at most 10 s after ready
+  const tl0 = Date.now();
+  const stL = (await until(async () => { const s2 = await status(); return s2 && s2.liveness && s2.liveness.qed64 && s2.liveness.qed64.probeAfterMs != null && s2.qed64 && s2.qed64.liveness ? s2 : null; }, { timeoutMs: 10000, intervalMs: 100 })) || st;
+  report.notes.push(`QED64 liveness projection read ${Date.now() - tl0} ms after the first ready${stL === st ? ' (not present within 10 s: the checks read the ready status)' : ''}`);
+  { const st = stL;
   check('liveness probe stood down', st && st.liveness && st.liveness.probe === 'stood-down' && st.liveness.sent === 0 && st.liveness.answered === 0 && st.liveness.missed === 0 && st.liveness.qed64 && st.liveness.qed64.builtIn === true && st.liveness.qed64.api === true && st.liveness.qed64.probeAfterMs === 6000,
     `status().liveness probe ${st && st.liveness && st.liveness.probe}, sent ${st && st.liveness && st.liveness.sent}, qed64 ${JSON.stringify(st && st.liveness && st.liveness.qed64 && { builtIn: st.liveness.qed64.builtIn, api: st.liveness.qed64.api, stalled: st.liveness.qed64.stalled, lastAnswerAgoMs: st.liveness.qed64.lastAnswerAgoMs, lastFrameAgoMs: st.liveness.qed64.lastFrameAgoMs, probeAfterMs: st.liveness.qed64.probeAfterMs, totals: st.liveness.qed64.totals })}`);
   check('seed: embed (no qed64.buffer seeding)', st && st.seed && st.seed.action === 'embed' && st.seed.saved === false, `status().seed ${JSON.stringify(st && st.seed)}`);
@@ -121,6 +128,7 @@ try {
     `stall {source ${st && st.stall && st.stall.source}, progressMsgs ${st && st.stall && st.stall.progressMsgs}}, boot {source ${st && st.boot && st.boot.source}, apiBootEvents ${st && st.boot && st.boot.apiBootEvents}, bytes ${st && st.boot && st.boot.bytes}, sources ${JSON.stringify(st && st.boot && st.boot.sources)}}`);
   check('status().qed64 carries the api projections', st && st.qed64 && st.qed64.phase === 'ready' && Array.isArray(st.qed64.snapshots) && st.qed64.snapshots.includes('mathlib') && st.qed64.boot && st.qed64.boot.done === true && st.qed64.liveness && st.qed64.memory && st.qed64.memory.initialBytes > 0,
     `qed64 ${JSON.stringify(st && st.qed64 && { phase: st.qed64.phase, version: st.qed64.version, session: st.qed64.session, snapshots: st.qed64.snapshots, boot: st.qed64.boot, memory: st.qed64.memory, offer: st.qed64.offer })}`);
+  }
   // the forced boot write (gallery.js boot(): persistDocument(ex.text, {force}) before the frame navigates) sets persisted on its
   // own, so persistence FROM the event is the event's arrival plus a second write: writes >= 2 (the boot write + a 'document' one)
   check('document event + persistence', st && st.document && st.document.version != null && st.document.length === HV.text.length && st.document.persisted === true && st.document.lastEventAgoMs != null && st.document.writes >= 2, `status().document ${JSON.stringify(st && st.document)}`);

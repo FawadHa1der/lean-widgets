@@ -1,0 +1,36 @@
+{
+  "schema": "qed64-showcase.pin/v3",
+  "id": "37ff491",
+  "buildId": "wasm64-5650321f3f58aeb0",
+  "overlayDirs": "per-runtime",
+  "registeredAt": "2026-10-16T12:00:00Z",
+  "label": "L: QED64 37ff491 (main, pushed 2026-10-16: lean-v4.34.0-53cb11e adoption = kernel 0040 native wasm EH + 0041 lean_apply fix, #73 abort label, mkdirp fix), runtime 5650321f",
+  "status": "superseded 2026-10-16 by N (58ebbad); no VERDICT: l-full1/l-full2 red on C3 (QED64 status().memory null at ready: the page sampled memory only every 12 s, fixed upstream as HARDENING #76) and on C10/C23 (the faster runtime broke two timing premises of ours, fixed in d8fe1c6). Kept as the record of the first pin on runtime 5650321f (docs/REPIN-LOG.md, pins L and N).",
+  "qed64": {
+    "commit": "37ff491830c6e60e8b894c6ab7e86806c22149fd",
+    "promote": "d1646ae82b252918fb2dee232752ef3a12292f1f",
+    "kernel": "53cb11e6d6ae0076f8885fec3690e01a6de03404"
+  },
+  "mainBundle": "/assets/index-DQt26ZRg.js",
+  "consoleSites": {
+    "627": "d5c84e1f83bb62eac7d3cb0946972aa282edb5edb8c358e7f7a53d8a17930a44"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_REPO}/work/bump-0035b/slim/lib-tree-slim",
+    "coreSrc": "${QED64_SHOWCASE_WORK}/core-lib-slim.5650321f3f58aeb0",
+    "baseN": 5004,
+    "coreDigest": "sha256:87d3af2598075d41890ab1fac45cc1cf17c3c8b6b828dc4dbc56734bb859e23b"
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "As in H: the page API projects the #52 worker liveness (status().liveness, the `liveness` event); the gallery's own probe stands down on capabilities.liveness."
+  },
+  "hardening": {
+    "earlyUnpaired": true,
+    "networkPreboot": true,
+    "pinnedIndexes": true,
+    "note": "QED64's fixes for the showcase's reports: #62 an unpaired snapshot is refused before the runtime starts (9045b86); #63 a network failure before boot is one named death, not a reboot loop (e10454b, 3524618); #64 per-build index copies, read only when the mutable index names another runtime (5952e32, 3bd5521). The UX suite enforces each only through these flags (C9, C11, C1/C14)."
+  },
+  "knownLimitations": [],
+  "notes": "New runtime 5650321f (release lean-v4.34.0-53cb11e: packs, native64 and lists are e1a79c1's bytes; the fat lib-tree and lib-tree-slim are unchanged, core-lib-slim is new): no native rebuild, no restage; bakes w7+w8 into new per-runtime overlay dirs (K's f69cca24 stores stay intact)."
+}

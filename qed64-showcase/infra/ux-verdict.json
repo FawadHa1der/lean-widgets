@@ -1,15 +1,15 @@
 {
  "schema": "qed64-showcase.ux-verdict/v1",
  "note": "Written by node scripts/deploy-manifest.mjs --record-verdict: the G2 verdict a checkout without out/ux (CI) accepts. Commit it with the gallery/lock it names.",
- "gallery": "1454d28e196656ea6640c0976f57d9629b0d6366a5517a51c5e324b41e2f731e",
- "lockSha256": "9e041eadd9c7f7ff2289618aaa332e10f3e22afd6aeebad6b79f420861ed8ff1",
+ "gallery": "bf85fcb5684e04882505eaded4c27c1c5bbec02ace66be02eaa0e43fe1d8600a",
+ "lockSha256": "0be2db46545e69bf450cbd68d53927805932e17367dfade991fa84daee6d88f5",
  "overlays": {
-  "widgets8": "21c48b5c0ec17a7e5a74fed5c587f7a4adf996b1931bad24471553575507a1c0",
-  "widgets7": "096f9c09852aaaddf25d7d9c3196704b5ac5c41e9bc860295d4716f174cf5663"
+  "widgets8": "7c166cbe1d39e80df2b441b1b3c048a1d479ab6614fe2045d4f4aa87bab43f25",
+  "widgets7": "14cc3d7225034be4413bcb524c797c3462f3b8af64e156f3ecdaf2b5110e28b2"
  },
- "run": "k-full5",
- "end": "2026-10-13T01:14:35Z",
- "lane": "pinK",
- "pin": "62a06e2",
- "recordedAt": "2026-10-13T02:22:52.542Z"
+ "run": "n-full2",
+ "end": "2026-10-16T18:03:49Z",
+ "lane": "pinN",
+ "pin": "58ebbad",
+ "recordedAt": "2026-10-16T19:11:51.646Z"
 }

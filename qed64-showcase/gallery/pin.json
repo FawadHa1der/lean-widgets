@@ -1,22 +1,22 @@
 {
   "schema": "qed64-showcase.gallery-pin/v1",
   "derivedFrom": "QED64.lock.json",
-  "lockSha256": "9e041eadd9c7f7ff2289618aaa332e10f3e22afd6aeebad6b79f420861ed8ff1",
-  "pin": "62a06e2",
-  "buildId": "wasm64-f69cca24d0878a58",
+  "lockSha256": "0be2db46545e69bf450cbd68d53927805932e17367dfade991fa84daee6d88f5",
+  "pin": "58ebbad",
+  "buildId": "wasm64-5650321f3f58aeb0",
   "bundleBuildIds": [
-    "wasm64-f69cca24d0878a58"
+    "wasm64-5650321f3f58aeb0"
   ],
   "leanVersion": "4.34.0",
   "apiRevision": "1.0.0",
-  "shell": "shell-d7258b6c5fed05cf",
+  "shell": "shell-71577e34b6c977c6",
   "overlays": {
-    "widgets7": "widgets7.f69cca24d0878a58",
-    "widgets8": "widgets8.f69cca24d0878a58"
+    "widgets7": "widgets7.5650321f3f58aeb0",
+    "widgets8": "widgets8.5650321f3f58aeb0"
   },
   "qed64": {
-    "commit": "62a06e2632b56931b077bdadd751bac23f000919",
-    "promote": "fc945e4726ad68e1fc5fcfe745ec924eca8f02a7"
+    "commit": "58ebbad671fed524ab9877f08e64d960945df935",
+    "promote": "d1646ae82b252918fb2dee232752ef3a12292f1f"
   },
   "widgetsSourceHash": "b81f1b75ff53ca5a8f9c47bbb84b1bd76d1ed4fe1c7016d4e3f2691064ed1505",
   "mathlib": "5ed2965256430c3649e86755f9576b54eca72435",
