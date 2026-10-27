@@ -214,14 +214,22 @@ deterministically testable with `#guard`: same input, same output, byte for byte
   **end to end over the actual repro types** (`(Set.Iio (0:ℕ)).Nonempty`,
   `Iic ∪ Ici = univ` over `ℝ × ℝ`, `Ico (1/3:ℕ) (1/2:ℕ)`, transitive chaining
   through a non-endpoint variable — each paired with an `example` proving the
-  statement true/false as claimed); plus pinned generated-condition directions
+  statement true/false as claimed), including the `DenselyOrdered` gate of the
+  `≠ ∅` entry: `Set.Ioo (0:ℕ) 2 ≠ ∅` (also spelled `∅ ≠ …` and `¬(… = ∅)`) is
+  offered only with a `missing instance` marker and never `ALL-READY`, while the
+  `Ico`-over-`ℕ` and `Ioo`-over-`ℚ`/`ℝ` controls stay unmarked and ready; plus
+  pinned generated-condition directions
   for every entry, readiness reporting (ready / missing / transitively-derived /
   literal-derived / strict-vs-nonstrict) and fallback behavior.
 - **CommandTests** — 20 message-exact `#guard_msgs` tests of
   `#interval_inspect (text := true)` (plus four in `Demo.lean`), including
   section-`variable` scenarios (with a section hypothesis feeding readiness) and
   the `∅ ≠ s` mirror spelling, and substring tests of the assembled panel HTML
-  including the themed badges.
+  including the themed badges. Four `#assert_panel_items` pins run the real
+  panel-mode `#interval_inspect`, decode the panel it stores in the info tree, and
+  pin its suggestion rows: over `ℕ`, `Set.Ioo 0 2 ≠ ∅` (both orientations) shows
+  the `missing instance: DenselyOrdered ✗` badge, and `Ico` over `ℕ` and `Ioo`
+  over `ℝ` do not.
 - **ImportClosureTests** — imports *only* `IntervalInspector` and proves every
   tactic and lemma constant mentioned in a fallback suggestion is available and
   working in the package's own import closure (the `linarith` repro included).
@@ -237,12 +245,16 @@ deterministically testable with `#guard`: same input, same output, byte for byte
 Assertion census (count of lines beginning with a compile-time assertion
 command across `IntervalInspector/` and `IntervalInspectorTests/`:
 `grep -rhoE '^\s*(#guard_msgs|#guard|#assert_[a-z_]+|example)\b' … | sort | uniq -c`):
-552 `#guard`s, 162 `#assert_*` command assertions (16 kinds), 24 `#guard_msgs`
-(20 in `CommandTests`, 4 in `Demo.lean`), 108 `example`s (97 lemma-verifying
-ones in the test modules, 10 in `Demo.lean`, 1 in `ClickE2E`) — 846 counted
-assertion commands (845 on the v4.32.2 reference; the one addition is the
-`setOf` alias test above), plus the 3 throwing checks in the shadowed-binder
-`run_cmd` repro and the internal checks of the 16 ClickE2E click simulations.
+552 `#guard`s, 172 `#assert_*` command assertions (17 kinds), 24 `#guard_msgs`
+(20 in `CommandTests`, 4 in `Demo.lean`), 109 `example`s (98 lemma-verifying
+ones in the test modules, 10 in `Demo.lean`, 1 in `ClickE2E`) — 857 counted
+assertion commands. The count was 846 on v4.34.0 and at the v4.35.0 port (845
+on the v4.32.2 reference; the one addition is the `setOf` alias test above).
+The 11 added after the 4.35 port audit close its `DenselyOrdered` `≠ ∅` gap:
+6 `#assert_reports` and 1 `example` in `SuggestTests`, and 4
+`#assert_panel_items` in `CommandTests`. Not counted: the 3 throwing checks in
+the shadowed-binder `run_cmd` repro and the internal checks of the 16 ClickE2E
+click simulations.
 
 ## Limitations (honest)
 
@@ -293,7 +305,9 @@ assertion commands (845 on the v4.32.2 reference; the one addition is the
   this package's own import closure, so they at least always parse).
 - **The interactive panel needs a live Lean server**; the RPC round-trip and the
   click-to-insert behavior are exercised manually in VS Code, not by `lake test`
-  (the HTML the panel produces *is* tested, via its pure assembly function).
+  (the HTML the panel produces *is* tested, via its pure assembly function, and
+  the panel the `#interval_inspect` command stores is decoded and pinned in
+  `CommandTests`).
 - The `interval_inspect?` tactic changes no goals (it only attaches a panel); it is
   allow-listed for Mathlib's unused-tactic linter.
 - **Theme-awareness relies on `--vscode-*` CSS variables** being defined by the
@@ -302,12 +316,22 @@ assertion commands (845 on the v4.32.2 reference; the one addition is the
 
 ## Toolchain
 
-Pinned: `leanprover/lean4:v4.34.0`, Mathlib `v4.34.0` (rev `5ed29652`),
-ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` (as resolved in
-`lake-manifest.json`). Never run `lake update`; fetch Mathlib oleans with
-`lake exe cache get`.
+Pinned: `leanprover/lean4:v4.35.0`, Mathlib `v4.35.0` (rev `56a00585`),
+ProofWidgets `df72b022e558978a1c50264cfc4d7fec86fa8e04` (as resolved in
+`lake-manifest.json`; it equals Mathlib v4.35.0's own pins). Never run
+`lake update`; fetch Mathlib oleans with `lake exe cache get`.
 
-Ported from the v4.32.2 pairing (see `PORT-NOTES.md` for the complete diff):
+Ported from the v4.34.0 pairing with **no source change** (see the top section of
+`PORT-NOTES.md`): `lake build` and `lake test` pass unchanged on v4.35.0, every
+`#guard_msgs` and ClickE2E pin included, with the same 846 counted assertions
+(857 since the later gap-closing tests; see *Testing*).
+The only new build output is Lake's per-import "designed for use with the module
+system" warning for this package's non-`module` files (expected; files are
+deliberately not converted to `module`). Lake's `requiresModuleSystem` check
+itself is unchanged since v4.34.0. The warning is new because Mathlib v4.35.0's
+lakefile now sets `requiresModuleSystem := true`.
+
+Earlier, ported from the v4.32.2 pairing (see `PORT-NOTES.md` for the complete diff):
 the real-number import is now `Mathlib.Basic.Real.Basic`
 (`Mathlib.Data.Real.Basic` is a `deprecated_module` shim since 2026-08-27),
 set-builder notation is recognized as `Set.ofPred` (with the deprecated `setOf`

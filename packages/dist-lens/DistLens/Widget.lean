@@ -294,7 +294,9 @@ def elabDistTerm (t : Syntax.Term) : TermElabM Expr := do
 
 /-- Check that `e : PMF α` (up to reducing the type *until* the `PMF` head —
 `whnf` alone would unfold the `PMF` def itself), with a `cmd`-branded error
-otherwise. -/
+otherwise.  A `MeasureTheory.Measure`-typed term (Mathlib `v4.35.0`'s uniform
+constructors, e.g. the deprecated alias `PMF.uniformOfFintype`) gets
+`measureHint?`'s pointer to `DistLens.uniformOfFintype`/`DistLens.uniformOfFinset`. -/
 def checkIsPMF (cmd : String) (e : Expr) : MetaM Unit := do
   let ty ← inferType e
   let ok ← do
@@ -302,8 +304,11 @@ def checkIsPMF (cmd : String) (e : Expr) : MetaM Unit := do
     | some ty' => pure (ty'.isAppOfArity ``PMF 1)
     | none => pure false
   unless ok do
-    throwError "{cmd}: expected a term of type `PMF α`, but \
+    let msg := m!"{cmd}: expected a term of type `PMF α`, but \
       `{← ppOneLine e}` has type `{← ppOneLine ty}`"
+    match ← measureHint? e ty with
+    | some hint => throwError m!"{msg}\n\n{hint}"
+    | none => throwError msg
 
 /-- Attach an HTML panel to the command syntax. -/
 def savePanel (stx : Syntax) (ht : Html) : CommandElabM Unit := do

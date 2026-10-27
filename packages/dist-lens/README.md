@@ -14,7 +14,7 @@ demo distribution.
 
 ```lean
 import DistLens
-open PMF
+open PMF DistLens   -- `uniformOfFintype`/`uniformOfFinset` are DistLens's own since Mathlib v4.35.0
 set_option linter.deprecated false   -- PMF.bernoulli/binomial are deprecated upstream
 
 noncomputable def die : PMF (Fin 6) := uniformOfFintype (Fin 6)
@@ -59,7 +59,8 @@ The term argument parses at `term:max`: write `#dist (uniformOfFintype (Fin 6))`
 ## What is supported (the whitelist)
 
 `PMF.pure`, `PMF.bind`, `PMF.map`, `uniformOfFintype`, `uniformOfFinset`
-(literal `{a, b, …}` finsets), `bernoulli` (rational-literal `p`),
+(literal `{a, b, …}` finsets; both are `DistLens.`-namespaced, see below),
+`bernoulli` (rational-literal `p`),
 `binomial` (literal `p`, `n`), `ofFintype` with `![…]` literal weight
 vectors — nested arbitrarily up to depth 8, with ≤ 64 outcomes.  User
 `def`s wrapping these unfold automatically.  Outcome-level work (`pure`,
@@ -68,6 +69,30 @@ vectors — nested arbitrarily up to depth 8, with ≤ 64 outcomes.  User
 displayed (cardinality + `Repr` labels via compiled evaluation, GraphScope
 style) but is display-only: refused as a `bind`/`map` source, and no
 insertable weight goals (see Limitations).
+
+**The uniform constructors are DistLens's own.**  Mathlib `v4.35.0` (#42909)
+turned `PMF.uniformOfFinset`/`PMF.uniformOfFintype` into the Measure-valued
+`MeasureTheory.Measure.uniformOfFinset` (the name `PMF.uniformOfFintype`
+survives only as a deprecated alias *of that measure*, so
+`PMF.uniformOfFintype (Fin 6)` no longer elaborates), while the rest of the
+`PMF` API is unchanged.  `DistLens/Uniform.lean` therefore ships Mathlib
+`v4.34.0`'s two `PMF`-valued definitions and `_apply` lemmas verbatim as
+`DistLens.uniformOfFintype`/`DistLens.uniformOfFinset`: write
+`DistLens.uniformOfFintype (Fin 6)`, or `open DistLens` and the bare
+`uniformOfFintype (Fin 6)`.  With `import Mathlib` and `open PMF DistLens`
+the bare name is ambiguous with Mathlib's alias; Lean keeps the alternative
+that elaborates (DistLens's), so it still works — pretty-printed as
+`DistLens.uniformOfFintype` there.  With `open PMF` alone the bare name is
+Mathlib's Measure-valued alias: `#dist`, `#dist_film` and `#chain` refuse a
+`MeasureTheory.Measure` (for `#chain`, a step such as
+`fun _ : Fin 2 => uniformOfFintype (Fin 2)`) with a hint naming
+`DistLens.uniformOfFintype`/`DistLens.uniformOfFinset`.  Put the
+`open DistLens` at top level: inside a
+`namespace Foo.DistLens`, `open DistLens` opens `Foo.DistLens` itself, not
+DistLens (Lean warns "Ambiguous namespace").
+`DistLensTests/MathlibUniformTests.lean` pins each of these cases.  The two
+definitions and lemmas are adapted from Mathlib under the Apache 2.0 license
+(see License below).
 
 Everything else is an **honest refusal** naming the exact reason: symbolic
 parameters, non-literal containers, `normalize`/`filter`/`bindOnSupport`,
@@ -79,7 +104,7 @@ the list, caps exceeded (with actual sizes).
 `pmf_num` proves concrete weight equalities `p x = (a/b : ℝ≥0∞)` for the
 whitelisted shapes: `simp` with the PMF application lemma set
 (`bind_apply`, `map_apply`, `pure_apply`, `bernoulli_apply`,
-`uniformOfFintype_apply`, `uniformOfFinset_apply`, `binomial_apply`,
+`DistLens.uniformOfFintype_apply`, `DistLens.uniformOfFinset_apply`, `binomial_apply`,
 `ofFintype_apply`, `tsum_fintype`, `tsum_bool`, `Fin.sum_univ_succ`,
 `Matrix.cons_val*`; since the v4.34.0 port this `simp` step runs under a
 scoped `backward.isDefEq.respectTransparency.types false`, because the
@@ -101,6 +126,7 @@ sum-to-1 side goal after `simp [Fin.sum_univ_succ]`.
 | File | Layer |
 |---|---|
 | `DistLens/Model.lean` | Pure ℚ: `DistModel` (weights/CDF/moments/support), invariant self-checks, `FilmModel` diff marks, `ChainModel`, exact Gauss–Jordan `rref` + `stationary` (unique / non-unique / inconsistent), power iteration, convolution / pushforward / binomial combinators. |
+| `DistLens/Uniform.lean` | `DistLens.uniformOfFintype`/`DistLens.uniformOfFinset` and their `_apply` lemmas: Mathlib `v4.34.0`'s `PMF`-valued uniform constructors, adapted verbatim (Mathlib `v4.35.0` made its own Measure-valued).  Apache 2.0; its header keeps the Mathlib copyright and authors and lists the modifications. |
 | `DistLens/Verify.lean` | The `ennreal_num` and `pmf_num` tactics (the probe-validated recipe). |
 | `DistLens/Extract.lean` | The impure layer: whitelist `Expr` matcher → `XDist`/`ChainModel`; ℚ parameter parsing (`OfNat`/`HDiv`/`Inv`/`Nat.cast`/literal-`cond` shapes); outcome keying through compiled `evalExpr` on ℕ/Bool bridges; opaque-carrier labels via `Repr`; caps checked before evaluation; honest refusals. |
 | `DistLens/Render.lean` | Pure renderers: ASCII reports, SVG bar chart / CDF / chain graph (exact ℚ geometry; the only floats are the circle layout's `sin`/`cos`, rounded immediately — GraphScope's audited pattern), panels; `css` helper, `reactContractViolations`, `htmlToDebugString`. |
@@ -148,7 +174,7 @@ matrix) is reported as `extraction bug!`.
   (cardinality + `Repr` labels), but offers **no** insertable weight goals:
   the labels are `Repr` display strings, not verified source terms, and
   `pmf_num` cannot reduce `Fintype.card` of an arbitrary carrier — the
-  would-be `#dist (PMF.uniformOfFintype Ordering)` example fails with
+  would-be `#dist (DistLens.uniformOfFintype Ordering)` example fails with
   `ennreal_num: cannot close this ℝ≥0∞ goal ⊢ ↑(Fintype.card Ordering) = 3`.
   A row would advertise a proof action that breaks, exactly the subtype-mk
   situation, so it is suppressed.  `ClickE2E` pins both the suppression and
@@ -161,9 +187,11 @@ matrix) is reported as `extraction bug!`.
   edit above the command) is therefore rejected by the editor rather than
   applied at drifted offsets — re-elaboration refreshes the panel; the
   suggestion text is always shown and can be copied.
-* **Deprecated upstream API.**  `PMF.bernoulli` and `PMF.binomial` (and
+* **Deprecated upstream API.**  Upstream is deprecating `PMF` in favour of
+  measures (#42821).  At Mathlib `v4.35.0` the uniform `PMF`s are already gone
+  (DistLens ships its own, above); `PMF.bernoulli` and `PMF.binomial` (and
   their `_apply` lemmas) are deprecated at this pin (since 2026-04-07,
-  still present and functional at Mathlib `v4.34.0`) in favor of the
+  still present and functional at Mathlib `v4.35.0`) in favor of the
   Measure-valued `ProbabilityTheory.bernoulliMeasure`/`binomial`
   (`bernoulliMeasure_apply`, `binomial_real_singleton`), which need
   `MeasurableSet` side goals and a different lemma set — not covered here.
@@ -196,24 +224,31 @@ matrix) is reported as `extraction bug!`.
 
 ## Versions
 
-Pinned to `leanprover/lean4:v4.34.0` with Mathlib `v4.34.0` (ProofWidgets
-rev `106ff4fa` through Mathlib's manifest; never `lake update`).  Ported from
-the `v4.32.2` original with a single source change (the scoped
-`respectTransparency.types` option inside `pmf_num`, above); the test suite
-is byte-identical to the original and all green.  **Forward risk:** that fix
-relies on a `backward.*` compatibility option (still registered, default
-`true`, at v4.34.1 and v4.35.0-rc3); upstream eventually deletes `backward.*`
-options, and when this one goes `pmf_num` will fail with an unknown-option
-error and need a permanent fix (e.g. a `Finset.Nonempty`-typed proof
-spelling in the emitted suggestion, or a `Nonempty`-unfolding simp lemma).
-See `PORT-NOTES.md`, gotcha 8.  `PORT-NOTES.md` records
-the port, the pin evidence and the assertion census.
+Pinned to `leanprover/lean4:v4.35.0` with Mathlib `v4.35.0` (`56a00585`;
+ProofWidgets rev `df72b022` through Mathlib's manifest; never `lake update`).
+Ported from `v4.34.0` (itself ported from the `v4.32.2` original).  The
+`v4.35.0` port's one forced change: Mathlib made the uniform `PMF`s
+Measure-valued, so `DistLens/Uniform.lean` now ships them as
+`DistLens.uniformOfFintype`/`DistLens.uniformOfFinset` (above) and the
+extractor whitelist and the `pmf_num` simp set name those; user files
+write `DistLens.uniformOfFintype` (or `open DistLens`) where they wrote
+`PMF.uniformOfFintype`.  The `v4.34.0` port's scoped
+`respectTransparency.types` option inside `pmf_num` is unchanged and still
+needed.  **Forward risk:** that fix relies on a `backward.*` compatibility
+option (still registered, default `true`, at v4.35.0); upstream eventually
+deletes `backward.*` options, and when this one goes `pmf_num` will fail with
+an unknown-option error and need a permanent fix (e.g. a
+`Finset.Nonempty`-typed proof spelling in the emitted suggestion, or a
+`Nonempty`-unfolding simp lemma).  Upstream is also deprecating `PMF` itself
+(#42821): `bernoulli`/`binomial` are deprecated-but-present, and a later
+Mathlib may move `pure`/`bind`/`map`/`ofFintype` too.  `PORT-NOTES.md`
+records both ports, the pin evidence and the assertion census.
 
 ## Tests
 
-`lake test` (driver `DistLensTests`): 345 compile-time assertions (census,
-counting only lines that *start* with the command: 44 `#guard_msgs` blocks
-+ 205 `#guard`s + 44 compiled `example`s in `DistLensTests/`, plus the 52
+`lake test` (driver `DistLensTests`): 401 compile-time assertions (census,
+counting only lines that *start* with the command: 75 `#guard_msgs` blocks
++ 205 `#guard`s + 69 compiled `example`s in `DistLensTests/`, plus the 52
 `check`/`checkEq`/`checkClean`/`checkFails` calls (23 / 8 / 15 / 6) the
 eight `ClickE2E` `#eval` suites run; the 17 `example`s and 12
 panel commands of `DistLens/Demo.lean` elaborate on every `lake build` on
@@ -222,8 +257,15 @@ top of that) — extraction
 (two-dice triangle, `E = 7/2`,`Var = 35/12` pips die, Gaussian elimination
 with hand-computed π, reducible/inconsistent detection), 38 compiled
 `pmf_num`/`ennreal_num` examples plus pinned failures on false claims,
-byte-exact SVG serializations, React-contract checks over every panel, and
-invariant-checker alarms on crafted bad models.
+byte-exact SVG serializations, React-contract checks over every panel,
+invariant-checker alarms on crafted bad models, the uniform shim's own
+contract (`UniformTests`: lemma statements, both `@[simp]` attributes under
+plain `simp` with negative controls, `pmf_num`'s explicit use of both lemmas),
+and (`MathlibUniformTests`) the uniform constructors next to Mathlib's
+`Uniform` module, as under `import Mathlib`: which constant a bare name means
+with `open PMF DistLens`, with `MeasureTheory.Measure` also open, with
+`open PMF` alone and in the namespace trap, plus the hinted refusals of
+Mathlib's Measure-valued constructors.
 
 `DistLensTests/ClickE2E.lean` additionally simulates the suggestion clicks
 end to end: realistic user files (importing only `DistLens`) are compiled
@@ -241,3 +283,13 @@ after the inserted example on its line); and an opaque-carrier fixture
 (`uniformOfFintype Ordering`) pins that the panel offers **zero** suggestion
 rows there — together with the reason: the would-be example still fails to
 recompile with `pmf_num`'s pinned refusal.
+
+## License
+
+Apache License 2.0 (`LICENSE`; the license's full text is in
+`LICENSE-APACHE-2.0`), copyright 2026 Fawad Haider, except as
+recorded in `NOTICE`: `DistLens/Uniform.lean` is adapted from Mathlib's
+`Mathlib/Probability/Distributions/Uniform.lean` at `v4.34.0` (commit
+`5ed29652`), copyright (c) 2024 Josha Dekker, authors Josha Dekker, Devon
+Tuma and Kexing Ying, also under the Apache License 2.0.  The file's header
+keeps that notice and lists the changes.

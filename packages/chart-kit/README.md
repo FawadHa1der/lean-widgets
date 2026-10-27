@@ -22,11 +22,14 @@ IEEE 754 doubles **bit-for-bit** into their exact rational values (`0.1`
 becomes `3602879701896397/36028797018963968`, because that is what the double
 actually is) and honestly refuses NaN/±∞.
 
-Built and tested against toolchain `leanprover/lean4:v4.34.0` and
-ProofWidgets4 `106ff4f` (pinned in `lake-manifest.json`). This is the QED64
-pairing; the original v4.32.2 / ProofWidgets4 `6e311e2` build is preserved in
-the sibling `widgets/chart-kit` tree, and the port required no Lean code changes (one module docstring in `FloatBridge.lean` was updated for accuracy)
-(see `PORT-NOTES.md`).
+Built and tested against toolchain `leanprover/lean4:v4.35.0` and
+ProofWidgets4 `df72b022` (pinned in `lakefile.toml` and `lake-manifest.json`;
+the same ProofWidgets rev Mathlib v4.35.0 pins; no Mathlib dependency). This
+is the QED64 pairing. The original v4.32.2 / ProofWidgets4 `6e311e2` sources
+are preserved as this repository's `lean-v4.32.2` tag. The v4.32.2 → v4.34.0 port
+(ProofWidgets4 `106ff4f`) required no Lean code changes (one module docstring
+in `FloatBridge.lean` was updated for accuracy), and the v4.34.0 → v4.35.0
+port required none at all, with no test pin changes (see `PORT-NOTES.md`).
 
 ## Usage
 

@@ -1,15 +1,19 @@
-# Lean InfoView Widgets (Lean v4.34.0)
+# Lean InfoView Widgets (Lean v4.35.0)
 
-**Live:** https://qed64-showcase.fawadworkaddress.workers.dev/showcase/ (deployed 2026-10-05; Chromium-based desktop browser, ~16 GB RAM; first visit downloads ~680 MB).
+**Live:** https://qed64-showcase.fawadworkaddress.workers.dev/showcase/ (deployed 2026-10-05, serving the packages'
+v4.34.0 builds; Chromium-based desktop browser, ~16 GB RAM; first visit downloads ~680 MB).
 
-Eight InfoView widget packages for Lean 4 and Mathlib (v4.34.0), and two ways to see them without installing anything:
+Eight InfoView widget packages for Lean 4 and Mathlib (v4.35.0), and two ways to see them without installing anything:
 a static gallery of their real panels, and the widgets running live in [QED64](https://github.com/FawadHa1der/QED64),
 Lean compiled to wasm64 and running in the browser. Everything in this repository builds from a clone.
 
 The v4.32.2 original of the packages is the git tag
 [`lean-v4.32.2`](https://github.com/FawadHa1der/lean-widgets/tree/lean-v4.32.2). The port to v4.34.0 exists because
-QED64 pairs its snapshots to Lean 4.34.0 and Mathlib `5ed2965`. Every package has a `PORT-NOTES.md` that lists what
-changed and why ([Port summary](#port-summary-v4322--v4340)).
+QED64 pairs its snapshots to Lean 4.34.0 and Mathlib `5ed2965`; the last v4.34.0 state is commit `4d93a28` (branch
+`qed64-pin-i`). The QED64 showcase's registered pins (`qed64-showcase/pins/`, all on QED64's Lean 4.34.0 runtimes)
+serve overlays baked from the v4.34.0 packages. The packages are now on Lean v4.35.0 / Mathlib v4.35.0 (`56a00585`),
+ahead of re-pinning the QED64 showcase to a QED64 release on Lean 4.35.0. Every package has a `PORT-NOTES.md` that lists what changed and why
+([v4.34.0 → v4.35.0](#port-summary-v4340--v4350), [v4.32.2 → v4.34.0](#port-summary-v4322--v4340)).
 
 ## What is in this repository
 
@@ -47,7 +51,7 @@ cd lean-widgets
 
 | You want to | You need |
 |---|---|
-| build and test the packages | [elan](https://github.com/leanprover/elan) (each package pins `leanprover/lean4:v4.34.0`), git, about 8 GB of disk per Mathlib-dependent package (each package fetches its own Mathlib build cache) |
+| build and test the packages | [elan](https://github.com/leanprover/elan) (each package pins `leanprover/lean4:v4.35.0`), git, about 8 GB of disk per Mathlib-dependent package (each package fetches its own Mathlib build cache) |
 | build the static showcase | the packages built (to regenerate the dumps), Python 3, Node (any recent version) |
 | run the QED64 showcase | Node 26 with npm (the lock records v26.3.0; another 26.x is reported as a DRIFT), git, an artifact origin, about 2.4 GB of disk for the artifacts; macOS or Linux |
 | run its browser tests | Playwright's Chromium (`npx playwright install chromium chromium-headless-shell`), 16 GB of RAM |
@@ -157,15 +161,19 @@ new runtime's upload never replaces the one a live page reads. The gallery's `?o
   region, so the example files start with a plain `import Mathlib` / `import HasseView` and also work in VS Code.
 * **The gallery** iframes the stock page from the same origin, checks that the region is paired with the runtime
   before navigating, and fills the editor and moves the cursor through the page. On the QED64 pins up to E `33b0967`
-  (what the live site serves) it uses the page's internal hooks and installs a small bridge for three InfoView defects
-  of the shipped page (D1, D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins,
-  F `84d594e` and G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure), H `bf9d947`
-  (QED64 main: G plus QED64's keep-alive fix; gated in the browser), I `385a1ac` (QED64 main on the kernel fork's
-  release `lean-v4.34.0-e1a79c1`, a new runtime, with QED64's fixes #62–#64; superseded after a kernel-0036 regression in
-  Chrome) and J `5e63edd` (QED64 main: I plus QED64's interim for that regression, the same runtime; the active pin of a
-  local checkout since 2026-10-09, gated in the browser 2026-10-09/10; none of F–J is deployed), it uses QED64's
-  declared embedding API v1
-  (`qed64.api`, `?embed=1`, `#code=`); those defects are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1").
+  it uses the page's internal hooks and installs a small bridge for three InfoView defects of the shipped page (D1, D2,
+  D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins, F `84d594e` and
+  G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure), H `bf9d947` (QED64 main: G plus
+  QED64's keep-alive fix; gated in the browser; deployed 2026-10-08, what the live site serves), I `385a1ac` (QED64 main
+  on the kernel fork's release `lean-v4.34.0-e1a79c1`, a new runtime, with QED64's fixes #62–#64; superseded after a
+  kernel-0036 regression in Chrome), J `5e63edd` (QED64 main: I plus QED64's interim for that regression, the same
+  runtime; gated in the browser 2026-10-09/10; superseded by K), K `62a06e2` (QED64 main with QED64's #68–#72, the same
+  runtime; gated in the browser 2026-10-13), L `37ff491` (QED64 main on the kernel fork's release
+  `lean-v4.34.0-53cb11e`, a new runtime; no VERDICT; superseded by N) and N `58ebbad` (QED64 main: L plus QED64's
+  #74–#76, the same runtime; the active pin of a local checkout since 2026-10-16, gated in the browser 2026-10-16; of
+  F–N only H is deployed), it uses QED64's declared embedding API v1 (`qed64.api`, `?embed=1`, `#code=`); those defects
+  are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding
+  API v1").
 * **Tests:** a static gate (`showcase.sh gallery`), headless wasm checks in Node, and the Playwright UX suite.
   Every full `ux` run is recorded with the gallery, lock and overlay hashes it ran on. A run is a VERDICT only if it
   was green on unchanged inputs, and a deploy needs a verdict on exactly the inputs it deploys.
@@ -222,20 +230,24 @@ visualization research (not part of this repository), a proof-state-integrated
 graph visualizer, a universal tree/heap visualizer, and the three
 next-frontier builds: Hasse diagrams, exact
 probability distributions, and verified charting primitives. Every package is a self-contained Lake project on
-**Lean `v4.34.0`**, builds green, and ships an adversarially-audited compile-time
+**Lean `v4.35.0`**, builds green, and ships an adversarially-audited compile-time
 test suite (`lake test`) — including mutation testing (deliberate logic mutations
 must break the suite).
 
+The Assertions column is each package's census on the v4.35.0 tree, counted mechanically with the method its
+README states (2026-10-26, rechecked 2026-10-27); the Audit column records the packages' original audits (each port's audits are in its
+`PORT-NOTES.md`).
+
 | Package | What it does | Deps | Assertions | Audit |
 |---------|--------------|------|-----------:|-------|
-| [`interval-inspector/`](packages/interval-inspector/) | Draws interval goals as a theme-aware SVG number line (open/closed endpoint glyphs, stacked subset/eq comparisons, mismatch shading, order-unknown captions) and suggests the right Mathlib lemma from a **62-entry table where every lemma is proof-verified against pinned Mathlib**, side conditions checked ready/missing against an order graph built from your hypotheses. Recognizes `Set.Icc/…/Iio`, `∪`/`∩` trees, **set-builder spellings** (`{x \| a ≤ x ∧ x < b}` → `Ico`), and `Set.Nonempty` / `= ∅` / `≠ ∅` shapes. `#interval_inspect` + panel + `interval_inspect?` tactic with click-to-insert. | Mathlib | 794 | pass (3 audited rounds, 6/6 mutations) |
-| [`expr-xray/`](packages/expr-xray/) | Elaborated-expression inspector: collapsible tree with binder-role classification, universe levels, coercion badges, four preset views, `pp.explicit` block — and a **defeq-aware diff**: every mismatch is checked with `isDefEq` (reducible, then default transparency), re-ranked so *definitionally real* blockers come first, with an "all mismatches are defeq — syntactic only" verdict when nothing truly differs. `#xray` / `#xray_diff` + shift-click panel (1 selection = inspect, 2 = compare). | ProofWidgets | 520+ | pass (3 audited rounds, 6/6 mutations) |
-| [`simp-lens/`](packages/simp-lens/) | `simp_lens` — a drop-in `simp` **with full location support** (`at h`, `at h ⊢`, `at *`): per-location rewrite filmstrips (origin, before/after, hover/go-to-def), the minimal `Try this: simp only [...] at …` (reusing core's `mkSimpOnly`), and per-lemma **exclusion previews** with essential/redundant badges. Equivalence tests *execute* the generated call and assert it reaches the same state as `simp`. | ProofWidgets | 390+ | pass (3 audited rounds, 6/6 mutations) |
-| [`graph-scope/`](packages/graph-scope/) | `#graph_scope g` — evaluates a concrete `SimpleGraph` through its own `Fintype`/`DecidableRel` instances and draws a theme-aware SVG: circular layout, stats (order/size/degrees/components/connectivity/bipartiteness), **walk overlays** with step numbers, **highlight rings** for vertex subsets. Bipartiteness returns *validated evidence* — a proper 2-coloring or an odd-cycle witness the tests verify programmatically. All analysis is pure `#guard`-testable code over an extracted edge list. **Click-to-insert** (RPC panel): edges insert `example : (g).Adj a b := by decide`, vertices insert degree facts, and the stats line inserts (dis)connectivity facts — gated by an experimentally validated cost budget (kernel `decide` on `Connected` is expensive; the pure `diameter` analysis decides insertability). All texts round-trip-gated and compile-verified. | Mathlib | 340+ | pass (3 audited rounds + polish, 7/7 mutations) |
-| [`tree-scope/`](packages/tree-scope/) | `#tree_scope v` — **universal tree/heap visualizer**: a `ToTreeView` typeclass with semantic instances (core `RBNode`/`RBMap` rendered in true red/black with **red-red, black-height, and BST-order violation overlays** using the type's own `cmp`; `Batteries.BinomialHeap` forests with rank badges and heap-property checks via the type's `le`; Mathlib `Tree`; `Std.TreeMap`), plus a **constructor-reflection fallback** that renders *any* concrete inductive value (whnf-evaluated, not `Repr`). `#tree_evolve` filmstrips a fold of operations with per-step added-node diff badges — watch RB rebalancing happen. Exact-ℚ tidy layout with proven non-overlap/centering/translation-invariance properties; Catalan gallery demo (all 14 four-node trees). | Mathlib | ~460 | pass (2 audited rounds + polish, 4/4 mutations) |
-| [`hasse-view/`](packages/hasse-view/) | `#hasse V` — layered **Hasse diagrams** for any finite decidable order (fills the Zulip request open since Jan 2022): covering relation computed from the extracted ≤ table, ⊥/⊤/atom/coatom badges, **lattice verdict with a concrete no-join witness pair**, upset/downset shading, height and antichain bounds — and validity self-checks that *warn* about non-antisymmetric/non-transitive instances instead of drawing them wrong. **Click-to-insert** (RPC panel): cover edges insert `example : a ⋖ b := by decide` (the package ships its own lawful `DecidableRel (· ⋖ ·)` instance — Mathlib's pin has only `Bool`), ⊥/⊤ badges insert instance-free bound facts, and the non-lattice caption inserts the compiled no-join witness; every offered text is round-trip-gated and compile-verified. Demos: the powerset cube, divisors of 12 (shows the gate *rejecting* unparseable labels), a non-lattice bowtie. | Mathlib | 349 | pass (2 audited rounds, 5/5 mutations) |
-| [`dist-lens/`](packages/dist-lens/) | `#dist` / `#dist_film` / `#chain` — **exact probability distributions** (probe-validated architecture): whitelist extraction of PMF terms to exact ℚ weights (uniform/bernoulli/binomial/pure/bind/map/ofFintype), bars + CDF + E/Var with fraction labels, bind-convolution filmstrips, and finite **Markov chains** with exact Gaussian-elimination stationary distributions. Ships the **`pmf_num` tactic**: every displayed weight offers a click-to-insert *compiled* proof `example : p x = 1/6 := by pmf_num` — including bernoulli's truncated-subtraction residues and stationary equations. | Mathlib | 270+ | pass (r1, 2/2 mutations + polish) |
-| [`chart-kit/`](packages/chart-kit/) | **Verified-exact charting primitives** (the demand-backed build): `ChartSpec → Html` library for widget authors + `#chart` command — bar/line/step/scatter marks over exact ℚ data, nice-tick computation entirely in ℚ (no Float in the math), categorical bars, legends, themed palette, and `Series.ofFloats` with **bit-exact IEEE-754 decoding** (0.1 charts as its true rational value; NaN/∞ refused by name). | ProofWidgets | 256 | pass (r1, 2/2 mutations + polish) |
+| [`interval-inspector/`](packages/interval-inspector/) | Draws interval goals as a theme-aware SVG number line (open/closed endpoint glyphs, stacked subset/eq comparisons, mismatch shading, order-unknown captions) and suggests the right Mathlib lemma from a **62-entry table where every lemma is proof-verified against pinned Mathlib**, side conditions checked ready/missing against an order graph built from your hypotheses. Recognizes `Set.Icc/…/Iio`, `∪`/`∩` trees, **set-builder spellings** (`{x \| a ≤ x ∧ x < b}` → `Ico`), and `Set.Nonempty` / `= ∅` / `≠ ∅` shapes. `#interval_inspect` + panel + `interval_inspect?` tactic with click-to-insert. | Mathlib | 857 | pass (3 audited rounds, 6/6 mutations) |
+| [`expr-xray/`](packages/expr-xray/) | Elaborated-expression inspector: collapsible tree with binder-role classification, universe levels, coercion badges, four preset views, `pp.explicit` block — and a **defeq-aware diff**: every mismatch is checked with `isDefEq` (reducible, then default transparency), re-ranked so *definitionally real* blockers come first, with an "all mismatches are defeq — syntactic only" verdict when nothing truly differs. `#xray` / `#xray_diff` + shift-click panel (1 selection = inspect, 2 = compare). | ProofWidgets | 480 | pass (3 audited rounds, 6/6 mutations) |
+| [`simp-lens/`](packages/simp-lens/) | `simp_lens` — a drop-in `simp` **with full location support** (`at h`, `at h ⊢`, `at *`): per-location rewrite filmstrips (origin, before/after, hover/go-to-def), the minimal `Try this: simp only [...] at …` (reusing core's `mkSimpOnly`), and per-lemma **exclusion previews** with essential/redundant badges. Equivalence tests *execute* the generated call and assert it reaches the same state as `simp`. | ProofWidgets | 428 | pass (3 audited rounds, 6/6 mutations) |
+| [`graph-scope/`](packages/graph-scope/) | `#graph_scope g` — evaluates a concrete `SimpleGraph` through its own `Fintype`/`DecidableRel` instances and draws a theme-aware SVG: circular layout, stats (order/size/degrees/components/connectivity/bipartiteness), **walk overlays** with step numbers, **highlight rings** for vertex subsets. Bipartiteness returns *validated evidence* — a proper 2-coloring or an odd-cycle witness the tests verify programmatically. All analysis is pure `#guard`-testable code over an extracted edge list. **Click-to-insert** (RPC panel): edges insert `example : (g).Adj a b := by decide`, vertices insert degree facts, and the stats line inserts (dis)connectivity facts — gated by a calibrated cost model (kernel `decide` on `Connected` enumerates Mathlib's walks: the panel counts that walk work exactly, measures one adjacency decision of the graph's own instance, and offers the link only when the heartbeat estimate stays within half the default `maxHeartbeats`; since the v4.35.0 port, which replaced a diameter/size budget that was unsound at its corner and kept that budget's limits as the recursion-depth domain). All texts round-trip-gated and compile-verified. | Mathlib | 513 | pass (3 audited rounds + polish, 7/7 mutations) |
+| [`tree-scope/`](packages/tree-scope/) | `#tree_scope v` — **universal tree/heap visualizer**: a `ToTreeView` typeclass with semantic instances (core `RBNode`/`RBMap` rendered in true red/black with **red-red, black-height, and BST-order violation overlays** using the type's own `cmp`; `Batteries.BinomialHeap` forests with rank badges and heap-property checks via the type's `le`; Mathlib `Tree`; `Std.TreeMap`), plus a **constructor-reflection fallback** that renders *any* concrete inductive value (whnf-evaluated, not `Repr`). `#tree_evolve` filmstrips a fold of operations with per-step added-node diff badges — watch RB rebalancing happen. Exact-ℚ tidy layout with proven non-overlap/centering/translation-invariance properties; Catalan gallery demo (all 14 four-node trees). | Mathlib | 500 | pass (2 audited rounds + polish, 4/4 mutations) |
+| [`hasse-view/`](packages/hasse-view/) | `#hasse V` — layered **Hasse diagrams** for any finite decidable order (fills the Zulip request open since Jan 2022): covering relation computed from the extracted ≤ table, ⊥/⊤/atom/coatom badges, **lattice verdict with a concrete no-join witness pair**, upset/downset shading, height and antichain bounds — and validity self-checks that *warn* about non-antisymmetric/non-transitive instances instead of drawing them wrong. **Click-to-insert** (RPC panel): cover edges insert `example : a ⋖ b := by decide` (the package ships its own lawful `DecidableRel (· ⋖ ·)` instance for `[Preorder] [DecidableLE] [Fintype]` orders; Mathlib v4.35.0's new instance needs `DecidableLT`, which products and the bowtie demo lack), ⊥/⊤ badges insert instance-free bound facts, and the non-lattice caption inserts the compiled no-join witness; every offered text is round-trip-gated and compile-verified. Demos: the powerset cube, divisors of 12 (shows the gate *rejecting* unparseable labels), a non-lattice bowtie. | Mathlib | 476 | pass (2 audited rounds, 5/5 mutations) |
+| [`dist-lens/`](packages/dist-lens/) | `#dist` / `#dist_film` / `#chain` — **exact probability distributions** (probe-validated architecture): whitelist extraction of PMF terms to exact ℚ weights (uniform/bernoulli/binomial/pure/bind/map/ofFintype; the uniform constructors are `DistLens.uniformOfFintype` / `DistLens.uniformOfFinset` since Mathlib v4.35.0 made its uniform `PMF`s measures), bars + CDF + E/Var with fraction labels, bind-convolution filmstrips, and finite **Markov chains** with exact Gaussian-elimination stationary distributions. Ships the **`pmf_num` tactic**: every displayed weight offers a click-to-insert *compiled* proof `example : p x = 1/6 := by pmf_num` — including bernoulli's truncated-subtraction residues and stationary equations. | Mathlib | 401 | pass (r1, 2/2 mutations + polish) |
+| [`chart-kit/`](packages/chart-kit/) | **Verified-exact charting primitives** (the demand-backed build): `ChartSpec → Html` library for widget authors + `#chart` command — bar/line/step/scatter marks over exact ℚ data, nice-tick computation entirely in ℚ (no Float in the math), categorical bars, legends, themed palette, and `Series.ofFloats` with **bit-exact IEEE-754 decoding** (0.1 charts as its true rational value; NaN/∞ refused by name). | ProofWidgets | 261 | pass (r1, 2/2 mutations + polish) |
 
 Each package README documents its architecture and an honest LIMITATIONS section
 (e.g. the live panel round-trip needs a running Lean server and was verified
@@ -284,9 +296,11 @@ name = "interval-inspector"
 path = "path/to/lean-widgets/packages/interval-inspector"
 ```
 
-All eight pin `leanprover/lean4:v4.34.0`, Mathlib `v4.34.0` (rev `5ed2965`) and
-ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` (the rev in Mathlib v4.34.0's
-manifest, so mixing with Mathlib v4.34.0 projects is safe).
+All eight (and `lean-widget-kit`) pin `leanprover/lean4:v4.35.0` and ProofWidgets
+`df72b022e558978a1c50264cfc4d7fec86fa8e04` (the rev in Mathlib v4.35.0's manifest, so mixing with Mathlib v4.35.0
+projects is safe). The five Mathlib-dependent packages and the kit also pin Mathlib `v4.35.0` (rev `56a00585`), and
+every other rev in their manifests (Batteries `66e46918`, Aesop, Qq, plausible, importGraph, LeanSearchClient, Cli)
+is Mathlib v4.35.0's own.
 
 ## How these were built and verified
 
@@ -317,7 +331,72 @@ manifest, so mixing with Mathlib v4.34.0 projects is safe).
   MetaM asserts), deterministic on the pinned toolchain; CI needs nothing but
   `lake` — or `./test-all.sh` for the whole suite (incl. the `lean-widget-kit`
   meta-package: one require + `import LeanWidgetKit` = the entire suite).
-  Combined: **3,200+ assertions** across the eight packages. The frontier builds were specced directly from probe-verified feasibility research — dist-lens's proof tactic implements a closer chain validated by executed probes before a line of the widget existed.
+  Combined: **3,916 assertions** across the eight packages (the sum of the census column above). The frontier builds were specced directly from probe-verified feasibility research — dist-lens's proof tactic implements a closer chain validated by executed probes before a line of the widget existed.
+
+## Port summary (v4.34.0 → v4.35.0)
+
+Ported in place on the branch `port-lean-4.35` (from `qed64-pin-i`, commit `4d93a28`): Lean v4.35.0, Mathlib
+v4.35.0 (`56a00585`), ProofWidgets `df72b022` (Mathlib v4.35.0's manifest rev). Each package's pins were set with one
+`lake update` (plus `lake exe cache get` where Mathlib is a dependency), then the package was ported and adversarially
+audited (pin check, census, mandatory mutations, re-execution of every claimed transcript); the findings were fixed.
+simp-lens, hasse-view, dist-lens and graph-scope were then re-audited: the re-audit passed simp-lens (two more
+`#lens_origins` pins) and hasse-view (a correction to its `PORT-NOTES.md`), and failed dist-lens and graph-scope, which
+went through a second round of library fixes. chart-kit, expr-xray, interval-inspector and tree-scope record a single
+audit and its fixes. Two packages needed library code changes: dist-lens (a Mathlib API removal) and graph-scope
+(Mathlib's new decidability instances exposed a connectivity link budget that was unsound at its corner, very likely
+since before the port).
+No test was weakened; the only changed expected outputs are documented in the packages' `PORT-NOTES.md`. Counts are
+the package census (the README method), recounted mechanically on both trees.
+
+| Package | Changes | Assertions (4.34.0 → 4.35.0) |
+|---------|---------|-----------------------------:|
+| `chart-kit` | none (documentation only) | 261 → 261 |
+| `expr-xray` | none in the library; tests for coercions detected only through `@[coe]` | 459 → 480 |
+| `tree-scope` | none in the library; `PanelTests` pins what `#tree_scope` / `#tree_evolve` store in the panel | 476 → 500 |
+| `hasse-view` | docstrings only (Mathlib's new `CovBy` instance made one statement false); tests pin which `⋖` instance is selected and why the package's own is still needed | 463 → 476 |
+| `simp-lens` | none in the library; tests pin per-frame origin lists, including the simproc `.continue (some _)` path that Lean 4.35's `simprocCore` change touched | 404 → 428 |
+| `interval-inspector` | none in the library; ℕ end-to-end tests of the `DenselyOrdered` gate on the `≠ ∅` suggestion | 846 → 857 |
+| `graph-scope` | `Gate.lean`: an adjacency-cost guard for Mathlib's new quantifying `hasse` / `pathGraph` instances; `Insert.lean` + `Gate.lean`: a walk-work cost model calibrated on measured heartbeats (250 calibration graphs, validated on 50 more) replaces the connectivity link's diameter/size budget as its cost bound; the diameter/size limits stay as the recursion-depth domain, and a recursion-depth estimate (≤ 500) replaces the disconnected graphs' max-degree ≤ 2 proxy; tests for both | 426 → 513 |
+| `dist-lens` | new `DistLens/Uniform.lean` with `DistLens.uniformOfFintype` / `DistLens.uniformOfFinset` (Mathlib v4.34.0's definitions, with Apache-2.0 attribution, `LICENSE-APACHE-2.0` and `NOTICE`); the extractor whitelist and `pmf_num`'s simp set name them; a hint when a refused term is Measure-valued | 357 → 401 |
+| `lean-widget-kit` | none (one docstring pointer corrected) | no assertions of its own |
+| **Total** | | **3,692 → 3,916** |
+
+(Two 4.34.0 figures differ from the v4.32.2 → v4.34.0 table below: expr-xray's 459 is the corrected census, where
+the old grep said 456 because it missed 10 bare `#guard` lines, counted 2 docstring mentions of `#guard_msgs` and
+counted the 5 helper definitions; dist-lens's 357 includes `StackGuardTests`, added on 2026-10-12 after that port's
+345.)
+
+User files must name the DistLens constructors: `DistLens.uniformOfFintype` / `DistLens.uniformOfFinset`, or the bare
+names under a top-level `open DistLens` (as in `open PMF DistLens`). That covers files that spelled
+`PMF.uniformOfFintype` / `PMF.uniformOfFinset`, and also the v4.34 idiom of the bare `uniformOfFintype` under
+`open PMF` alone (the usage block of dist-lens's v4.34 README, and QED64's showcase example): with `import Mathlib`
+the bare name now means Mathlib's Measure-valued alias and fails, and with `import DistLens` alone it does not
+resolve. An `open DistLens` written inside `namespace Foo.DistLens` opens `Foo.DistLens` instead (dist-lens
+`PORT-NOTES.md`, gotcha 2). The static showcase dumps were regenerated on 4.35 and are byte-identical to the v4.34.0
+ones (see [showcase/README.md](showcase/README.md)). The QED64 showcase's served pins are unaffected until it is
+re-pinned: each pin's `QED64.lock.json` records the widgets commit its overlays are built from (`WIDGETS_COMMIT`,
+exported with `git archive <commit> packages/`), and every registered pin names a v4.34.0 tree (`90e415c` or
+`6b31bba`). Two things do see the port: once it is committed, `showcase.sh verify` reports a DRIFT on #7
+(`HEAD:packages` is no longer `WIDGETS_COMMIT:packages`), and the native golden generator and gates
+(`qed64-showcase/lean/goldens/`, which write the goldens in `lean/expect/`) compile against the working tree's
+`packages/`, which is now on v4.35.0. The re-pin also needs the dist-lens example fix: the top-level `open PMF`
+of `qed64-showcase/lean/examples/dist-lens.lean` becomes `open PMF DistLens` (dist-lens
+`PORT-NOTES.md`, F5).
+
+**4.35.0 gotchas worth knowing:**
+
+1. Mathlib v4.35.0 (#42909, part of deprecating `PMF`, #42821) removed `PMF.uniformOfFinset` and made
+   `PMF.uniformOfFintype` a deprecated alias of the Measure-valued `uniformOfFinset`. Name literals
+   (``` ``PMF.uniformOfFintype ```) still compile, so `isAppOfArity` matchers silently stop matching, and lemma names
+   inside syntax quotations fail only at run time: grep every use of a changed name, not just the build errors.
+2. Mathlib v4.35.0 (#40728) adds `DecidableRel` instances for `CovBy` / `WCovBy` on finite orders and for
+   `SimpleGraph.hasse` / `pathGraph`, and removes the Bool-only `CovBy` instances. The new graph instances quantify
+   over the vertex type, so kernel `decide` through them can be far more expensive than through a closed adjacency.
+3. Simprocs stop at the first rewrite per visit (`simprocCore` / `dsimprocCore`): a tracer wrapping `Simp.Methods`
+   can see a chain of simproc rewrites split into separate visits.
+4. Lake warns "imports X from package mathlib, which is designed for use with the module system; consider adding
+   `module`" for every non-module file that imports Mathlib. It is expected here and left alone.
+5. Lake's manifest format is now `1.3.0` (path entries gain `"copy": false`).
 
 ## Port summary (v4.32.2 → v4.34.0)
 

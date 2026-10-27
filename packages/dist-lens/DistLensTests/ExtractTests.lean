@@ -350,7 +350,7 @@ error: #dist: expected a term of type `PMF α`, but `3` has type `ℕ`
 #dist (text := true) (3 : ℕ)
 
 /--
-error: #dist: `@Subtype.mk` is not a supported PMF constructor — DistLens matches PMF.pure, PMF.bind, PMF.map, PMF.uniformOfFintype, PMF.uniformOfFinset, PMF.bernoulli, PMF.binomial and PMF.ofFintype (with `![…]` literal weights); symbolic or monadic spellings are refused rather than guessed at
+error: #dist: `@Subtype.mk` is not a supported PMF constructor — DistLens matches PMF.pure, PMF.bind, PMF.map, DistLens.uniformOfFintype, DistLens.uniformOfFinset, PMF.bernoulli, PMF.binomial and PMF.ofFintype (with `![…]` literal weights); symbolic or monadic spellings are refused rather than guessed at
 -/
 #guard_msgs in
 #dist (text := true)
@@ -373,6 +373,19 @@ error: #chain: expected a term of type `Fin n → PMF (Fin n)` with a literal `n
 -/
 #guard_msgs in
 #chain (text := true) (3 : ℕ)
+
+-- Codomains that are not a `MeasureTheory.Measure`: the refusal carries no hint.
+/--
+error: #chain: expected a term of type `Fin n → PMF (Fin n)` with a literal `n`, but `fun x => PMF.pure 0` has type `Fin 2 → PMF (Fin 3)`
+-/
+#guard_msgs in
+#chain (text := true) (fun _ : Fin 2 => PMF.pure (0 : Fin 3))
+
+/--
+error: #chain: expected a term of type `Fin n → PMF (Fin n)` with a literal `n`, but `fun x => 3` has type `Fin 2 → ℕ`
+-/
+#guard_msgs in
+#chain (text := true) (fun _ : Fin 2 => (3 : ℕ))
 
 /--
 error: #chain: initial state 5 is out of range for 2 states

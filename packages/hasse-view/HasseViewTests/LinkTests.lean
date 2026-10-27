@@ -97,6 +97,82 @@ example : ¬ ∃ m : Bowtie, (m ≤ (3 : Bowtie) ∧ m ≤ (4 : Bowtie)) ∧
 -- statement check can genuinely fail on wrong pairs).
 example : ¬ ((∅ : Finset (Fin 3)) ⋖ {0, 1}) := by decide
 
+/-! ## Which `⋖` instance is selected (Mathlib v4.35.0 overlap)
+
+Mathlib v4.35.0 has its own `Fintype.instDecidableRelCovByOfDecidableLT`
+(`[Fintype V] [LT V] [DecidableLT V]`).  The `HasseView/Links.lean` docstring
+says HasseView's `instDecidableRelCovByOfFintype` is the instance selected
+wherever `HasseView` is imported, and that it is still needed because
+hand-written orders such as `Bowtie` (and the product order on `Bool × Bool`)
+have no `DecidableLT`.  These pins enforce both statements: lowering the
+package instance's priority (so Mathlib's would win on `Fin`/`Bool`/`Finset`)
+fails the first group, and a Mathlib change that gave `Bowtie` or `Bool × Bool`
+a `DecidableLT` (making the package instance redundant there) fails the
+second.  The truth values `decide` computes are the same under either lawful
+instance (`Decidable` is a subsingleton); only the selection is pinned. -/
+
+/-- `#assert_instance_head C => n`: build fails unless instance search for the
+class `C` returns a term whose head constant is `n` (looked up under the
+binders of an eta-expanded `DecidableRel` instance, which `synthInstance`
+returns as `fun a b => n … a b`). -/
+elab "#assert_instance_head " t:term:max " => " n:ident : command =>
+  liftTermElabM do
+    let expected ← realizeGlobalConstNoOverload n
+    let cls ← Term.elabType t
+    Term.synthesizeSyntheticMVarsNoPostponing
+    let cls ← Lean.instantiateMVars cls
+    let inst ← Lean.instantiateMVars (← Lean.Meta.synthInstance cls)
+    let head ← Lean.Meta.lambdaTelescope inst fun _ body => pure body.getAppFn
+    unless head.isConstOf expected do
+      throwError "expected instance search for {cls} to select {expected}, got {inst}"
+
+/-- `#assert_no_instance C`: build fails if instance search finds any
+instance of the class `C`. -/
+elab "#assert_no_instance " t:term:max : command =>
+  liftTermElabM do
+    let cls ← Term.elabType t
+    Term.synthesizeSyntheticMVarsNoPostponing
+    let cls ← Lean.instantiateMVars cls
+    if let some inst ← Lean.Meta.synthInstance? cls then
+      throwError "expected no instance of {cls}, but instance search found {inst}"
+
+-- The package instance is selected for every linkable demo type (and `Bool`),
+-- both as a `DecidableRel` and per pair (the goal the inserted `by decide`
+-- actually synthesizes).
+#assert_instance_head (DecidableRel (· ⋖ · : Fin 5 → Fin 5 → Prop)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (DecidableRel (· ⋖ · : Bool → Bool → Prop)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (DecidableRel (· ⋖ · : Finset (Fin 3) → Finset (Fin 3) → Prop)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (DecidableRel (· ⋖ · : Bool × Bool → Bool × Bool → Prop)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (DecidableRel (· ⋖ · : Bowtie → Bowtie → Prop)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (Decidable ((1 : Fin 5) ⋖ 2)) =>
+  HasseView.instDecidableRelCovByOfFintype
+#assert_instance_head (Decidable ((1 : Bowtie) ⋖ 3)) =>
+  HasseView.instDecidableRelCovByOfFintype
+
+-- Why the package instance is still needed: Mathlib's needs `DecidableLT`,
+-- which these two demo types lack.
+#assert_no_instance (DecidableLT Bowtie)
+#assert_no_instance (DecidableLT (Bool × Bool))
+
+-- With the package instance erased (for one command each), Mathlib's
+-- instance takes over exactly where `DecidableLT` exists, and `Bowtie` /
+-- `Bool × Bool` are left with no `⋖` instance at all.
+attribute [-instance] HasseView.instDecidableRelCovByOfFintype in
+#assert_instance_head (DecidableRel (· ⋖ · : Fin 5 → Fin 5 → Prop)) =>
+  Fintype.instDecidableRelCovByOfDecidableLT
+attribute [-instance] HasseView.instDecidableRelCovByOfFintype in
+#assert_instance_head (DecidableRel (· ⋖ · : Finset (Fin 3) → Finset (Fin 3) → Prop)) =>
+  Fintype.instDecidableRelCovByOfDecidableLT
+attribute [-instance] HasseView.instDecidableRelCovByOfFintype in
+#assert_no_instance (Decidable ((1 : Bowtie) ⋖ 3))
+attribute [-instance] HasseView.instDecidableRelCovByOfFintype in
+#assert_no_instance (Decidable (((false, false) : Bool × Bool) ⋖ (false, true)))
+
 /-! ## Gate assertion commands -/
 
 /-- `#assert_label_roundtrips V "l" i`: build fails unless label `l`

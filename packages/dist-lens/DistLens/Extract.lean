@@ -1,7 +1,7 @@
 import DistLens.Model
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Probability.ProbabilityMassFunction.Binomial
-import Mathlib.Probability.Distributions.Uniform
+import DistLens.Uniform
 import Mathlib.Lean.Expr.Rat
 
 /-! # DistLens: extraction
@@ -10,7 +10,9 @@ The impure layer: a **whitelist matcher** over elaborated `PMF` terms that
 computes the exact ℚ weight vector Lean-side (its own tiny interpreter:
 pointwise for `uniformOfFintype`/`uniformOfFinset`/`bernoulli`/`binomial`/
 `pure`/`ofFintype`, convolution for `bind`, pushforward with collision
-summing for `map`).  **No ℝ≥0∞ value is ever evaluated numerically** — PMF
+summing for `map`; the two uniform constructors are `DistLens.uniformOfFintype`/
+`DistLens.uniformOfFinset` from `DistLens/Uniform.lean`, since Mathlib v4.35.0 made
+its own Measure-valued).  **No ℝ≥0∞ value is ever evaluated numerically** — PMF
 applications are noncomputable (`#eval` fails with
 `dependsOnNoncomputable`), so the weights come from the *parameters* of the
 whitelisted constructors, all parsed as exact ℚ.
@@ -222,7 +224,7 @@ def mkKeyExpr (cmd : String) (c : Carrier) (k : Nat) : MetaM Expr := do
 
 /-- The constructor whitelist: heads `resolveHead` must *not* unfold. -/
 def whitelistHeads : List Name :=
-  [``PMF.uniformOfFintype, ``PMF.uniformOfFinset, ``PMF.bernoulli,
+  [``DistLens.uniformOfFintype, ``DistLens.uniformOfFinset, ``PMF.bernoulli,
    ``PMF.binomial, ``PMF.pure, ``PMF.bind, ``PMF.map, ``PMF.ofFintype,
    ``Matrix.vecCons, ``Matrix.vecEmpty]
 
@@ -249,10 +251,40 @@ where
 /-- The standard honest refusal for a non-whitelisted head. -/
 def unsupportedHead (cmd : String) (e : Expr) : MetaM α :=
   throwError "{cmd}: `{e.getAppFn}` is not a supported PMF constructor — \
-    DistLens matches PMF.pure, PMF.bind, PMF.map, PMF.uniformOfFintype, \
-    PMF.uniformOfFinset, PMF.bernoulli, PMF.binomial and PMF.ofFintype \
+    DistLens matches PMF.pure, PMF.bind, PMF.map, DistLens.uniformOfFintype, \
+    DistLens.uniformOfFinset, PMF.bernoulli, PMF.binomial and PMF.ofFintype \
     (with `![…]` literal weights); symbolic or monadic spellings are \
     refused rather than guessed at"
+
+/-- Mathlib `v4.35.0`'s Measure-valued uniform constructors, which `v4.34.0` users wrote
+as `PMF`s: `PMF.uniformOfFintype` (now a deprecated alias *of the measure*) and
+`MeasureTheory.Measure.uniformOfFinset`.  Single-backtick name literals on purpose:
+DistLens does not import `Mathlib.Probability.Distributions.Uniform`, which declares
+them (`import Mathlib` does). -/
+def measureUniformHeads : List Name :=
+  [`PMF.uniformOfFintype, `MeasureTheory.Measure.uniformOfFinset]
+
+/-- The hint appended to an "expected a `PMF`" type refusal when the refused type `ty`
+is a `MeasureTheory.Measure` (`none` for any other type).  It names the refused term's
+head constant fully qualified when that is one of `measureUniformHeads` (under
+`open PMF` the term itself pretty-prints as a bare `uniformOfFintype …`, which reads as
+if DistLens's own constructor were refused), and points at DistLens's `PMF`-valued
+uniform constructors (`DistLens/Uniform.lean`).  `e` and `ty` are closed terms (no loose
+bound variables): `extractChain` opens a step's binder on a local before calling this. -/
+def measureHint? (e ty : Expr) : MetaM (Option MessageData) := do
+  let ty ← whnfR (← instantiateMVars ty)
+  unless ty.isAppOf ``MeasureTheory.Measure do return none
+  let use := "write `DistLens.uniformOfFintype α` or `DistLens.uniformOfFinset s hs` \
+    (or the bare names with `open DistLens` at top level, outside any \
+    `namespace …DistLens`)"
+  if let .const n _ := (← instantiateMVars e).consumeMData.getAppFn then
+    if measureUniformHeads.contains n then
+      return some m!"Hint: `{n}` is Mathlib's Measure-valued uniform constructor \
+        (since Mathlib v4.35.0; `PMF.uniformOfFintype` is a deprecated alias of \
+        `MeasureTheory.Measure.uniformOfFinset`), not a `PMF`. DistLens ships the \
+        `PMF`-valued uniform constructors itself: {use}"
+  return some m!"Hint: DistLens draws `PMF`s, not measures. Since Mathlib v4.35.0 \
+    the uniform constructors there are Measure-valued; for a uniform `PMF`, {use}"
 
 /-! ## Literal container parsers -/
 
@@ -360,7 +392,7 @@ partial def extractDist (cmd : String) (e : Expr) (depth : Nat := 0) :
     throwError "{cmd}: the PMF term still contains metavariables (`_`) — \
       fill in the underscores so the distribution is fully determined"
   -- `uniformOfFintype α _ _`
-  if e.isAppOfArity ``PMF.uniformOfFintype 3 then
+  if e.isAppOfArity ``DistLens.uniformOfFintype 3 then
     let α := e.getArg! 0
     match ← carrierOf? α with
     | some (.fin n) =>
@@ -375,7 +407,7 @@ partial def extractDist (cmd : String) (e : Expr) (depth : Nat := 0) :
       throwError "{cmd}: internal: `uniformOfFintype ℕ` cannot occur"
     | some (.opaqueTy _) | none => extractOpaqueUniform cmd α
   -- `uniformOfFinset α s h`
-  else if e.isAppOfArity ``PMF.uniformOfFinset 3 then
+  else if e.isAppOfArity ``DistLens.uniformOfFinset 3 then
     let α := e.getArg! 0
     let some c ← carrierOf? α
       | throwError "{cmd}: `uniformOfFinset` is supported over `Fin n`, \
@@ -588,7 +620,7 @@ def extractChain (cmd : String) (e : Expr) : MetaM ChainModel := do
   let tyErr : MessageData :=
     m!"{cmd}: expected a term of type `Fin n → PMF (Fin n)` with a \
       literal `n`, but `{← ppOneLine orig}` has type `{← ppOneLine ty}`"
-  let .forallE _ dom img _ := ty | throwError tyErr
+  let .forallE bn dom img bi := ty | throwError tyErr
   let some (.fin n) ← carrierOf? dom | throwError tyErr
   -- NB `whnf` would unfold `PMF` itself (it is a `def`, not an inductive),
   -- so reduce only *until* the `PMF` head.
@@ -599,7 +631,19 @@ def extractChain (cmd : String) (e : Expr) : MetaM ChainModel := do
         pure ((← carrierOf? (img.getArg! 0)) == some (.fin n))
       else pure false
     | none => pure false
-  unless imgOk do throwError tyErr
+  unless imgOk do
+    -- The hint reads the codomain opened on a local of type `dom`, because it may
+    -- mention the bound variable: `(x : Fin 2) → Measure (?m x)` is the type of the
+    -- failed `v4.34.0` spelling `fun _ : Fin 2 => PMF.uniformOfFintype (Fin 2)`.  For a
+    -- `fun i => …` step it names the head of the body, opened on the same local.
+    let hint? ← withLocalDecl bn bi dom fun xv => do
+      let row := match orig.consumeMData with
+        | .lam _ _ body _ => body.instantiate1 xv
+        | other => other
+      measureHint? row (img.instantiate1 xv)
+    match hint? with
+    | some hint => throwError m!"{tyErr}\n\n{hint}"
+    | none => throwError tyErr
   if n == 0 then
     throwError "{cmd}: a chain needs at least one state"
   if n > maxChainStates then

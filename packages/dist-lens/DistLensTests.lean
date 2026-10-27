@@ -9,6 +9,8 @@ import DistLensTests.ContractTests
 import DistLensTests.InvariantTests
 import DistLensTests.SuggestTests
 import DistLensTests.StackGuardTests
+import DistLensTests.UniformTests
+import DistLensTests.MathlibUniformTests
 import DistLensTests.ClickE2E
 
 #guard DistLens.version = "0.1.0"

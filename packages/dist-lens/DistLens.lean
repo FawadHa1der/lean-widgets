@@ -1,4 +1,5 @@
 import DistLens.Model
+import DistLens.Uniform
 import DistLens.Verify
 import DistLens.Extract
 import DistLens.Render

@@ -6,7 +6,8 @@ import Mathlib.Basic.Real.Basic
 
 Message-exact `#guard_msgs` tests of the deterministic ASCII rendering, including
 inside `variable` sections (the command elaborates with `runTermElabM`, like
-`#check`).
+`#check`).  At the end, pins of the panel the real panel-mode command stores
+(its suggestion rows, decoded from the saved widget props).
 -/
 
 namespace IntervalInspectorTests
@@ -176,3 +177,85 @@ private def panelSym : String := htmlToDebugString (inspectorHtml analysisSym pl
 #guard !strContains panelSym "\"color\":\"#ef4444\""
 
 end PanelHtmlTests
+
+/-! ## The real `#interval_inspect` panel, end to end
+
+Panel mode (no `text := true`) stores one `HtmlDisplayPanel` widget whose props
+carry the inspector HTML the InfoView shows.  The assertion command below
+elaborates the *actual* `#interval_inspect e` command (a nested `elabCommand`, as
+in a user's file), reads the stored widget back out of the info tree, decodes its
+`html` prop with the `RpcEncodable` instance the InfoView round-trip uses, and
+pins the suggestion rows the user sees.
+
+Pinned on the `≠ ∅` spelling of the `Ioo` repro: `Set.nonempty_Ioo` needs
+`DenselyOrdered`, which `ℕ` lacks.  Over `ℕ` the suggestion must carry the
+`missing instance: DenselyOrdered ✗` badge; over the dense control `ℝ`, and for
+`Ico` over `ℕ` (no density needed), it must not. -/
+
+namespace CommandPanelTests
+
+open Lean Elab Command Server ProofWidgets IntervalInspector
+
+/-- All text leaves of an `Html` tree, concatenated in document order. -/
+partial def htmlText : Html → String
+  | .text s => s
+  | .element _ _ cs => String.join (cs.toList.map htmlText)
+  | .component _ _ _ cs => String.join (cs.toList.map htmlText)
+
+/-- The suggestion rows (`li` elements) of an `Html` tree, in document order.
+`suggestionHtml` lays a row out as `#[name, " — ", tactic] ++ condBadges ++
+instBadges`; it is rendered here as the text of those first three children
+followed by each badge in brackets, e.g.
+`Set.foo — refine … [a ≤ b ✓ ready] [missing instance: X ✗]`. -/
+partial def htmlItems : Html → Array String
+  | .element "li" _ cs =>
+    #[String.join ((cs.toList.take 3).map htmlText)
+      ++ String.join ((cs.toList.drop 3).map fun c => s!" [{htmlText c}]")]
+  | .element _ _ cs => cs.flatMap htmlItems
+  | .component _ _ _ cs => cs.flatMap htmlItems
+  | .text _ => #[]
+
+/-- Elaborate the real `#interval_inspect t` (panel mode) and return the `Html`
+stored in the single `HtmlDisplayPanel` widget it saves. -/
+def inspectPanelHtml (t : Syntax.Term) : CommandElabM Html := do
+  let before := (← getInfoState).trees.size
+  withEnableInfoTree true <| elabCommand (← `(command| #interval_inspect $t))
+  let stored := ((← getInfoState).trees.toList.drop before).flatMap fun tree =>
+    tree.deepestNodes fun _ i _ =>
+      match i with
+      | .ofUserWidgetInfo wi => some (wi.javascriptHash, (wi.props.run {}).1)
+      | _ => none
+  let [(h, props)] := stored
+    | throwError "expected exactly 1 stored panel widget, got {stored.length}"
+  unless h == hash HtmlDisplayPanel.javascript do
+    throwError "the stored widget is not an HtmlDisplayPanel"
+  let .ok htmlJson := props.getObjVal? "html"
+    | throwError "stored props have no html field: {props.compress}"
+  match Id.run ((ExceptT.run (rpcDecode (α := Html) htmlJson)).run {}) with
+  | .ok html => return html
+  | .error e => throwError "stored html does not decode: {e}"
+
+/-- `#assert_panel_items e => "row₁ | row₂"`: run the real `#interval_inspect e`
+and pin the suggestion rows of its stored panel (see `htmlItems`), joined by
+`" | "`. -/
+elab "#assert_panel_items " t:term " => " s:str : command => do
+  let actual := String.intercalate " | " (htmlItems (← inspectPanelHtml t)).toList
+  unless actual == s.getString do
+    throwError "panel items mismatch:\n  expected: {s.getString}\n  actual:   {actual}"
+
+-- ℕ (no `DenselyOrdered`): offered only with the missing-instance badge, in both
+-- orientations.
+#assert_panel_items (Set.Ioo (0:ℕ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty — refine (Set.nonempty_Ioo.mpr ?_).ne_empty \
+      [0 < 2 ✓ ready] [missing instance: DenselyOrdered ✗]"
+#assert_panel_items ((∅ : Set ℕ) ≠ Set.Ioo 0 2)
+  => "Set.Nonempty.ne_empty — refine ((Set.nonempty_Ioo.mpr ?_).ne_empty).symm \
+      [0 < 2 ✓ ready] [missing instance: DenselyOrdered ✗]"
+-- The gate is `Ioo`-only: `Ico` over ℕ shows no badge.
+#assert_panel_items (Set.Ico (0:ℕ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty — refine (Set.nonempty_Ico.mpr ?_).ne_empty [0 < 2 ✓ ready]"
+-- Dense control: the same `Ioo` statement over ℝ shows the suggestion, no badge.
+#assert_panel_items (Set.Ioo (0:ℝ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty — refine (Set.nonempty_Ioo.mpr ?_).ne_empty [0 < 2 ✓ ready]"
+
+end CommandPanelTests

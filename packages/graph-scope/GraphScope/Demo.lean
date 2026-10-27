@@ -8,16 +8,25 @@ Open this file in the editor and put the cursor on any `#graph_scope` line to
 see the rendered graph in the InfoView.  Clicking a drawn edge, a vertex, or
 the components stats line inserts a verified `example : … := by decide` on a
 new line after the command (the local `DecidableRel` instances below are what
-make those examples compile here — see the README's scoping caveat).
+make the `completeBipartiteGraph` examples compile here, and what keep the
+`pathGraph` connectivity link — see the README's scoping caveat).
 
 Mathlib's concrete graphs differ in how much decidability they ship:
 
 * `cycleGraph n`, `⊥`, `⊤` / `completeGraph V` have `DecidableRel` instances
-  out of the box;
-* `pathGraph n` (defined via the Hasse diagram of `Fin n`, whose covering
-  relation has no decidability instance) and `completeBipartiteGraph V W` do
-  *not* — the idiomatic workaround, shown below, is a local instance via
-  `decidable_of_iff` from the graph's `simp`-normal adjacency description;
+  out of the box — and, since Mathlib v4.35.0, so do `hasse α` (for
+  `[Fintype α] [DecidableLT α]`) and hence `pathGraph n`, deciding the
+  covering relation by quantifying over the vertex type.  GraphScope draws
+  such graphs and offers their edge and vertex links, but withholds the
+  connectivity link: its cost model was not calibrated for quantifying
+  instances (see "The adjacency-cost guard" in `GraphScope/Gate.lean`);
+* `completeBipartiteGraph V W` does *not* — the idiomatic workaround, shown
+  below, is a local instance via `decidable_of_iff` from the graph's
+  `simp`-normal adjacency description.  The same is done for `pathGraph n`
+  (via `pathGraph_adj`); being declared after Mathlib's, that instance is the
+  one synthesis picks wherever `GraphScope` is imported, and since it decides
+  adjacency by one arithmetic comparison, `pathGraph` keeps its connectivity
+  link;
 * graphs built with `SimpleGraph.fromRel r` are decidable whenever `r` is
   (Mathlib provides the instance), which makes `fromRel` the most convenient
   constructor for ad-hoc finite examples.  `SimpleGraph.fromEdgeSet` over a
@@ -32,8 +41,9 @@ namespace GraphScope.Demo
 
 open SimpleGraph
 
-/-- `pathGraph n` is `hasse (Fin n)` and `CovBy` has no `Decidable` instance;
-the characterization `pathGraph_adj` makes adjacency decidable. -/
+/-- `pathGraph n` is `hasse (Fin n)`; the characterization `pathGraph_adj`
+makes adjacency decidable directly (Mathlib v4.35.0's own instance instead
+decides `CovBy` by quantifying over `Fin n`). -/
 instance (n : ℕ) : DecidableRel (pathGraph n).Adj := fun _ _ =>
   decidable_of_iff _ pathGraph_adj.symm
 

@@ -1,6 +1,6 @@
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Probability.ProbabilityMassFunction.Binomial
-import Mathlib.Probability.Distributions.Uniform
+import DistLens.Uniform
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Finiteness
@@ -22,7 +22,8 @@ the implementation note below for why — browser stack depth):
 
 1. `simp` with the PMF application lemma set (`bind_apply`, `map_apply`,
    `pure_apply`, `bernoulli_apply`, `uniformOfFintype_apply`,
-   `uniformOfFinset_apply`, `binomial_apply`, `ofFintype_apply`,
+   `uniformOfFinset_apply` (DistLens's own since Mathlib v4.35.0, see
+   `DistLens/Uniform.lean`), `binomial_apply`, `ofFintype_apply`,
    `tsum_fintype`, `tsum_bool`, `Fin.sum_univ_succ`, plus the
    `Matrix.cons_val*` lemmas so `![…]`-literal weight functions and
    `![…]`-vectors of PMFs reduce), leaving a ground ℝ≥0∞ arithmetic residue;
@@ -265,8 +266,8 @@ syntax (name := pmfNum) "pmf_num" : tactic
     -- `try simp … <;> ennreal_num` = `focus (try simp …; all_goals ennreal_num)`.
     focus do
       let simpTac ← `(tactic| simp [PMF.bind_apply, PMF.map_apply, PMF.pure_apply,
-              PMF.bernoulli_apply, PMF.uniformOfFintype_apply,
-              PMF.uniformOfFinset_apply, PMF.binomial_apply, PMF.ofFintype_apply,
+              PMF.bernoulli_apply, DistLens.uniformOfFintype_apply,
+              DistLens.uniformOfFinset_apply, PMF.binomial_apply, PMF.ofFintype_apply,
               tsum_fintype, tsum_bool, Fin.sum_univ_succ,
               Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
               Fin.isValue])

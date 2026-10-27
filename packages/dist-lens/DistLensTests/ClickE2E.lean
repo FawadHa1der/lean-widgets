@@ -328,7 +328,7 @@ def uFile1 : String := String.intercalate "\n" [
   "import DistLens",
   "",
   "-- unicode ballast before the command: ∀ε>0, ℝ ⋖ 🎲 — bytes ≠ units",
-  "noncomputable def 𝕜die : PMF (Fin 4) := PMF.uniformOfFintype (Fin 4)",
+  "noncomputable def 𝕜die : PMF (Fin 4) := DistLens.uniformOfFintype (Fin 4)",
   "",
   "#dist 𝕜die",
   ""]
@@ -368,7 +368,7 @@ def uFile1Suggestions : Array String :=
       "import DistLens",
       "",
       "-- unicode ballast before the command: ∀ε>0, ℝ ⋖ 🎲 — bytes ≠ units",
-      "noncomputable def 𝕜die : PMF (Fin 4) := PMF.uniformOfFintype (Fin 4)",
+      "noncomputable def 𝕜die : PMF (Fin 4) := DistLens.uniformOfFintype (Fin 4)",
       "",
       "#dist 𝕜die",
       "example : 𝕜die 0 = 1/4 := by unfold 𝕜die; pmf_num",
@@ -407,17 +407,17 @@ parenthesized term must NOT be wrapped in a second pair of parentheses. -/
 def uFile2 : String := String.intercalate "\n" [
   "import DistLens",
   "",
-  "#dist (PMF.uniformOfFintype (Fin 3))",
+  "#dist (DistLens.uniformOfFintype (Fin 3))",
   ""]
 
 #eval show IO Unit from do
   let o ← compileString uFile2 (opts := logOpts)
   checkClean "uFile2 compiles" o
   let props ← theProps DistPanelProps "uFile2" o
-  check "uFile2: insertRange is ⟨2,36⟩" (props.insertRange == at' 2 36)
+  check "uFile2: insertRange is ⟨2,41⟩" (props.insertRange == at' 2 41)
   checkEq "uFile2: suggestions (single parens)"
     (toString <| (Array.range 3).map fun k =>
-      s!"example : (PMF.uniformOfFintype (Fin 3)) {k} = 1/3 := by pmf_num")
+      s!"example : (DistLens.uniformOfFintype (Fin 3)) {k} = 1/3 := by pmf_num")
     (toString props.suggestions)
   let (_, o₁) ← clickAndRecompile uFile2 props.insertRange props.suggestions[1]!
   checkClean "uFile2 + suggestion 1 recompiles" o₁
@@ -504,7 +504,7 @@ wart, pinned here so any behavior change is noticed. -/
 def uFile5 : String := String.intercalate "\n" [
   "import DistLens",
   "",
-  "#dist (PMF.uniformOfFintype (Fin 2)) -- tail comment 🎲",
+  "#dist (DistLens.uniformOfFintype (Fin 2)) -- tail comment 🎲",
   ""]
 
 #eval show IO Unit from do
@@ -512,14 +512,14 @@ def uFile5 : String := String.intercalate "\n" [
   checkClean "uFile5 compiles" o
   let props ← theProps DistPanelProps "uFile5" o
   check "uFile5: insertRange precedes the trailing comment"
-    (props.insertRange == at' 2 36)
+    (props.insertRange == at' 2 41)
   let (edited, o₀) ← clickAndRecompile uFile5 props.insertRange props.suggestions[0]!
   checkEq "uFile5: edited file (pinned wart: comment trails the example)"
     (String.intercalate "\n" [
       "import DistLens",
       "",
-      "#dist (PMF.uniformOfFintype (Fin 2))",
-      "example : (PMF.uniformOfFintype (Fin 2)) 0 = 1/2 := by pmf_num -- tail comment 🎲",
+      "#dist (DistLens.uniformOfFintype (Fin 2))",
+      "example : (DistLens.uniformOfFintype (Fin 2)) 0 = 1/2 := by pmf_num -- tail comment 🎲",
       ""])
     edited
   checkClean "uFile5 + suggestion recompiles despite trailing comment" o₀
@@ -534,7 +534,7 @@ only unit-tested on `applyLspEdit` above). -/
 def uFile6 : String := String.intercalate "\n" [
   "import DistLens",
   "",
-  "noncomputable def die : PMF (Fin 6) := PMF.uniformOfFintype (Fin 6)",
+  "noncomputable def die : PMF (Fin 6) := DistLens.uniformOfFintype (Fin 6)",
   "",
   "#dist die",
   "",
@@ -552,7 +552,7 @@ def uFile6 : String := String.intercalate "\n" [
     (String.intercalate "\n" [
       "import DistLens",
       "",
-      "noncomputable def die : PMF (Fin 6) := PMF.uniformOfFintype (Fin 6)",
+      "noncomputable def die : PMF (Fin 6) := DistLens.uniformOfFintype (Fin 6)",
       "",
       "#dist die",
       "example : die 0 = 1/6 := by unfold die; pmf_num",
@@ -577,14 +577,14 @@ be revisited. -/
 def uFile7 : String := String.intercalate "\n" [
   "import DistLens",
   "",
-  "#dist (PMF.uniformOfFintype Ordering)",
+  "#dist (DistLens.uniformOfFintype Ordering)",
   ""]
 
 #eval show IO Unit from do
   let o ← compileString uFile7 (opts := logOpts)
   checkClean "uFile7 compiles" o
   let props ← theProps DistPanelProps "uFile7" o
-  check "uFile7: insertRange is ⟨2,37⟩" (props.insertRange == at' 2 37)
+  check "uFile7: insertRange is ⟨2,42⟩" (props.insertRange == at' 2 42)
   -- The display keeps working: three outcomes, `Repr` labels, exact ⅓s.
   checkEq "uFile7: opaque labels (display-only path intact)"
     (toString #["Ordering.lt", "Ordering.eq", "Ordering.gt"])
@@ -597,7 +597,7 @@ def uFile7 : String := String.intercalate "\n" [
   -- WHY, pinned: the example a row would have inserted does NOT compile —
   -- `pmf_num` leaves the `Fintype.card Ordering` residue open.
   let (_, oBad) ← clickAndRecompile uFile7 props.insertRange
-    "example : (PMF.uniformOfFintype Ordering) Ordering.lt = 1/3 := by pmf_num"
+    "example : (DistLens.uniformOfFintype Ordering) Ordering.lt = 1/3 := by pmf_num"
   checkFails "uFile7: the would-be opaque suggestion must still fail" oBad
     "ennreal_num: cannot close this ℝ≥0∞ goal"
 

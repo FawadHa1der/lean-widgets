@@ -37,6 +37,10 @@ namespace SimpLensTests.Trace
 #lens_used ∀ a b : Nat, (if true then a else b) = a => [eq_self, reduceIte]
 #lens_steps ∀ a b : Nat, (if true then a else b) = a => 3
 #lens_principal ∀ a b : Nat, (if true then a else b) = a at 1 => reduceIte
+-- all origins of that frame, in recording order: `eq_self` (fired inside
+-- `reduceIte`'s own `simp` of the condition `true = true`) first, the
+-- principal simproc last
+#lens_origins ∀ a b : Nat, (if true then a else b) = a at 1 => [eq_self, reduceIte]
 #lens_closes ∀ a b : Nat, (if true then a else b) = a
 
 -- ## logic: (p ∧ True) ∨ False ↔ p
@@ -137,6 +141,9 @@ set_option linter.unusedVariables false
 #lens_steps ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h] => 2
 #lens_used ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h] => [h, Nat.div_self, eq_self]
 #lens_principal ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h] at 0 => Nat.div_self
+-- all origins of frame 0, in recording order: the side-condition origin `h`
+-- (it discharged `0 < n`) first, the principal `Nat.div_self` last
+#lens_origins ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h] at 0 => [h, Nat.div_self]
 #lens_closes ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h]
 #lens_chain ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h]
 #lens_equiv ∀ (n : Nat) (h : 0 < n), n / n = 1 hyps [h]
@@ -145,3 +152,84 @@ set_option linter.unusedVariables false
 #lens_depths ∀ n : Nat, n + 0 + 0 = n => [0, 0, 0]
 
 end SimpLensTests.PhasesDepths
+
+/-! ## Traced `Step.continue (some _)` results, end to end
+
+No default simproc answers `.continue (some _)` with a changed expression, so
+the tracer's `.continue (some r)` branch (`stepResultExpr?`) was pinned only by
+a unit `#guard` in `FilmTests`. This is also the path whose semantics changed
+in Lean 4.35: `simprocCore` now returns on the *first* simproc that rewrites
+(`.visit`, `.done` or `.continue (some _)`) instead of running the remaining
+candidates on the rewritten term in the same call, and simp looks the
+candidates up afresh when it revisits the result.
+
+The fixture: a constant function `lensZ` and two test-only post simprocs keyed
+on the same pattern `lensZ _`. `lensZdec` answers `.continue (some _)` with
+`lensZ (k+1) ↦ lensZ k`; `lensZzero` answers `.done` with `lensZ 0 ↦ 0`. Both
+rewrite by `rfl` (`proof? := none`; `lensZ` is constant). On `lensZ 2 = 0`,
+4.35 gives one frame per simproc firing, each with a single origin: the two
+`lensZdec` steps, then `lensZzero`, then `eq_self`. On 4.34's `simprocCore`,
+read from its source, `lensZzero` would have run on `lensZ 0` in the same call
+as the second `lensZdec`, giving one merged `lensZ 1 ~> 0` frame with origins
+`[lensZdec, lensZzero]` and 3 frames in all. These pins therefore fail if the
+tracer drops `.continue (some _)` results, and they record the 4.35 frame
+shape.
+-/
+
+namespace SimpLensTests.ContinueSome
+
+open Lean Meta Simp
+
+/-- Test fixture: a constant function, so `lensZ a` and `lensZ b` are
+definitionally equal for all `a b` and the fixture simprocs can rewrite
+between them by `rfl`. -/
+def lensZ (_ : Nat) : Nat := 0
+
+/-- Test fixture: post simproc answering `.continue (some _)` with
+`lensZ (k+1) ↦ lensZ k` on numerals (by `rfl`). -/
+simproc lensZdec (lensZ _) := fun e => do
+  unless e.isAppOfArity ``lensZ 1 do return .continue
+  let some k ← Lean.Meta.getNatValue? e.appArg! | return .continue
+  if k == 0 then return .continue
+  return .continue (some { expr := mkApp (mkConst ``lensZ) (Lean.mkNatLit (k - 1)) })
+
+/-- Test fixture: post simproc keyed on the same pattern, answering `.done`
+with `lensZ 0 ↦ 0` (by `rfl`). -/
+simproc lensZzero (lensZ _) := fun e => do
+  unless e.isAppOfArity ``lensZ 1 do return .continue
+  let some 0 ← Lean.Meta.getNatValue? e.appArg! | return .continue
+  return .done { expr := Lean.mkNatLit 0 }
+
+-- ## target: three simproc rewrites of one subterm, then `eq_self`
+#lens_steps lensZ 2 = 0 => 4
+#lens_used lensZ 2 = 0 => [lensZdec, lensZzero, eq_self]
+#lens_step lensZ 2 = 0 at 0 => lensZdec, "lensZ 2" ~> "lensZ 1"
+#lens_step lensZ 2 = 0 at 1 => lensZdec, "lensZ 1" ~> "lensZ 0"
+#lens_step lensZ 2 = 0 at 2 => lensZzero, "lensZ 0" ~> "0"
+#lens_step lensZ 2 = 0 at 3 => eq_self, "0 = 0" ~> "True"
+-- one origin per frame: the 4.35 first-result-wins `simprocCore`
+#lens_origins lensZ 2 = 0 at 0 => [lensZdec]
+#lens_origins lensZ 2 = 0 at 1 => [lensZdec]
+#lens_origins lensZ 2 = 0 at 2 => [lensZzero]
+#lens_phases lensZ 2 = 0 => ["post", "post", "post", "post"]
+#lens_depths lensZ 2 = 0 => [0, 0, 0, 0]
+#lens_closes lensZ 2 = 0
+#lens_min lensZ 2 = 0 => "simp only [lensZdec, lensZzero]"
+#lens_classify lensZ 2 = 0 =>
+  ["simproc SimpLensTests.ContinueSome.lensZdec",
+   "simproc SimpLensTests.ContinueSome.lensZzero", "global lemma eq_self"]
+#lens_chain lensZ 2 = 0
+#lens_equiv lensZ 2 = 0
+
+-- ## hypothesis location (the `traceSimpGoal` engine): same three frames
+#lens_at_step ∀ (h : lensZ 2 = 1), False at h frame 0 of h =>
+  lensZdec, "lensZ 2" ~> "lensZ 1"
+#lens_at_step ∀ (h : lensZ 2 = 1), False at h frame 1 of h =>
+  lensZdec, "lensZ 1" ~> "lensZ 0"
+#lens_at_step ∀ (h : lensZ 2 = 1), False at h frame 2 of h =>
+  lensZzero, "lensZ 0" ~> "0"
+#lens_at_closes ∀ (h : lensZ 2 = 1), False at h
+#lens_at_chain ∀ (h : lensZ 2 = 1), False at h
+#lens_at_equiv ∀ (h : lensZ 2 = 1), False at h
+
+end SimpLensTests.ContinueSome

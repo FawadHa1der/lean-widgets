@@ -43,7 +43,7 @@ def coinX : XDist :=
 -- `Repr` display strings (not verified source terms) and `pmf_num` cannot
 -- reduce `Fintype.card` of an arbitrary carrier, so an inserted example
 -- would not compile (the ClickE2E suite pins the actual compile failure).
-#guard weightSuggestions "(PMF.uniformOfFintype Ordering)" "pmf_num"
+#guard weightSuggestions "(DistLens.uniformOfFintype Ordering)" "pmf_num"
     { carrier := .opaqueTy "Ordering", keys := #[0, 1, 2]
       labels := #["Ordering.lt", "Ordering.eq", "Ordering.gt"]
       weights := #[1/3, 1/3, 1/3] }

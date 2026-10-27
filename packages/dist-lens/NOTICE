@@ -1,0 +1,21 @@
+DistLens
+Copyright 2026 Fawad Haider
+
+Licensed under the Apache License, Version 2.0 (see LICENSE; the full text
+of the License is in LICENSE-APACHE-2.0).
+
+This package includes code adapted from Mathlib
+(https://github.com/leanprover-community/mathlib4), which is also licensed
+under the Apache License, Version 2.0:
+
+  DistLens/Uniform.lean
+    adapted from Mathlib/Probability/Distributions/Uniform.lean at Mathlib
+    v4.34.0 (commit 5ed2965256430c3649e86755f9576b54eca72435):
+    the definitions PMF.uniformOfFinset and PMF.uniformOfFintype and the
+    lemmas PMF.uniformOfFinset_apply and PMF.uniformOfFintype_apply, renamed
+    into the DistLens namespace.
+    Copyright (c) 2024 Josha Dekker. All rights reserved.
+    Authors: Josha Dekker, Devon Tuma, Kexing Ying
+    The modifications are listed in the header of DistLens/Uniform.lean.
+    Mathlib's license, the Apache License, Version 2.0, is in
+    LICENSE-APACHE-2.0.

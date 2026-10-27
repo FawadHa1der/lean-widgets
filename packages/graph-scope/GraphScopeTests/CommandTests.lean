@@ -284,23 +284,82 @@ error: #graph_scope: cannot synthesize `DecidableEq NoDeq` — GraphScope needs 
 #guard_msgs in
 #graph_scope (text := true) (⊥ : SimpleGraph NoDeq)
 
--- `hasse (Fin 4)` (= what `pathGraph` unfolds to) has no `DecidableRel`
--- instance in scope, since the `Demo` instance is keyed to `pathGraph`.
+-- `hasse (Fin 4)` (= what `pathGraph` unfolds to).  Since Mathlib v4.35.0
+-- (mathlib4 #40728) Mathlib ships a computable
+-- `instance [Fintype α] [DecidableLT α] : DecidableRel (hasse α).Adj`
+-- (`SimpleGraph.instDecidableRelAdjHasseOfFintypeOfDecidableLT`), so out of
+-- the box the graph now renders — the same drawing as `pathGraph 4` above.
 /--
-error: #graph_scope: cannot synthesize `DecidableRel (hasse (Fin 4)).Adj` — GraphScope needs [Fintype V], [DecidableEq V] and [DecidableRel g.Adj] to evaluate the graph
+info: graph: 4 vertices, 3 edges
+edges: 0-1 1-2 2-3
+degrees: 1 2 2 1 (min 1, max 2)
+components: 1 (connected)
+bipartite: yes (parts: {0, 2} / {1, 3})
 -/
 #guard_msgs in
 #graph_scope (text := true) (hasse (Fin 4))
 
--- With `open scoped Classical`, the same graph *synthesizes* a `DecidableRel`
--- instance — a noncomputable one (`Classical.propDecidable`).  It is rejected
--- with a curated error naming the culprit, not a raw compiler error.
+-- The missing-`DecidableRel` branch of `synthOrExplain`, on the same graph:
+-- with that one Mathlib instance erased for this command only
+-- (`attribute [-instance] … in`), no instance for `DecidableRel (hasse (Fin
+-- 4)).Adj` is left — the `Demo` instance is keyed to `pathGraph`, and the
+-- other v4.35 additions (Mathlib's `pathGraph` instance, the `Fintype`
+-- `CovBy`/`WCovBy` instances) are still in scope but do not apply to this
+-- goal — so the error is the pre-v4.35 one, unchanged.  The erasure names an
+-- auto-generated Mathlib instance: if a future bump renames it, this command
+-- fails loudly (unknown constant), and the two `hasseNoInst` pins below cover
+-- the same branches without any upstream name.
+/--
+error: #graph_scope: cannot synthesize `DecidableRel (hasse (Fin 4)).Adj` — GraphScope needs [Fintype V], [DecidableEq V] and [DecidableRel g.Adj] to evaluate the graph
+-/
+#guard_msgs in
+attribute [-instance] SimpleGraph.instDecidableRelAdjHasseOfFintypeOfDecidableLT in
+#graph_scope (text := true) (hasse (Fin 4))
+
+-- With `open scoped Classical` (and the Mathlib instance erased as above),
+-- the same graph *synthesizes* a `DecidableRel` instance — a noncomputable
+-- one (`Classical.propDecidable`).  It is rejected with a curated error
+-- naming the culprit, not a raw compiler error.
 /--
 error: #graph_scope: the instance synthesized for `DecidableRel (hasse (Fin 4)).Adj` is noncomputable (it uses `Classical.propDecidable`) — GraphScope evaluates the graph with compiled code, so it needs computable instances; define one by hand (for adjacency, `decidable_of_iff` is the idiomatic fix, see GraphScope/Demo.lean)
 -/
 #guard_msgs in
+attribute [-instance] SimpleGraph.instDecidableRelAdjHasseOfFintypeOfDecidableLT in
 open scoped Classical in
 #graph_scope (text := true) (hasse (Fin 4))
+
+-- …whereas with the computable Mathlib instance available, `open scoped
+-- Classical` does not hijack synthesis (`Classical.propDecidable` is a
+-- low-priority fallback): the graph renders and is not falsely rejected.
+/--
+info: graph: 4 vertices, 3 edges
+edges: 0-1 1-2 2-3
+degrees: 1 2 2 1 (min 1, max 2)
+components: 1 (connected)
+bipartite: yes (parts: {0, 2} / {1, 3})
+-/
+#guard_msgs in
+open scoped Classical in
+#graph_scope (text := true) (hasse (Fin 4))
+
+/-- `hasse (Fin 4)` behind a plain `def` and given no `DecidableRel` instance:
+instance synthesis does not unfold the (non-reducible) `def`, so Mathlib's
+`hasse` instance does not apply.  Pins the same two `synthOrExplain` branches
+as the erasure-based pins above, independently of upstream instance names. -/
+def hasseNoInst : SimpleGraph (Fin 4) := hasse (Fin 4)
+
+/--
+error: #graph_scope: cannot synthesize `DecidableRel hasseNoInst.Adj` — GraphScope needs [Fintype V], [DecidableEq V] and [DecidableRel g.Adj] to evaluate the graph
+-/
+#guard_msgs in
+#graph_scope (text := true) hasseNoInst
+
+/--
+error: #graph_scope: the instance synthesized for `DecidableRel hasseNoInst.Adj` is noncomputable (it uses `Classical.propDecidable`) — GraphScope evaluates the graph with compiled code, so it needs computable instances; define one by hand (for adjacency, `decidable_of_iff` is the idiomatic fix, see GraphScope/Demo.lean)
+-/
+#guard_msgs in
+open scoped Classical in
+#graph_scope (text := true) hasseNoInst
 
 -- Same classical bypass on the `DecidableEq` branch (`NoDeq` has a computable
 -- `Fintype` but no `DecidableEq`; `Classical.propDecidable` fills it in).

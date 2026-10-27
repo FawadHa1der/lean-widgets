@@ -27,7 +27,7 @@ import HasseView
 ```
 
 Requirements on `V`: `[Fintype V]`, `[DecidableEq V]`, `[LE V]`, and a
-computable `[DecidableLE V]` (in v4.34.0 `DecidableLE` is a reducible
+computable `[DecidableLE V]` (in v4.35.0 `DecidableLE` is a reducible
 abbreviation of `DecidableRel (· ≤ ·)`, so either spelling of the instance
 works).  Missing or `noncomputable` instances (including the
 `Classical.propDecidable` fallback under `open scoped Classical`) are
@@ -52,9 +52,12 @@ never replaces anything you wrote) and moves the cursor to its end:
 * **cover edges** — `example : (a : V) ⋖ b := by decide`, one per drawn
   edge.  `⋖` closes by `decide` thanks to
   `HasseView.instDecidableRelCovByOfFintype` (`Preorder` + `DecidableLE` +
-  `Fintype`, exported by this package — Mathlib's pin only has the `Bool`
-  instance); requiring a `Preorder` makes `<` lawfully the strict part of
-  `≤`, which is exactly the relation the diagram draws.
+  `Fintype`, exported by this package — Mathlib's pin only has
+  `Fintype.instDecidableRelCovByOfDecidableLT`, which needs a `DecidableLT`
+  that e.g. the `Bowtie` demo and `Bool × Bool` lack; where both apply,
+  HasseView's is the one selected, as `LinkTests` pins); requiring a
+  `Preorder` makes `<` lawfully the strict part of `≤`, which is exactly the
+  relation the diagram draws.
 * **`⊥`/`⊤` badges** — `example : ∀ x : V, b ≤ x := by decide` (dual for
   `⊤`), deliberately phrased *without* `OrderBot`/`OrderTop` (the type may
   lack those instances; the table-derived bottom is just an element).
@@ -97,7 +100,7 @@ component nodes, edit texts and fallbacks — without a live server.
 | `HasseView/Gate.lean` | The analysis-time honesty gate: `labelRoundTrips` (parse → elaborate → `DecidableEq`-equal to the enumerated element, via the extractor's `evalExpr` bridge), `statementHolds` (elaborate at `Prop`, synthesize a computable `Decidable`, evaluate `true`), `buildLinks`. Silent on failure (plain-text fallback), state-isolated, interrupts propagate. |
 | `HasseView/Widget.lean` | The `#hasse` command: `(text := true)` mode, `highlight [..]` / `updown i` clauses in any order (duplicates rejected); stores `HassePanelProps` via `savePanelWidgetInfo` and renders through the `HassePanel.rpc` method (`mk_rpc_widget%`), which adds `MakeEditLink` document context at render time. |
 | `HasseView/Demo.lean` | The powerset cube, divisors of 12 (local instances; the gate's plain-text fallback demo), `Fin 5`, `Bool × Bool`, the non-lattice bowtie (witness caption; `Preorder`/`OfNat` instances so its cover links verify), overlay demos. |
-| `HasseViewTests/` | 463 compile-time assertions (plus 11 statically compiled generated-example texts): hand-computed pins (covers, ranks, lattice verdicts, layout coordinates, byte-exact text reports, SVG fragments), crafted invalid tables, React-contract checks over every real panel (links included), `#guard_msgs` pins of every user-facing message, cross-implementation property checks (`#assert_poset_invariants`, `#assert_extracts_to`), and the link audit: byte-exact builder pins, round-trip/statement gate unit tests (positive and negative), `#links_report` pins of the full gate verdict, `#compile_insertions` (every offered insertion text is parsed and elaborated — an offered example that does not prove fails the build), and serializer pins of `MakeEditLink` component nodes with their exact edit texts. `ClickE2E.lean` adds 114 end-to-end click-simulation assertions: realistic user files are compiled **in-process through Lean's own frontend**, the stored `HassePanelProps` payload (insertion range + verified texts) is read back from the info tree, the click is applied with the language server's own `replaceLspRange` (UTF-16 pins with `ℝ`/`⋖`/emoji/surrogate-pair type names), and the edited file is recompiled and must produce zero messages — with negative tests (corrupted `newText`, shifted range) proving the harness fails loudly. |
+| `HasseViewTests/` | 476 compile-time assertions (plus 11 statically compiled generated-example texts): hand-computed pins (covers, ranks, lattice verdicts, layout coordinates, byte-exact text reports, SVG fragments), crafted invalid tables, React-contract checks over every real panel (links included), `#guard_msgs` pins of every user-facing message, cross-implementation property checks (`#assert_poset_invariants`, `#assert_extracts_to`), and the link audit: byte-exact builder pins, round-trip/statement gate unit tests (positive and negative), `#links_report` pins of the full gate verdict, `#compile_insertions` (every offered insertion text is parsed and elaborated — an offered example that does not prove fails the build), serializer pins of `MakeEditLink` component nodes with their exact edit texts, and pins of which `⋖` decidability instance is selected (HasseView's or Mathlib's) and of why the package instance is still needed. `ClickE2E.lean` adds 114 end-to-end click-simulation assertions: realistic user files are compiled **in-process through Lean's own frontend**, the stored `HassePanelProps` payload (insertion range + verified texts) is read back from the info tree, the click is applied with the language server's own `replaceLspRange` (UTF-16 pins with `ℝ`/`⋖`/emoji/surrogate-pair type names), and the edited file is recompiled and must produce zero messages — with negative tests (corrupted `newText`, shifted range) proving the harness fails loudly. |
 
 ## Design decisions
 
@@ -159,24 +162,28 @@ component nodes, edit texts and fallbacks — without a live server.
   anchors is untested territory in the InfoView's React/SVG namespace
   handling, and thin lines make poor click targets; the list keeps every
   candidate visible, clickable and testable.
-* The inserted example's `by decide` needs `HasseView` imported at the
-  insertion site (for `instDecidableRelCovByOfFintype`) — true by
-  construction wherever `#hasse` elaborates.
+* For a type without a `DecidableLT` instance (e.g. `Bowtie`,
+  `Bool × Bool`), an inserted cover example's `by decide` needs `HasseView`
+  imported at the insertion site (for `instDecidableRelCovByOfFintype`) —
+  true by construction wherever `#hasse` elaborates.  For types that have
+  `DecidableLT` (checked: `Fin 5`, `Bool`, `Finset (Fin 3)`), Mathlib
+  v4.35.0's own `Fintype.instDecidableRelCovByOfDecidableLT` would also
+  close it.
 
 ## Verifying
 
 ```sh
 lake build   # library + demos (every #hasse in Demo.lean elaborates)
-lake test    # 463 compile-time assertions (incl. the ClickE2E click simulation)
+lake test    # 476 compile-time assertions (incl. the ClickE2E click simulation)
 ```
 
-Pinned toolchain: `leanprover/lean4:v4.34.0` with Mathlib `v4.34.0`
-(`5ed29652`) and the ProofWidgets rev from Mathlib's manifest (`106ff4fa`);
-see `PORT-NOTES.md` for the port from v4.32.2.
+Pinned toolchain: `leanprover/lean4:v4.35.0` with Mathlib `v4.35.0`
+(`56a00585`) and the ProofWidgets rev from Mathlib's manifest (`df72b022`);
+see `PORT-NOTES.md` for the ports from v4.32.2 → v4.34.0 → v4.35.0.
 
-Assertion census (how the 463 is counted): lines starting with `#guard`,
+Assertion census (how the 476 is counted): lines starting with `#guard`,
 `#guard_msgs`, `#assert_*` or `#compile_insertions` in `HasseViewTests/` and
-`HasseViewTests.lean`, excluding `ClickE2E.lean` — 282 + 29 + 33 + 5 = 349 —
+`HasseViewTests.lean`, excluding `ClickE2E.lean` — 282 + 29 + 46 + 5 = 362 —
 plus `ClickE2E.lean`'s 114: its 12 `#guard` lines, the 98 `check`/`checkEqStr`
 calls its two `#eval` suites execute, and 4 `let some … | throw` payload
 assertions. The 11 `example : … := by decide` lines in `LinkTests.lean` (the

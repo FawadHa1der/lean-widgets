@@ -742,6 +742,36 @@ example : ¬ (Set.Iic ((0,0) : ℝ × ℝ) ∪ Set.Ici ((0,0) : ℝ × ℝ) = Se
 #assert_reports (Set.Ioo (0:ℝ) 2).Nonempty
   => "Set.nonempty_Ioo [0 < 2 (ready)] — refine Set.nonempty_Ioo.mpr ?_ [ALL-READY]"
 
+-- The same repro in its `≠ ∅` spellings, which go through a different table entry
+-- (`neEmptyOf`, whose `Ioo` branch carries its own `DenselyOrdered` need).  Over ℕ
+-- the `Set.nonempty_Ioo`-based suggestion is kept (it has a side condition) but
+-- marked and never `ALL-READY`, in all three spellings; nothing is suppressed.
+#assert_reports (Set.Ioo (0:ℕ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] [missing instance: DenselyOrdered] — \
+      refine (Set.nonempty_Ioo.mpr ?_).ne_empty"
+#assert_reports ((∅ : Set ℕ) ≠ Set.Ioo 0 2)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] [missing instance: DenselyOrdered] — \
+      refine ((Set.nonempty_Ioo.mpr ?_).ne_empty).symm"
+#assert_reports ¬(Set.Ioo (0:ℕ) 2 = ∅)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] [missing instance: DenselyOrdered] — \
+      refine (Set.nonempty_Ioo.mpr ?_).ne_empty"
+-- The statement is true over ℕ, but the offered lemma cannot prove it there.
+example : Set.Ioo (0:ℕ) 2 ≠ ∅ := by
+  fail_if_success exact (Set.nonempty_Ioo.mpr (by norm_num)).ne_empty
+  exact Set.Nonempty.ne_empty ⟨1, Set.mem_Ioo.mpr ⟨by norm_num, by norm_num⟩⟩
+-- The gate is `Ioo`-only: `Set.nonempty_Ico` needs no density, so over ℕ the `Ico`
+-- spelling stays unmarked and ready.
+#assert_reports (Set.Ico (0:ℕ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] — \
+      refine (Set.nonempty_Ico.mpr ?_).ne_empty [ALL-READY]"
+-- Dense controls (ℚ and ℝ have `DenselyOrdered`): no marker, fully ready.
+#assert_reports (Set.Ioo (0:ℚ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] — \
+      refine (Set.nonempty_Ioo.mpr ?_).ne_empty [ALL-READY]"
+#assert_reports (Set.Ioo (0:ℝ) 2 ≠ ∅)
+  => "Set.Nonempty.ne_empty [0 < 2 (ready)] — \
+      refine (Set.nonempty_Ioo.mpr ?_).ne_empty [ALL-READY]"
+
 -- The `Ioc` union join over `ℝ × ℝ` (no `LinearOrder`): conditions can be ready
 -- from the harvested binder facts, yet the missing instance keeps it un-`ALL-READY`.
 #assert_reports ∀ (a b c : ℝ × ℝ), a ≤ b → b ≤ c →

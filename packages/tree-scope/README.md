@@ -25,9 +25,15 @@ info: tree: 3 nodes, depth 2
 invariants ok
 ```
 
-Built against `leanprover/lean4:v4.34.0` + Mathlib `v4.34.0` +
-ProofWidgets (pure-Lean `Html` DSL only, no npm build).  Ported unchanged from
-the v4.32.2 build; see `PORT-NOTES.md` for the verification and 4.34 notes.
+Built against `leanprover/lean4:v4.35.0` + Mathlib `v4.35.0` (`56a00585`) +
+ProofWidgets `df72b022` (inherited from Mathlib; pure-Lean `Html` DSL only, no
+npm build).  Ported unchanged from the v4.34.0 build (itself unchanged from
+v4.32.2); see `PORT-NOTES.md` for the verification and the 4.34 / 4.35 notes.
+On 4.35 `lake build` prints two expected module-system warnings for
+`TreeScope/Instances/MathlibTree.lean` (it imports Mathlib from a non-`module`
+file); they are harmless and no test pins them. They come from Lake's
+`requiresModuleSystem` check, which is unchanged since v4.34.0. They are new
+because Mathlib v4.35.0's lakefile now sets `requiresModuleSystem := true`.
 
 ## Stage 2: semantic dispatch
 
@@ -225,8 +231,9 @@ contract, while the gallery must be byte-for-byte deterministic.
 * **Grid width bound is honest but soft:** a single tree wider than
   `maxRowWidth` gets its own row and the grid reports the true (larger)
   width.
-* **`Lean.RBMap` is a deprecated module in Lean v4.34.0** (`deprecated_module`,
-  since 2026-06-01; successor `Std.TreeMap`, whose instance is also shipped).
+* **`Lean.RBMap` is a deprecated module since Lean v4.34.0** (still, unchanged,
+  in v4.35.0; `deprecated_module`, since 2026-06-01; successor `Std.TreeMap`,
+  whose instance is also shipped).
   The `RBNode`/`RBMap` instances still work because this package reaches the
   module through `import Lean`; a consumer importing `Lean.Data.RBMap`
   *directly* gets a deprecation warning unless the import carries a trailing
@@ -235,9 +242,9 @@ contract, while the gallery must be byte-for-byte deterministic.
 
 ## Tests
 
-`lake test` builds `TreeScopeTests`: 476 compile-time assertions
-(404 `#guard` + 72 message-exact `#guard_msgs`, counting only lines that
-*start* with the command — two module docstrings also mention `#guard_msgs`
+`lake test` builds `TreeScopeTests`: 500 compile-time assertions
+(424 `#guard` + 76 message-exact `#guard_msgs`, counting only lines that
+*start* with the command — module docstrings also mention `#guard_msgs`
 and are not assertions).  `TreeScope/Demo.lean` holds
 no pins; its `#tree_scope` / `#tree_evolve` / `#html` demos only have to
 elaborate under `lake build`.  Stage 1: model measures and ASCII
@@ -256,4 +263,8 @@ pins for clean heaps and `Std.TreeMap`s), the `BinaryTree` `nil` convention
 and order overlay, `diffMark`/`removedCount` unit tests and fully pinned
 filmstrips (including the rotation step, a shrinking `erase` step, the
 17-step cap and per-step cap errors), and the Catalan gallery cross-checked
-against Mathlib.
+against Mathlib.  Panel mode: `PanelTests` reads the panel props that
+`#tree_scope` (an `RBMap`, a `BinaryTree`, a reflected `List`) and
+`#tree_evolve` (an `RBMap` filmstrip) store in the info tree and checks them
+against panels rendered from hand-written expected trees (one
+`HtmlDisplayPanel` widget on the command, exact `html` props, decoded text).

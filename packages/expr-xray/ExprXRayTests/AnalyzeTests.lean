@@ -169,6 +169,101 @@ private def sfun ⦃n : Nat⦄ (m : Nat) : Nat := n + m
   let n ← analyzeT (← `(Int.ofNat 3))
   assertTrue "coe: Int.ofNat flagged" n.isCoe
 
+/-! ## Coercion detection through `@[coe]` alone
+
+Every head tested above (`Nat.cast`, `Int.ofNat`) is also on the hard-coded
+`knownCoeHeads` whitelist, so those tests cannot tell whether `isCoeName`
+queries `Meta.getCoeFnInfo?` at all. The fixtures below are two test-local
+types with the same shape: a structure, a projection-like function to `Nat`
+and a `Coe` instance built from it. Only `XRayTestMeters.toNat` carries
+`@[coe]`; neither function is whitelisted. `XRayTestFeet.toNat` is the
+control and pins the documented limitation that a user coercion not
+registered with `@[coe]` is not flagged. -/
+
+/-- Test-local type whose coercion function is registered via `@[coe]`. -/
+structure XRayTestMeters where
+  /-- The underlying count. -/
+  val : Nat
+
+/-- A coercion function registered via `@[coe]` and NOT on `knownCoeHeads`. -/
+@[coe] def XRayTestMeters.toNat (m : XRayTestMeters) : Nat := m.val
+
+instance : Coe XRayTestMeters Nat := ⟨XRayTestMeters.toNat⟩
+
+/-- Control type: same shape as `XRayTestMeters`, but its function has no
+`@[coe]` attribute. -/
+structure XRayTestFeet where
+  /-- The underlying count. -/
+  val : Nat
+
+/-- An ordinary function (no `@[coe]`), also used as a `Coe` instance. -/
+def XRayTestFeet.toNat (f : XRayTestFeet) : Nat := f.val
+
+instance : Coe XRayTestFeet Nat := ⟨XRayTestFeet.toNat⟩
+
+-- preconditions: neither head is whitelisted, so only the `@[coe]` query
+-- can flag `XRayTestMeters.toNat`
+#guard !knownCoeHeads.contains ``XRayTestMeters.toNat
+#guard !knownCoeHeads.contains ``XRayTestFeet.toNat
+
+#eval show TermElabM Unit from do
+  -- fixture sanity: the attribute registered exactly one of the two
+  assertTrue "@[coe] fixture: Meters.toNat registered"
+    (← getCoeFnInfo? ``XRayTestMeters.toNat).isSome
+  assertFalse "@[coe] fixture: Feet.toNat not registered"
+    (← getCoeFnInfo? ``XRayTestFeet.toNat).isSome
+  -- `isCoeName` answers from the `@[coe]` registry alone
+  assertTrue "@[coe]: isCoeName Meters.toNat" (← isCoeName ``XRayTestMeters.toNat)
+  assertFalse "@[coe] control: isCoeName Feet.toNat" (← isCoeName ``XRayTestFeet.toNat)
+
+#eval show TermElabM Unit from do
+  -- the elaborator inserts the coercion through the `Coe` instance and
+  -- unfolds it to the `@[coe]` function, which heads the term
+  let n ← analyzeT (← `(((⟨3⟩ : XRayTestMeters) : Nat)))
+  assertEq "@[coe]: root kind" n.kind .app
+  assertEq "@[coe]: 2 children (head + coercee)" n.children.size 2
+  assertEq "@[coe]: head pp" ((← nodeAt "m[0]" n [0]).pp) "XRayTestMeters.toNat"
+  assertTrue "@[coe]: app node flagged" n.isCoe
+  assertTrue "@[coe]: head const flagged" ((← nodeAt "m[0]" n [0]).isCoe)
+  assertEq "@[coe]: root type is Nat" n.type? (some "Nat")
+  -- the coerced structure literal is not itself a coercion
+  assertFalse "@[coe]: coercee not flagged" ((← nodeAt "m[1]" n [1]).isCoe)
+  -- a direct application of the function is flagged the same way
+  let d ← analyzeT (← `(XRayTestMeters.toNat ⟨3⟩))
+  assertTrue "@[coe]: direct application flagged" d.isCoe
+
+#eval show TermElabM Unit from do
+  -- control: the same elaboration path through a `Coe` instance, but the
+  -- head has no `@[coe]`, so nothing is flagged
+  let n ← analyzeT (← `(((⟨3⟩ : XRayTestFeet) : Nat)))
+  assertEq "@[coe] control: root kind" n.kind .app
+  assertEq "@[coe] control: head pp" ((← nodeAt "f[0]" n [0]).pp) "XRayTestFeet.toNat"
+  assertFalse "@[coe] control: app node not flagged" n.isCoe
+  assertFalse "@[coe] control: head const not flagged" ((← nodeAt "f[0]" n [0]).isCoe)
+  assertFalse "@[coe] control: no node flagged anywhere" (n.any (·.isCoe))
+
+-- the text mode shows the `↑coe` tag on the `@[coe]` head and its application
+/--
+info: lam «fun m => ↑m» : XRayTestMeters → Nat
+  const «XRayTestMeters» : Type
+  app «↑m» : Nat ↑coe
+    const «XRayTestMeters.toNat» : XRayTestMeters → Nat ↑coe
+    fvar «m» : XRayTestMeters
+-/
+#guard_msgs in
+#xray (text := true) fun (m : XRayTestMeters) => (m : Nat)
+
+-- ... and no tag on the control
+/--
+info: lam «fun f => f.toNat» : XRayTestFeet → Nat
+  const «XRayTestFeet» : Type
+  app «f.toNat» : Nat
+    const «XRayTestFeet.toNat» : XRayTestFeet → Nat
+    fvar «f» : XRayTestFeet
+-/
+#guard_msgs in
+#xray (text := true) fun (f : XRayTestFeet) => (f : Nat)
+
 /-! ## Depth limiting and elision -/
 
 #eval show TermElabM Unit from do

@@ -37,14 +37,21 @@ from the `#hasse` command, verbatim.
 
 ## The `⋖` decidability instance
 
-Mathlib (v4.34.0 pin) only makes `· ⋖ ·` decidable for `Bool`;
-`CovBy` is a plain (non-reducible) def, so `by decide` cannot see through it
-without help.  `instDecidableRelCovByOfFintype` below makes `a ⋖ b`
-decidable for every finite preorder with decidable `≤` — this is what lets
-the inserted cover examples close with `by decide` in any file that imports
-`HasseView`.  A `Preorder` (not just `LT`) is required so that `<` is
-lawfully the strict part of `≤` (`lt_iff_le_not_ge`), which is exactly the
-strict order the diagram is drawn from (`PosetData.ltB`).
+Mathlib (v4.35.0 pin) makes `· ⋖ ·` decidable on a finite type only through
+`Fintype.instDecidableRelCovByOfDecidableLT` (`Mathlib/Data/Fintype/Defs.lean`;
+it replaced the `Bool`-only instance of earlier pins), which needs
+`[DecidableLT V]` — absent for hand-written orders such as the `Bowtie` demo
+and for the product order on `Bool × Bool`.  `CovBy` is a plain
+(non-reducible) def, so `by decide` cannot see through it without help.
+`instDecidableRelCovByOfFintype` below makes `a ⋖ b` decidable for every
+finite preorder with decidable `≤` (no `DecidableLT` needed) — this is what
+lets the inserted cover examples close with `by decide` in any file that
+imports `HasseView`; declared after Mathlib's instance (same default
+priority), it is also the one instance search selects there.  Both facts are
+pinned in `HasseViewTests/LinkTests.lean` (`#assert_instance_head`,
+`#assert_no_instance`).  A `Preorder` (not just `LT`) is required so
+that `<` is lawfully the strict part of `≤` (`lt_iff_le_not_ge`), which is
+exactly the strict order the diagram is drawn from (`PosetData.ltB`).
 -/
 
 namespace HasseView

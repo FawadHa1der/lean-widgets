@@ -12,10 +12,14 @@ Replace `simp` with `simp_lens`, look at which lemmas actually fired (in
 order, with before/after for each rewrite), and click the suggestion to insert
 the minimal call.
 
-Built for `leanprover/lean4:v4.34.0` with
+Built for `leanprover/lean4:v4.35.0` with
 [ProofWidgets4](https://github.com/leanprover-community/ProofWidgets4)
-(rev `106ff4fa`, pure-Lean `Html` DSL — no npm/JS build). Ported from the
-v4.32.2 original; see `PORT-NOTES.md` for the (small) diff.
+(rev `df72b022`, the rev Mathlib v4.35.0 pins; pure-Lean `Html` DSL — no
+npm/JS build; no Mathlib dependency). Ported from the v4.32.2 original via
+v4.34.0 / ProofWidgets `106ff4fa`. The v4.34.0 → v4.35.0 step changed only the
+toolchain and ProofWidgets pins: no library source and no existing test or
+expected output changed; post-audit passes then added tests. See
+`PORT-NOTES.md` for both (small) diffs.
 
 ## What you actually see
 
@@ -134,12 +138,19 @@ text with location clauses, equivalence against real `simp` execution —
 including full local-context comparison for location runs — exclusion
 landings, contained preview statuses under explicit heartbeat sub-budgets,
 timeout-parity twins at deliberately tight `maxHeartbeats`, definitional-only
-detection, render frame-cap truncation, diagnostics counters, and
-chain-consistency invariants).
+detection, render frame-cap truncation, diagnostics counters,
+chain-consistency invariants, and full per-frame origin lists: side-condition
+origins recorded before the principal one, and one origin per frame for
+simprocs that answer `.continue (some _)`, the path Lean 4.35's `simprocCore`
+change touched).
 
 Assertion census (lines starting with a `#guard` / `#guard_msgs` / `#lens_*` /
-`#e2e_*` command across `SimpLens*/` and the two root modules): **404** —
-identical to the v4.32.2 original. The `#e2e_*` commands in
+`#e2e_*` command across `SimpLens*/` and the two root modules): **428** — the
+v4.32.2 original's 404 (unchanged through the v4.34.0 and v4.35.0 ports) plus
+24 `#lens_*` / `#lens_at_*` pins added after the v4.35.0 audits (22 in the
+first post-audit pass, then 2 `#lens_origins` pins of side-condition origins
+after the re-audit). The
+`#e2e_*` commands in
 `SimpLensTests/ClickE2E.lean` each run several internal checks (the
 recompile-and-diff harness), so the effective check count is higher.
 

@@ -168,6 +168,19 @@ elab "#lens_step " t:term ex:(lensWith)? hy:(lensHyps)? " at " i:num " => "
     assertEq s!"frame {i} before" (toString (← ppExpr fr.step.before)) before.getString
     assertEq s!"frame {i} after" (toString (← ppExpr fr.step.after)) after.getString
 
+/-- `#lens_origins t at i => [n1, ...]` — assert *all* origins recorded for
+frame `i`, in recording order (side-condition origins first, the principal
+one last; globals by full name, hypotheses by user name). -/
+elab "#lens_origins " t:term ex:(lensWith)? hy:(lensHyps)? " at " i:num " => "
+    "[" expected:ident,* "]" : command => do
+  withRun t ex hy fun r => do
+    let i := i.getNat
+    let some fr := r.film.frames[i]?
+      | throwError "no frame {i} (filmstrip has {r.film.length} frames)"
+    let actual ← fr.step.origins.mapM originDisplay
+    let expected ← expected.getElems.mapM expectedName
+    assertEq s!"frame {i} origins" actual.toList expected.toList
+
 /-- `#lens_lands t => "goal"` — assert the traced run leaves exactly this goal
 open (use `#lens_closes` for closed goals). -/
 elab "#lens_lands " t:term ex:(lensWith)? hy:(lensHyps)? " => " g:str : command => do

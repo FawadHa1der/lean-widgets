@@ -370,10 +370,17 @@ elab "#e2e_negative " mode:str ppSpace src:str : command => do
 
 /-! ## The scenarios
 
-Each user file imports ONLY `GraphScope` — in particular the `DecidableRel`
-instances for `pathGraph` / `completeBipartiteGraph` must arrive with that
-import (they live in `GraphScope.Demo`); these scenarios are the load-bearing
-proof of that claim. -/
+Each user file imports ONLY `GraphScope`.  The `DecidableRel` instance for
+`completeBipartiteGraph` must arrive with that import (it lives in
+`GraphScope.Demo`; Mathlib has none), and the `completeBipartite` scenario is
+the load-bearing proof of that.  For `pathGraph` it is no longer the only
+instance: since Mathlib v4.35.0, Mathlib's own (which decides `⋖` by
+quantifying over `Fin n`) would make the edge and degree clicks compile too.
+That `GraphScope.Demo`'s instance is the one selected is pinned by
+`InsertTests`' `#synth` pin and, since the adjacency-cost guard
+(`GraphScope/Gate.lean`), by the `path5` and `unicode` scenarios' `connectivity
+yes`: with Mathlib's instance selected the connectivity link would be
+withheld. -/
 
 /--
 info: [path5] base: clean, 3 commands, links: 4 edges / 5 degrees / connectivity yes

@@ -148,15 +148,21 @@ lake build   # builds the library incl. Demo.lean (demos elaborate on every buil
 lake test    # builds the test suite; any failing assertion fails the build
 ```
 
-Toolchain: `leanprover/lean4:v4.34.0` (pinned in `lean-toolchain`),
-ProofWidgets `106ff4fafc74ef4ac99d81dbf3ab399118f497a5` pinned in
-`lakefile.toml` and the lockfile. No npm/node required. (Ported from the
-`v4.32.2` / ProofWidgets `6e311e2a` original with no Lean source changes and
-no snapshot-pin changes — see `PORT-NOTES.md`.)
+Toolchain: `leanprover/lean4:v4.35.0` (pinned in `lean-toolchain`),
+ProofWidgets `df72b022e558978a1c50264cfc4d7fec86fa8e04` (the rev Mathlib
+v4.35.0 pins; no Mathlib dependency) pinned in `lakefile.toml` and the
+lockfile. No npm/node required. (Ported from the `v4.32.2` / ProofWidgets
+`6e311e2a` original via v4.34.0 / ProofWidgets `106ff4fa`. Neither step
+needed a Lean code change or a snapshot-pin change; the 4.34 step reworded one
+test-module docstring line. See `PORT-NOTES.md`.)
 
-Test census: 456 static assertion sites in `ExprXRayTests/` (95 `#guard`,
-17 `#guard_msgs`, 344 `assert*` calls; three of the sites run inside loops, so
-more assertions execute than that). Counting method in `PORT-NOTES.md`.
+Test census: 480 static assertion sites in `ExprXRayTests/`: 107 `#guard`,
+17 `#guard_msgs` and 356 `assert*` calls. That is 459 plus the 21 added on
+2026-10-25 by the `@[coe]` coverage tests in `AnalyzeTests.lean` (2 `#guard`,
+2 `#guard_msgs`, 17 `assert*` calls). Six of the `assert*` calls sit inside
+`for` loops over a diff's mismatches, so more assertions execute than that.
+The counting method is in `PORT-NOTES.md`; it was corrected on 2026-10-25 from
+an earlier grep that reported 95 / 17 / 344 = 456.
 
 ## Architecture
 
@@ -174,7 +180,8 @@ ExprXRayTests.lean         -- root: imports all test modules
 ExprXRayTests/
   TestUtil.lean            -- elabT + throwing assert helpers
   TypesTests.lean          -- pure #guard tests
-  AnalyzeTests.lean        -- roles, kinds, universes, coercions, depth limiting
+  AnalyzeTests.lean        -- roles, kinds, universes, coercions (incl. a test-local
+                           --   @[coe] head), depth limiting
   DiffTests.lean           -- ≥15 curated pairs, ranking, exact summaries, cross-consistency
   DefeqTests.lean          -- defeq statuses on curated pairs, re-ranking, purity, badges
   RenderTests.lean         -- serialized-Html assertions: badges, dimming, preset filtering

@@ -24,6 +24,6 @@ One import for the whole InfoView widget suite:
 * `#chart` — verified-exact charting primitives over ℚ data.
 
 Each widget also remains available as a standalone package; see the suite
-README one directory up. -/
+README two directories up (the repository root). -/
 
 def LeanWidgetKit.version : String := "0.1.0"

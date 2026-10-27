@@ -11,5 +11,6 @@ import TreeScopeTests.MathlibTreeTests
 import TreeScopeTests.EvolveTests
 import TreeScopeTests.CatalanTests
 import TreeScopeTests.StdTreeMapTests
+import TreeScopeTests.PanelTests
 
 #guard TreeScope.version = "0.2.0"

@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install elan (no default toolchain; lean-toolchain selects v4.34.0)
+      - name: Install elan (no default toolchain; each package's lean-toolchain selects the version)
         working-directory: .
         run: bash ci/install-elan.sh
       - name: Toolchain
