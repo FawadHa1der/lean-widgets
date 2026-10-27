@@ -32,8 +32,21 @@ echo "controls on pin $(node "$SC/scripts/lib/pins.mjs" target) ($(node "$SC/scr
 node "$SC/scripts/stage-trees.mjs" --check-digest baseSlim --tree "$W/tree-stock" || { echo "REFUSED: $W/tree-stock fails pin $(node "$SC/scripts/lib/pins.mjs" target)'s base-tree digest check above (a stale copy: remove it and rerun, which re-clones it from servedTrees.baseSlim)"; exit 2; }
 
 declare -a NAMES RCS
-step() { local name="$1"; shift; echo "== $name: $*"; "$@" > "$W/logs/controls-$name.log" 2>&1; local rc=$?
-  tail -n 1 "$W/logs/controls-$name.log"; NAMES+=("$name"); RCS+=("$rc"); }
+# Each control runs under a time limit (CONTROL_LIMIT_S, default 900 s; each takes seconds). A node that had printed its
+# verdict then deadlocked inside process.exit (node 26.3: the main thread joining a V8 background compile job that was
+# waiting for a GC only the main thread could run) and held the lane for 2 h 16 min (2026-10-27, e-e1-flipped-index).
+# An alarm ends it (its timer survives exec; SIGALRM's default action, restored here, ends the command): exit 142,
+# logged as a timeout when the limit has passed (a command's own exit 142 is not). A probe child it started is not
+# killed with it.
+LIMIT_S="${CONTROL_LIMIT_S:-900}"
+case "$LIMIT_S" in ''|0*|*[!0-9]*) echo "REFUSED: CONTROL_LIMIT_S must be whole seconds, 1 to 86400 (got '$LIMIT_S')"; exit 2 ;; esac
+[ "${#LIMIT_S}" -le 5 ] && [ "$LIMIT_S" -le 86400 ] || { echo "REFUSED: CONTROL_LIMIT_S must be whole seconds, 1 to 86400 (got '$LIMIT_S')"; exit 2; }
+bounded() { perl -e '$s = shift; $SIG{ALRM} = "DEFAULT"; alarm $s;
+  exec { $ARGV[0] } @ARGV or do { print STDERR "bounded: cannot run $ARGV[0]: $!\n"; exit 127 }' -- "$LIMIT_S" "$@"; }
+timed_out() { [ "$1" = 142 ] && [ $(( $(date +%s) - $3 )) -ge "$LIMIT_S" ] &&
+  echo "TIMEOUT: ended after ${LIMIT_S}s (CONTROL_LIMIT_S); see the lines above" >> "$2"; return 0; }
+step() { local name="$1"; shift; echo "== $name: $*"; local t0; t0=$(date +%s); bounded "$@" > "$W/logs/controls-$name.log" 2>&1; local rc=$?
+  timed_out "$rc" "$W/logs/controls-$name.log" "$t0"; tail -n 1 "$W/logs/controls-$name.log"; NAMES+=("$name"); RCS+=("$rc"); }
 
 step a-e1-essential node "$H/exact-header.mjs" --example "$C/e1-essential.lean" --bake-key "$C/stock-mathlib.BAKE-KEY.txt" \
   --snap "$RAW/mathlib.snap" --index "$IX" --lib "$W/tree-stock" --snapset stock
@@ -51,8 +64,8 @@ step d-e3b-control-html node "$H/react-contract.mjs" --in "$HOUT/conv-control.st
 M="$W/headless/mut"; rm -rf "$M"; mkdir -p "$M"
 cp -c "$RAW/init.snap" "$M/init.snap" && cp "$RAW/init.snap.provenance.json" "$M/" &&
   printf '\x2f' | dd of="$M/init.snap" bs=1 seek=60000000 conv=notrunc 2>/dev/null
-expect1() { local name="$1"; shift; echo "== $name (expect exit 1): $*"; "$@" > "$W/logs/controls-$name.log" 2>&1; local rc=$?
-  tail -n 1 "$W/logs/controls-$name.log"; NAMES+=("$name"); [ "$rc" = 1 ] && RCS+=(0) || RCS+=("neg-got-$rc"); }
+expect1() { local name="$1"; shift; echo "== $name (expect exit 1): $*"; local t0; t0=$(date +%s); bounded "$@" > "$W/logs/controls-$name.log" 2>&1; local rc=$?
+  timed_out "$rc" "$W/logs/controls-$name.log" "$t0"; tail -n 1 "$W/logs/controls-$name.log"; NAMES+=("$name"); [ "$rc" = 1 ] && RCS+=(0) || RCS+=("neg-got-$rc"); }
 expect1 e-e3-flipped-sidecar node "$H/rpc-probe.mjs" --example "$C/hasse-refused.lean" --snap "$M/init.snap" \
   --lib "$W/tree-stock" --snapset mut-sidecar --golden none --out "$W/headless/mut/hasse.mut-sidecar.rpc.json"
 expect1 e-e3-flipped-index node "$H/rpc-probe.mjs" --example "$C/hasse-refused.lean" --snap "$M/init.snap" --index "$IX" \
