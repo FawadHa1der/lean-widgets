@@ -59,7 +59,9 @@
 //   R1 runtime-manifest.json == runtime-manifest.<BID>.json (bytes), buildId == BID, every chunk present
 //      with the manifest's size and sha256
 //   R2 every profile the index lists has its manifest and every transport part present with its digest
-//      and size (with --no-essential-pack the essential profile is reported as deliberately absent)
+//      and size (with --no-essential-pack the essential profile is reported as deliberately absent); the index entry
+//      names a release and it == the manifest's content.release, and the manifest's content.lean.version == the
+//      index's runtime.leanVersion (fail closed: a pack manifest has the same URL in every release, QED64 HARDENING #81)
 //   R3 every snapshot index uploaded (stock + overlays): schema, runtime == BID, every entry's URL (re-rooted
 //      to /snapshots/<dir>/ for overlays, as qed64-boot.ts:96-106 does) present with sha256 == digest
 //      and size == transfer; overlays hold exactly {init, mathlib}
@@ -219,7 +221,8 @@ function build(opts) {
   }
   if (opts.stockSnapshots) for (const [f, k] of pubFiles('snapshots')) addR2(f, `/${path.relative(pub, f)}`, 'snapshots-stock', path.join(pub, 'snapshots'), k);
   // QED64 HARDENING #64 (a pin whose descriptor sets hardening.pinnedIndexes): this runtime's per-build index copies, as
-  // QED64's own upload writes them (its scripts/upload-artifacts.sh step 2): /snapshots/index.<BID>.json = the stock
+  // QED64's own upload writes them (its scripts/upload-artifacts.sh: step 2 up to 58ebbad; from 4b93459 on step 3, after
+  // every .snapz and before the mutable indexes): /snapshots/index.<BID>.json = the stock
   // snapshot index's bytes, /snapshots/profiles-index.<BID>.json = profiles/index.json's. This runtime's shell reads a copy
   // only while the served mutable index names another runtime (a split upload's window, decision E1; a later runtime's
   // indexes once that is deployed), so the copies go up with the manifests (upload phase 2) and stay. QED64's git tracks
@@ -328,6 +331,17 @@ function validate({ manifest: m, ctx }) {
       if (!ok(!!mo, `R2 profile ${p.id}: manifest ${p.manifest} uploaded`)) continue;
       const mj = jsonOf(mo, `R2 profile ${p.id}`);
       if (!mj) continue;
+      // The pairing of index and manifest (QED64 HARDENING #81): a manifest's URL is the same in every release, so only
+      // the index entry's `release` says which one this pin's shell pairs with; a shell from #81 on refuses a mismatch as
+      // stale ("reload"), an older one installs the other release's pack. QED64 skips an entry that names no release;
+      // here both must name one and agree (every pin's tracked index and manifests do), and the manifest's Lean
+      // version must be the index runtime's.
+      const relIdx = p.release, relMan = mj.content && mj.content.release;
+      const leanIdx = pj.runtime && pj.runtime.leanVersion, leanMan = mj.content && mj.content.lean && mj.content.lean.version;
+      ok(!!relIdx && relIdx === relMan && !!leanIdx && leanIdx === leanMan,
+        `R2 profile ${p.id}: index release ${relIdx} == ${p.manifest} content.release, Lean ${leanMan} == index runtime.leanVersion ${leanIdx}`,
+        [!relIdx ? 'the index entry names no release' : '', relIdx && relIdx !== relMan ? `the manifest is release ${relMan} (a pack manifest of another release under the same URL: the shell would refuse it as stale, or an older one install it)` : '',
+          !leanIdx ? 'the index records no runtime.leanVersion' : '', leanIdx && leanIdx !== leanMan ? `the manifest is Lean ${leanMan}` : ''].filter(Boolean).join('; '));
       const parts = mj.content.pack.transport.parts;
       const absent = parts.filter((x) => !byUrl.has(x.url));
       if (!m.options.essentialPack && p.id === 'essential' && absent.length === parts.length) { info(`R2 profile essential: ${parts.length} parts deliberately not uploaded (--no-essential-pack: "Load exact imports" will fail)`); continue; }

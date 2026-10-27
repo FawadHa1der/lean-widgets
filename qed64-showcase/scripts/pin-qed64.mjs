@@ -25,7 +25,9 @@
 //                                       SKIP. Rebuild-only inputs that moved (the Docker image behind
 //                                       qed64-toolchain:emsdk-6.0.5, a tag QED64's own toolchain build rewrites; the
 //                                       Node version the bakes ran on) print DRIFT (not FAIL; `showcase.sh native`
-//                                       refuses on the image) unless --strict. #12: a QED64 HARDENING fix that is an
+//                                       refuses on the image) unless --strict. #7 also checks the kernel build (else
+//                                       the lock's native64/Mathlib commits) against QED64's release record at the
+//                                       pin, which the lock is not written from. #12: a QED64 HARDENING fix that is an
 //                                       ancestor of the pin's commit needs its descriptor `hardening` flag true, and a
 //                                       flag true needs the fix (FAIL either way: the UX suite enforces QED64's asks
 //                                       only through these flags).
@@ -50,8 +52,9 @@
 // `git ls-tree -r WIDGETS_COMMIT packages/`.
 //
 // Locations (scripts/lib/env.mjs): QED64_REPO (only for `pin`), QED64_KERNEL_BUILD (the kernel build, read-only; `pin`
-// reads the native toolchain record from it, or carries the active pin's record when it is unset; `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as
-// this machine's paths.
+// reads the native toolchain record from it, or carries the active pin's record when it is unset, and refuses either one
+// when it disagrees with the pin's QED64 release record; `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock
+// records them as placeholders, never as this machine's paths.
 //
 // Every operation on a QED64 tree is read-only: git rev-parse / status / show / ls-tree (with --no-optional-locks on
 // QED64_REPO), and copy-on-write file clones (new inodes, never hard links).
@@ -71,7 +74,8 @@ const cmd0 = process.argv[2];
 let Q = '', K = '';
 try {
   // pin: QED64_KERNEL_BUILD set -> the native toolchain record is read from it; unset (a host without the native kernel
-  // build, e.g. after it was removed) -> carried from the active pin's lock, said so (verify #7 is then N/A here, as in CI)
+  // build, e.g. after it was removed) -> carried from the active pin's lock, said so (verify #7 is then N/A here, as in CI).
+  // Either way pin refuses a record that is not the native toolchain the pin's release record names (recordChecks)
   if (cmd0 === 'pin') { Q = ENV.need('QED64_REPO'); if (ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); }
   if (cmd0 === 'verify' && ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); // optional for verify: set -> checked, unset -> N/A
 } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
@@ -109,7 +113,15 @@ if (['pin', 'verify'].includes(cmd0)) {
   try { SRC = QSRC.requireSrc(QPIN, ID); } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
 }
 const DOCKER_IMAGE = ENV.DOCKER_IMAGE;
-const DOCKER_ID = '8b6698bbf474';
+// The image the native widget oleans are built in (lock toolchain.docker.id; `showcase.sh native` refuses any other):
+// the image the pin's kernel release was built in, its release record's docker.imageId as the 12-hex short id `docker
+// image ls` prints (dockerIdOf; lean-v4.35.0-b081e7c: 9563286ca922). Pins whose QED64 sources have no release record
+// (A–H) keep this constant, the image their oleans were built in.
+const DOCKER_ID_NO_RECORD = '8b6698bbf474';
+// The native compiler's shared libraries (lock toolchain.native64, beside stage1/bin/lean and lake). bin/lean and bin/lake
+// are ~70 KB launchers, byte-identical in the lean-v4.34.0-* and lean-v4.35.0-b081e7c builds, so only these sha256s tell
+// two native compilers apart. Locks registered before they were recorded lack them; verify #7 then compares the launchers.
+const NATIVE_LIBS = ['libleanshared.so', 'libLake_shared.so', 'libInit_shared.so'].map((f) => `stage1/lib/lean/${f}`);
 const PLAYWRIGHT = '1.62.1';
 const BROWSER_REV = '1234';
 
@@ -161,19 +173,26 @@ function walk(dir, base = dir, out = []) {
 const urlToPublic = (u) => 'public' + u;
 // git show <rev>:<path> of the source dependency, or null when the path does not exist at <rev> (stderr silenced)
 const gitShowOrNull = (rev, p) => { try { return execFileSync('git', ['-C', SRC, 'show', `${rev}:${p}`], { maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return null; } };
+/** QED64's release record at `rev`, parsed; null when `rev` has none (QED64 < 4f46477: pins A–H). Throws when it is not
+ *  JSON. kernelAt validates it against the descriptor; dockerIdOf and recordChecks read its docker, native64, mathlib
+ *  and packs fields. */
+function recordAt(rev) {
+  const raw = gitShowOrNull(rev, RELEASE_RECORD_PATH);
+  if (raw === null) return null;
+  try { return JSON.parse(raw.toString()); } catch (e) { throw new Error(`${RELEASE_RECORD_PATH} at ${String(rev).slice(0, 7)} is not JSON: ${e.message}`); }
+}
 /** The kernel commit QED64 names at `rev`, and where it was read: {kernel, from}. The release record (QED64 >= 4f46477)
  *  when it exists at `rev`, checked against the descriptor (schema, kernel.commit a full id, runtime.buildId == BID,
  *  gate passed on kernel.commit, gate.wasmSha256 == the buildId's lean.wasm digest); else the first token of KERNEL-PIN
  *  (pins A–H, which have no record). Throws when the record is malformed or disagrees, or when neither file exists. */
 function kernelAt(rev) {
   const r7 = String(rev).slice(0, 7);
-  const raw = gitShowOrNull(rev, RELEASE_RECORD_PATH);
-  if (raw === null) {
+  const rec = recordAt(rev);
+  if (rec === null) {
     const kp = gitShowOrNull(rev, KERNEL_PIN_PATH);
     if (kp === null) throw new Error(`QED64 at ${r7} has neither ${RELEASE_RECORD_PATH} nor ${KERNEL_PIN_PATH}`);
     return { kernel: kp.toString().split(/\s+/)[0], from: KERNEL_PIN_PATH };
   }
-  let rec; try { rec = JSON.parse(raw.toString()); } catch (e) { throw new Error(`${RELEASE_RECORD_PATH} at ${r7} is not JSON: ${e.message}`); }
   const k = rec.kernel && rec.kernel.commit;
   const bad = [
     rec.schema !== RELEASE_RECORD_SCHEMA && `schema ${rec.schema} != ${RELEASE_RECORD_SCHEMA}`,
@@ -185,6 +204,52 @@ function kernelAt(rev) {
   if (bad.length) throw new Error(`${RELEASE_RECORD_PATH} at ${r7}: ${bad.join('; ')}`);
   return { kernel: k, from: `${RELEASE_RECORD_PATH} kernel.commit (${rec.id})` };
 }
+/** The Docker image id `pin` records (see DOCKER_ID_NO_RECORD), and where it was read: {id, from}. Throws when a record
+ *  names no image id (every lean4-wasm64.release/v1 record does). */
+function dockerIdOf(rec) {
+  if (!rec) return { id: DOCKER_ID_NO_RECORD, from: `the constant for pins without ${RELEASE_RECORD_PATH}` };
+  const full = String((rec.docker && rec.docker.imageId) || '').replace(/^sha256:/, '');
+  if (!/^[0-9a-f]{64}$/.test(full)) throw new Error(`${RELEASE_RECORD_PATH} (${rec.id}): docker.imageId ${rec.docker && rec.docker.imageId} is not an image id (sha256:<64 hex>)`);
+  const tag = rec.docker.tag && rec.docker.tag !== DOCKER_IMAGE ? `; the record names it ${rec.docker.tag}` : '';
+  return { id: full.slice(0, 12), from: `${RELEASE_RECORD_PATH} docker.imageId (${rec.id}${tag})` };
+}
+/** Non-circular cross-checks of a native toolchain against the release record at QPIN (QED64's tracked file, which `pin`
+ *  never writes): NATIVE-COMMIT and BUILT-COMMIT == native64.commit, MATHLIB-COMMIT == mathlib.commit, the essential
+ *  module list's line count == the mathlib-essential pack's `modules`. `have` = {native, built, mathlib, essential}, each
+ *  [value, name]; an absent entry (or record field) is not checked. BUILT-COMMIT is the build dir's wasm64 build commit:
+ *  a FAIL only for a release that ships native64 and its kernel from ONE commit (lean-v4.35.0-b081e7c on: its build dir
+ *  says so); the lean-v4.34.0-* releases ship native64 857544b439 beside kernels 53cb11e6d6 / e1a79c1ce9, and their build
+ *  dir records its own wasm64 build (8d91aadcda), which the record does not name: a WARN there.
+ *  Returns [{level: 'ok' | 'fail' | 'warn', msg, detail}]. */
+function recordChecks(rec, have) {
+  const n64 = rec.native64 && rec.native64.commit, mc = rec.mathlib && rec.mathlib.commit;
+  const ess = (rec.packs || []).find((p) => p.id === 'mathlib-essential');
+  const sh = (v) => (v === null || v === undefined ? 'missing' : String(v).slice(0, 10));
+  const out = [];
+  const cmp = (h, want, field, level = 'fail', why = '') => {
+    if (!h || want === undefined || want === null) return;
+    const [got, name] = h;
+    out.push({ level: got === want ? 'ok' : level, msg: `#7 ${name} == ${field} of ${RELEASE_RECORD_PATH} (${rec.id})`, detail: `${sh(got)} vs ${sh(want)}${got === want ? '' : why}` });
+  };
+  cmp(have.native, n64, 'native64.commit');
+  const k = rec.kernel && rec.kernel.commit;
+  cmp(have.built, n64, 'native64.commit', k === n64 ? 'fail' : 'warn',
+    k === n64 ? '' : ` (the release ships native64 and kernel ${sh(k)} from different commits: BUILT-COMMIT is this build dir's own wasm64 build, which the record does not name; NATIVE-COMMIT is the compiler's identity)`);
+  cmp(have.mathlib, mc, 'mathlib.commit');
+  cmp(have.essential, ess && ess.modules, 'the mathlib-essential pack\'s modules');
+  return out;
+}
+// What a kernel build dir says about its native toolchain, in recordChecks' `have` form
+const readTrimOrNull = (p) => { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return null; } };
+const kernelBuildFacts = (k) => {
+  const list = readTrimOrNull(path.join(k, 'mathlib/essential-modules.txt'));
+  return {
+    native: [readTrimOrNull(path.join(k, 'native/NATIVE-COMMIT')), 'QED64_KERNEL_BUILD native/NATIVE-COMMIT'],
+    built: [readTrimOrNull(path.join(k, 'BUILT-COMMIT')), 'QED64_KERNEL_BUILD BUILT-COMMIT'],
+    mathlib: [readTrimOrNull(path.join(k, 'mathlib/MATHLIB-COMMIT')), 'QED64_KERNEL_BUILD mathlib/MATHLIB-COMMIT'],
+    essential: [list === null ? null : list.split('\n').filter((l) => l.trim()).length, 'QED64_KERNEL_BUILD mathlib/essential-modules.txt line count'],
+  };
+};
 // WIDGETS_SOURCE_HASH recompute (see header; scripts/lib/widgets-src.mjs). Returns { hash, files, listing }.
 const WIDGETS_SRC = WSRC.WIDGETS_SRC;
 const widgetsSourceHash = async (dir = WIDGETS_SRC) => WSRC.widgetsSourceHash(dir);
@@ -224,6 +289,52 @@ async function pin() {
   const stamp0 = distStamp();
   console.log(`S0.2 OK  QED64 HEAD=${head} clean, kernel ${kpin.slice(0, 10)} from ${kfrom}, serves ${qbid}`);
 
+  // toolchain pins (S0.5 #7), before the release clone so a refusal leaves release/<id> as it was. The release record at
+  // QPIN (null for pins A–H) names the native toolchain the pin's kernel release was built with: the record read from
+  // QED64_KERNEL_BUILD, or carried from another pin's lock, must be that one (recordChecks), else pin refuses.
+  const rec = recordAt(QPIN);
+  const { id: DOCKER_ID, from: dockerFrom } = dockerIdOf(rec);
+  const refuseOn = (checks, why) => {
+    const bad = checks.filter((c) => c.level === 'fail');
+    if (bad.length) throw new Error(`${why}: ${bad.map((c) => `${c.msg.replace(/^#7 /, '')} (${c.detail})`).join('; ')}`);
+    for (const c of checks.filter((x) => x.level === 'warn')) console.log(`S0.5 NOTE ${c.msg.replace(/^#7 /, '')}: ${c.detail}`);
+    if (checks.length) console.log(`S0.5 OK  native toolchain record matches ${rec.id} (${RELEASE_RECORD_PATH} at QPIN): ${checks.filter((c) => c.level === 'ok').length}/${checks.length} cross-checks`);
+  };
+  let native64, mathlib;
+  if (K) {
+    if (rec) refuseOn(recordChecks(rec, kernelBuildFacts(K)), `QED64_KERNEL_BUILD=${K} is not the kernel build of ${rec.id}, the release pin ${ID}'s QED64 sources name`);
+    const lm = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json'));
+    const pw = lm.packages.find((p) => p.name === 'proofwidgets');
+    native64 = {
+      dir: '${QED64_KERNEL_BUILD}/native',
+      NATIVE_COMMIT: fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim(),
+      BUILT_COMMIT: fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim(),
+      'stage1/bin/lean': await sha256File(path.join(K, 'native/stage1/bin/lean')),
+      'stage1/bin/lake': await sha256File(path.join(K, 'native/stage1/bin/lake')),
+    };
+    for (const l of NATIVE_LIBS) native64[l] = await sha256File(path.join(K, 'native', l));
+    mathlib = { commit: fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim(), proofwidgets: pw.rev };
+  } else {
+    // the native toolchain is a rebuild-only input shared by every pin built with it: carry its record from the active
+    // pin's lock (never invent one); `verify` checks it wherever QED64_KERNEL_BUILD is set. A pin whose release record
+    // names another native64 or Mathlib commit (a re-pin to a new Lean, e.g. lean-v4.35.0-b081e7c while the active pin
+    // serves a 4.34 one) is refused: its toolchain can only be read from its own kernel build.
+    let src = null; try { src = activePinId(); } catch { /* none */ }
+    const tc0 = src && src !== ID ? (readJson(path.join(repoPinDir(src), 'QED64.lock.json')).toolchain || {}) : {};
+    if (!tc0.native64 || !tc0.mathlib) throw new Error('QED64_KERNEL_BUILD is not set and no active pin lock (other than this pin) records the native toolchain to carry: set QED64_KERNEL_BUILD');
+    native64 = tc0.native64; mathlib = tc0.mathlib;
+    console.log(`S0.5 NOTE native toolchain record carried from pin ${src}'s lock (QED64_KERNEL_BUILD is not set on this host): NATIVE_COMMIT ${String(native64.NATIVE_COMMIT).slice(0, 10)}, Mathlib ${String(mathlib.commit).slice(0, 7)}`);
+    if (rec) refuseOn(recordChecks(rec, { native: [native64.NATIVE_COMMIT, `pin ${src}'s lock toolchain.native64.NATIVE_COMMIT`], mathlib: [mathlib.commit, `pin ${src}'s lock toolchain.mathlib.commit`] }),
+      `QED64_KERNEL_BUILD is not set, and the native toolchain record carried from pin ${src}'s lock is not the one ${rec.id} (pin ${ID}'s ${RELEASE_RECORD_PATH}) names; set QED64_KERNEL_BUILD to that release's kernel build`);
+  }
+  const toolchain = {
+    native64,
+    docker: { image: DOCKER_IMAGE, id: DOCKER_ID },
+    mathlib,
+    node: process.version,
+    playwright: { version: PLAYWRIGHT, browserRevision: BROWSER_REV },
+  };
+
   // S0.4 release clone (copy-on-write clone per file: APFS clonefile / Linux reflink; never a hard link)
   const set = releaseSet();
   fs.rmSync(R, { recursive: true, force: true });
@@ -242,52 +353,32 @@ async function pin() {
   if (head1 !== QPIN || dirty1.trim() || distStamp() !== stamp0) throw new Error(`QED64 changed during the clone (HEAD ${head1}, ${dirty1.trim() ? 'dirty' : 'clean'}, dist ${distStamp() === stamp0 ? 'same' : 'REWRITTEN'}): re-run pin`);
   console.log('S0.4 OK  QED64 HEAD, status and dist/ unchanged during the clone');
 
-  // toolchain pins (S0.5 #7)
-  let native64, mathlib;
-  if (K) {
-    const lm = readJson(path.join(K, 'mathlib/mathlib4/lake-manifest.json'));
-    const pw = lm.packages.find((p) => p.name === 'proofwidgets');
-    native64 = {
-      dir: '${QED64_KERNEL_BUILD}/native',
-      NATIVE_COMMIT: fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim(),
-      BUILT_COMMIT: fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim(),
-      'stage1/bin/lean': await sha256File(path.join(K, 'native/stage1/bin/lean')),
-      'stage1/bin/lake': await sha256File(path.join(K, 'native/stage1/bin/lake')),
-    };
-    mathlib = { commit: fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim(), proofwidgets: pw.rev };
-  } else {
-    // the native toolchain is a rebuild-only input shared by every pin built with it: carry its record from the active
-    // pin's lock (never invent one); `verify` checks it wherever QED64_KERNEL_BUILD is set
-    let src = null; try { src = activePinId(); } catch { /* none */ }
-    const tc0 = src && src !== ID ? (readJson(path.join(repoPinDir(src), 'QED64.lock.json')).toolchain || {}) : {};
-    if (!tc0.native64 || !tc0.mathlib) throw new Error('QED64_KERNEL_BUILD is not set and no active pin lock (other than this pin) records the native toolchain to carry: set QED64_KERNEL_BUILD');
-    native64 = tc0.native64; mathlib = tc0.mathlib;
-    console.log(`S0.5 NOTE native toolchain record carried from pin ${src}'s lock (QED64_KERNEL_BUILD is not set on this host): NATIVE_COMMIT ${String(native64.NATIVE_COMMIT).slice(0, 10)}, Mathlib ${String(mathlib.commit).slice(0, 7)}`);
-  }
-  const toolchain = {
-    native64,
-    docker: { image: DOCKER_IMAGE, id: DOCKER_ID },
-    mathlib,
-    node: process.version,
-    playwright: { version: PLAYWRIGHT, browserRevision: BROWSER_REV },
-  };
-
   // preserve keys other stages own (e.g. WIDGETS_SOURCE_HASH from S0.1)
   let prev = {};
   try { prev = readJson(LOCK); } catch {}
   // Docker image equivalence (verify #7) is a fact about the IMAGE, not about this pin: an image recorded as building the
   // same oleans byte for byte stays recorded when a pin is (re-)registered. Carry it from this pin's previous lock, else
   // from another registered pin's lock that records the same image tag and id (pin F lane, 2026-10-06: registering F
-  // dropped E's record, so verify printed the resolved Docker DRIFT again).
-  const eqOf = (l) => (l && l.toolchain && l.toolchain.docker && l.toolchain.docker.image === DOCKER_IMAGE && l.toolchain.docker.id === DOCKER_ID
-    && Array.isArray(l.toolchain.docker.equivalent) && l.toolchain.docker.equivalent.length ? l.toolchain.docker.equivalent : null);
+  // dropped E's record, so verify printed the resolved Docker DRIFT again). A lock that lists DOCKER_ID among its
+  // equivalents is carried whole, id included: the record's image is then a proven equivalent of the image that lock's
+  // oleans were built in (pins I–N: their records name 0de79b891eb9, their oleans were built in 8b6698bbf474), so
+  // re-registering such a pin keeps its docker record. An image no lock records (lean-v4.35.0-b081e7c's 9563286ca922)
+  // is recorded alone: the 4.34 equivalents, shown for the 4.34 oleans, do not carry over.
+  const eqOf = (l) => {
+    const d = l && l.toolchain && l.toolchain.docker;
+    if (!d || d.image !== DOCKER_IMAGE || !Array.isArray(d.equivalent) || !d.equivalent.length) return null;
+    return d.id === DOCKER_ID || d.equivalent.some((e) => e.id === DOCKER_ID) ? { id: d.id, equivalent: d.equivalent } : null;
+  };
   // else from the active pin's lock, else from any other registered pin's lock (newest registration first)
   const others = [];
   try { const a = activePinId(); if (a !== ID) others.push(a); } catch { /* no active pin */ }
   try { for (const p of listPins().slice().reverse()) if (p.id !== ID && !others.includes(p.id)) others.push(p.id); } catch { /* none */ }
-  let equivalent = eqOf(prev);
-  for (const o of others) { if (equivalent) break; try { equivalent = eqOf(readJson(path.join(repoPinDir(o), 'QED64.lock.json'))); } catch { /* unreadable */ } }
-  if (equivalent) toolchain.docker.equivalent = equivalent;
+  let carried = eqOf(prev), carriedFrom = carried ? ID : null;
+  for (const o of others) { if (carried) break; try { carried = eqOf(readJson(path.join(repoPinDir(o), 'QED64.lock.json'))); carriedFrom = o; } catch { /* unreadable */ } }
+  if (carried) { toolchain.docker.id = carried.id; toolchain.docker.equivalent = carried.equivalent; }
+  console.log(`S0.5 OK  toolchain image ${DOCKER_IMAGE} ${DOCKER_ID} from ${dockerFrom}${carried ? (carried.id === DOCKER_ID
+    ? `; ${carried.equivalent.length} recorded equivalent(s) carried from pin ${carriedFrom}'s lock`
+    : `: a recorded equivalent of ${carried.id} in pin ${carriedFrom}'s lock, whose docker record (id ${carried.id}, ${carried.equivalent.length} equivalent(s)) is kept`) : ''}`);
   const { schema: _s, qed64: _q, vendor: _v, source: _sr, shell: _sh, artifacts: _ar, release: _r, anchors: _a, toolchain: _t, pinnedAt: _p, ...keep } = prev;
   const anchors = {};
   for (const p of TRACKED_JSON) anchors[p] = { gitBlob: git('rev-parse', `${QPIN}:${p}`).toString().trim(), sha256: files[p].sha256 };
@@ -311,7 +402,8 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   // named in the summary; never a reason to pass a check on the served files.
   const na = (msg, why) => { nas++; console.log(`N/A  ${msg} — ${why}`); };
   const ok = (cond, msg, detail = '') => { console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${detail ? ' — ' + detail : ''}`); if (!cond) fails++; };
-  // WARN: consistent but weaker than it could be (a QED64 fix is in the pin, the descriptor does not enforce it); not a FAIL
+  // WARN: consistent but weaker than it could be (a QED64 fix is in the pin, the descriptor does not enforce it; a kernel
+  // build's BUILT-COMMIT the release record cannot vouch for, #7); not a FAIL
   const warn = (msg, detail = '') => { warns++; console.log(`WARN ${msg}${detail ? ' — ' + detail : ''}`); };
   // a check that could not run is a FAIL unless --allow-skip
   const skip = (msg) => { if (allowSkip) { skips++; console.log(`SKIP ${msg} (--allow-skip)`); } else { fails++; console.log(`FAIL ${msg} (check could not run; pass --allow-skip to tolerate)`); } };
@@ -404,14 +496,27 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   // 7. toolchain pins. The native64 toolchain, its Docker image, Mathlib and ProofWidgets are REBUILD-ONLY inputs (the
   // native widget oleans: `showcase.sh native`, `stage`); a checkout without QED64_KERNEL_BUILD cannot rebuild and does
   // not need them to serve (the served files are checked by #1-#6, #10 and the overlays by #11), so they print N/A.
+  // Where QED64's release record exists at QPIN (QED64 >= 4f46477), it is the non-circular reference (the lock was written
+  // from the kernel build, the record was not): the kernel build when QED64_KERNEL_BUILD is set, else the lock's
+  // native64/Mathlib commits, are checked against it (recordChecks). A malformed record already FAILs #9.
   const tc = lock.toolchain;
+  let rec = null; try { rec = recordAt(QPIN); } catch { /* reported by #9 */ }
+  const report = (checks) => { for (const c of checks) if (c.level === 'warn') warn(c.msg, c.detail); else ok(c.level === 'ok', c.msg, c.detail); };
   if (!K) {
-    na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: QED64_KERNEL_BUILD is not set`,
+    na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake/lib sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: QED64_KERNEL_BUILD is not set`,
       'rebuild-only inputs of the native widget oleans (docs/BUILD-FROM-SOURCE.md); set it to check them');
+    if (rec) report(recordChecks(rec, { native: [tc.native64.NATIVE_COMMIT, 'lock toolchain.native64.NATIVE_COMMIT'], mathlib: [tc.mathlib.commit, 'lock toolchain.mathlib.commit'] }));
   } else {
     ok(fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim() === tc.native64.NATIVE_COMMIT, `#7 NATIVE-COMMIT == ${tc.native64.NATIVE_COMMIT.slice(0, 10)}`);
     ok(fs.readFileSync(path.join(K, 'BUILT-COMMIT'), 'utf8').trim() === tc.native64.BUILT_COMMIT, `#7 BUILT-COMMIT == ${tc.native64.BUILT_COMMIT.slice(0, 10)}`);
     for (const b of ['lean', 'lake']) ok(await sha256File(path.join(K, `native/stage1/bin/${b}`)) === tc.native64[`stage1/bin/${b}`], `#7 native/stage1/bin/${b} sha256 == lock`, tc.native64[`stage1/bin/${b}`].slice(0, 16));
+    // the compiler's shared libraries (NATIVE_LIBS): checked when the lock records them, which pin does from 2026-10-27 on
+    if (!NATIVE_LIBS.some((l) => l in tc.native64)) console.log(`     #7 the lock records no ${NATIVE_LIBS.map((l) => path.basename(l)).join(' / ')} sha256 (registered before pin recorded them): only the bin/lean and bin/lake launchers are compared`);
+    else for (const l of NATIVE_LIBS) {
+      const got = await sha256File(path.join(K, 'native', l)).catch(() => null);
+      ok(got !== null && got === tc.native64[l], `#7 native/${l} sha256 == lock`, got === null ? 'missing in QED64_KERNEL_BUILD' : tc.native64[l] ? tc.native64[l].slice(0, 16) : 'not recorded in the lock');
+    }
+    if (rec) report(recordChecks(rec, kernelBuildFacts(K)));
     // `docker image inspect <repo:tag>` intermittently answers "No such image" on this Docker Desktop
     // (28.5.1) while `docker images` lists the tag and `docker run` resolves it; so resolve the tag
     // through `docker image ls`, which is what run uses. Daemon unreachable -> skip(); tag absent -> FAIL.

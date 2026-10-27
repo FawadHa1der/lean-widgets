@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Full regeneration + gate for the showcase examples (native, stock v4.34.0).
+# Full regeneration + gate for the showcase examples (native, stock Lean: $TC = LEAN_TOOLCHAIN_DIR for the superset
+# gates and the LSP; the closure gates use each package's lean-toolchain via elan, which must be the same version).
 #   run-all.sh [pkg ...]      (default: all eight)
 # Environments: w7 = phase-1 bake (Essential + 7 roots), w8 = phase-2 bake (+ DistLens).
 # The primary env is w7 for the 7 phase-1 packages and w8 for dist-lens; phase-1
@@ -20,6 +21,7 @@
 # Writes $W/goldens/run-all.tsv (one row per gate) and exits non-zero if a REQUIRED gate failed.
 set -uo pipefail
 . "$(cd "$(dirname "$0")/../../scripts/lib" && pwd)/env.sh"   # SC, W: scripts/lib/env.sh
+need QED64_KERNEL_BUILD   # lsp-golden.mjs (superset) checks the golden env against $K/mathlib/essential-modules.txt
 G="$SC/lean/goldens"
 PKGS=("$@"); [ ${#PKGS[@]} -eq 0 ] && PKGS=(chart-kit expr-xray simp-lens interval-inspector graph-scope tree-scope hasse-view dist-lens)
 mkdir -p "$W/goldens" "$W/logs"

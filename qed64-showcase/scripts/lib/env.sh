@@ -14,8 +14,14 @@
 #   K           $QED64_KERNEL_BUILD   the wasm64 kernel build dir (read-only input: native/, mathlib/, BUILT-COMMIT)
 #   KR          $QED64_KERNEL_SRC     the kernel source checkout (read-only; only assert-untouched watches it)
 #   LG          $LEAN4GAME_DIR        a wasm64 lean4game checkout (read-only; only assert-untouched watches it)
-#   TC          $LEAN_TOOLCHAIN_DIR, default ${ELAN_HOME:-~/.elan}/toolchains/leanprover--lean4---v4.34.0
+#   TC          $LEAN_TOOLCHAIN_DIR, default ${ELAN_HOME:-~/.elan}/toolchains/leanprover--lean4---v<the TARGET pin's Lean
+#               version> (its runtime manifest's leanVersion; v4.34.0, the version of every pin before 521cf3f, when unreadable)
+#   MATHLIB_CLONE  $MATHLIB_CLONE, default $W/mathlib4.<first 8 hex of the target pin lock's toolchain.mathlib.commit> when
+#               it exists, else the legacy $W/mathlib4 when its HEAD is that commit; else '' and MATHLIB_CLONE_WHY says
+#               why (need MATHLIB_CLONE prints it, naming the expected path). The clone `native` writes and `stage` reads.
 #   QED64_TOOLCHAIN_IMAGE  the Docker image of QED64's toolchain (default qed64-toolchain:emsdk-6.0.5)
+# The TARGET pin is $SHOWCASE_PIN, else the active pin. TC and MATHLIB_CLONE are derived from its files by
+# scripts/lib/env.mjs (one implementation, asked once here with --sh; it needs node, as every entry point does).
 # need <VAR>…: fail with a clear message when a required input is unset or missing (exit 2).
 SC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REPO_ROOT="$(cd "$SC/.." && pwd)"
@@ -41,7 +47,17 @@ Q="${QED64_REPO:-}"
 K="${QED64_KERNEL_BUILD:-}"
 KR="${QED64_KERNEL_SRC:-}"
 LG="${LEAN4GAME_DIR:-}"
-TC="${LEAN_TOOLCHAIN_DIR:-${ELAN_HOME:-$HOME/.elan}/toolchains/leanprover--lean4---v4.34.0}"
+# TC and MATHLIB_CLONE from env.mjs (asked only when one is not given explicitly); an explicit LEAN_TOOLCHAIN_DIR /
+# MATHLIB_CLONE wins, also one this shell set without exporting it (env.mjs did not see that one)
+__mc="${MATHLIB_CLONE:-}"; TC=""; TC_LEAN=""; TC_FROM=""; MATHLIB_CLONE=""; MATHLIB_CLONE_WHY=""
+if [ -z "${LEAN_TOOLCHAIN_DIR:-}" ] || [ -z "$__mc" ]; then
+  __envsh="$(node "$SC/scripts/lib/env.mjs" --sh 2>/dev/null)" || __envsh=""
+  eval "$__envsh"; unset __envsh
+fi
+if [ -n "${LEAN_TOOLCHAIN_DIR:-}" ]; then TC="$LEAN_TOOLCHAIN_DIR"; TC_FROM=LEAN_TOOLCHAIN_DIR; fi
+if [ -n "$__mc" ]; then MATHLIB_CLONE="$__mc"; MATHLIB_CLONE_WHY=""; fi; unset __mc
+[ -n "$TC" ] || { TC_LEAN=4.34.0; TC="${ELAN_HOME:-$HOME/.elan}/toolchains/leanprover--lean4---v$TC_LEAN"; TC_FROM="fallback v$TC_LEAN (scripts/lib/env.mjs did not answer)"; }
+[ -n "$MATHLIB_CLONE" ] || [ -n "$MATHLIB_CLONE_WHY" ] || MATHLIB_CLONE_WHY="scripts/lib/env.mjs did not answer (is node on PATH?); set MATHLIB_CLONE"
 QED64_TOOLCHAIN_IMAGE="${QED64_TOOLCHAIN_IMAGE:-qed64-toolchain:emsdk-6.0.5}"
 
 __env_hint() {
@@ -50,15 +66,16 @@ __env_hint() {
     QED64_KERNEL_BUILD) echo "the wasm64 kernel build dir (native/stage1, mathlib/, BUILT-COMMIT; built from https://github.com/FawadHa1der/lean4 branch qed64-wasm64)" ;;
     QED64_KERNEL_SRC) echo "the kernel source checkout (https://github.com/FawadHa1der/lean4, branch qed64-wasm64)" ;;
     LEAN4GAME_DIR) echo "a wasm64 lean4game checkout" ;;
-    LEAN_TOOLCHAIN_DIR) echo "the stock Lean v4.34.0 toolchain (elan toolchain install leanprover/lean4:v4.34.0)" ;;
+    LEAN_TOOLCHAIN_DIR) echo "the stock Lean v${TC_LEAN:-?} toolchain of the target pin (elan toolchain install leanprover/lean4:v${TC_LEAN:-?}; $TC_FROM)" ;;
+    MATHLIB_CLONE) echo "${MATHLIB_CLONE_WHY:-the target pin's Mathlib clone (\$W/mathlib4.<first 8 hex of its lock's toolchain.mathlib.commit>, or the legacy \$W/mathlib4 at that commit)}" ;;
     *) echo "see qed64-showcase/.env.example" ;;
   esac
 }
-# need VAR… : every named variable must be set and name an existing path
+# need VAR… : every named variable must be set and name an existing path (LEAN_TOOLCHAIN_DIR: TC, its default included)
 need() {
   local v val
   for v in "$@"; do
-    val="${!v:-}"
+    if [ "$v" = LEAN_TOOLCHAIN_DIR ]; then val="$TC"; else val="${!v:-}"; fi
     if [ -z "$val" ]; then echo "[env] ERROR: $v is not set: $(__env_hint "$v"). Set it in the environment or in $SC/.env.local (template: .env.example)." >&2; exit 2; fi
     if [ ! -e "$val" ]; then echo "[env] ERROR: $v=$val does not exist: $(__env_hint "$v")." >&2; exit 2; fi
   done

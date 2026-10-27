@@ -5,7 +5,8 @@
 # closure (default): the source is copied to $W/examples-native/<pkg>/<pkg>[.<tag>].lean
 #   with the `import Mathlib` line blanked (kept as an EMPTY line so every LSP
 #   line number is unchanged) and compiled with `lake env lean` from the
-#   package's own built tree (read-only use) on the stock v4.34.0 toolchain:
+#   package's own built tree (read-only use) on the package's own toolchain (its lean-toolchain, via
+#   elan's `lake`; superset mode uses $TC, which must be the same version):
 #   proves every name the example uses lives inside the package closure,
 #   hence inside the bake superset.
 # superset: the source is copied UNMODIFIED (header `import Mathlib`) to

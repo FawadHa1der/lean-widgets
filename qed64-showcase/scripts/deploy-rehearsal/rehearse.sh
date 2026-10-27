@@ -7,8 +7,9 @@
 #
 #   scripts/deploy-rehearsal/rehearse.sh <step>…     steps, in order:
 #     guard        negative controls of the SHARED-BUCKET GUARD: a fake bucket 'rehearsalguard' seeded with sentinel
-#                  QED64 root and lean4game/ objects; upload (real, not dry), deploy-app, rollback and --commands with
-#                  R2_PREFIX= / R2_PREFIX=lean4game/ / a foreign prefix must all refuse and leave the bucket untouched
+#                  QED64 root, lean4game/ and lean4-wasm64/<release id>/ objects; upload (real, not dry), deploy-app,
+#                  rollback and --commands with R2_PREFIX= / R2_PREFIX=lean4game/ / R2_PREFIX=lean4-wasm64/ / a foreign
+#                  prefix must all refuse and leave the bucket untouched
 #     upload-dry   DRY_RUN=1 scripts/upload-artifacts.sh -> fake remote (must write nothing)
 #     upload       scripts/upload-artifacts.sh -> fake remote 'rehearsalr2' = rclone local backend (via an alias) at
 #                  $REHEARSAL_DIR/bucket, i.e. objects land at bucket/<R2_BUCKET>/<R2_PREFIX>…
@@ -80,17 +81,24 @@ must_refuse() {
 step() {
   case "$1" in
   guard)
-    # The demonstrated hazard: in the SHARED bucket an empty prefix (QED64's root) or lean4game/ would let an upload
-    # overwrite another app's runtime-manifest.json / indexes. Sentinels stand in for those production objects.
+    # The demonstrated hazard: in the SHARED bucket an empty prefix (QED64's root), lean4game/ or lean4-wasm64/ (the
+    # toolchain release prefix QED64's Worker reads /runtime/* and /profiles/* from since QED64 4b98279) would let an
+    # upload overwrite another app's runtime-manifest.json / indexes / pack manifests. Sentinels stand in for those
+    # production objects (the root runtime/ one for the names QED64 removed on 2026-10-23, still refused).
     guard_remote rehearsalguard
     G="$RD/guard-bucket/$(bucket R2_BUCKET)"
-    rm -rf "$RD/guard-bucket"; mkdir -p "$G/runtime" "$G/snapshots" "$G/lean4game/runtime"
+    GR="$G/lean4-wasm64/lean-v0.0.0-sentinel"   # a release directory lean4-wasm64/<release id>/ (HOSTING.md layout)
+    rm -rf "$RD/guard-bucket"; mkdir -p "$G/runtime" "$G/profiles" "$G/snapshots" "$G/lean4game/runtime" "$GR/runtime" "$GR/profiles"
     echo '{"who":"QED64 production runtime manifest (sentinel)"}' > "$G/runtime/runtime-manifest.json"
+    echo '{"who":"QED64 production profile index (sentinel)"}' > "$G/profiles/index.json"
     echo '{"who":"QED64 production snapshots index (sentinel)"}' > "$G/snapshots/index.json"
     echo '{"who":"lean4game runtime manifest (sentinel)"}' > "$G/lean4game/runtime/runtime-manifest.json"
+    echo '{"who":"lean4-wasm64 release record (sentinel)"}' > "$GR/release.json"
+    echo '{"who":"lean4-wasm64 release runtime manifest (sentinel)"}' > "$GR/runtime/runtime-manifest.json"
+    echo '{"who":"lean4-wasm64 release pack manifest (sentinel)"}' > "$GR/profiles/lean-core.manifest.json"
     before=$(tree_sum "$RD/guard-bucket")
     : > "$LOGS/guard.log"
-    for pfx in '' 'lean4game/' 'lean4game' 'runtime/' 'snapshots/x/'; do
+    for pfx in '' 'lean4game/' 'lean4game' 'lean4-wasm64/' 'lean4-wasm64/lean-v0.0.0-sentinel/' 'runtime/' 'snapshots/x/'; do
       tag=${pfx//\//_}; tag=${tag:-empty}
       must_refuse "guard-upload-$tag" 'deploy target refused' env R2_REMOTE=rehearsalguard R2_PREFIX="$pfx" ALLOW_SHARED_PREFIX=1 \
         sandbox-exec -f "$SB" scripts/upload-artifacts.sh | tee -a "$LOGS/guard.log"
@@ -269,7 +277,7 @@ EOF
   *) echo "unknown step $1" >&2; exit 2 ;;
   esac
 }
-[ $# -gt 0 ] || { sed -n '2,30p' "$0"; exit 2; }
+[ $# -gt 0 ] || { sed -n '2,31p' "$0"; exit 2; }
 for s in "$@"; do
   if [ "$s" = all ]; then for t in upload-dry guard upload upload-s3 rollback deploy-dry load serve smoke; do say "== $t"; step "$t"; done
   else say "== $s"; step "$s"; fi

@@ -109,7 +109,7 @@ for (const [pin, rs] of Object.entries(by(runs, 'pin'))) {
     C21: { runs: c21.length, crashed: c21.filter((r) => r.C21 === 'crashed').map((r) => r.run) },
     W4crashed: rs.filter((r) => r.W4 === 'crashed').map((r) => r.run), W4runs: rs.filter((r) => r.W4 && r.W4 !== 'skipped').length,
     C20: {
-      runs: c20.length, clean135: c20.filter((r) => r.C20.clean === r.C20.total).length,
+      runs: c20.length, allClean: c20.filter((r) => r.C20.clean === r.C20.total).length,
       notClean: c20.filter((r) => r.C20.clean !== r.C20.total).map((r) => `${r.run}:${r.C20.clean}/${r.C20.total}${r.C20.testStatus ? ` ${r.C20.testStatus}` : ''}`),
       clicks: c20.reduce((n, r) => n + r.C20.clean, 0), stalls: c20.reduce((n, r) => n + (r.C20.stalls || 0), 0),
       galleryWedges: c20.reduce((n, r) => n + (r.C20.wedges || 0), 0),
@@ -162,7 +162,7 @@ for (const pin of Object.keys(perPin).sort((a, b) => (PINS[a] ? PINS[a].letter :
   L(`  C10 (reload storm in the suite): ran in ${p.C10.runs} runs (${p.C10.full} full); crashed ${p.C10.crashed.length}${p.C10.crashed.length ? ` (${p.C10.crashed.join(', ')})` : ''}; passed ${p.C10.passed.length}${p.C10.other.length ? `; other ${p.C10.other.join(', ')}` : ''}`);
   L(`  C21: ran in ${p.C21.runs} runs; crashed ${p.C21.crashed.length}${p.C21.crashed.length ? ` (${p.C21.crashed.join(', ')})` : ''}`);
   L(`  W4: ran in ${p.W4runs} runs; crashed ${p.W4crashed.length}${p.W4crashed.length ? ` (${p.W4crashed.join(', ')})` : ''}`);
-  L(`  C20: ${p.C20.runs} runs, ${p.C20.clean135} at 135/135${p.C20.notClean.length ? `; not clean: ${p.C20.notClean.join(', ')}` : ''}; ${p.C20.clicks} clean link clicks; card stalls ${p.C20.stalls}; gallery wedges ${p.C20.galleryWedges}; QED64 rescues ${p.C20.qed64Rescues ?? 'n/a (no QED64 liveness)'}, wedged reboots ${p.C20.qed64WedgedReboots ?? 'n/a'}${p.C20.qed64Rescues != null ? ` (recorded in ${p.C20.qed64Recorded} of ${p.C20.runs} runs)` : ''}`);
+  L(`  C20: ${p.C20.runs} runs, ${p.C20.allClean} with every link clean${p.C20.notClean.length ? `; not clean: ${p.C20.notClean.join(', ')}` : ''}; ${p.C20.clicks} clean link clicks; card stalls ${p.C20.stalls}; gallery wedges ${p.C20.galleryWedges}; QED64 rescues ${p.C20.qed64Rescues ?? 'n/a (no QED64 liveness)'}, wedged reboots ${p.C20.qed64WedgedReboots ?? 'n/a'}${p.C20.qed64Rescues != null ? ` (recorded in ${p.C20.qed64Recorded} of ${p.C20.runs} runs)` : ''}`);
   L(`  stock reload storms (chrome-headless-shell): ${p.storms.runs} runs, crashed ${p.storms.crashed.length}${p.storms.crashed.length ? ` (${p.storms.crashed.join(', ')})` : ''}`);
 }
 if (desktop) {

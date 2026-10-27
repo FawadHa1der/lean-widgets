@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Assemble out/native-build.json from the build-native.sh logs (read-only over $W)."""
-import json, os, sys
+import json, os, subprocess, sys
 
 SC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -24,6 +24,18 @@ def env(name, default=None):
     if default is None:
         sys.exit(f'native-report: {name} is not set (environment or {SC}/.env.local; template .env.example)')
     return default
+
+
+def mathlib_clone():
+    """The clone build-native.sh built in: MATHLIB_CLONE as scripts/lib/env.mjs resolves it (the environment or .env.local,
+    else the target pin's clone from its lock), so this record names the same tree as the build."""
+    try:
+        r = json.loads(subprocess.run(['node', f'{SC}/scripts/lib/env.mjs', '--json'], capture_output=True, text=True, check=True).stdout)
+    except (OSError, ValueError, subprocess.CalledProcessError) as e:
+        sys.exit(f'native-report: scripts/lib/env.mjs did not answer: {e}')
+    if not r.get('MATHLIB_CLONE'):
+        sys.exit(f"native-report: MATHLIB_CLONE did not resolve: {r.get('MATHLIB_CLONE_WHY') or 'unknown reason'}")
+    return r['MATHLIB_CLONE']
 
 
 W = env('QED64_SHOWCASE_WORK', os.path.expanduser('~/.cache/lean-widgets/qed64-showcase-work'))
@@ -51,7 +63,7 @@ for s in steps:
 rep = {
     'schema': 'qed64-showcase.native-build/v1',
     'widgetsSourceHash': open(f'{W}/widgets-src/SOURCE-HASH.txt').readline().strip(),
-    'clone': f'{W}/mathlib4',
+    'clone': mathlib_clone(),
     'toolchain': {
         'image': IMG,
         'native': '$QED64_KERNEL_BUILD/native (ro at /native)',

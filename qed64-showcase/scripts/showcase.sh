@@ -84,7 +84,10 @@
 #      WITH_BROWSER_LOCK (the lock script — change only for tests), BROWSER_LOCK_DIR (where the host-wide lock lives,
 #      default ~/.cache/host-browser-lock; every lane on the host must use the same one),
 #      BASE_SLIM / BASE_FAT / CORE_SRC / BASE_N (the served olean trees the bake trees start from, the
-#      served core lib, and the served region's module count; change them only on a re-pin).
+#      served core lib, and the served region's module count; default: the target pin's servedTrees, BASE_FAT from
+#      servedTrees.baseFat or, for a pin without it, QED64_REPO's work/lib-tree; change them only on a re-pin),
+#      MATHLIB_CLONE (the Mathlib clone `native` builds into and `stage` reads; default derived from the target pin's lock
+#      by scripts/lib/env.sh: $W/mathlib4.<first 8 hex of its toolchain.mathlib.commit>, or the legacy $W/mathlib4).
 # Exit: 0 ok · 1 a step failed · 2 usage · 3 refused by a guard. A locked step is reported as REFUSED (exit
 #       3) only for with-browser-lock.sh's 75 (lock wait timed out) and 76 (cooldown refused) and for 77, the
 #       code `_inlock` uses for its own preflight refusal; any other rc, including a locked command's own 3, is
@@ -113,7 +116,10 @@ MIN_BROWSER_GB="${MIN_BROWSER_GB:-6}"
 pin_field() { node "$SC/scripts/lib/pins.mjs" field "$1" 2>/dev/null; }
 store() { node "$SC/scripts/lib/pins.mjs" store "$1"; }   # a store of the target pin (scripts/lib/pins.mjs storePath)
 BASE_SLIM="${BASE_SLIM:-$(pin_field servedTrees.baseSlim)}"
-BASE_FAT="${BASE_FAT:-${Q:+$Q/work/lib-tree}}"
+# the fat base: servedTrees.baseFat (G0-checked against baseFatDigest); only a pin whose descriptor has no baseFat (pins up
+# to 58ebbad) falls back to QED64's own fat tree, as before. A baseFat that does not expand stays empty: `stage fat` refuses.
+BASE_FAT="${BASE_FAT:-$(pin_field servedTrees.baseFat)}"
+if [ -z "$BASE_FAT" ] && [[ "$(pin_field servedTrees)" != *'"baseFat"'* ]]; then BASE_FAT="${Q:+$Q/work/lib-tree}"; fi
 CORE_SRC="${CORE_SRC:-$(pin_field servedTrees.coreSrc)}"   # the served core lib (exact bytes) for a core delta
 BASE_N="${BASE_N:-$(pin_field servedTrees.baseN)}"                                     # modules in the served region's tree
 ROOTS7="QED64.Essential,ChartKit,ExprXRay,GraphScope,HasseView,IntervalInspector,SimpLens,TreeScope"
@@ -171,28 +177,31 @@ free_gib() { free_inactive_gib; }   # scripts/lib/platform.sh: macOS free+inacti
 bake_pids() { pgrep -f '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs' 2>/dev/null || true; }
 browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-' 2>/dev/null || true; }
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
-# docker_image_guard: `native` must run in the toolchain image the lock records (QED64.lock.json
-# toolchain.docker.id: the image the delta oleans were built in). The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by
-# whoever builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; each of
-# its releases lean-v4.34.0-<kernel7> records the image identity in release.json docker.imageId: a8817d0 for pins up to
-# bf9d947, e1a79c1 for 385a1ac, whose QED64 sources pin it as toolchain/lean4-wasm64-release.json). QED64 no longer builds
-# the toolchain itself. So it can move under us; then `native` refuses until the image is re-pinned (README
-# "Re-pin": Docker tag drift). verify reports it as DRIFT.
+# docker_image_guard: `native` must run in the toolchain image the TARGET pin's lock records (`pins.mjs store lock`:
+# pins/<SHOWCASE_PIN>/QED64.lock.json, else the active QED64.lock.json; toolchain.docker.id: the image its delta oleans are
+# built in). A new pin's native build runs while it is staged (pin-switch refuses to switch to a pin without its stores),
+# so the active lock would name the previous release's image. The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by whoever
+# builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; each of its
+# releases lean-v<lean>-<kernel7> records the image identity in release.json docker.imageId: lean-v4.34.0-a8817d0 for pins
+# up to bf9d947, lean-v4.34.0-e1a79c1 for 385a1ac, lean-v4.35.0-b081e7c (sha256:9563286ca922…) for 521cf3f, whose QED64
+# sources pin it as toolchain/lean4-wasm64-release.json). QED64 no longer builds the toolchain itself. So it can move under
+# us; then `native` refuses until the image is re-pinned (README "Re-pin": Docker tag drift). verify reports it as DRIFT.
 # toolchain.docker.equivalent lists further image ids shown to build the SAME oleans byte for byte (docs/BUILD-FROM-SOURCE.md
 # "Docker image drift"); they are accepted too.
 docker_image_guard() {
-  local img want got e
-  img="$(node -p 'require(process.argv[1]).toolchain.docker.image' "$SC/QED64.lock.json")"
-  want="$(node -p 'require(process.argv[1]).toolchain.docker.id' "$SC/QED64.lock.json")"
+  local lock img want got e
+  lock="$(store lock)" && [ -f "$lock" ] || { guard_fail "the target pin's lock ($lock) is missing: register the pin first (pin-qed64.mjs pin --pin <id>)"; return 0; }
+  img="$(node -p 'require(process.argv[1]).toolchain.docker.image' "$lock")"
+  want="$(node -p 'require(process.argv[1]).toolchain.docker.id' "$lock")"
   got="$(docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' 2>/dev/null | awk -v t="$img" '$1 == t {sub(/^sha256:/, "", $2); print $2; exit}')"
   case "$got" in
-    "$want"*) say "toolchain image $img = ${got:0:12} == lock"; return 0 ;;
-    "") guard_fail "toolchain image $img not present (or Docker not reachable); the lock records $want"; return 0 ;;
+    "$want"*) say "toolchain image $img = ${got:0:12} == lock ${lock#"$SC"/}"; return 0 ;;
+    "") guard_fail "toolchain image $img not present (or Docker not reachable); ${lock#"$SC"/} records $want"; return 0 ;;
   esac
-  for e in $(node -p '((require(process.argv[1]).toolchain.docker.equivalent) || []).map((x) => x.id).join(" ")' "$SC/QED64.lock.json"); do
+  for e in $(node -p '((require(process.argv[1]).toolchain.docker.equivalent) || []).map((x) => x.id).join(" ")' "$lock"); do
     case "$got" in "$e"*) say "toolchain image $img = ${got:0:12}: a recorded equivalent of $want (same oleans, byte for byte)"; return 0 ;; esac
   done
-  guard_fail "toolchain image $img is now ${got:0:12}, but the native oleans were built in $want (QED64.lock.json) and no recorded equivalent matches; the tag moved — see docs/BUILD-FROM-SOURCE.md \"Docker image drift\" before rebuilding"
+  guard_fail "toolchain image $img is now ${got:0:12}, but the native oleans are built in $want (${lock#"$SC"/}) and no recorded equivalent matches; the tag moved — see docs/BUILD-FROM-SOURCE.md \"Docker image drift\" before rebuilding"
 }
 lock_desc() { if [ -f "$LOCK" ]; then printf 'held: %s' "$(cat "$LOCK" 2>/dev/null)"; else printf 'free'; fi; }
 
@@ -527,12 +536,12 @@ native_gate() { # native_gate <label> <build step whose new oleans to gate>
     if [ ! -s "$src" ]; then say "gate-$label: $2 built no new oleans (incremental rebuild): nothing to gate"; return 0; fi
     oleans_to_modules "$src" > "$mods"
   fi
-  step "gate-$label" ${AWAKE[@]+"${AWAKE[@]}"} bash "$SC/scripts/build-native.sh" header-gate --clone "$W/mathlib4" --core "$K/native/stage1/lib/lean" \
+  step "gate-$label" ${AWAKE[@]+"${AWAKE[@]}"} bash "$SC/scripts/build-native.sh" header-gate --clone "$MATHLIB_CLONE" --core "$K/native/stage1/lib/lean" \
     --modules "$mods" --label "$label" --json "$LOGS/header-gate-$label.json"
 }
 cmd_native() {
   local what="${1:-all}"
-  need QED64_KERNEL_BUILD
+  need QED64_KERNEL_BUILD MATHLIB_CLONE   # MATHLIB_CLONE: the target pin's clone (scripts/lib/env.sh), the one tree native writes
   no_bake "native builds never overlap a bake"
   docker_busy && refuse "a Docker container is running (one Docker job at a time): $(docker ps --format '{{.Names}}' | tr '\n' ' ')"
   if [ -f "$LOCK" ] && [ -z "${NATIVE_NOTED:-}" ]; then NATIVE_NOTED=1; say "note: the browser lock is held ($(cat "$LOCK")); Docker may overlap a short browser run (amendment 4), never a bake"; fi
@@ -562,13 +571,15 @@ cmd_stage() {
   no_bake "a bake reads these trees"
   # the trees are shared by every runtime (not per pin): a headless verifier reading them must not see them replaced
   [ "$DRY" = 1 ] || [ ! -e "$W/headless/.lock" ] || refuse "a headless verifier holds $W/headless/.lock ($(cat "$W/headless/.lock/owner" 2>/dev/null)); it reads these trees"
-  need QED64_REPO QED64_KERNEL_BUILD
+  need QED64_REPO QED64_KERNEL_BUILD MATHLIB_CLONE
   [ -n "$BASE_SLIM" ] && [ -n "$CORE_SRC" ] && [ -n "$BASE_N" ] || die "the target pin's servedTrees (pins/<id>/pin.json) did not resolve: $(node "$SC/scripts/lib/pins.mjs" field servedTrees.baseSlim 2>&1 >/dev/null)"
-  local st="$SC/scripts/stage-trees.mjs" common=(--core-src "$CORE_SRC" --base-n "$BASE_N")
+  # --clone: the delta's source oleans come from the clone `native` built (the target pin's MATHLIB_CLONE), never a default
+  local st="$SC/scripts/stage-trees.mjs" common=(--core-src "$CORE_SRC" --base-n "$BASE_N" --clone "$MATHLIB_CLONE")
   case "$which" in
     w7)  must stage-w7 ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_SLIM" --into "$W/tree-slim-w7" --slim --roots "$ROOTS7" "${common[@]}" --report "$LOGS/stage-trees-w7.json" $force ;;
     w8)  must stage-w8 ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_SLIM" --into "$W/tree-slim-w8" --slim --roots "$ROOTS8" "${common[@]}" --report "$LOGS/stage-trees-w8.json" $force ;;
-    fat) local hdrs; hdrs="$(find "$W/widgets-src" -mindepth 3 -maxdepth 3 -name Demo.lean | LC_ALL=C sort | paste -sd, -)"
+    fat) [ -n "$BASE_FAT" ] || die "no fat base tree: the target pin's servedTrees.baseFat did not resolve ($(node "$SC/scripts/lib/pins.mjs" field servedTrees.baseFat 2>&1 >/dev/null)), and without that field QED64_REPO's work/lib-tree is the fallback"
+         local hdrs; hdrs="$(find "$W/widgets-src" -mindepth 3 -maxdepth 3 -name Demo.lean | LC_ALL=C sort | paste -sd, -)"
          must stage-fat ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_FAT" --into "$W/tree-fat" --fat --roots "$ROOTSFAT" --root-headers "$hdrs" "${common[@]}" --report "$LOGS/stage-trees-fat.json" $force ;;
     all) cmd_stage w7 $force; cmd_stage w8 $force; cmd_stage fat $force ;;
     *) die "stage: unknown tree '$which'" ;;

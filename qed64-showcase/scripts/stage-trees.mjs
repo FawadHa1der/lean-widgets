@@ -3,23 +3,26 @@
 //
 //   node scripts/stage-trees.mjs --base <served tree> --into <new tree> (--slim | --fat)
 //        --roots QED64.Essential,ChartKit,...  [--root-headers <a.lean,b.lean>]
-//        [--clone W/mathlib4] [--core-src <served core lib>] [--native-core <K/native/stage1/lib/lean>]
+//        [--clone <Mathlib clone>] [--core-src <served core lib>] [--native-core <K/native/stage1/lib/lean>]
 //        [--essential K/mathlib/essential-modules.txt] [--base-n 5004] [--report <json>] [--force]
-//   node scripts/stage-trees.mjs --check-digest baseSlim|coreSrc [--tree <dir>]
+//        --clone defaults to MATHLIB_CLONE (scripts/lib/env.mjs: the target pin's clone, W/mathlib4.<Mathlib commit 8> or
+//        the legacy W/mathlib4; REFUSED with the expected path when it does not resolve)
+//   node scripts/stage-trees.mjs --check-digest baseSlim|baseFat|coreSrc [--tree <dir>]
 //        only G0 below for one served tree (default: the target pin's servedTrees.<key>; --tree checks a copy of it,
 //        e.g. run-controls.sh's W/tree-stock); exit 0 OK or SKIP (no digest recorded), 1 FAIL, 2 setup error
 //
 // G0 (before anything is cloned; only for a pin whose descriptor records the digest, pins/<id>/pin.json
-//    servedTrees.baseSlimDigest / coreDigest; pins A–H record none): the tree digest of --base (when it is the pin's
-//    servedTrees.baseSlim) and of --core-src (when it is servedTrees.coreSrc) equals the recorded digest, and the recorded
-//    digest equals the pin's QED64 embedding/base-tree.json trees.lib-tree-slim / core-lib-slim digest where that file
-//    exists (QED64 385a1ac on). Rule = QED64's treeDigest (pipeline/release/adopt-helper.mjs): sha256 over the lines
+//    servedTrees.baseSlimDigest / baseFatDigest / coreDigest; pins A–H record none): the tree digest of --base (when it
+//    is the pin's servedTrees.baseSlim for --slim, servedTrees.baseFat for --fat) and of --core-src (when it is
+//    servedTrees.coreSrc) equals the recorded digest, and the recorded digest equals the pin's QED64
+//    embedding/base-tree.json trees.lib-tree-slim / lib-tree / core-lib-slim digest where that file exists (QED64 385a1ac
+//    on). Rule = QED64's treeDigest (pipeline/release/adopt-helper.mjs): sha256 over the lines
 //    "<relpath>\0<sha256 hex>\n" of every file, relpath /-separated, sorted by byte order. About 5 s per GB.
 // 1. APFS-clone the base tree (`cp -cR`; new inodes, never hard links) to --into.
 // 2. Walk the import closure of --roots (plus the import lines of --root-headers) with QED64's
 //    olean-imports.mjs reader; a module is read from the tree if present, else from its source:
-//      widget libs (ChartKit … DistLens, LeanWidgetKit) and Mathlib  W/mathlib4/.lake/build/lib/lean
-//      Batteries/ProofWidgets/Aesop/Qq/…                             W/mathlib4/.lake/packages/<p>/.lake/build/lib/lean
+//      widget libs (ChartKit … DistLens, LeanWidgetKit) and Mathlib  <clone>/.lake/build/lib/lean
+//      Batteries/ProofWidgets/Aesop/Qq/…                             <clone>/.lake/packages/<p>/.lake/build/lib/lean
 //      Init/Lean/Std/Lake                                            --core-src (the served core, exact bytes)
 // 3. delta = closure − modules already in the tree. Clone each delta module's facets into the tree with
 //    copyFileSync(COPYFILE_FICLONE: clonefile on APFS; FICLONE_FORCE is ENOSYS on darwin): module-system files carry .olean .olean.server .ir .ir.sig
@@ -50,7 +53,8 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PINS = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 
 // ---- G0: served-tree digests (see the header); also the --check-digest mode, which needs nothing else ----
-const DIGEST_FIELDS = { baseSlim: { field: 'baseSlimDigest', tree: 'lib-tree-slim' }, coreSrc: { field: 'coreDigest', tree: 'core-lib-slim' } };
+const DIGEST_FIELDS = { baseSlim: { field: 'baseSlimDigest', tree: 'lib-tree-slim' }, baseFat: { field: 'baseFatDigest', tree: 'lib-tree' },
+  coreSrc: { field: 'coreDigest', tree: 'core-lib-slim' } };
 function treeDigest(dir) { // QED64 adopt-helper.mjs treeDigest, same rule
   const lines = [];
   let bytes = 0;
@@ -91,7 +95,7 @@ function servedDigest(key, dir) {
 const ENV = await import(path.join(SC, 'scripts/lib/env.mjs'));
 if (process.argv[2] === '--check-digest') {
   const [, key, flag, tree] = process.argv.slice(2);
-  if (!(key in DIGEST_FIELDS) || (flag !== undefined && (flag !== '--tree' || !tree))) { console.error('usage: stage-trees.mjs --check-digest baseSlim|coreSrc [--tree <dir>]'); process.exit(2); }
+  if (!(key in DIGEST_FIELDS) || (flag !== undefined && (flag !== '--tree' || !tree))) { console.error(`usage: stage-trees.mjs --check-digest ${Object.keys(DIGEST_FIELDS).join('|')} [--tree <dir>]`); process.exit(2); }
   let r;
   try { r = servedDigest(key, tree && path.resolve(tree)); } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); }
   console.log(`${r.skip ? 'SKIP' : r.ok ? 'OK  ' : 'FAIL'} ${r.line}${r.detail ? ' — ' + r.detail : ''}`);
@@ -101,16 +105,17 @@ const OLEAN_IMPORTS = path.join(PINS.storePath('qed64'), 'pipeline/artifacts/ole
 const { oleanImportEntries } = await import(OLEAN_IMPORTS);
 const { oleanExtEntryCounts } = await import(path.join(SC, 'scripts/lib/olean-entries.mjs'));
 
-// locations: scripts/lib/env.mjs (W = QED64_SHOWCASE_WORK, K = QED64_KERNEL_BUILD, the read-only trees from the env)
-const { W, Q, KR, LG, WS } = ENV;
+// locations: scripts/lib/env.mjs (K = QED64_KERNEL_BUILD, MATHLIB_CLONE, the read-only trees from the env)
+const { Q, KR, LG, WS } = ENV;
 let K;
 try { K = ENV.need('QED64_KERNEL_BUILD'); } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); }
 const READ_ONLY = [Q, K, KR, LG, WS].filter(Boolean);
 
 const args = process.argv.slice(2);
-// default --core-src / --base-n: the active pin's served core lib (pins/<id>/pin.json servedTrees; scripts/lib/pins.mjs)
+// default --core-src / --base-n: the target pin's served core lib (pins/<id>/pin.json servedTrees; scripts/lib/pins.mjs);
+// default --clone: its Mathlib clone (scripts/lib/env.mjs MATHLIB_CLONE; '' when it does not resolve, refused below)
 const SERVED = PINS.pinDescriptor(PINS.targetPinId()).servedTrees;
-const opt = { clone: path.join(W, 'mathlib4'), coreSrc: ENV.expandPath(SERVED.coreSrc),
+const opt = { clone: ENV.MATHLIB_CLONE, coreSrc: ENV.expandPath(SERVED.coreSrc),
   nativeCore: path.join(K, 'native/stage1/lib/lean'), essential: path.join(K, 'mathlib/essential-modules.txt'),
   baseN: SERVED.baseN, rootHeaders: [] };
 for (let i = 0; i < args.length; i++) {
@@ -127,9 +132,10 @@ for (let i = 0; i < args.length; i++) {
   else { console.error(`stage-trees: unknown arg ${a}`); process.exit(2); }
 }
 if (!opt.base || !opt.into || !opt.mode || !opt.roots) {
-  console.error('usage: stage-trees.mjs --base <tree> --into <tree> (--slim|--fat) --roots A,B,... [--root-headers f.lean,...] [--report out.json] [--force]');
+  console.error('usage: stage-trees.mjs --base <tree> --into <tree> (--slim|--fat) --roots A,B,... [--root-headers f.lean,...] [--clone <Mathlib clone>] [--report out.json] [--force]');
   process.exit(2);
 }
+if (!opt.clone) { try { ENV.need('MATHLIB_CLONE'); } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); } }
 opt.into = path.resolve(opt.into);
 for (const ro of READ_ONLY) if (opt.into === ro || opt.into.startsWith(ro + '/')) { console.error(`REFUSED: --into ${opt.into} is inside read-only ${ro}`); process.exit(2); }
 
@@ -155,11 +161,12 @@ let fails = 0;
 const gate = (cond, msg, detail = '') => { console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${detail ? ' — ' + detail : ''}`); if (!cond) fails++; return cond; };
 const t0 = Date.now();
 
-// ---- G0 served-tree digests (only where the descriptor records them; a tree that is not the pin's served one, e.g.
-// the fat base or an overriding --core-src, is noted and not checked) ----
+// ---- G0 served-tree digests (only where the descriptor records them): --base against servedTrees.baseSlim (--slim) or
+// servedTrees.baseFat (--fat), --core-src against servedTrees.coreSrc; a tree that is not the pin's served one (e.g. an
+// overriding BASE_FAT or --core-src) is noted and not checked ----
 const digests = [];
 const samePath = (a, b) => { const r = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } }; return !!a && !!b && r(a) === r(b); };
-for (const [key, dir] of [['baseSlim', opt.base], ['coreSrc', opt.coreSrc]]) {
+for (const [key, dir] of [[opt.mode === 'fat' ? 'baseFat' : 'baseSlim', opt.base], ['coreSrc', opt.coreSrc]]) {
   if (!SERVED[DIGEST_FIELDS[key].field]) continue; // pins A–H: no digest recorded
   if (!samePath(dir, ENV.expandPath(SERVED[key]))) { console.log(`note G0 ${key}: ${dir} is not the pin's servedTrees.${key}; its digest is not checked`); continue; }
   const r = servedDigest(key, dir);

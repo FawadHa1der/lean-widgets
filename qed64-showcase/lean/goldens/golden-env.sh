@@ -4,7 +4,7 @@
 #
 # The QED64 page resolves the header `import Mathlib` / `import <Pkg>` as
 # "covered" by the overlay snapshot, whose environment is
-#   QED64.Essential (the 4,354 served modules) + the package roots of the bake.
+#   QED64.Essential (the served modules: $K/mathlib/essential-modules.txt) + the package roots of the bake.
 # Natively we reproduce that environment by compiling a SHADOW `Mathlib.olean`
 # (an umbrella over exactly that module list) and putting its directory first
 # on LEAN_PATH, so the unmodified browser text `import Mathlib` resolves to the

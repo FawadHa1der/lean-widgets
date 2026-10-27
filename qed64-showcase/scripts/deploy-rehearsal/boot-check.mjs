@@ -9,6 +9,10 @@
 //     16 text) and the text "Insertable examples (click to insert after the command)";
 //   - every request went to <origin> (nothing else was contacted) and the page is crossOriginIsolated.
 // Writes <out dir>/boot-<id>.png and <out dir>/boot-<id>.json; prints BOOT-CHECK OK / FAILED.
+// Also RECORDS (no check: it never changes the result) which /profiles/ pack manifests and parts the boot fetched, with
+// their statuses (boot-<id>.json "profiles"), so a run can tell which release's pack the shell installed (decision E1: a
+// pack manifest has the same URL in every release). ci/rehearse-deploy.sh's old-shell scenario classifies the same
+// fetches from the server's request log instead, because an old checkout's copy of this file may predate this record.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,12 +35,15 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   context.setDefaultTimeout(45000);
   const hosts = new Map(); const r2 = { n: 0, bytes: 0, status: {} };
+  const profiles = { manifests: [], parts: [] };   // "<status> <path>" of every /profiles/ GET (pack manifests, parts)
   context.on('request', (q) => { try { const u = new URL(q.url()); if (/^(https?|wss?):$/.test(u.protocol)) hosts.set(u.host, (hosts.get(u.host) || 0) + 1); } catch { /* data:, blob: */ } });
   context.on('response', (r) => {
     try {
       const u = new URL(r.url());
       if (!/^\/(runtime|profiles|snapshots)\//.test(u.pathname) || r.request().method() !== 'GET') return;
       r2.n++; r2.status[r.status()] = (r2.status[r.status()] || 0) + 1;
+      if (/^\/profiles\/[^/]+\.manifest\.json$/.test(u.pathname)) profiles.manifests.push(`${r.status()} ${u.pathname}`);
+      else if (/^\/profiles\/[^/]+\.part-\d+$/.test(u.pathname)) profiles.parts.push(`${r.status()} ${u.pathname}`);
       r.request().sizes().then((s) => { r2.bytes += Math.max(0, s.responseBodySize || 0); }).catch(() => {});
     } catch { /* ignore */ }
   });
@@ -77,9 +84,10 @@ try {
   await page.screenshot({ path: shot });
   out.screenshot = shot;
   const originHost = new URL(origin).host;
-  out.hosts = Object.fromEntries(hosts); out.r2 = r2; out.pageErrors = errors;
+  out.hosts = Object.fromEntries(hosts); out.r2 = r2; out.profiles = profiles; out.pageErrors = errors;
   check([...hosts.keys()].every((h) => h === originHost), `every request went to ${originHost}`, JSON.stringify(out.hosts));
   console.log(`info artifacts: ${r2.n} GETs under /runtime/ /profiles/ /snapshots/, ${(r2.bytes / 1e6).toFixed(1)} MB bodies, statuses ${JSON.stringify(r2.status)}; page errors ${errors.length}; screenshot ${shot}`);
+  console.log(`info /profiles/: pack manifests ${profiles.manifests.map((x) => x.replace('/profiles/', '')).join(', ') || 'none'}; ${new Set(profiles.parts.map((x) => x.split(' ')[1])).size} pack part(s) fetched`);
 } finally {
   await browser.close().catch(() => {});
 }

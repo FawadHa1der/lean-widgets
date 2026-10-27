@@ -23,7 +23,7 @@ Mathlib.Data.Finset.Pairwise
 Mathlib.Combinatorics.SimpleGraph.Clique
 Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 Mathlib.Order.Partition.Finpartition
-Mathlib.Data.Setoid.Partition
+Mathlib.Order.Setoid.Partition
 Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
 Mathlib.Combinatorics.SimpleGraph.Walk.Counting
 Mathlib.Combinatorics.SimpleGraph.Connectivity.Finite
@@ -32,7 +32,7 @@ Mathlib.Combinatorics.SimpleGraph.Connectivity.Subgraph
 Mathlib.Combinatorics.SimpleGraph.Metric
 Mathlib.Combinatorics.SimpleGraph.Sum
 Mathlib.Combinatorics.SimpleGraph.Prod
-Mathlib.Data.Fin.SuccPredOrder
+Mathlib.Order.SuccPred.Fin
 Mathlib.Combinatorics.SimpleGraph.Hasse
 Mathlib.Combinatorics.SimpleGraph.CycleGraph
 ProofWidgets.Component.Panel.SelectionPanel

@@ -27,9 +27,17 @@
 #               the OLD Worker and shell (the workflow run at OLD_REF, a fresh clone) deploy over a pristine OLD_STATE
 #               with their published check and smoke OK, THEN phases 1-2 are loaded under them; OLD_MANIFEST's
 #               --published without the replaced phase-2 keys is OK, and each replaced key serves exactly the new
-#               manifest's bytes ("REPLACED (expected)"); every bare snapshots/widgets{7,8}/ object is untouched; one boot of
+#               manifest's bytes: a runtime manifest is "REPLACED (expected)" (the old shell reads its per-build copy
+#               first), a pack manifest /profiles/<p>.manifest.json (the same URL in every release; another release's
+#               content when the packs change, as at QED64 521cf3f) is an E1 HAZARD: an "E1 MEASURE" line names it and its
+#               window (from phase 2 until the new Worker is deployed, in either order; an old tab left open after it
+#               too); every bare snapshots/widgets{7,8}/ object is untouched; one boot of
 #               the old gallery (/showcase/#hasse-view, the old clone's boot-check.mjs) and one bare "/" stock boot,
-#               both under the browser lock. Then phase 3 and the NEW Worker (the workflow at REF), in both orders, to
+#               both under the browser lock. Every boot also records which /profiles/ pack manifests and parts it fetched,
+#               read from the old-shell origin's request log (wrangler dev logs each request; server-side, so an old
+#               clone's boot scripts need not record it), classified against OLD_MANIFEST and NEW_MANIFEST: for the old
+#               shell's boots an "E1 MEASURE" line says whether it fetched NEW-release pack parts (<run>/old-shell/
+#               pack-fetches.txt has every boot). Then phase 3 and the NEW Worker (the workflow at REF), in both orders, to
 #               MEASURE decision E1 rather than assume it:
 #                 order A  phase 3 BEFORE the deploy (today's upload): measure the old shell's stock and gallery boots in
 #                          the window; then the new workflow (published check, deploy, SMOKE) and the new gallery + stock
@@ -124,24 +132,58 @@ oload() {
 # the wrangler.toml a run-local deploy of <scenario> generated in its fresh clone (deploy-app.sh writes it next to the clone's
 # qed64-showcase/), and that clone's qed64-showcase/ directory
 oconfig() { find "$RUN/$1" -path '*/lean-widgets/qed64-showcase/wrangler.toml' 2>/dev/null | head -1; }
+# The request log of the server on the old-shell port in the current order (oserve and the shim's deploy both run it
+# with REHEARSAL_RUN_DIR=<order dir>/server; set per order in old_shell), and its line count before a boot.
+OS_SRVLOG=""
+osrvlines() { local n=0; [ -f "$OS_SRVLOG" ] && n=$(wc -l < "$OS_SRVLOG"); echo $((n + 1)); }
+# opacks <tag> <first log line>: the /profiles/ pack manifests and parts the boot <tag> fetched (its slice of OS_SRVLOG:
+# wrangler dev logs "[wrangler:info] GET <path> <status> …" per request), each part classified by the deploy manifests
+# that name it: NEW_MANIFEST only (the new release's bytes), OLD_MANIFEST only, or both. Observation only: it never
+# changes a boot's result. An old shell's boot (a tag with "old-") gets an E1 MEASURE line; every boot is listed in
+# <run>/old-shell/pack-fetches.txt.
+opacks() {
+  local tag=$1 from=$2 line
+  if [ ! -f "$OS_SRVLOG" ]; then line="not measured: no server log ${OS_SRVLOG:-(none)}"
+  else line=$(tail -n +"$from" "$OS_SRVLOG" | node -e 'const fs=require("fs");
+    const urls=(p)=>new Set(JSON.parse(fs.readFileSync(p,"utf8")).r2.map((o)=>o.url));const om=urls(process.argv[1]),nm=urls(process.argv[2]);
+    let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{
+      if(!/\[wrangler:info\] [A-Z]+ \//.test(s)){console.log("not measured: no request lines in the server log for this boot");return;}
+      const got=[...s.matchAll(/\[wrangler:info\] GET (\/profiles\/[^\s?]+)\S* (\d{3})/g)].map((m)=>({u:m[1],st:m[2]}));
+      const mans=[...new Set(got.filter((r)=>/\.manifest\.json$/.test(r.u)).map((r)=>`${r.u.split("/").pop()} ${r.st}`))];
+      const parts=[...new Set(got.filter((r)=>/\.part-\d+$/.test(r.u)).map((r)=>r.u))];
+      const of=(f)=>parts.filter(f).length;
+      const nNew=of((u)=>nm.has(u)&&!om.has(u)),nOld=of((u)=>om.has(u)&&!nm.has(u)),nBoth=of((u)=>om.has(u)&&nm.has(u)),nNone=parts.length-nNew-nOld-nBoth;
+      console.log(`pack manifests fetched: ${mans.join(", ")||"none"}; ${parts.length} pack part(s): ${nNew} of the NEW release only, ${nOld} of the live release only, ${nBoth} in both${nNone?`, ${nNone} in neither manifest`:""}${nNew?" (NEW-release pack parts fetched)":""}`);});' \
+    "$OS_OLD_MANIFEST" "$OS_NEW_MANIFEST" 2>&1) || line="not measured: classifying $OS_SRVLOG failed (${line:0:200})"
+  fi
+  echo "$tag: $line" >> "$RUN/old-shell/pack-fetches.txt"
+  case "$tag" in
+    *old-*) measure "$tag: the OLD shell's /profiles/ fetches: $line" ;;
+    *) echo "pack fetches $tag: $line" ;;
+  esac
+}
 # boots, each under the host-wide browser lock (one Chrome at a time on this host)
 ogallery() {   # <checkout qed64-showcase dir> <tag>: boot-check.mjs of THAT checkout (its examples.json) on the old-shell origin
-  local c=$1 tag=$2 rc=0 b="$RUN/old-shell/bootsc-$2"
+  local c=$1 tag=$2 rc=0 b="$RUN/old-shell/bootsc-$2" n0
   # boot-check.mjs reads <its ../..>/gallery/examples.json and imports playwright: a scaffold with the checkout's two files
   # and this checkout's node_modules (a fresh clone has none)
   mkdir -p "$b/scripts/deploy-rehearsal" "$b/gallery"
   cp "$c/scripts/deploy-rehearsal/boot-check.mjs" "$b/scripts/deploy-rehearsal/" && cp "$c/gallery/examples.json" "$b/gallery/" || return 1
   [ -e "$b/node_modules" ] || ln -s "$SC/node_modules" "$b/node_modules"
+  n0=$(osrvlines)
   (cd "$SC" && scripts/with-browser-lock.sh "rehearse-$tag" node "$b/scripts/deploy-rehearsal/boot-check.mjs" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag") \
     > "$RUN/old-shell/boot-$tag.log" 2>&1 || rc=$?
   tail -1 "$RUN/old-shell/boot-$tag.log"
+  opacks "$tag" "$n0"
   [ "$rc" = 0 ] && grep -q '^BOOT-CHECK OK' "$RUN/old-shell/boot-$tag.log"
 }
 ostock() {     # <tag>: one cold boot of the stock page "/" without ?snapshots= (the shell's default indexes)
-  local tag=$1 rc=0
+  local tag=$1 rc=0 n0
+  n0=$(osrvlines)
   (cd "$SC" && scripts/with-browser-lock.sh "rehearse-$tag" node "$RUN/old-shell/stock-boot.cjs" "$SC" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" "$tag") \
     > "$RUN/old-shell/boot-$tag.log" 2>&1 || rc=$?
   tail -1 "$RUN/old-shell/boot-$tag.log"
+  opacks "$tag" "$n0"
   [ "$rc" = 0 ] && grep -q '^STOCK-BOOT OK' "$RUN/old-shell/boot-$tag.log"
 }
 measure() { echo "E1 MEASURE $*" | tee -a "$RUN/old-shell/e1-measure.txt"; }
@@ -165,16 +207,22 @@ for (const o of nm.r2) by[phaseOf(o)].push(o);
 const p12 = [...by['1-objects'], ...by['2-manifests']], p3 = by['3-indexes'];
 // phases 1-2 go up while the old shell is live. A digest-named object (phase 1) can never change under its name; a
 // phase-2 manifest that replaces a live one (runtime/runtime-manifest.json on a runtime change: the old shell fetches its
-// per-build runtime-manifest.<bid>.json first) is listed, and the old boots below are what decides whether it matters
+// per-build runtime-manifest.<bid>.json first) is listed, and the old boots below are what decides whether it matters.
+// A replaced PACK manifest (profiles/<p>.manifest.json: one URL for every release, so a release that changes the packs
+// replaces it) is the E1 hazard itself: from phase 2 until the new Worker is deployed, an old shell that installs the
+// pack reads the new release's manifest and parts (a shell before QED64 HARDENING #81 checks no release). Listed apart.
 const changed12 = p12.filter((o) => live.has(o.key) && live.get(o.key).sha256 !== o.sha256);
 for (const o of changed12.filter((x) => phaseOf(x) === '1-objects')) fail(`phase 1 would change the live digest-named object ${o.key}`);
 const replaced2 = changed12.filter((o) => phaseOf(o) === '2-manifests').map((o) => o.key);
 fs.writeFileSync(path.join(O, 'p12-replaced-keys.txt'), replaced2.join('\n') + '\n');
+const hazard2 = changed12.filter((o) => phaseOf(o) === '2-manifests' && /^\/profiles\/[^/]+\.manifest\.json$/.test(o.url)).map((o) => o.key);
+fs.writeFileSync(path.join(O, 'p12-e1-hazard-keys.txt'), hazard2.join('\n') + '\n');
 const bareRe = new RegExp(`^${(nm.options.prefix || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}snapshots/widgets[78]/`);
 for (const o of nm.r2.filter((x) => bareRe.test(x.key) && live.has(x.key) && live.get(x.key).sha256 !== x.sha256)) fail(`the new manifest rewrites the live bare overlay object ${o.key}`);
 const window3 = p3.filter((o) => live.has(o.key) && live.get(o.key).sha256 !== o.sha256).map((o) => o.key);
 const shared = p12.filter((o) => live.has(o.key)).length;
 console.log(`phases 1-2: ${p12.length} objects (${shared - changed12.length} already live with the same sha256, ${p12.length - shared} new keys); live objects they REPLACE: ${replaced2.join(', ') || 'none'} (phase-2 manifests only)`);
+if (hazard2.length) console.log(`phase 2 REPLACES ${hazard2.length} live pack manifest(s) under the same URL (E1 hazard, window: phase 2 -> the new Worker deploy): ${hazard2.join(', ')}`);
 console.log(`phase 3: ${p3.length} indexes; the ones that REPLACE a live object (the E1 window): ${window3.join(', ') || 'none'}`);
 fs.writeFileSync(path.join(O, 'window-keys.txt'), window3.join('\n') + '\n');
 for (const [name, list] of [['p12', p12], ['p3', p3]]) {
@@ -256,7 +304,7 @@ old_shell() {
   mkdir -p "$O"
   echo "== scenario old-shell: live shell at ${oref:0:12} (OLD_STATE $OS_STATE, OLD_MANIFEST ${OS_OLD_MANIFEST#"$SC"/}), new at ${REF:0:12} (NEW_MANIFEST ${OS_NEW_MANIFEST#"$SC"/}), orders ${OLD_SHELL_ORDERS:-A B}"
   old_shell_prep > "$O/prep.log" 2>&1 || { tail -5 "$O/prep.log"; fail old-shell "prep (log $O/prep.log)"; return 0; }
-  tail -3 "$O/prep.log"
+  tail -4 "$O/prep.log"
   write_stock_boot
   # the live objects + the new phases 1-2 on top (nothing deleted): one state, cloned per order
   cp -cR "$OS_STATE" "$O/state-12" || { fail old-shell "cannot clone OLD_STATE"; return 0; }
@@ -265,6 +313,7 @@ old_shell() {
   for order in ${OLD_SHELL_ORDERS:-A B}; do
     case "$order" in A|B) ;; *) errs+=("OLD_SHELL_ORDERS: unknown order $order (A, B)"); continue ;; esac
     local D="$O/$order"; mkdir -p "$D"
+    OS_SRVLOG="$D/server/wrangler-dev.log"   # every server of this order (oserve, the shim's deploys) logs requests there
     echo "-- old-shell order $order: $([ "$order" = A ] && echo 'phase 3 BEFORE the new Worker' || echo 'phase 3 AFTER the new Worker')"
     cfg_old=""; oldsc=""
     if [ "$first" = 1 ] || [ "$order" = A ]; then
@@ -290,7 +339,8 @@ old_shell() {
     if [ "$first" = 1 ]; then   # once: the state is the same in both orders up to here
       # 2. the live manifest's own --published (every bare snapshots/widgets{7,8}/ object included) WITHOUT the phase-2
       #    manifests that replace live ones (p12-replaced-keys.txt, e.g. runtime/runtime-manifest.json on a runtime change:
-      #    they name the new buildId by design); those are checked separately to serve exactly the NEW manifest's bytes
+      #    it names the new buildId by design; profiles/<p>.manifest.json when the release changes the packs: the E1
+      #    hazard, p12-e1-hazard-keys.txt); those are checked separately to serve exactly the NEW manifest's bytes
       mkdir -p "$O/published-old"
       node -e 'const fs=require("fs");const m=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
         const drop=new Set(fs.readFileSync(process.argv[2],"utf8").split("\n").filter(Boolean));
@@ -301,18 +351,27 @@ old_shell() {
       if (cd "$SC" && node scripts/deploy-manifest.mjs --published "http://127.0.0.1:$OLD_PORT" --out "$O/published-old") >> "$O/published-old.log" 2>&1; then
         tail -1 "$O/published-old.log"
       else errs+=("OLD_MANIFEST --published (without the replaced phase-2 keys) FAILED with phases 1-2 on top ($O/published-old.log)"); fi
+      # A replaced pack manifest is not "expected": it is printed as an E1 HAZARD with the release it now serves and the
+      # one the LIVE /profiles/index.json (phase 3, not replaced yet) still names, and becomes an E1 MEASURE line below
       node -e 'const fs=require("fs"),{createHash}=require("crypto");
         const [oldP,newP,keysP,origin]=process.argv.slice(1);const om=JSON.parse(fs.readFileSync(oldP,"utf8")),nm=JSON.parse(fs.readFileSync(newP,"utf8"));
-        const keys=fs.readFileSync(keysP,"utf8").split("\n").filter(Boolean);let bad=0;
+        const keys=fs.readFileSync(keysP,"utf8").split("\n").filter(Boolean);let bad=0,hz=0,idx;
+        const liveIndex=async()=>(idx??=await fetch(origin+"/profiles/index.json").then((r)=>r.json()).catch(()=>null));
         (async()=>{for(const k of keys){const o=om.r2.find(x=>x.key===k),n=nm.r2.find(x=>x.key===k);
           if(!o||!n){bad++;console.log(`FAIL replaced ${k}: not in both manifests`);continue;}
           const r=await fetch(origin+n.url,{headers:{"accept-encoding":"identity"}}).catch(e=>({status:`ERR ${e.message}`,arrayBuffer:async()=>new ArrayBuffer(0)}));
-          const h=createHash("sha256").update(Buffer.from(await r.arrayBuffer())).digest("hex");
-          if(r.status===200&&h===n.sha256)console.log(`REPLACED (expected) ${n.url}: serves the new manifest sha256 ${h.slice(0,16)}… (live was ${o.sha256.slice(0,16)}…)`);
-          else{bad++;console.log(`FAIL replaced ${n.url}: status ${r.status} sha256 ${h.slice(0,16)}… != new ${n.sha256.slice(0,16)}…`);}}
-          console.log(bad?`REPLACED-KEYS FAILED (${bad})`:`REPLACED-KEYS OK ${keys.length}`);process.exit(bad?1:0);})()' \
+          const body=Buffer.from(await r.arrayBuffer());const h=createHash("sha256").update(body).digest("hex");
+          if(!(r.status===200&&h===n.sha256)){bad++;console.log(`FAIL replaced ${n.url}: status ${r.status} sha256 ${h.slice(0,16)}… != new ${n.sha256.slice(0,16)}…`);continue;}
+          if(/^\/profiles\/[^/]+\.manifest\.json$/.test(n.url)){hz++;let rel="?";try{rel=JSON.parse(body.toString("utf8")).content.release;}catch{}
+            const li=await liveIndex();const e=li&&Array.isArray(li.profiles)?li.profiles.find((p)=>p.manifest===n.url):null;
+            console.log(`E1 HAZARD ${n.url}: replaced under the same URL by phase 2, serves the NEW manifest sha256 ${h.slice(0,16)}… (release ${rel}; live was ${o.sha256.slice(0,16)}…) while the live /profiles/index.json names release ${e?e.release:"(no entry)"}`);}
+          else console.log(`REPLACED (expected) ${n.url}: serves the new manifest sha256 ${h.slice(0,16)}… (live was ${o.sha256.slice(0,16)}…)`);}
+          console.log(bad?`REPLACED-KEYS FAILED (${bad})`:`REPLACED-KEYS OK ${keys.length}${hz?` (${hz} of them an E1 HAZARD: a pack manifest)`:""}`);process.exit(bad?1:0);})()' \
         "$OS_OLD_MANIFEST" "$O/p12-manifest.json" "$O/p12-replaced-keys.txt" "http://127.0.0.1:$OLD_PORT" >> "$O/published-old.log" 2>&1 \
         && tail -1 "$O/published-old.log" || errs+=("a replaced phase-2 key does not serve the new manifest's bytes ($O/published-old.log)")
+      { grep '^E1 HAZARD ' "$O/published-old.log" || true; } | while IFS= read -r l; do
+        measure "phase 2 hazard (window: from phase 2 until the new Worker is deployed, in either order; an old tab left open after the deploy too): ${l#E1 HAZARD }"
+      done
       node -e 'const m=require(process.argv[1]);const re=new RegExp("^/snapshots/widgets[78]/");const b=m.r2.filter(o=>re.test(o.url));
         console.log(`bare overlay objects of the live manifest: ${b.length} (${b.map(o=>o.url.split("/").slice(2).join("/")).join(", ")}), each checked by the --published above`)' "$OS_OLD_MANIFEST" | tee -a "$O/published-old.log"
       # 3. the old gallery and the old stock page boot with the new phases 1-2 present
@@ -374,7 +433,7 @@ old_shell() {
     ostop "$D" || true
   done
   if [ ${#errs[@]} = 0 ]; then
-    pass old-shell "phases 1-2 changed no digest-named or bare overlay object (replaced manifests: $(tr '\n' ' ' < "$O/p12-replaced-keys.txt")); old workflow + OLD_MANIFEST published OK; old gallery + stock boot OK; after phase 3 + the new Worker: published, SMOKE and new boots OK (orders ${OLD_SHELL_ORDERS:-A B}); E1 measured ($O/e1-measure.txt)"
+    pass old-shell "phases 1-2 changed no digest-named or bare overlay object (replaced manifests: $(tr '\n' ' ' < "$O/p12-replaced-keys.txt")$(grep -q . "$O/p12-e1-hazard-keys.txt" 2>/dev/null && echo "; of them E1 hazards, pack manifests: $(tr '\n' ' ' < "$O/p12-e1-hazard-keys.txt")")); old workflow + OLD_MANIFEST published OK; old gallery + stock boot OK; after phase 3 + the new Worker: published, SMOKE and new boots OK (orders ${OLD_SHELL_ORDERS:-A B}); E1 measured ($O/e1-measure.txt)"
   else
     local e; for e in "${errs[@]}"; do echo "  old-shell: $e"; done
     fail old-shell "${#errs[@]} check(s) failed (see above; E1 measurements in $O/e1-measure.txt)"

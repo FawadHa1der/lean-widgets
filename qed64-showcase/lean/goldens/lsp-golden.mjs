@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Golden generator for the QED64 widget showcase examples.
 //
-// Drives the STOCK native Lean v4.34.0 language server (`lean --server`) over
+// Drives the STOCK native Lean language server (`lean --server` of LEAN_TOOLCHAIN_DIR, which must be the packages' toolchain) over
 // LSP exactly the way the InfoView drives QED64's wasm worker:
 //   didOpen(example text) -> waitForDiagnostics -> $/lean/rpc/connect ->
 //   per cursor: Lean.Widget.getWidgets, getInteractiveGoals/TermGoal,
@@ -47,7 +47,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const SC = path.resolve(import.meta.dirname, '..', '..');
-const { W, TC } = await import(path.join(SC, 'scripts/lib/env.mjs')); // work dir (QED64_SHOWCASE_WORK), stock toolchain (LEAN_TOOLCHAIN_DIR)
+const { W, TC, need } = await import(path.join(SC, 'scripts/lib/env.mjs')); // work dir (QED64_SHOWCASE_WORK), stock toolchain (LEAN_TOOLCHAIN_DIR)
 const LEAN = `${TC}/bin/lean`;
 const ENV_SH = path.join(SC, 'lean/goldens/golden-env.sh');
 
@@ -222,8 +222,16 @@ const spec = JSON.parse(fs.readFileSync(SPEC_PATH, 'utf8'));
 let text = fs.readFileSync(EXAMPLE, 'utf8');
 if (!/^import Mathlib\n/.test(text)) throw new Error('example must start with `import Mathlib`');
 let leanPath;
+let essentialN = null; // QED64.Essential's module count (superset): the list golden-env.sh built the shadow umbrella from
 if (MODE === 'superset') {
   leanPath = execFileSync(ENV_SH, ['path', ENV]).toString().trim();
+  const ess = fs.readFileSync(path.join(need('QED64_KERNEL_BUILD'), 'mathlib/essential-modules.txt'), 'utf8').split('\n').filter((l) => l.trim());
+  const umbrella = path.join(W, 'golden-env', ENV, 'src', 'Mathlib.lean');
+  const imports = fs.readFileSync(umbrella, 'utf8').split('\n').filter((l) => l.startsWith('import ')).map((l) => l.slice(7).trim());
+  // the umbrella is the essential list followed by the bake roots: a differing list means a stale golden env
+  if (imports.length <= ess.length || ess.some((m, i) => imports[i] !== m))
+    throw new Error(`${umbrella} does not import QED64_KERNEL_BUILD's essential-modules.txt (${ess.length} modules): rebuild it with golden-env.sh build`);
+  essentialN = ess.length;
 } else {
   leanPath = execFileSync(ENV_SH, ['closure', PKG]).toString().trim();
   text = text.replace(/^import Mathlib\n/, '\n'); // keep line numbering identical
@@ -336,7 +344,7 @@ const lines = text.split('\n');
 const result = { package: PKG, mode: MODE, generatedAt: new Date().toISOString(), generator: 'lean/goldens/lsp-golden.mjs',
   toolchain: execFileSync(LEAN, ['--version']).toString().trim(),
   environment: MODE === 'superset'
-    ? { header: text.split('\n').slice(0, 2), golden: ENV, resolvesTo: `shadow Mathlib umbrella ${ENV} = QED64.Essential (4354) + bake roots${ENV === 'w8' ? ' incl. DistLens' : ''}`, leanPath: leanPath.split(':') }
+    ? { header: text.split('\n').slice(0, 2), golden: ENV, resolvesTo: `shadow Mathlib umbrella ${ENV} = QED64.Essential (${essentialN}) + bake roots${ENV === 'w8' ? ' incl. DistLens' : ''}`, leanPath: leanPath.split(':') }
     : { header: ['', text.split('\n')[1]], resolvesTo: 'package closure only', leanPath: leanPath.split(':') },
   exampleSha256: sha(fs.readFileSync(EXAMPLE, 'utf8')), documentSha256: sha(text),
   elaborationMs: opened.ms, documentDiagnostics: opened.diagnostics, cursors: [], selections: [], clicks: [], declaredChecks: [] };

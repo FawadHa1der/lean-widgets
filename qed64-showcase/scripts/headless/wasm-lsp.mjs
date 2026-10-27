@@ -13,8 +13,13 @@
 //   is loaded, else 256 MiB; 6 GiB maximum) -> full Lean init ->
 //   _lean_wasm_load_snapshot_mem(ptr, bytes, 1n) for every raw snapshot, in
 //   order -> mark_preinitialized -> stdin ring -> per-byte stdout tap feeding
-//   the product's LspFrameDecoder -> callMain(["--worker",
-//   "-Dserver.reportDelayMs=0"]).
+//   the product's LspFrameDecoder -> callMain(RESIDENT_ARGV), the resident
+//   FileWorker's command line read from the pin's own public/workers/
+//   lean.worker.js (residentArgv below; pin K 62a06e2 on: "--worker",
+//   "-Dserver.reportDelayMs=0", "-DElab.async=false", HARDENING #70). Before
+//   2026-10-27 this file hard-coded ["--worker", "-Dserver.reportDelayMs=0"]
+//   (Elab.async left on): results recorded before that (pin N and earlier)
+//   are not directly comparable with later ones (scripts/headless/README.md).
 // Client frames obey the worker front door's rules (public/workers/
 // lsp-front-door.js): the FileWorker reads `initialize` then `didOpen`
 // directly (never answers initialize; no `initialized`), and only the
@@ -35,6 +40,22 @@ export const parseJson = (s) => JSON.parse(s, (k, v, ctx) =>
 const FORWARDED_NOTIFICATIONS = new Set(['textDocument/didChange', '$/cancelRequest', '$/lean/staleDependency',
   '$/lean/rpc/release', '$/lean/rpc/keepAlive']);
 const MiB = 1048576, GiB = 1073741824, PAGE = 65536;
+
+/** The resident FileWorker's argv exactly as the pin's browser worker passes it: `const RESIDENT_ARGV = [...]` (or
+ *  Object.freeze([...])) in <QED64 sources>/public/workers/lean.worker.js, parsed, never copied here. A worker without
+ *  it (pins before K 62a06e2, which inline the argv in callMain) or with an unexpected shape is refused: the headless lane
+ *  runs the pin's own command line or nothing. */
+export function residentArgv(src = QED64_SRC) {
+  const f = path.join(src, 'public/workers/lean.worker.js');
+  const js = fs.readFileSync(f, 'utf8');
+  const m = /\bconst\s+RESIDENT_ARGV\s*=\s*(?:Object\.freeze\(\s*)?(\[[^\]]*\])/.exec(js);
+  if (!m) throw new Error(`${f}: no 'const RESIDENT_ARGV = [...]' (the resident FileWorker's command line; QED64 8f29630, HARDENING #70, pin K 62a06e2 on): the headless lane refuses to guess the worker's argv for this pin`);
+  let argv = null;
+  try { argv = JSON.parse(m[1]); } catch (e) { throw new Error(`${f}: RESIDENT_ARGV ${m[1]} is not a JSON array of strings (${e.message})`); }
+  if (!Array.isArray(argv) || argv[0] !== '--worker' || !argv.every((a) => typeof a === 'string'))
+    throw new Error(`${f}: RESIDENT_ARGV ${m[1]} is not ["--worker", …] (strings)`);
+  return argv;
+}
 
 class ClientBase {
   constructor(log) {
@@ -84,7 +105,7 @@ export class WasmLsp extends ClientBase {
     return c;
   }
   #M = null; #ring = null; #mem = null; #frames = null; #CAP = 1 << 20; #wasmLogFd = null;
-  timings = {}; loads = []; memory = {}; stdoutLines = [];
+  timings = {}; loads = []; memory = {}; stdoutLines = []; argv = null;
 
   #wlog(line) { if (this.#wasmLogFd !== null) fs.writeSync(this.#wasmLogFd, line + '\n'); }
 
@@ -95,6 +116,9 @@ export class WasmLsp extends ClientBase {
     const artifactDir = fs.realpathSync(path.resolve(opts.artifact)), lib = fs.realpathSync(path.resolve(opts.lib));
     const leanJs = path.join(artifactDir, 'bin/lean.js');
     if (!fs.existsSync(leanJs)) throw new Error(`${leanJs} not found`);
+    // the worker's command line, from the pin's lean.worker.js (refused before anything is booted when it has none)
+    this.argv = residentArgv();
+    this.log(`lean ${this.argv.join(' ')} (RESIDENT_ARGV of ${path.join(QED64_SRC, 'public/workers/lean.worker.js')})`);
     if (opts.wasmLog) this.#wasmLogFd = fs.openSync(opts.wasmLog, 'w');
     const umbrella = opts.snaps.some((s) => path.basename(s) !== 'init.snap');
     const initialBytes = opts.initialBytes ?? (umbrella ? 2048 * MiB : 256 * MiB);
@@ -185,7 +209,7 @@ export class WasmLsp extends ClientBase {
             const orig = tty.ops;
             tty.ops = { ...orig, put_char(t, val) { if (t.output?.length > 0) orig.fsync(t); if (val !== null) self.#frames.push(val); } };
             self.timings.bootMs = Math.round(performance.now() - t0);
-            M.callMain(['--worker', '-Dserver.reportDelayMs=0']);
+            M.callMain([...self.argv]);
             resolve();
           } catch (e) { reject(e); }
         },

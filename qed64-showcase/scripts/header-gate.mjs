@@ -8,7 +8,9 @@
 //   bytes[40:80] all zero        githash: native64 is built with an empty githash
 //
 // usage:
-//   header-gate.mjs --clone <W/mathlib4> [--core <K/native/stage1/lib/lean>]
+//   header-gate.mjs --clone <Mathlib clone> [--core <K/native/stage1/lib/lean>]
+//                   (showcase.sh native passes the target pin's MATHLIB_CLONE, scripts/lib/env.sh: W/mathlib4.<first 8
+//                   hex of the pin lock's toolchain.mathlib.commit>, or the legacy W/mathlib4)
 //                   [--modules <file of module names>]...   resolve each module's facets in the clone
 //                   [--files <file of paths, relative to --clone or absolute>]...
 //                   [--label <name>] [--json <out.json>]

@@ -1,11 +1,12 @@
-// C20 (new): the in-browser twin of lean/expect/click-all. EVERY link the InfoView renders in the eight examples (135 distinct
-// links: 129 MakeEditLink + 6 Try this, lean/expect/click-all/w8/<pkg>.json and lean/expect/click-all/dist-lens.json, the widgets8
-// environment the gallery serves) is clicked with the real mouse in the real InfoView, each from a freshly reset
-// example (the gallery's Reset button). For each link: the panel it lives in equals its golden first (so the link
+// C20 (new): the in-browser twin of lean/expect/click-all. EVERY link the InfoView renders in the eight examples (every
+// distinct MakeEditLink and Try this link of lean/expect/click-all/w8/<pkg>.json and lean/expect/click-all/dist-lens.json,
+// the widgets8 environment the gallery serves; the total is counted from them, lean/expect/click-all/summary.json has the
+// per-env counts) is clicked with the real mouse in the real InfoView, each from a freshly reset example (the gallery's
+// Reset button). For each link: the panel it lives in equals its golden first (so the link
 // exists where the native run found it), the post-click document equals the native click-all edit (applyEdit of the
 // frozen range/newText AND the sha256 of the native edited file), and QED64 re-checks that version with 0 errors and
-// 0 warnings. One warm-profile boot per package (packages with no links are skipped: chart-kit, expr-xray,
-// tree-scope have 0 in click-all).
+// 0 warnings. One warm-profile boot per package (packages with no links in click-all are skipped, e.g. chart-kit,
+// expr-xray and tree-scope).
 import { test, expect } from '../lib/fixtures.mjs';
 import { Gallery, EXAMPLES, CLICKALL, GOLDENS, LIVENESS_MODE, API, RESTART_HOW, rel, clickAllPath, sleep } from '../lib/qed64.mjs';
 import { clickLink, goldenCursor } from '../lib/actions.mjs';
@@ -116,5 +117,5 @@ test(`C20 click-all in the browser: all ${total} rendered links, each from a fre
   m.perPackage = Object.fromEntries(Object.entries(m.packages).map(([k, p]) => [k, `${p.ok}/${p.links} in ${(p.ms / 1000).toFixed(1)} s`]));
   console.log(`C20 ${m.clean}/${total} clean in ${(m.wallMs / 60000).toFixed(1)} min ${JSON.stringify(m.perPackage)}; stalls ${m.stalls} ${JSON.stringify(m.stallLinks)}; liveness wedged ${m.livenessWedged}, restarted ${m.livenessRestarts}; L7 handled by QED64 ${m.l7HandledUpstream}; qed64 liveness ${JSON.stringify(m.qed64Liveness)}; pool max ${JSON.stringify(m.poolMax)}; captures ${JSON.stringify(m.captures)}`);
   expect(fail, 'C20 failures').toEqual([]);
-  expect(m.clean).toBe(135);
+  expect(m.clean).toBe(total); // every link of the frozen click-all set, however many the goldens hold
 });

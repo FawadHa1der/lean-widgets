@@ -9,8 +9,10 @@ Every non-widget, non-core module in the closure is classified by the olean the
 clone already holds: native (flags byte 0, empty githash), gmp (official
 toolchain barrel olean), or missing. "To compile" = gmp + missing.
 
-usage: delta.py --clone W/mathlib4 --widgets W/widgets-src --core K/native/stage1/lib/lean
+usage: delta.py --clone <Mathlib clone> --widgets W/widgets-src --core K/native/stage1/lib/lean
                 [--roots ChartKit,ExprXRay,...] [--base-roots ...] [--json out.json]
+The clone is the target pin's MATHLIB_CLONE (`node scripts/lib/env.mjs` prints it: W/mathlib4.<first 8 hex of the
+pin lock's toolchain.mathlib.commit>, or the legacy W/mathlib4), the tree build-native.sh then builds in.
 With --base-roots, modules already in the closure of the base roots are reported
 separately (phase-2 increment = closure(roots) - closure(base-roots)).
 """

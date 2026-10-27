@@ -16,10 +16,22 @@
 //                              out/runtimes/<buildId>/overlay/<o>/ (the per-runtime overlay store, by logical name).
 //
 // Origins (an origin serves the deployed layout: /runtime/…, /profiles/…, /snapshots/…, /snapshots/<dir>/…):
-//   --origin <url>         (ARTIFACT_ORIGIN)        the showcase's own origin: our deployed Worker, or scripts/serve.mjs
-//                                                   of a checkout that has the files. Serves QED64's files AND overlays.
-//   --qed64-origin <url>   (QED64_ARTIFACT_ORIGIN)  an origin serving QED64's own files only (QED64's live site serves
-//                                                   exactly these paths); tried after --origin for QED64's files.
+//   --origin <url>         (ARTIFACT_ORIGIN)        the showcase's own origin: our deployed Worker (the upload copies,
+//                                                   never deletes, so every pin uploaded to its prefix keeps its QED64
+//                                                   files and .snapz, all digest-named; an overlay's index.json is one
+//                                                   per /snapshots/<dir>/, the last upload's: bare for pins A–H, shared
+//                                                   by same-runtime pins from I on), or scripts/serve.mjs of a checkout
+//                                                   that has the files. Serves QED64's files AND overlays. The source
+//                                                   for any pin QED64's live site does not deploy now.
+//   --qed64-origin <url>   (QED64_ARTIFACT_ORIGIN)  an origin serving QED64's own files only; tried after --origin for
+//                                                   QED64's files. QED64's live site serves them for ONE release, the
+//                                                   one it deploys now: since QED64 4b98279 its Worker reads /runtime/*
+//                                                   and /profiles/<not index.json> only from that release's prefix (no
+//                                                   fallback to the bucket root, whose runtime/ and profiles/ copies
+//                                                   were removed on 2026-10-23), and its R2 sweep of 2026-10-23 kept
+//                                                   only the live and the previous pairing's /snapshots/. Bootstrapping
+//                                                   or rolling back to any other pin (N, H, …) from it gets 404s: use
+//                                                   --origin.
 //   Plain HTTP(S) GETs from Node: CORP/COEP apply to browsers, not to this client.
 //
 //   node scripts/fetch-artifacts.mjs [--pin <id>] [--origin <url>] [--qed64-origin <url>] [--only public|overlays]
@@ -100,7 +112,14 @@ if (ONLY !== 'public') {
   }
 }
 if (argv.includes('--git-only')) { if (ONLY === 'overlays') usage('--git-only installs public/ manifests; not with --only overlays'); plan.splice(0, plan.length, ...plan.filter((x) => x.from !== 'origin')); }
+/* QED64's files: the showcase's origin first, then QED64's, which answers only for the release it deploys now (header:
+   since 4b98279 no bucket-root fallback), so for any other pin it is a 404 and only --origin can deliver; every byte is
+   checked against the lock either way. The overlays exist only on the showcase's origin. qedOriginHint: what a QED64
+   file that no origin delivered adds to its failure when QED64's origin was the last one tried. (Block comments: the
+   usage text is every line that starts with //.) */
 const origins = (it) => (it.kind === 'overlay' ? [ORIGIN] : [ORIGIN, QORIGIN]).filter(Boolean);
+const qedOriginHint = (it, last) => (it.kind === 'qed64' && QORIGIN && String(last).startsWith(QORIGIN)
+  ? ` — QED64's origin serves only what its live site deploys now (/runtime/ and /profiles/<not index.json> of ONE release since QED64 4b98279; its 2026-10-23 sweep kept only the live and the previous pairing's /snapshots/): fetch pin ${ID}'s files from the showcase's own origin (--origin)` : '');
 
 async function have(it) {
   try { const st = fs.statSync(it.dest); return st.isFile() && st.size === it.bytes && (await sha256File(it.dest)) === it.sha256; } catch { return false; }
@@ -134,7 +153,7 @@ if (REMOTE) {
       } catch (e) { last = `${o}: ${e.message}`; }
     }
     n++;
-    if (!good) { bad++; console.log(`FAIL ${it.url} (lock ${it.bytes} B): ${last}`); }
+    if (!good) { bad++; console.log(`FAIL ${it.url} (lock ${it.bytes} B): ${last}${qedOriginHint(it, last)}`); }
   }
   console.log(bad ? `REMOTE-CHECK FAILED: ${bad} of ${n}` : `REMOTE-CHECK OK: all ${n} files to fetch answer 200 with the lock's size (${[ORIGIN, QORIGIN].filter(Boolean).join(', ')})`);
   process.exit(bad ? 1 : 0);
@@ -194,7 +213,7 @@ async function install(it) {
       return { how: `${append ? `resumed at ${have0} B from` : 'from'} ${o}`, bytes: got };
     }
   }
-  throw new Error(`no origin delivered ${it.url}: ${lastErr}`);
+  throw new Error(`no origin delivered ${it.url}: ${lastErr}${qedOriginHint(it, lastErr)}`);
 }
 
 const t0 = Date.now();

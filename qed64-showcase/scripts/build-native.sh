@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Native64 build of the Mathlib/ProofWidgets delta and the widget libraries, inside
-# Docker, writing ONLY into the APFS clone $W/mathlib4 (BUILD-PLAN.md §4 B0-B4, §9.1).
+# Native64 build of the Mathlib/ProofWidgets delta and the widget libraries, inside Docker, writing ONLY into the
+# APFS clone $MATHLIB_CLONE (the target pin's, scripts/lib/env.sh; BUILD-PLAN.md §4 B0-B4, §9.1).
 #
 #   scripts/build-native.sh identity          B1  lean/lake identity inside the container
 #   scripts/build-native.sh reuse-gate <tag> [list]  B2  lake build --no-build (plan's 3 modules, or a module list)
@@ -14,7 +14,8 @@
 #
 # Mount layout mirrors wasm64-lean-kernel/wasm64-build/mathlib-tree.sh run(): the
 # workspace is at /work/mathlib4 and the native compiler at /native (read-only), so
-# Lake traces recorded by the original build (paths, lean githash '') still match.
+# Lake traces recorded by the original build (paths, lean githash '') still match; the clone's own
+# host path ($W/mathlib4.<Mathlib commit 8>, or the legacy $W/mathlib4) never reaches the container.
 # Additions (no effect on traces): --network none, LAKE_NO_CACHE, LAKE_ARTIFACT_CACHE=false,
 # the read-only widget sources at /work/mathlib4/widgets.
 #
@@ -24,8 +25,9 @@
 set -uo pipefail
 
 SC="$(cd "$(dirname "$0")/.." && pwd)"
-. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # W, K (QED64_KERNEL_BUILD), QED64_TOOLCHAIN_IMAGE
-need QED64_KERNEL_BUILD
+. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # W, K (QED64_KERNEL_BUILD), MATHLIB_CLONE, QED64_TOOLCHAIN_IMAGE
+need QED64_KERNEL_BUILD MATHLIB_CLONE
+MC="$MATHLIB_CLONE"   # the target pin's Mathlib clone (lock toolchain.mathlib.commit): the one tree this script writes
 IMG="$QED64_TOOLCHAIN_IMAGE"
 LOGS="$W/logs"
 mkdir -p "$LOGS"
@@ -36,10 +38,14 @@ GATE_MODULES="Mathlib.Order.Basic Mathlib.Tactic ProofWidgets.Component.HtmlDisp
 
 die() { echo "build-native: $*" >&2; exit 2; }
 
-# Refuse to run if a read-only tree could be the write target.
-[ -d "$W/mathlib4/.lake/build/lib/lean/Mathlib" ] || die "no clone at $W/mathlib4 (run B0: cp -cpR $K/mathlib/mathlib4 $W/mathlib4)"
+# Refuse to run if a read-only tree could be the write target, or if the clone is not of the kernel build's Mathlib
+# (QED64_KERNEL_BUILD of one release with SHOWCASE_PIN of another would build the delta against the wrong tree).
+[ -d "$MC/.lake/build/lib/lean/Mathlib" ] || die "no clone at $MC (run B0: cp -cpR $K/mathlib/mathlib4 $MC)"
+case "$(cd "$MC" && pwd -P)/" in "$(cd "$K" && pwd -P)/"*) die "the clone $MC is inside the read-only kernel build $K: refusing" ;; esac
 . "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # file_nlink (stat -f %l / stat -c %h)
-[ "$(file_nlink "$W/mathlib4/.lake/build/lib/lean/Mathlib/Order/Basic.olean")" = 1 ] || die "clone shares inodes (nlink != 1): refusing"
+[ "$(file_nlink "$MC/.lake/build/lib/lean/Mathlib/Order/Basic.olean")" = 1 ] || die "clone shares inodes (nlink != 1): refusing"
+MC_HEAD="$(git --no-optional-locks -C "$MC" rev-parse HEAD 2>/dev/null)"; K_MATHLIB="$(cat "$K/mathlib/MATHLIB-COMMIT" 2>/dev/null)"
+[ -n "$MC_HEAD" ] && [ "$MC_HEAD" = "$K_MATHLIB" ] || die "the clone $MC is at Mathlib ${MC_HEAD:-?}, but $K/mathlib/MATHLIB-COMMIT is ${K_MATHLIB:-missing}: QED64_KERNEL_BUILD does not match the target pin"
 [ -f "$W/widgets-src/SOURCE-HASH.txt" ] || die "no widget export at $W/widgets-src"
 
 # run <step-name> <bash command>  — one container, logged, stats-sampled, timed.
@@ -63,7 +69,7 @@ run() {
     -e LAKE_NO_CACHE=1 -e LAKE_ARTIFACT_CACHE=false \
     -e "PATH=/native/stage1/bin:/emsdk/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     -v "$K/native":/native:ro \
-    -v "$W/mathlib4":/work/mathlib4 \
+    -v "$MC":/work/mathlib4 \
     -v "$W/widgets-src":/work/mathlib4/widgets:ro \
     -w /work/mathlib4 "$IMG" \
     bash -lc "export PATH=/native/stage1/bin:\$PATH; git config --global --add safe.directory '*'; mkdir -p /work/mathlib4/.lake/showcase-stamps && touch $stamp; $cmd" \
@@ -76,9 +82,9 @@ run() {
   peak=$(awk '{u=$2; v=u+0; if (u ~ /GiB/) v*=1024; else if (u ~ /KiB/) v/=1024; else if (u ~ /B$/ && u !~ /MiB/) v/=1048576; if (v>m) m=v} END{printf "%.0f", m+0}' "$stats")
   # oleans written by this step (newer than the in-container stamp)
   local new="$LOGS/$step.new-oleans.txt"
-  if [ -f "$W/mathlib4/.lake/showcase-stamps/$step" ]; then
-    find "$W/mathlib4/.lake" -name '*.olean' -newer "$W/mathlib4/.lake/showcase-stamps/$step" \
-      | sed -e "s|^$W/mathlib4/||" | LC_ALL=C sort > "$new"
+  if [ -f "$MC/.lake/showcase-stamps/$step" ]; then
+    find "$MC/.lake" -name '*.olean' -newer "$MC/.lake/showcase-stamps/$step" \
+      | sed -e "s|^$MC/||" | LC_ALL=C sort > "$new"
   else
     : > "$new"
   fi
@@ -91,16 +97,16 @@ run() {
 }
 
 append_lakefile() {
-  local lf="$W/mathlib4/lakefile.lean" ap="$SC/lean/lakefile-append.lean"
+  local lf="$MC/lakefile.lean" ap="$SC/lean/lakefile-append.lean"
   [ -f "$ap" ] || die "missing $ap"
   if grep -q '^-- qed64-showcase: widget libraries' "$lf"; then
     echo "append: already present in $lf"
   else
-    [ -f "$W/mathlib4/lakefile.lean.pre-append" ] || cp -p "$lf" "$W/mathlib4/lakefile.lean.pre-append"
+    [ -f "$MC/lakefile.lean.pre-append" ] || cp -p "$lf" "$MC/lakefile.lean.pre-append"
     { printf '\n'; cat "$ap"; } >> "$lf"
     echo "append: appended $ap to $lf"
   fi
-  diff "$W/mathlib4/lakefile.lean.pre-append" "$lf"
+  diff "$MC/lakefile.lean.pre-append" "$lf"
   return 0
 }
 
@@ -119,10 +125,10 @@ case "$step" in
   append)
     append_lakefile ;;
   widgets)
-    grep -q '^-- qed64-showcase: widget libraries' "$W/mathlib4/lakefile.lean" || die "run 'append' first"
+    grep -q '^-- qed64-showcase: widget libraries' "$MC/lakefile.lean" || die "run 'append' first"
     run "b4-widgets${1:+-$1}" "lake build $PHASE1_LIBS" ;;
   distlens)
-    grep -q '^-- qed64-showcase: widget libraries' "$W/mathlib4/lakefile.lean" || die "run 'append' first"
+    grep -q '^-- qed64-showcase: widget libraries' "$MC/lakefile.lean" || die "run 'append' first"
     T="${T:-4}" run "s7-distlens-T${T:-4}" "lake build $PHASE2_LIBS" ;;
   header-gate)
     node "$SC/scripts/header-gate.mjs" "$@" ;;
