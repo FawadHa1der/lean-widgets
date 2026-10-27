@@ -7,7 +7,7 @@ dependency of four kinds. None of them is a copy of QED64's code:
 |---|---|---|---|---|
 | **Source** | QED64's git tree at the served pin's commit | the git **submodule** `qed64-showcase/deps/qed64`; its gitlink *is* the served pin's source pin. Each staged pin uses a `git worktree` of the submodule's own repository at `$QED64_SHOWCASE_WORK/qed64-pins/<id>` | `git clone --recursive`; `showcase.sh bootstrap` runs `git submodule update --init` and adds worktrees if they are missing | `pin-qed64.mjs verify` #8: HEAD == the lock's commit, no tracked file modified, and for the active pin gitlink == HEAD == lock |
 | **Binary** | QED64's runtime chunks, library packs and stock snapshots. Their names are content addresses, and they are not in QED64's git | `release.files` in `pins/<id>/QED64.lock.json`: the sha256 and size of each of its files (145 for E, 146 for F, G and H: their `dist/` adds `qed64-build.json`; 147 for I: its `dist/` adds `workers/memory64-probe.js`) | `scripts/fetch-artifacts.mjs` fetches them from an artifact origin by URL path, checking sha256 against the lock. The tracked manifests come from git instead | verify #1–#6 and #10 (every byte, plus the manifests' own digests) |
-| **Toolchain** (heavy path only) | the kernel fork's native64 Lean/Lake, the Docker image it runs in, the Mathlib tree it built, QED64's slim base olean tree, and the runtime's `stage1/bin` (from pin I on fetched from the kernel fork's release that QED64's `toolchain/lean4-wasm64-release.json` names) | `toolchain` in the lock (native64 commits and binary sha256s, Docker image id and recorded equivalents, Mathlib and ProofWidgets commits, Node version) | You build or fetch them yourself: [BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md) | verify #7 when `QED64_KERNEL_BUILD` is set, and N/A otherwise. `showcase.sh native` refuses a Docker image the lock does not record |
+| **Toolchain** (heavy path only) | the kernel fork's native64 Lean/Lake, the Docker image it runs in, the Mathlib tree it built, QED64's slim base olean tree, and the runtime's `stage1/bin` (from pin I on fetched from the kernel fork's release that QED64's `toolchain/lean4-wasm64-release.json` names) | `toolchain` in the lock (native64 commits and binary sha256s, Docker image id and recorded equivalents, Mathlib and ProofWidgets commits, Node version) | You build or fetch them yourself: [BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md) | verify #7 when `QED64_KERNEL_BUILD` (one dir or a `:` list) holds the pin's own kernel build (matched by its NATIVE-COMMIT and MATHLIB-COMMIT; `scripts/lib/env.mjs`), and N/A otherwise, naming any candidate it rejected. `showcase.sh native` refuses a Docker image the lock does not record |
 | **Page tier** (runtime) | the page's JavaScript globals, DOM and query knobs that the gallery drives (on F, G, H and I, the v1 pins: the declared embedding API v1, `qed64.api`) | the pinned bundle itself. The gallery reads `gallery/pin.json` (generated from the lock), and the UX suite resolves the bundle name per pin | it arrives with the page, which is built from source | the gallery's static gate and the UX suite; the full list is under [Integration points](#integration-points) below |
 
 Our own additions sit on top: the native widget oleans, the baked widget overlays `widgets7`/`widgets8`, the gallery
@@ -31,7 +31,7 @@ maps `?overlay=widgets8` to the directory; the Worker routes `/snapshots/*` gene
    build-shell.mjs ── npm ci --prefix frontend && npm run build:site ──► release/<id>/dist   (byte-identical to the lock
                                    │                                                          or nothing is installed)
    fetch-artifacts.mjs ◄── git show <commit>:public/{runtime,profiles,snapshots}/*.json (tracked manifests)
-          ▲            ◄── ARTIFACT ORIGIN (our Worker / serve.mjs of a built checkout / QED64's own site for its files)
+          ▲            ◄── ARTIFACT ORIGIN (our Worker / serve.mjs of a built checkout / QED64's own site: its live release's files only)
           │                  /runtime/chunks/*  /profiles/*.part-*  /snapshots/*.snapz  <lock overlays.<o>.url>* (/snapshots/<dir>/*)
           └─────────────────► release/<id>/public/…   +   out/runtimes/<buildId>/overlay/widgets{7,8}/  (sha256 == lock)
 
@@ -121,19 +121,30 @@ own bakes. `scripts/fetch-artifacts.mjs` installs a pin's binaries as follows:
   The fetch is resumable. A complete, verified file is kept. An interrupted download continues from `<file>.partial`
   with a `Range` request when the origin answers 206 (our Worker does); otherwise that one file restarts. The overlays
   (`{index.json, init.<d>.snapz, widgets.<d>.snapz}` under the lock's `overlays.<o>.url`: `/snapshots/widgets{7,8}/` on
-  pins A–H, `/snapshots/widgets{7,8}.f69cca24d0878a58/` on pin I; a url that disagrees with `scripts/lib/pins.mjs`
-  `overlayUrl` is refused before anything is fetched) are installed into `out/runtimes/<buildId>/overlay/widgets{7,8}/`
-  and checked against the lock's `overlays` section.
+  pins A–H, `/snapshots/widgets{7,8}.<bid16>/` from pin I on (I: `f69cca24d0878a58`); a url that disagrees with
+  `scripts/lib/pins.mjs` `overlayUrl` is refused before anything is fetched) are installed into
+  `out/runtimes/<buildId>/overlay/widgets{7,8}/` and checked against the lock's `overlays` section.
 * **Origins:** `--origin` (`ARTIFACT_ORIGIN`) is the showcase's own origin. It serves QED64's files and our overlays at
   exactly these paths: the deployed Worker, or `scripts/serve.mjs` of a checkout that has the files. `--qed64-origin`
-  (`QED64_ARTIFACT_ORIGIN`) serves QED64's files only; QED64's live site serves the same paths. These are plain GETs
-  from Node; CORP/COEP do not apply to them. `--remote-check` HEADs every file first. QED64's Worker omits
-  Content-Length on HEAD, so for it the tool reads the GET headers instead.
+  (`QED64_ARTIFACT_ORIGIN`) serves QED64's files only, and QED64's live site serves them for **one** release, the one
+  it deploys now: since QED64 `4b98279` its Worker reads `/runtime/*` and `/profiles/<not index.json>` only from that
+  release's prefix `lean4-wasm64/<id>/`, with no fallback to the bucket root (whose `runtime/` and `profiles/` copies
+  were removed on 2026-10-23), and its R2 sweep of 2026-10-23 kept only the live and the previous pairing's
+  `/snapshots/` (QED64 `docs/DEPLOY.md`, "Atomic promotes"). So it can bootstrap only the pin whose release QED64
+  deploys now. Bootstrapping or rolling back to any other pin (N, H or older) needs the showcase's own origin: our
+  upload copies and never deletes, and QED64's fetched files are all digest-named, so every pin uploaded to our prefix
+  keeps them. Overlay indexes are the exception: an overlay's `index.json` is named only by its directory, the bare
+  `widgets{7,8}/` for pins A–H and a per-runtime one from pin I on that same-runtime pins share (I, J and K; L and N).
+  That key holds the last upload's index, so an older pin whose index differs (I and J once K is uploaded) fails the
+  lock check for that file; its digest-named `.snapz` stay. A file that QED64's origin, tried last, fails to deliver
+  gets that advice in its error. These are plain GETs from Node; CORP/COEP do not apply to them. `--remote-check` HEADs
+  every file first. QED64's Worker omits Content-Length on HEAD, so for it the tool reads the GET headers instead.
 * **Proved on 2026-10-04:** a fresh clone fetched all 81 binary files of pin E (1.38 GB) from
-  `https://qed64.fawadworkaddress.workers.dev` with sha256 equal to the lock. That run was interrupted once
-  deliberately after 30 s and resumed: 22 kept, 65 installed, 0 failed (`$W/logs/r2/clone-fetch-live-*.log`). The
-  overlays (761.5 MB) came from a local origin (`serve.mjs` of the main checkout on :5297; `clone-bootstrap-1.log`). The
-  Linux rehearsal fetched all 93 files from the same local origin.
+  `https://qed64.fawadworkaddress.workers.dev` with sha256 equal to the lock (before QED64 `4b98279`: that origin served
+  E's files then, and no longer does, see Origins above). That run was interrupted once deliberately after 30 s and
+  resumed: 22 kept, 65 installed, 0 failed (`$W/logs/r2/clone-fetch-live-*.log`). The overlays (761.5 MB) came from a
+  local origin (`serve.mjs` of the main checkout on :5297; `clone-bootstrap-1.log`). The Linux rehearsal fetched all 93
+  files from the same local origin.
 
 Until the showcase's Worker is deployed, the overlays exist only on machines that baked them. A cloner without such an
 origin either points `--origin` at someone's served checkout or rebuilds the overlays ([BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md)).

@@ -1,9 +1,49 @@
-# Next steps (updated 2026-10-10, pin J)
+# Next steps (updated 2026-10-27, pin O)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
 
-## Pin J `5e63edd`: active and gated; the evidence runs, the commit, then the user's decisions
+## Pin O `521cf3f`: active and gated (Lean 4.35); the commit, the CI mirror and the rehearsal, then the user's decisions
+
+**Where it stands (2026-10-27 ~23:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
+from `d60b15e`, which is `origin/main`). The active pin of this checkout is **O `521cf3f`** since 2026-10-27: QED64 main on
+the kernel release `lean-v4.35.0-b081e7c`, Lean 4.35.0, runtime `wasm64-36d7f415704473d9`, with the widgets ported to
+Lean 4.35 (`1a61003`). It is gated: headless `CONTROLS PASS`, stage4 and E2 green (E2 7/8 on L1), VERDICTs `o-full1` and
+`o-full2`, C20 405/405, the headed sign-off `o-headed4`, the 10 Mbit/s first visit (513.9 s), `deploy-manifest --check`
+OK with `infra/ux-verdict.json` naming `o-full2` (docs/REPIN-LOG.md, pin O). Pins K, L and N came between J and O; I and
+J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O and the Lean 4.35 port on top of `origin/main`.
+
+1. **Ours, next:** the pin O work is committed on `port-lean-4.35` (O's harness `07d015b`, the review fixes and
+   `NODE_TOOL` `0ab384a`, pin O `546d110`, then these docs); then the qed64-static CI mirror on that commit (`node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job qed64-static`) and the
+   deploy rehearsal (`ci/rehearse-deploy.sh`: a new rehearsal state for runtime 36d7f415, and `old-shell` against the
+   live H with its E1 MEASURE lines, which now also cover the pack manifests).
+2. **The user's decisions:**
+   * **The push.** A push of `port-lean-4.35` to main deploys O over the live H (`.github/workflows/qed64-deploy.yml`;
+     G2 reads the committed `infra/ux-verdict.json`). The deploy manifest has 93 R2 objects, 2.367 GB, most of them new
+     (O's packs, runtime, stock snapshots and per-runtime overlays). Or deploy N `58ebbad` first (Lean 4.34, its packs
+     unchanged from H's), then O.
+   * **E1, now wider.** O's pack manifests change under the same URL (`/profiles/lean-core.manifest.json`,
+     `/profiles/mathlib-essential.manifest.json`) in upload phase 2. The live H shell has no release check on a pack
+     install (QED64 #81 is new at O), so an H tab open between that upload and the Worker deploy can install O's 4.35
+     pack under its 4.34 runtime. Options in docs/DEPLOY-CLOUDFLARE.md 3.2 (keep that window short; or the other order).
+     A question to QED64, whether per-release manifest URLs are possible, is drafted in docs/UPSTREAM-REPORT-QED64.md
+     (last section) for the user to relay.
+   * **`.env.local`:** its `QED64_KERNEL_BUILD` names `~/code/wasm64-lean-kernel-build-v4.34.0`, which no longer
+     exists, so for O the kernel build resolves to unset (verify #7 N/A; native and stage refuse). Suggested:
+     `QED64_KERNEL_BUILD=$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`
+     (`.env.local` expands `$HOME` throughout the value): it resolves O's build for O and the 4.34 build for H–N.
+   * **Alias policy and stale tabs:** as in pin I's list (docs/REPIN-LOG.md, pin I, "Open decisions" 3–4), now for
+     `widgets{7,8}.36d7f415704473d9`.
+   * **Old stores:** whether to keep N's and H's build stores (runtimes `5650321f`, `3ab1c6a9`), `$W/mathlib4` and
+     `$W/kernel-build-native64` while N or H is a rollback target.
+3. **Follow-up (ours, design):** move the staged trees, their reports and the native build record into per-runtime
+   stores (`$W/runtimes/<bid>/`, as the bakes already are), so alternating pins needs no restage; today the provenance
+   records make the sharing fail closed (an older pin's lanes refuse O's trees), and restaging an older pin needs that
+   pin's branch (its native delta lists).
+4. **Upstream, drafted, not sent:** the pack-manifest URL question above, and an FYI on the node 26.3 exit deadlock
+   (docs/UPSTREAM-REPORT-QED64.md, last section; the user relays them).
+
+## Pin J `5e63edd` (history, 2026-10-10; J retired 2026-10-27): active and gated then; the evidence runs, the commit, then the user's decisions
 
 **Where it stands (2026-10-10 ~05:30Z).** The live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded). This checkout's active pin is J `5e63edd`
 (since 2026-10-09 ~18:55Z, first as a staged test pin): QED64 main since ~20:30Z, a fast-forward of

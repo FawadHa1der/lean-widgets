@@ -1,5 +1,15 @@
 # Stage 4 — headless verification in the wasm runtime (E1, E2, E3, E3b)
 
+**Pin O, Lean 4.35 (2026-10-27 14:07–14:32 EDT): `wasm64-36d7f415704473d9` (QED64 `521cf3f`, kernel release
+`lean-v4.35.0-b081e7c`) with the widget bakes `widgets.37b2f0a9…` (w8) and `widgets.4f02caae…` (w7), staged as
+`SHOWCASE_PIN=521cf3f` while N was still active; rerun with O active after the review fixes (18:49–19:04 EDT, the tools
+through `NODE_TOOL`), with the same counts** (`$W/logs/pinO-hl-*.log`, the rerun `$W/logs/pinO-pf2-*.log`;
+`out/runtimes/wasm64-36d7f415704473d9/headless/summary.json` is the rerun's; docs/REPIN-LOG.md, pin O): `CONTROLS PASS` (11/11); E1 8/8 (w8)
+and 7/7 (w7); E3 1167/1167 checks on w8 and 1038/1038 on w7; E3b 49/49 and 44/44 panels clean; E2 7/8, with tree-scope
+`Demo.lean:104` failing on L1 exactly as below (native Lean 4.35 still builds that Demo: `packages/tree-scope` `Demo.olean`,
+2026-10-25); gate `stage4Green`, `E2Green`. This is the first run whose E3/E3b boot the worker with the pin's own argv
+(`-DElab.async=false`, see the note below). The counts equal the 4.34 runs': no check was added or lost by the port.
+
 **Re-run on the re-pinned runtime (2026-10-01 17:28–17:45 EDT): `wasm64-2c18773ecfba45bb` (QED64 9fdf9b8, kernel
 0035) with the new widget bakes `widgets.a0c16868…` (w7) and `widgets.62e1f451…` (w8)** (`$W/logs/repin-headless-all-2.log`,
 `out/headless/summary.json`; docs/REPIN-LOG.md §7): `CONTROLS PASS`; E1 8/8 (w8) and 7/7 (w7); E3 1167/1167 checks on w8
@@ -8,6 +18,19 @@ below; gate `stage4Green`, `E2Green`. One check is new since the run below: the 
 a run of consecutive leaves (spec edit at 03:25). `rpc-probe.mjs` now matches it with the native golden tool's rule (the
 first pass failed it 144/145 on both bakes; root cause in REPIN-LOG §7). The rest of this file is the original run on
 `wasm64-4b025db7729c5f89`.
+
+**Note (2026-10-27): the worker's command line.** This concerns only the results that boot QED64's FileWorker through
+`scripts/headless/wasm-lsp.mjs`: E3 (`rpc-probe.mjs`, also the wasm E3 controls of `run-controls.sh`), E3b (which
+renders the panels E3 produced) and the "Timings in wasm" section (E3's `rpc.json`). Every such run in this file, and
+every one up to pin N (`58ebbad`), booted `lean --worker -Dserver.reportDelayMs=0` (hard-coded in `wasm-lsp.mjs`), i.e.
+with asynchronous elaboration ON, while QED64's browser worker has passed `-DElab.async=false` since HARDENING #70 (pin
+K `62a06e2`). From the Lean 4.35 re-pin (QED64 `521cf3f`) on, `wasm-lsp.mjs` parses the argv from the pin's own
+`public/workers/lean.worker.js` (`RESIDENT_ARGV`), so those runs elaborate synchronously, as the browser does. Their
+results under the two settings are **not directly comparable** (the wasm timings below were measured with `Elab.async`
+on); see [scripts/headless/README.md](../scripts/headless/README.md#e3--rpc-probemjs). E1 (`exact-header.mjs`: QED64's
+`snapshot-probe.mjs` batch compile) and E2 (`run-e2.sh`: QED64's `supervised-run.mjs` → `node-runner.mjs` CLI) do not
+go through `wasm-lsp.mjs`; their command lines are unchanged by this, as is E1's part of the max-RSS bullet in
+"Timings in wasm".
 
 Run 2026-10-01 00:26–00:58 EDT on this host, against the pinned QED64 runtime
 `wasm64-4b025db7729c5f89` (`$W/stage1`, an APFS clone of the served stage1 bin) and the bake
@@ -171,6 +194,10 @@ every `#guard_msgs` passed in wasm.
   * wasm, the Demo with only line 104 removed (`$W/run/diag-tree-scope-no104`): `Demo.olean
     stable at 319072 bytes`, rc 0 (`$W/logs/s4-diag-tree-scope-no104.log`). Line 104 is the
     only wasm difference in that Demo.
+  * pin O (Lean 4.35.0, kernel release `lean-v4.35.0-b081e7c`, 2026-10-27): the same verbatim E2 error on w8/tree-fat
+    (`$W/logs/showcase-showcase.sh-headless-e2.log`), while native Lean 4.35.0 builds the same Demo
+    (`packages/tree-scope/.lake/build/lib/lean/TreeScope/Demo.olean`). The policy text is unchanged at the release's
+    kernel commit `b081e7c` (`wasm64-build/PATCHES.md:321`, "every import happens at `OLeanLevel.exported`").
 * **Not fixable in our repo.** The import level is compiled into the pinned runtime, and
   QED64 must not change. The Demo is the read-only widget source, run verbatim. The showcase
   example `lean/examples/tree-scope.lean` does not use `reflect := true` on a core

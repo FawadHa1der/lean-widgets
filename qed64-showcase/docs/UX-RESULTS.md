@@ -24,6 +24,10 @@ line wrong. The current state is printed by:
 * `node scripts/deploy-manifest.mjs --check`: the `G2 UX:` line a deploy relies on;
 * `node scripts/ux-tally.mjs`: every tally in the table below, recomputed.
 
+From pin E on (2026-10-04), each pin's browser runs are recorded in its entry in docs/REPIN-LOG.md, not here: the last,
+pin O `521cf3f` (Lean 4.35, 2026-10-27), passed two VERDICT runs, C20 405/405, the headed sign-off and the 10 Mbit/s
+first visit, after one re-approved C13 gallery baseline (graph-scope, headless and headed: this re-pin's example edit).
+
 The boot-fix lane (2026-10-03, "Boot-fix lane" below) changed `gallery/gallery.js`, so the verdicts on gallery
 `921b0b6a…` listed in the snapshot below no longer apply to the current gallery. The post-audit fix lane (2026-10-03,
 "Post-audit fix lane" below) changed `gallery.js` and `gallery.css` again (gallery `b7aa521a…`), so the closure lane's

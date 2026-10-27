@@ -44,7 +44,7 @@ deliberate re-pin could change it (README "Re-pin").
 | `scripts/deploy-manifest.mjs` | The upload manifest generator, the dry-run check, asset staging, the command printer and the smoke test. `--from-lock` writes the shell-only manifest of a checkout without the artifacts (R2 entries from the lock; identical to the full manifest apart from `options.source`), `--published <origin>` checks that its R2 objects are live on an origin, and `--record-verdict` writes `infra/ux-verdict.json`. |
 | `out/deploy/manifest.json` | Generated output: every asset and every R2 object with its local source, size, sha256, content type, cache class and upload phase. |
 | `out/deploy/rclone/<group>.<immutable\|mutable>.files` | Generated output: one exact file list per upload group, which `rclone --files-from-raw` consumes. |
-| `infra/deploy.env` | The deploy target in one place: `R2_REMOTE=qed64-r2`, `R2_BUCKET=qed64-artifacts`, `R2_PREFIX=qed64-showcase/`, `WORKER_NAME=qed64-showcase`. Environment variables of the same name override it, subject to the shared-bucket guard in `scripts/lib/deploy-env.mjs` (in `qed64-artifacts` only `qed64-showcase/`; an empty prefix or one inside `lean4game/`, `runtime/`, `profiles/`, `snapshots/` is always refused; another prefix needs `ALLOW_SHARED_PREFIX=1`). |
+| `infra/deploy.env` | The deploy target in one place: `R2_REMOTE=qed64-r2`, `R2_BUCKET=qed64-artifacts`, `R2_PREFIX=qed64-showcase/`, `WORKER_NAME=qed64-showcase`. Environment variables of the same name override it, subject to the shared-bucket guard in `scripts/lib/deploy-env.mjs` (in `qed64-artifacts` only `qed64-showcase/`; an empty prefix or one inside `lean4game/`, `lean4-wasm64/` (the toolchain release prefix QED64 and lean4game serve `/runtime/*` and `/profiles/<not index.json>` from), `runtime/`, `profiles/`, `snapshots/` is always refused; another prefix needs `ALLOW_SHARED_PREFIX=1`). |
 | `infra/package.json` | Pins wrangler 4.125.0 (as lean4game does), apart from the root `package.json`: `npm ci --prefix infra`, `npx --prefix infra wrangler …`. |
 | `scripts/upload-artifacts.sh`, `scripts/deploy-app.sh`, `scripts/rollback-artifacts.sh` | The lean4game-style release scripts (guide: DEPLOY-CLOUDFLARE.md). `scripts/lib/deploy-common.sh` holds the shared target loading, the manifest gates and the release-record lookup; `scripts/lib/wrangler-config.mjs` writes and checks `wrangler.toml`. Every real upload or rollback leaves a release record in `out/deploy/published/` (back it up: `out/` is gitignored). |
 | `../.github/workflows/qed64-deploy.yml`, `infra/ux-verdict.json` | The GitHub Actions deploy of the shell (QED64's page built from the submodule, `deploy-app.sh` with `DEPLOY_FROM_LOCK=1`, smoke). `infra/ux-verdict.json` is the committed G2 verdict it deploys on (`deploy-manifest.mjs --record-verdict`). Guide: DEPLOY-CLOUDFLARE.md §9. (Until 2026-10-04: an inactive template that staged the shell from a dist tarball; the page is now built from source.) |
@@ -215,10 +215,10 @@ node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.work
 
 The default target is the shared bucket `qed64-artifacts` under the prefix `qed64-showcase/`, through the existing
 rclone remote `qed64-r2` (`infra/deploy.env`). The scripts refuse an empty or foreign prefix in that bucket (QED64's
-root, `lean4game/`), refuse without a verdict UX run on this gallery (G2), and `deploy-app.sh` refuses a shell whose R2
-keys are not what the newest upload published (release record). wrangler is pinned at 4.125.0 in `infra/` and always
-runs as `npx --prefix infra wrangler …`; a bare `npx wrangler` in the repo root would fetch an unpinned wrangler,
-because the root `node_modules` holds only Playwright.
+root, `lean4game/`, `lean4-wasm64/`), refuse without a verdict UX run on this gallery (G2), and `deploy-app.sh`
+refuses a shell whose R2 keys are not what the newest upload published (release record). wrangler is pinned at
+4.125.0 in `infra/` and always runs as `npx --prefix infra wrangler …`; a bare `npx wrangler` in the repo root would
+fetch an unpinned wrangler, because the root `node_modules` holds only Playwright.
 
 `node scripts/deploy-manifest.mjs --commands` prints the equivalent raw `rclone copy` / wrangler lines for the current
 manifest without running them (and refuses to print commands that would write into another app's namespace). The

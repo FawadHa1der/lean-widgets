@@ -2,7 +2,8 @@
 
 Eight showcase documents, one per widget package, written to be pasted into (or
 preloaded by the gallery into) QED64's editor, plus the expected InfoView
-behaviour for each, computed natively on the stock Lean v4.34.0 toolchain.
+behaviour for each, computed natively on the stock Lean toolchain of the
+packages (`$TC`: v4.35.0, pin `521cf3f`'s Lean).
 Nothing here depends on, or writes to, the QED64 repo or the widget trees.
 
 ```
@@ -132,16 +133,19 @@ in the browser) and the post-click diagnostics must match.
 
 * **`golden-env.sh build`** builds the browser-equivalent native environment.
   QED64 resolves `import Mathlib` / `import <Pkg>` as *covered* by the overlay
-  snapshot, whose environment is QED64.Essential (the 4,354 served modules,
-  `wasm64-lean-kernel-build-v4.34.0/mathlib/essential-modules.txt`) plus the
-  bake's package roots.  We compile a **shadow `Mathlib.olean`** (an umbrella
-  importing exactly that module list + the 7 phase-1 roots, `w7`; + DistLens,
-  `w8`) with the stock v4.34.0 `lean`, place it first on `LEAN_PATH` next to an
+  snapshot, whose environment is QED64.Essential (the served modules,
+  `$K/mathlib/essential-modules.txt`, K the target pin's kernel build that
+  `QED64_KERNEL_BUILD` names: 4,438 in pin `521cf3f`'s
+  `$W/kernel-build-native64-v4.35`) plus the bake's package roots.  We compile
+  a **shadow `Mathlib.olean`** (an umbrella importing exactly that module
+  list + the 7 phase-1 roots, `w7`; + DistLens, `w8`) with the stock `lean` of
+  `$TC` (the packages' toolchain, v4.35.0), place it first on `LEAN_PATH` next to an
   APFS clone (`cp -cR`) of the real `Mathlib/` subtree (Lean resolves a module
   root at the first search-path dir holding `Mathlib/` or `Mathlib.olean`), so
   the *unmodified* browser text resolves to the browser's module set.  All
   inputs are read-only uses of the widget trees' official-toolchain builds
-  (Mathlib/deps 5ed2965 = the kernel's pin, every dependency rev equal);
+  (Mathlib/deps 56a00585 = pin `521cf3f`'s Mathlib = the kernel build's
+  `mathlib/MATHLIB-COMMIT`, every dependency rev equal);
   ProofWidgets is merged from the per-package partial builds (all overlapping
   `.olean/.ir` byte-identical).
 * **`lsp-golden.mjs --pkg <pkg> [--mode superset|closure] [--env w7|w8]`** drives the stock
@@ -231,8 +235,17 @@ the hasse-view dump labels the cube's elements by index, the live panel by their
 
 ### Regenerating
 
+The target pin (`SHOWCASE_PIN`, else the active pin) must be `521cf3f`, so that
+`$TC` is its Lean v4.35.0, the packages' toolchain (`LEAN_TOOLCHAIN_DIR`
+overrides), and `QED64_KERNEL_BUILD` must name that pin's kernel build
+(`$W/kernel-build-native64-v4.35`): `golden-env.sh build` and `run-all.sh`
+(lsp-golden.mjs's stale-env check) read the Essential list from it. `run-all.sh`
+and `lsp-golden.mjs` refuse (exit 2) a golden env whose `BUILT-FROM` stamp is
+missing or is not its source's (`golden-env.sh check`): a failed build, or an
+env built before `build` wrote the stamp. Rebuild it.
+
 ```
-lean/goldens/golden-env.sh build          # once (≈30 s; writes $W/golden-env)
+lean/goldens/golden-env.sh build          # once, and after a failed build (≈1 min on 521cf3f, ≈30 s on 4.34; writes $W/golden-env: both BUILT-FROM removed first, each written last)
 lean/goldens/run-all.sh [pkg …]           # ≈ 2–4 min per package (both envs + click-all)
 node lean/goldens/lsp-golden.mjs --pkg <pkg> --click-all [--env w8]   # one click-all run
 node lean/goldens/summary.mjs             # tables + lean/expect/click-all/summary.json

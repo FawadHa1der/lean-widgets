@@ -50,14 +50,22 @@ match is installed:
 **Origins.** `--origin` is the showcase's own origin, which serves QED64's files *and* our overlays. Until the
 showcase's Worker is deployed, the overlays exist only where they were baked, so point `--origin` at the `serve.mjs` of
 a checkout that has them (`PORT=5297 scripts/showcase.sh serve` there; plain HTTP GETs) or take the heavy path.
-`--qed64-origin` serves QED64's own files only, and QED64's live site serves exactly those paths.
+`--qed64-origin` serves QED64's own files only, and QED64's live site serves them for **one** release, the one it
+deploys now: since QED64 `4b98279` its Worker reads `/runtime/*` and `/profiles/<not index.json>` only from that
+release's prefix, with no fallback to the bucket root (its `runtime/` and `profiles/` copies were removed on
+2026-10-23), and its R2 sweep of 2026-10-23 kept only the live and the previous pairing's snapshots. So
+`--qed64-origin https://qed64.fawadworkaddress.workers.dev` works only for the pin whose release QED64 deploys now;
+any other pin (bootstrapping or rolling back to N, H or older) comes from the showcase's own origin (`--origin`),
+whose upload never deletes: every pin uploaded to it keeps its digest-named files, and of the files fetched from it
+only an overlay's `index.json`, one per served directory, is the last upload's ([ARCHITECTURE.md](ARCHITECTURE.md)
+"Binary dependency").
 `node scripts/fetch-artifacts.mjs --remote-check --qed64-origin <url> --only public` checks an origin without
-downloading.
+downloading; a FAIL for which QED64's origin was the last one tried carries that advice.
 
 What `verify` prints in such a checkout: **ABSENT** for the build stores of the runtime (stage1, raw regions, bakes,
 headless results), which only the heavy path makes; **NOT MATERIALIZED** for staged pins you did not bootstrap;
-**N/A** for the kernel-build checks (`QED64_KERNEL_BUILD` unset) and for an undownloaded browser. Everything that is
-served is checked file by file.
+**N/A** for the kernel-build checks (`QED64_KERNEL_BUILD` unset, or naming no kernel build of the pin) and for an
+undownloaded browser. Everything that is served is checked file by file.
 
 Proved on 2026-10-04 from a fresh `git clone --recursive` (logs in `$W/logs/r2/`): `clone-bootstrap-*.log` and
 `clone-verify-2.log` (macOS), `linux-rehearsal-1.log` (Docker `node:26-bookworm`), and the clone's full UX run
@@ -75,24 +83,28 @@ pin from D to H) and `lean-v4.34.0-e1a79c1` (pin I's; kernel patch 0037, runtime
 kernel, runtime buildId, Docker image) and no longer has `pipeline/toolchain/build.sh`, `KERNEL-PIN` or the
 `pipeline/toolchain/work/` tree. **Pin I's runtime was taken from the release** (first time; `$W/logs/pinI-stage1-fetch.log`:
 `FETCH VERIFIED`; its `bin/` byte-identical to QED64's own adopted copy). The rows below say which source applies to
-which pins; the native toolchain rows are unchanged (the e1a79c1 record names the same native64 `857544b439` and Mathlib
-`5ed2965`), and nothing native was rebuilt for pin I.
+which pins; the native toolchain rows were unchanged for pin I (the e1a79c1 record names the same native64 `857544b439` and Mathlib
+`5ed2965`), and nothing native was rebuilt for pin I; pin O `521cf3f` (Lean 4.35) has its own, named in the rows.
 
 | Input | Where it comes from | Variable | Pinned in the lock as |
 |---|---|---|---|
-| The kernel fork, branch `qed64-wasm64` | github.com/FawadHa1der/lean4 (`wasm64-build/README.md` there). The served runtime's kernel is `kernel.commit` of QED64's release record `toolchain/lean4-wasm64-release.json` at the pin (QED64 `4f46477` on; I: `e1a79c1ce9`), for pins A–H QED64's `pipeline/toolchain/KERNEL-PIN` (E: `a8817d01f9`). The native64 compiler our oleans were built with is `NATIVE_COMMIT 857544b439` from build tree `BUILT_COMMIT 8d91aadcda` | `QED64_KERNEL_SRC` (optional; only `assert-untouched` watches it) | `qed64.kernel`, `toolchain.native64` |
-| Its build tree: `native/stage1/{bin/lean,bin/lake,lib/lean}` (the fork's native 64-bit Linux compiler, which writes oleans the wasm64 runtime can load), `mathlib/mathlib4` (Mathlib built with it), `mathlib/MATHLIB-COMMIT`, `BUILT-COMMIT`, `native/NATIVE-COMMIT` | in the kernel fork: `wasm64-build/build.sh` (Docker image + wasm build), `wasm64-build/import-release.sh build v4.34.0`, `wasm64-build/native64.sh v4.34.0`, `wasm64-build/mathlib-tree.sh v4.34.0`. Do not use `lake exe cache get`: community oleans are GMP builds for another target | `QED64_KERNEL_BUILD` | `toolchain.native64` (`stage1/bin/{lean,lake}` sha256), `toolchain.mathlib` (`5ed2965`, ProofWidgets `106ff4f`) |
+| The kernel fork, branch `qed64-wasm64` | github.com/FawadHa1der/lean4 (`wasm64-build/README.md` there). The served runtime's kernel is `kernel.commit` of QED64's release record `toolchain/lean4-wasm64-release.json` at the pin (QED64 `4f46477` on; I: `e1a79c1ce9`), for pins A–H QED64's `pipeline/toolchain/KERNEL-PIN` (E: `a8817d01f9`). The native64 compiler our oleans were built with is `NATIVE_COMMIT 857544b439` from build tree `BUILT_COMMIT 8d91aadcda` (pins up to 58ebbad; for `521cf3f` `b081e7c041` for both, the kernel release lean-v4.35.0-b081e7c) | `QED64_KERNEL_SRC` (optional; only `assert-untouched` watches it) | `qed64.kernel`, `toolchain.native64` |
+| Its build tree: `native/stage1/{bin/lean,bin/lake,lib/lean}` (the fork's native 64-bit Linux compiler, which writes oleans the wasm64 runtime can load), `mathlib/mathlib4` (Mathlib built with it), `mathlib/MATHLIB-COMMIT`, `BUILT-COMMIT`, `native/NATIVE-COMMIT` | in the kernel fork: `wasm64-build/build.sh` (Docker image + wasm build), `wasm64-build/import-release.sh build v4.34.0`, `wasm64-build/native64.sh v4.34.0`, `wasm64-build/mathlib-tree.sh v4.34.0` (pins up to 58ebbad; `521cf3f` uses the lean-v4.35.0-b081e7c build, e.g. `$W/kernel-build-native64-v4.35`). Do not use `lake exe cache get`: community oleans are GMP builds for another target | `QED64_KERNEL_BUILD` | `toolchain.native64` (`stage1/bin/{lean,lake}` sha256), `toolchain.mathlib` (`5ed2965`, ProofWidgets `106ff4f` up to 58ebbad; `56a00585`, ProofWidgets `df72b022` for 521cf3f) |
 | The Docker image `qed64-toolchain:emsdk-6.0.5` | `docker build -t qed64-toolchain:emsdk-6.0.5 docker-wasm64` in the kernel fork (the fork's `wasm64-build/build.sh` does this; the recipe is `docker-wasm64/Dockerfile`, last changed in `974ee228b0`). Docker Desktop with an 8 GB VM is enough for our build (peak 3.75 GiB) | `QED64_TOOLCHAIN_IMAGE` (default that tag) | `toolchain.docker.id` plus `equivalent` ids (see "Docker image drift" below) |
-| QED64's served olean trees: the slim base tree the stock `mathlib` region was baked from (5004 modules) and the slim core lib | QED64's `docs/REBUILD.md` §2–3 in the submodule (`work/lib-tree-slim`, `work/core-lib-slim`; per pin `pins/<id>/pin.json servedTrees`, e.g. E: `${QED64_REPO}/work/bump-0035b/slim/…`) and `work/lib-tree` for the fat tree. **Pin I:** `baseSlim` is H's (digest-identical, `8c247f41…`), and `coreSrc` is the release's own core library, `node <package>/cli.mjs fetch --from <release dir> --id lean-v4.34.0-e1a79c1 --digest <digest> --out $W/toolchains/lean-v4.34.0-e1a79c1 --only lean-lib`, then `node <package>/cli.mjs unpack --slim --manifest $W/toolchains/lean-v4.34.0-e1a79c1/profiles/lean-lib.manifest.json --out $W/core-lib-slim.f69cca24d0878a58` (10,074 files, 0.77 GB; tree digest `sha256:e442c951…` == QED64's `embedding/base-tree.json` `core-lib-slim`) | `QED64_REPO` (a QED64 checkout with its `work/` trees built; read-only); `QED64_SHOWCASE_WORK` for pin I's `coreSrc` | `pin.json servedTrees` (optional `baseSlimDigest` / `coreDigest`, checked by `stage-trees.mjs --check-digest`; pin I records neither yet, so the check prints SKIP) |
+| QED64's served olean trees: the slim base tree the stock `mathlib` region was baked from (5004 modules) and the slim core lib | QED64's `docs/REBUILD.md` §2–3 in the submodule (`work/lib-tree-slim`, `work/core-lib-slim`; per pin `pins/<id>/pin.json servedTrees`, e.g. E: `${QED64_REPO}/work/bump-0035b/slim/…`) and `work/lib-tree` for the fat tree (from `521cf3f` on the descriptor names the fat base too, `servedTrees.baseFat`, which `stage fat` then uses instead). **Pin I:** `baseSlim` is H's (digest-identical, `8c247f41…`), and `coreSrc` is the release's own core library, `node <package>/cli.mjs fetch --from <release dir> --id lean-v4.34.0-e1a79c1 --digest <digest> --out $W/toolchains/lean-v4.34.0-e1a79c1 --only lean-lib`, then `node <package>/cli.mjs unpack --slim --manifest $W/toolchains/lean-v4.34.0-e1a79c1/profiles/lean-lib.manifest.json --out $W/core-lib-slim.f69cca24d0878a58` (10,074 files, 0.77 GB; tree digest `sha256:e442c951…` == QED64's `embedding/base-tree.json` `core-lib-slim`) | `QED64_REPO` (a QED64 checkout with its `work/` trees built; read-only); `QED64_SHOWCASE_WORK` for pin I's `coreSrc` | `pin.json servedTrees` (optional `baseSlimDigest` / `baseFatDigest` / `coreDigest`, checked by `stage-trees.mjs --check-digest baseSlim\|baseFat\|coreSrc`; pins up to K record none, so the check prints SKIP; L and N record `coreDigest`, `521cf3f` all three) |
 | The pinned runtime's `stage1/bin` (`lean.wasm` + `lean.js` + `package.json` + `leanmake`) for the bakes and headless verifiers | **Pin I on:** the kernel fork's release that QED64's record names: unpack its `tools/lean4-wasm64-<version>.tgz` (pin I: `tools/lean4-wasm64-4.34.0-e1a79c1.tgz`, sha256 `65445d21bc64…`, as in the record and `SHA256SUMS`) into an empty directory, then `node <package>/cli.mjs fetch --from <release dir> --id lean-v4.34.0-e1a79c1 --digest sha256:bd71636b… --out $W/toolchains/lean-v4.34.0-e1a79c1 --only runtime` (`FETCH VERIFIED`) and copy its `bin/`; `node <package>/cli.mjs id <stage1 dir>` prints the buildId. Use the base release id, not its `-r2`/`-r3` revisions (same buildId, other digests). **Pins up to H:** QED64's `pipeline/toolchain/work/build/stage1/bin` of the pinned runtime (QED64 `docs/REBUILD.md` §1). Either way its `lean.wasm` sha256 must give the pin's buildId | copied to `$W/runtimes/<bid>/stage1/bin` | `qed64.buildId` (`wasm64-<sha256(lean.wasm)[0:16]>`) |
-| The stock Lean toolchain v4.34.0 (native goldens) | `elan toolchain install leanprover/lean4:v4.34.0` | `LEAN_TOOLCHAIN_DIR` | – |
+| The stock Lean toolchain of the widget packages (native goldens): their Lean, `packages/*/lean-toolchain` (v4.35.0, the Lean of `521cf3f`'s runtime); the golden scripts refuse (exit 2) any other version, so they run with `521cf3f` as the target pin or with `LEAN_TOOLCHAIN_DIR` set to it | `elan toolchain install leanprover/lean4:v4.35.0` | `LEAN_TOOLCHAIN_DIR` (default: elan's toolchain of the target pin's Lean, the `leanVersion` of its runtime manifest; without the manifest v4.34.0 only for a pin whose lock records the lean-v4.34.0 native compiler `857544b439`, any other pin leaves it unset) | – |
 
 Set the variables in `qed64-showcase/.env.local` (template `.env.example`); `node scripts/lib/env.mjs` prints what
-resolved. With `QED64_KERNEL_BUILD` set, `scripts/showcase.sh verify` also checks the toolchain pins (#7). An empty
-value in the environment (`QED64_KERNEL_BUILD=`) wins over `.env.local`, so verify reports those inputs N/A, as in CI:
-pin I's final verify ran that way (`$W/logs/pinI-verify2b.log`) after the kernel build dir `.env.local` names was
-deleted on this host on 2026-10-09; a set but missing directory makes `pin-qed64.mjs` refuse at start
-(`$W/logs/pinI-verify2.log`).
+resolved. `QED64_KERNEL_BUILD` is one kernel build dir or a `:`-separated list of them (one per Lean release); every
+script takes the target pin's, the one whose `native/NATIVE-COMMIT` and `mathlib/MATHLIB-COMMIT` are its lock's (`K`
+in that output; `K_FROM` names each rejected dir when none is). When it holds the pin's kernel build,
+`scripts/showcase.sh verify` also checks the toolchain pins (#7); unset, or naming only other releases' builds or
+missing dirs, #7 prints N/A naming them. An empty value in the environment (`QED64_KERNEL_BUILD=`) wins over
+`.env.local`, so verify reports those inputs N/A, as in CI: pin I's final verify ran that way
+(`$W/logs/pinI-verify2b.log`) after the kernel build dir `.env.local` names was deleted on this host on 2026-10-09; a
+set but missing directory made `pin-qed64.mjs verify` refuse at start then (`$W/logs/pinI-verify2.log`); it is an N/A
+naming the dir now.
 
 ### The command sequence
 
@@ -100,10 +112,16 @@ The commands are listed in order. Each command is the same one the project was b
 README "One-command workflow" describe the guards. `$W` is `QED64_SHOWCASE_WORK` (no spaces; tens of GB).
 
 ```
-# 0. light-path bootstrap first: sources, the page, QED64's binaries (the overlays may be absent: --only public)
+# 0. light-path bootstrap first: sources, the page, QED64's binaries (the overlays may be absent: --only public).
+#    QED64's origin serves only the release it deploys now (4b98279): for any other pin use --origin <showcase origin>
 scripts/showcase.sh bootstrap --qed64-origin <QED64 origin> --no-verify     # or fetch-artifacts.mjs --only public
 node scripts/export-widgets.mjs                                              # $W/widgets-src (git archive packages/)
-cp -cpR "$QED64_KERNEL_BUILD/mathlib/mathlib4" "$W/mathlib4"                 # B0: a copy-on-write clone (Linux: cp -a --reflink=auto)
+#    B0: the target pin's MATHLIB_CLONE, $W/mathlib4.<first 8 hex of its lock's toolchain.mathlib.commit> (pins up to
+#    58ebbad also accept the legacy $W/mathlib4 at their commit), from the target pin's kernel build K (its
+#    mathlib/MATHLIB-COMMIT is that commit; QED64_KERNEL_BUILD may be a list, so never "$QED64_KERNEL_BUILD/..."; an
+#    empty K: `node scripts/lib/env.mjs` prints K_FROM, why)
+K="$(node scripts/lib/env.mjs --json | node -pe 'JSON.parse(require("fs").readFileSync(0)).K')"
+cp -cpR "$K/mathlib/mathlib4" "$W/mathlib4.<Mathlib 8 hex>"               # a copy-on-write clone (Linux: cp -a --reflink=auto)
 #    the runtime's bin (pin I on: from the kernel fork's release named by QED64's toolchain/lean4-wasm64-release.json;
 #    T = the unpacked tools package, REL = the release directory, ID/DIGEST from the record)
 node "$T/cli.mjs" fetch --from "$REL" --id "$ID" --digest "$DIGEST" --out "$W/toolchains/$ID" --only runtime   # FETCH VERIFIED

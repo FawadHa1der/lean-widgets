@@ -116,18 +116,28 @@ this file through one loader, `scripts/lib/deploy-env.mjs` (`node scripts/lib/de
 target). An environment variable with the same name overrides a line. The bucket and prefix that the upload writes to
 are therefore always the ones the Worker reads from.
 
-**Shared-bucket guard.** The bucket `qed64-artifacts` also holds QED64's production objects at its root (`runtime/`,
-`profiles/`, `snapshots/`) and lean4game's under `lean4game/`. A wrong prefix there would overwrite another app's
-*mutable* names (`runtime-manifest.json`, `profiles/index.json`, `snapshots/index.json`, `*.manifest.json`). So in that
-bucket the loader accepts only `R2_PREFIX=qed64-showcase/`:
-* an **empty** prefix, or one inside `lean4game/`, `runtime/`, `profiles/` or `snapshots/`, is **always refused**
-  (`deploy target refused: …`), with no override. lean4game falls back to its own prefix when `R2_PREFIX` is empty;
-  here an empty value is refused instead, because it almost always means a half-applied own-bucket setup;
+**Shared-bucket guard.** The bucket `qed64-artifacts` is shared:
+* QED64's site-owned objects sit at its root: `profiles/index.json` and `snapshots/`. Its root `runtime/` and
+  `profiles/` copies were removed on 2026-10-23; the names stay refused.
+* The lean4-wasm64 toolchain releases sit under **`lean4-wasm64/<release id>/`**, uploaded by the release's owner.
+  Since QED64 `4b98279`, QED64's Worker reads `/runtime/*` and `/profiles/<not index.json>` *only* from there, with no
+  fallback to the root, and lean4game serves the same objects. A release prefix holds the one copy QED64 and lean4game
+  serve. This showcase does not read it: its Worker serves its own copies under `qed64-showcase/` (`infra/worker.js`
+  `artifactKey`: `R2_PREFIX` + path).
+* lean4game's own objects sit under `lean4game/`.
+
+A wrong prefix there would overwrite another app's *mutable* names (`runtime-manifest.json`, `profiles/index.json`,
+`snapshots/index.json`, `*.manifest.json`) or a toolchain release. So in that bucket the loader accepts only
+`R2_PREFIX=qed64-showcase/`:
+* an **empty** prefix, or one inside `lean4game/`, `lean4-wasm64/`, `runtime/`, `profiles/` or `snapshots/`, is
+  **always refused** (`deploy target refused: …`), with no override. lean4game falls back to its own prefix when
+  `R2_PREFIX` is empty; here an empty value is refused instead, because it almost always means a half-applied
+  own-bucket setup;
 * any other prefix (for example a staging prefix `qed64-showcase-staging/`) needs `ALLOW_SHARED_PREFIX=1`, set
   deliberately.
 
 Every script checks this before it runs rclone or wrangler. The rehearsal's `guard` step proves it on a fake bucket
-seeded with stand-ins for QED64's and lean4game's manifests.
+seeded with stand-ins for QED64's root objects, a `lean4-wasm64/<release id>/` release and lean4game's manifests.
 
 
 ## First deploy — record (2026-10-05, done from this machine)
@@ -239,9 +249,11 @@ first, then the push (the published check enforces that order).
    one is yours. The showcase will be at `https://qed64-showcase.<subdomain>.workers.dev`.
 4. **Choose where the artifacts live.**
    * **Shared bucket (default, the lean4game way).** No change needed. You need no new bucket and no new token.
-     QED64's objects stay at the bucket root and lean4game's under `lean4game/`, and the showcase's go under
-     `qed64-showcase/`. The three sets of mutable files (`runtime-manifest.json`, `profiles/index.json`,
-     `snapshots/index.json`) never collide, because each Worker reads only its own prefix.
+     QED64's site-owned objects stay at the bucket root, the toolchain release QED64 and lean4game serve under
+     `lean4-wasm64/<release id>/`, lean4game's own under `lean4game/`, and the showcase's go under `qed64-showcase/`.
+     The showcase's mutable files (`runtime-manifest.json`, `profiles/index.json`, `snapshots/index.json`) never
+     collide with theirs: its Worker reads only its own prefix, and the upload writes only there ("Shared-bucket
+     guard" at the top of this file).
    * **Own bucket (alternative).** Create a bucket `qed64-showcase-artifacts` (R2 → Create bucket) **[account]**. Give the
      upload token access to it, by extending the existing token or by creating a new one and a new rclone remote
      (command below). Then edit **both lines together** in `infra/deploy.env`: `R2_BUCKET=qed64-showcase-artifacts` and
@@ -347,6 +359,28 @@ What the script does (each step was exercised in the rehearsal):
    (no `PUBLISHED_ORIGIN`), then `PHASES=3-indexes scripts/upload-artifacts.sh`. **Not through the CI deploy yet:** its
    published check (section 9) compares the phase-3 indexes too and refuses until they are up. Which path to take is
    the user's decision; `ci/rehearse-deploy.sh old-shell` measures both orders.
+
+   **The split does not cover the pack manifests (E1 HAZARD).** `/profiles/lean-core.manifest.json` and
+   `/profiles/mathlib-essential.manifest.json` keep their URL in every release and go up in **phase 2**. Every lock
+   before O records the same two files (the same sha256s; releases `lean-core-4.34.0-wasm64-36a96239e08fd2e0` and
+   `mathlib-essential-5ed2965-wasm64-36a96239e08fd2e0`), so no earlier re-pin changed them. O (QED64 `521cf3f`, Lean
+   4.35) is the first release that changes the packs, and its phase 2 replaces both under the live shell. A shell
+   without QED64's release check (HARDENING #81, first in `521cf3f`: the shell of every earlier pin) never compares a
+   pack manifest's `release` with its profile index, so it installs the new release's pack and mounts those oleans
+   under its own runtime, which misreads them rather than refusing them. Every pack install is affected: each boot
+   (the stock page and every gallery frame install the core pack at boot) and each on-demand install such as "Load
+   exact imports". The window runs from phase 2 until the new Worker is deployed, whether phase 3 goes before or after
+   the deploy, and an old tab left open after the deploy stays exposed. A live shell with the check (O on), met by the
+   next release that changes the packs, refuses every pack install in the same window as `stale` instead: its profile
+   index (after phase 3 its per-build copy `snapshots/profiles-index.<buildId>.json`) still names its own release, so
+   its stock page and gallery do not boot until the new Worker is deployed (an old tab until it reloads). That fails
+   closed, like the rollback in section 5, but it is the same window. `upload-artifacts.sh` prints an `E1 HAZARD` line
+   (with `DRY_RUN=1` too) when its phase 2 changes a pack manifest compared with the newest release record that
+   uploaded phase 2 (`E1 HAZARD UNCHECKED` when no such record exists). The `old-shell` rehearsal reports the hazard
+   and the pack fetches of the old shell's boots. How to handle this window is part of decision E1, which is still
+   open with the owner. The options so far are to keep the time from phase 2 to the Worker deploy as short as
+   possible, or to change the deploy order. The rehearsal's orders A and B differ only in phase 3, so both open this
+   window at phase 2.
 4. It sets the Content-Type explicitly with `--header-upload`. rclone's s3 backend would guess the same types from
    the file extension, but the guess depends on the host's MIME tables. The pinned shell refuses a runtime manifest
    that is not typed JSON (`qed64-boot.ts:67-70`), and the gallery refuses a snapshot typed as HTML.
@@ -496,27 +530,39 @@ the earlier **names** back and redeploying the earlier **shell**.
    transferred.
 
 The order is the reverse of a release: put the old names back first, then the old shell. The old shell's
-`runtime-manifest.<buildId>.json` is immutable and still in the bucket.
+`runtime-manifest.<buildId>.json` is immutable and still in the bucket. A rollback across a pack change (from O to
+any earlier pin, 3.2) re-publishes the old pack manifests under the same URLs while O's shell is still live. O's
+release check (HARDENING #81) then refuses every pack install as `stale`, the core pack at boot included, so O's
+stock page and gallery do not boot until `wrangler rollback` puts the old shell back (an O tab left open after it is
+refused the same way until it reloads). That fails closed, but run step 2 right after step 1.
 
 ## 6. Re-pin
 
 A re-pin (README "Re-pin: adding a pin when QED64 sends a new commit") usually changes the runtime buildId. That has
 these consequences:
-* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded); the active pin locally is J `5e63edd` since 2026-10-09, on I's runtime). `pin use <id>` regenerates
+* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded); the active pin locally is O `521cf3f` since 2026-10-27, Lean 4.35.0 on runtime `wasm64-36d7f415704473d9`; pins I–N were never deployed). `pin use <id>` regenerates
   `out/deploy` for the new active pin, and `deploy-manifest --check` G2 then needs a verdict run on that pin's gallery.
 * **Snapshots are binary-paired to the runtime.** The overlays must be rebaked against the new runtime before
   anything is uploaded. The R3 gate refuses an index entry whose `runtime` is not the lock's buildId, and the gallery
   refuses a mismatch with `SNAPSHOT_UNPAIRED`.
 * **Upload before you deploy.** The new runtime chunks, packs and snapshots have new digest names, so phase 1 uploads
   them next to the old ones. Phase 2/3 then switches `runtime-manifest.json`, `snapshots/index.json` and
-  `profiles/index.json` (and, for pins A–H, the bare overlay indexes). Only after that does `deploy-app.sh` put the new
+  `profiles/index.json` (and, for pins A–H, the bare overlay indexes; and in phase 2, when the release changes the
+  packs as O does, the pack manifests `profiles/<p>.manifest.json`). Only after that does `deploy-app.sh` put the new
   shell live.
 * **From pin I on, the overlays never switch under a live shell.** A per-runtime pin (`pin.json` v3) uploads its
   overlays to new directories, `snapshots/widgets{7,8}.<bid16>/`, index included, in phases 1–2; the old shell's bare
   `snapshots/widgets{7,8}/` objects are not touched (gate R5). What still changes under the old shell is phase 3, the
   stock and profile indexes: from then until the new Worker is live, bare `/?…` visits of the old stock page can fail
   (the gallery boots from its overlay). Splitting the upload around the deploy (3.2, `PHASES=`) closes that window by
-  hand but not yet through CI (section 9); decision E1, docs/REPIN-LOG.md pin I entry. After the deploy, a bookmark of
+  hand but not yet through CI (section 9); decision E1, docs/REPIN-LOG.md pin I entry. **It does not close the pack
+  window of a release that changes the packs (O, QED64 `521cf3f`):** its phase 2 also replaces
+  `/profiles/lean-core.manifest.json` and `/profiles/mathlib-essential.manifest.json` under the same URL, and an old
+  shell without QED64's release check (HARDENING #81; every pin before O) installs the new release's packs under its
+  own runtime, in its gallery as well as on bare stock visits, from phase 2 until the new Worker is deployed (whether
+  phase 3 goes before or after it) and in an old tab left open after it. A live shell with that check (O on) refuses
+  those installs as `stale` instead, so in the same window its stock page and gallery do not boot (3.2). How to handle
+  that window is decision E1, still open with the owner (the `E1 HAZARD` in 3.2). After the deploy, a bookmark of
   `/?snapshots=snapshots/widgets8` gets the new shell with the old overlay and stops with QED64's named unpaired error;
   the gallery's `?overlay=widgets8` keeps working (it maps to the pin's directory). A gallery tab opened before the
   deploy that reboots its frame afterwards fails the same way until the page is reloaded.
@@ -609,8 +655,9 @@ Edit only), `CLOUDFLARE_ACCOUNT_ID`, and the variable `SHOWCASE_ORIGIN`. Nothing
 
 **What CI does not do.**
 * **Upload artifacts.** Decided against, not just left out. A CI upload needs the 2.4 GB of bytes: QED64's own files
-  could come from QED64's live origin (`fetch-artifacts` verifies each against the lock), but our overlays exist only
-  on the machine that baked them (or on this showcase's own origin, which is what the upload would fill). It would
+  could come from QED64's live origin only for the release QED64 deploys now (since QED64 `4b98279` it serves no other
+  release's runtime or packs; `fetch-artifacts` verifies each file against the lock), but our overlays exist only on
+  the machine that baked them (or on this showcase's own origin, which is what the upload would fill). It would
   also need R2 S3 keys with write access to the **shared** bucket `qed64-artifacts` (QED64's and lean4game's objects
   too) as GitHub secrets, a much larger blast radius than a Workers-only token. Artifacts change only with a re-pin or
   rebake, which runs on your machine anyway.
@@ -641,13 +688,15 @@ of the fake R2. See [CI rehearsal](#ci-rehearsal) for its results. Since pin I t
 overlay index at the directory the manifest records (`options.overlayDirs`), and an eighth scenario, **`old-shell`**,
 rehearses a runtime-changing deploy against the live shell: the fake R2 is the live pin's objects (`OLD_STATE`) with
 the new pin's phases 1–2 loaded on top (nothing deleted); the old Worker and shell (a fresh clone at `OLD_REF`) must
-still pass their published check, every bare `snapshots/widgets{7,8}/` object must be untouched, and one boot of the
-old gallery plus one bare `/` stock boot run under the browser lock; then phase 3 and the new Worker in both orders
-(A: phase 3 before the deploy, B: after it), printing `E1 MEASURE …` lines (evidence for decision E1, not failures).
-It needs `OLD_REF` and a rehearsal state of the new pin built into another directory than `OLD_STATE`; without
-`OLD_REF` it is skipped and named on the last line, never counted as OK. Its first run is pending: on pin J (I's
-successor on the same runtime), after J's evidence runs and the commit (docs/REPIN-LOG.md, pin I entry, "Not done /
-running").
+still pass their published check without the phase-2 manifests that replace live ones, each of which must serve the
+new manifest's bytes (a runtime manifest is expected; a pack manifest is an `E1 HAZARD`, 3.2), every bare
+`snapshots/widgets{7,8}/` object must be untouched, and one boot of the old gallery plus one bare `/` stock boot run
+under the browser lock, each recording the `/profiles/` pack manifests and parts it fetched; then phase 3 and the new
+Worker in both orders (A: phase 3 before the deploy, B: after it), printing `E1 MEASURE …` lines (evidence for
+decision E1, not failures). It needs `OLD_REF` and a rehearsal state of the new pin built into another directory than
+`OLD_STATE`; without `OLD_REF` it is skipped and named on the last line, never counted as OK. It ran for pins J and K
+against the live H (docs/REPIN-LOG.md: J's "Not done / running", K's "Gates (K)"), before any release changed the
+packs.
 
 ## 10. Troubleshooting
 

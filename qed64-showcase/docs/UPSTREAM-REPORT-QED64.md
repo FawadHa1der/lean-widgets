@@ -1,6 +1,6 @@
 # QED64: defects and limitations found while building the widget showcase
 
-**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06, 2026-10-08, 2026-10-09 and 2026-10-10).
+**To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06, 2026-10-08, 2026-10-09, 2026-10-10 and 2026-10-27; the newest: the last section).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
 pin current`):** since 2026-10-08 19:20Z the showcase **serves H `bf9d947`** (your main with the v1 page API and the keep-alive fix, runtime
 `wasm64-3ab1c6a9da03bc29`), and from 2026-10-04 to then it served E `33b0967` (your main with #55 and #54; L9 V2 and S1 below). Until then it served C `5ac5d00` (your interim local main: runtime
@@ -32,7 +32,7 @@ regression's record, not deployed. Its overlays are served from per-runtime dire
 (`/snapshots/widgets8.f69cca24d0878a58/`), for the reason your HARDENING #64 gives for your own indexes.
 **J `5e63edd`** (your **main** since 2026-10-09 ~20:30Z, the fast-forward of `fix/stack-probe-headroom`: I plus
 `lean.worker.js` setting `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, your HARDENING #67; the same runtime, overlays,
-main bundle and stock snapshots) is the **active pin of our local checkout** since ~18:55Z (first as a staged test pin)
+main bundle and stock snapshots) was the **active pin of our local checkout** from ~18:55Z on 2026-10-09 (first as a staged test pin) until K `62a06e2` replaced it on 2026-10-12; since 2026-10-27 the active pin is O `521cf3f` (last section)
 and is **gated in the browser** (VERDICTs `j-full1`, `j-full5`, headed sign-off `j-headed2`, C20 405/405, the 10 Mbit/s
 first visit; "2026-10-10: pin J" at the end). Not deployed; the live site serves H `bf9d947`.
 
@@ -1197,3 +1197,43 @@ docs/REPIN-LOG.md, pin I entry, "Pin J" (logs `$W/logs/pinJ-*.log`, chain log `p
   `fix/own-predecessor-wait`: `5e63edd` + #68, a page that replaces its own runtime waits for all of its Workers, + the
   `[pool]` growth/lifetime diagnostic; not on your main), `0ff314c` and `3b804ea` (the same with
   `LEAN_WASM_PARKED_DEDICATED` 8 and 4). Its results go here when they exist.
+
+## 2026-10-27: pin O (521cf3f) — Lean 4.35 on the kernel release lean-v4.35.0-b081e7c
+
+Pins K `62a06e2`, L `37ff491` and N `58ebbad` (2026-10-12 to 2026-10-16) are recorded in docs/REPIN-LOG.md. Two of
+their results bear on the sections above. Your #71 (K) put the stack probe back at 16384 and withdrew #67's 8192, so the
+interim that the header and "2026-10-10: pin J" credit is gone. At 16384 our DistLens `pmf_num` examples failed again
+(13/21 on your `6fa2a16`), and we fixed that on our side: `pmf_num`/`ennreal_num` are now elaborators (`6b31bba`), 21/21
+at your default probe since K. L also found `status().memory` null at ready on the faster runtime, which you fixed as
+#76. Nothing else in them changes the findings above. **O** is your main `521cf3f` (promote `add01f8`, the `lean-v4.35.0-b081e7c` adoption:
+Lean 4.35.0, Mathlib `56a00585`, ProofWidgets `df72b022`, kernel patch 0042; #77–#81 over N), runtime
+`wasm64-36d7f415704473d9`. It is the active pin of our local checkout since 2026-10-27, not deployed; the live site still
+serves H `bf9d947`.
+
+- **Gates, all green on your page with our widgets ported to Lean 4.35:** headless `CONTROLS PASS`, stage 4 (E1 8/8 +
+  7/7, E3 1167/1167 + 1038/1038, E3b 49/49 + 44/44), E2 7/8 on L1 as before; in the browser two VERDICT full runs
+  (`o-full1`, `o-full2`), C20 405/405, the headed sign-off (35/35) and the 10 Mbit/s first visit (`RESULT PASS`, ready at
+  513.9 s; N: 519.0 s). The embedding API is still revision `1.0.0` with `editorRpc` and `widgetSourceCache`, so our
+  bridge stays down.
+- **D1 and D2 are now fixed on your plain stock page too**, not only inside the embedding (X4, 2026-10-27, run against
+  `/` without our bridge): a core Try-this link applies in 102 ms, and the `conv?` panel renders and its Generate-conv
+  edit applies in 101 ms. On `1859b83` and `9fdf9b8` both were broken. Nothing to do on your side.
+- **L1 holds on 4.35** (no change expected): the same tree-scope `Demo.lean:104` error in your runtime, while native
+  Lean 4.35.0 builds that Demo; the kernel's `wasm64-build/PATCHES.md:321` keeps "every import happens at
+  `OLeanLevel.exported`" at `b081e7c`.
+- **A question about the pack manifests and deploys (for our decision E1).** `/profiles/lean-core.manifest.json` and
+  `/profiles/mathlib-essential.manifest.json` keep their URL across releases, and at `521cf3f` their content changes for
+  the first time (every earlier pin of ours recorded the same two files). Your #81 makes an O tab refuse another release's
+  pack as stale, but a shell from before #81, such as the live H, installs whatever the URL holds. When the showcase
+  uploads O's manifests before its new Worker is live, an H tab open or booted in that window (the stock page and each
+  gallery frame install the core pack at boot) can therefore install the 4.35 pack under its 4.34 runtime. Would
+  per-release manifest URLs (as #64 did for the snapshot indexes) be possible on your side? How we handle the window
+  until then is still open on our side (our decision E1, docs/DEPLOY-CLOUDFLARE.md 3.2): keep the time from that upload
+  to the Worker deploy short, or change the deploy order.
+- **For your node-based tools, FYI (node 26.3, not your code):** our headless E1 tool, which hashes and unpacks your
+  snapshot files in node, deadlocked in `process.exit` after printing its verdict in 14 of 30 runs of one control. The
+  main thread sits in `node::DisposePlatform` → `WorkerThreadsTaskRunner::Shutdown` → `uv_thread_join`, and the joined
+  thread is V8's `ConcurrentBaselineCompiler` (Sparkplug) parked in `CollectionBarrier::AwaitCollectionBackground`,
+  waiting for a GC only the main thread can run. With `node --no-concurrent-sparkplug`, 0 of 30 hung. Your
+  `snapshot-probe.mjs` / `supervised-run.mjs` run on the same node; if one of them ever hangs after its last line, this is
+  a likely cause (`sample <pid>` shows the two stacks).

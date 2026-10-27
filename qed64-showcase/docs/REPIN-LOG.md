@@ -4,7 +4,7 @@ One entry per change of the QED64 pin. Each entry says what the pin moved from a
 "Re-pin" was actually executed, the evidence for each gate, and how to switch back.
 
 **Where it stands:** printed by `scripts/showcase.sh pin current` / `pin list` and `showcase.sh verify`, not written
-here. *History (dated):* ten pins registered (A–H by 2026-10-06, I and J on 2026-10-09), all with complete stores (the
+here. *History (dated):* fourteen pins registered (A–H by 2026-10-06, I and J on 2026-10-09, K on 2026-10-12, L and N on 2026-10-16, O on 2026-10-27; there is no M; I and J retired on 2026-10-27), all with complete stores except I and J, whose widgets8 overlay K replaced in the f69cca24 store they share (the
 pin-J lane's measurement pins `58ae6d2`, `349b1b7`, `27a4ba6`, `0ff314c`, `3b804ea` are registered locally only, never
 committed, and removed after their runs). The sequence of served pins: A `1859b83`
 (first build) → B `9fdf9b8` (2026-10-01, QED64's L7 fix; L9 V1) → C `5ac5d00` (multi-pin lane, with the rehearsed
@@ -19,13 +19,17 @@ on the local branch `qed64-embedding-v1`, which is not pushed. **I `385a1ac`** (
 `lean-v4.34.0-e1a79c1`, runtime `wasm64-f69cca24d0878a58`, with QED64's #62/#63/#64) was the active pin locally from
 2026-10-09 ~13:10Z, the first pin whose overlays are served from per-runtime directories; its first full run found the
 kernel-0036 regression in Chrome. **J `5e63edd`** (QED64 main since 2026-10-09 ~20:30Z: I plus the worker's engine-stack
-probe at 8192 slots, HARDENING #67, the interim for 0036; same runtime and overlays) is the **active pin locally**
-since ~18:55Z and is gated in the browser (two VERDICTs, a headed sign-off, C20 405/405, the 10 Mbit/s first visit;
-last entry, "Pin J"). The live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded).
+probe at 8192 slots, HARDENING #67, the interim for 0036; same runtime and overlays) was the active pin locally from
+~18:55Z, gated in the browser (two VERDICTs, a headed sign-off, C20 405/405, the 10 Mbit/s first visit;
+pin I entry, "Pin J"). **K `62a06e2`** (QED64 main with #68–#72, I's runtime, the widgets8 overlay rebaked for the
+widgets at `6b31bba`, widgets7 unchanged) followed on 2026-10-12, then **L `37ff491`** and **N `58ebbad`** on runtime
+`wasm64-5650321f3f58aeb0` (2026-10-16), and **O `521cf3f`** (QED64 main on the kernel release `lean-v4.35.0-b081e7c`,
+**Lean 4.35.0**, runtime `wasm64-36d7f415704473d9`; the widgets ported to 4.35 first) is the **active pin locally**
+since 2026-10-27 and gated (last entry). None of I–O is deployed. The live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded).
 
 Current verdict and sign-off counts per pin: `scripts/showcase.sh pin list` (this table's "Browser gates" column is
 dated history: as of the final gate, 2026-10-02, for E as of the pin-e lane, 2026-10-04, for F–H as of
-2026-10-07, for I as of 2026-10-09 ~18:00Z, and for J as of 2026-10-10 ~03:55Z).
+2026-10-07, for I as of 2026-10-09 ~18:00Z, for J as of 2026-10-10 ~03:55Z, and for K, L, N and O as of their entries).
 
 | Pin | Runtime | Registered by | Browser gates (history, 2026-10-02) | Status |
 |---|---|---|---|---|
@@ -37,8 +41,12 @@ dated history: as of the final gate, 2026-10-02, for E as of the pin-e lane, 202
 | F `84d594e` | `wasm64-3ab1c6a9da03bc29` (E's runtime and stores; the v1 page: `qed64.api`, `?embed=1`, `#code=`, #56 editor RPC, widget-source cache, #57, #59 coalescing) | v1-adoption lane, 2026-10-05 | `CONTROLS PASS` 11/11 and a v1 smoke 22/22 on an earlier gallery; no UX run (pin F entry) | staged since 2026-10-06 (active locally 2026-10-05/06); not deployed |
 | G `5c327c2` | `wasm64-3ab1c6a9da03bc29` (F + QED64's edit back-pressure `e4cffcc`, HARDENING #59) | pin-G lane, 2026-10-06 | `CONTROLS PASS` 11/11, smoke 22/22; `g-full1b` red with 7 failures, all diagnosed (one a QED64 defect: the keep-alive starvation); VERDICT `g-full1c` on `931c33a7…` (pin G entry) | staged since 2026-10-06 ~20:03Z; not deployed |
 | H `bf9d947` | `wasm64-3ab1c6a9da03bc29` (G + QED64's keep-alive fix; QED64 main) | v1-adoption session, 2026-10-06 (pin H entry) | smoke 22/22; VERDICT `h-full1b`, `h-full3`, `h-full4` on `d8a5bb6d…`; `C20` 135/135 ×3; headed sign-off `h-headed2`; 3 renderer crashes (QED64 #55 residual) in `h-full1`, `h-full2b`, `h-headed1` (pin H entry) | active locally 2026-10-06 ~20:03Z to 2026-10-09 ~13:10Z; staged since; verdict record `infra/ux-verdict.json` → `h-full4` (stale for a redeploy of H with the pin I gallery code, pin I entry); not deployed (the live site serves E) |
-| I `385a1ac` | `wasm64-f69cca24d0878a58` (kernel `e1a79c1ce9`, release `lean-v4.34.0-e1a79c1`, patch 0037; QED64 main with #62/#63/#64); new stores, overlays served at `/snapshots/widgets{7,8}.f69cca24d0878a58/` (descriptor `qed64-showcase.pin/v3`) | pin-I re-pin, 2026-10-09 (last entry) | static and headless gates green; browser gates on hold (smoke 23/23; `i-full2` red on a kernel-0036 regression: DistLens `pmf_num` clicks fail "stack is exhausted" in Chrome) (pin I entry, "Gates") | active locally 2026-10-09 ~13:10Z to ~18:55Z; **superseded by J**; stays registered as the record of the 0036 regression; not deployed |
-| J `5e63edd` | `wasm64-f69cca24d0878a58` (I's runtime, stock snapshots, profiles, main bundle and overlay directories; only `dist/workers/lean.worker.js` and `dist/qed64-build.json` differ: `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, HARDENING #67; QED64 main, a fast-forward of `fix/stack-probe-headroom`) | first a staged test pin from our worktree (2026-10-09 ~18:50Z), promoted when QED64 pushed the commit to main (~20:30Z) (pin I entry, "Pin J") | smoke 23/23; `j-dl1` 3/3; VERDICT `j-full1`, `j-full5` on `65279b0b…` (red: `j-full2`, `j-full3`, `j-full4`); `C20` 135/135 ×3; headed sign-off `j-headed2` (35/35); 10 Mbit/s first visit PASS (565.1 s); C11 headed ×3 3/3 | **active locally** since 2026-10-09 ~18:55Z; verdict record `infra/ux-verdict.json` → `j-full5` (to be committed); not deployed |
+| I `385a1ac` | `wasm64-f69cca24d0878a58` (kernel `e1a79c1ce9`, release `lean-v4.34.0-e1a79c1`, patch 0037; QED64 main with #62/#63/#64); new stores, overlays served at `/snapshots/widgets{7,8}.f69cca24d0878a58/` (descriptor `qed64-showcase.pin/v3`) | pin-I re-pin, 2026-10-09 (last entry) | static and headless gates green; browser gates on hold (smoke 23/23; `i-full2` red on a kernel-0036 regression: DistLens `pmf_num` clicks fail "stack is exhausted" in Chrome) (pin I entry, "Gates") | active locally 2026-10-09 ~13:10Z to ~18:55Z; **superseded by J**; **retired** 2026-10-27 (K rebaked the f69cca24 overlay store); stays registered as the record of the 0036 regression; not deployed |
+| J `5e63edd` | `wasm64-f69cca24d0878a58` (I's runtime, stock snapshots, profiles, main bundle and overlay directories; only `dist/workers/lean.worker.js` and `dist/qed64-build.json` differ: `LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, HARDENING #67; QED64 main, a fast-forward of `fix/stack-probe-headroom`) | first a staged test pin from our worktree (2026-10-09 ~18:50Z), promoted when QED64 pushed the commit to main (~20:30Z) (pin I entry, "Pin J") | smoke 23/23; `j-dl1` 3/3; VERDICT `j-full1`, `j-full5` on `65279b0b…` (red: `j-full2`, `j-full3`, `j-full4`); `C20` 135/135 ×3; headed sign-off `j-headed2` (35/35); 10 Mbit/s first visit PASS (565.1 s); C11 headed ×3 3/3 | active locally 2026-10-09 ~18:55Z to 2026-10-12; not deployed; **retired** 2026-10-27 (K rebaked the f69cca24 overlay store) |
+| K `62a06e2` | `wasm64-f69cca24d0878a58` (I's runtime; widgets8 rebaked for the widgets at `6b31bba`, widgets7 unchanged; QED64 main with #68–#72) | pin K entry, 2026-10-12 | VERDICT `k-full1`, `k-full5`; C20 405/405; headed `k-headed1`; 10 Mbit/s PASS | gated 2026-10-13; active locally to 2026-10-16; not deployed |
+| L `37ff491` | `wasm64-5650321f3f58aeb0` (kernel release `lean-v4.34.0-53cb11e`: native Wasm exceptions + 0041); new stores | pins L and N entry, 2026-10-16 | no VERDICT (`l-full1`/`l-full2` red on C3, QED64's, fixed upstream as #76, and on C10/C23, ours, fixed in `d8fe1c6`) | registered as the first pin on this runtime; superseded by N |
+| N `58ebbad` | `wasm64-5650321f3f58aeb0` (L's runtime and stores; QED64 main with #74–#76) | pins L and N entry, 2026-10-16 | VERDICT `n-full1`, `n-full2`; C20 405/405; headed `n-headed1`; 10 Mbit/s PASS (519.0 s) | gated 2026-10-16; active locally to 2026-10-27; not deployed |
+| O `521cf3f` | `wasm64-36d7f415704473d9` (kernel release `lean-v4.35.0-b081e7c`, patch 0042; **Lean 4.35.0**, Mathlib `56a00585`; QED64 main with #77–#81; the widgets ported to 4.35, `1a61003`); new stores, overlays at `/snapshots/widgets{7,8}.36d7f415704473d9/` | pin O entry, 2026-10-25..27 | smoke 23/23; VERDICT `o-full1`, `o-full2` on `047aa584…`; C20 405/405; headed `o-headed4` (35/35); 10 Mbit/s PASS (513.9 s) | **active locally** since 2026-10-27; verdict record `infra/ux-verdict.json` → `o-full2`; not deployed |
 
 ## 2026-10-01: QED64 1859b830 / wasm64-4b025db7… → 9fdf9b85 / wasm64-2c18773ecfba45bb (QED64's L7 fix)
 
@@ -2067,3 +2075,153 @@ reads the two checks that need it once it is present (at most 10 s after ready) 
 2. The user's decisions: the push (it would deploy N; R2 gains runtime 5650321f's per-runtime overlay directories and
    the stock objects), and the E1 upload order. Whether kernel patch 0038 is still wanted after 0040/0041 is the kernel
    session's question, not this log's.
+
+## 2026-10-27: pin O (521cf3f / wasm64-36d7f415704473d9, QED64 main) — Lean 4.35.0: the kernel release lean-v4.35.0-b081e7c, the widgets ported to 4.35
+
+*Status 2026-10-27 ~23:10Z:* **O `521cf3f` is the active pin of this checkout and fully gated** (headless
+`CONTROLS PASS`, stage4 and E2 green; two VERDICTs `o-full1`, `o-full2`; C20 405/405; headed `o-headed4` 35/35; the
+10 Mbit/s first visit PASS at 513.9 s; `DEPLOY-MANIFEST CHECK OK`; `infra/ux-verdict.json` → `o-full2`). Not pushed, not
+deployed: the live site serves H `bf9d947`. N `58ebbad` stays registered (its stores intact); I and J are retired.
+
+**What moved.** QED64 `521cf3f` (main) adopts the kernel release `lean-v4.35.0-b081e7c` (digest `sha256:5450ccc0…`,
+kernel patch 0042) in its promote `add01f8`, with HARDENING #77–#81 over N: Lean **4.35.0**, Mathlib `56a00585`,
+ProofWidgets `df72b022`, runtime `wasm64-36d7f415704473d9`, toolchain image `qed64-toolchain:emsdk-6.0.5`
+`9563286ca922` (from the release record's `docker.imageId`). Unlike every earlier re-pin, the Lean version changes,
+so the widgets were ported first: the nine packages build and test on Lean 4.35.0 / Mathlib v4.35.0
+(`1a61003`, `WIDGETS_COMMIT`; test-all GREEN 9/9; `WIDGETS_SOURCE_HASH` `4a1f4902…`, 232 files). The port's
+gotchas are in `packages/*/PORT-NOTES.md`; the user-visible changes are DistLens's example header
+(`lean/examples/dist-lens.lean` line 14: `open PMF DistLens`) and the graph-scope example's doc comment and card blurb
+(its components link is now offered only when the calibrated cost model fits).
+
+**Harness changes the new Lean version needed.**
+
+* The stock Lean toolchain (`TC`) is derived from the target pin's runtime `leanVersion` instead of a fixed v4.34
+  path, and the Mathlib clone is per Mathlib commit (`MATHLIB_CLONE=$W/mathlib4.<8 hex of the lock's mathlib commit>`;
+  4.34 keeps the legacy `$W/mathlib4`). Explicit env vars still beat `.env.local`.
+* `pin-qed64.mjs`: the docker image id comes from the release record, the release's `.so` hashes are checked, the
+  record is cross-checked against the pin, and `pin` refuses without `QED64_KERNEL_BUILD`.
+* `stage-trees.mjs` stages and G0-checks the fat base tree too (`baseFatDigest`); the native goldens' Essential count
+  comes from `$K/mathlib/essential-modules.txt`.
+* The headless lane reads the resident worker's argv from the pin's `public/workers/lean.worker.js`
+  (`RESIDENT_ARGV`), never a copy.
+* The native delta lists were regenerated: phase 1 38 modules (two Mathlib renames: `Data.Fin.SuccPredOrder` →
+  `Order.SuccPred.Fin`, `Data.Setoid.Partition` → `Order.Setoid.Partition`), phase 2 404.
+
+**Registration (by hand, from our own worktree).** `$W/qed64-pins/521cf3f`; page built from source; binaries cloned
+into its gitignored paths and checked against its tracked manifests (a by-hand script, `stage-pin-binaries.py`, kept in the session's scratch directory and not committed: the runtime chunks from
+the kernel release directory, the per-build runtime manifest, the 69 pack parts, QED64's stock snapz).
+`pin-qed64.mjs pin --pin 521cf3f`: 145 release files; main bundle `/assets/index-BcCr_hPg.js`; console notify site
+line 627 with new content (`47afccc…`). `servedTrees`: core `d42722f8…` (10,175 files), slim base `58113bce…`
+(20,365), fat base `a33a51a8…` (25,456), baseN 5092.
+
+**Heavy path (`SHOWCASE_PIN=521cf3f`, its own runtime stores; N stays active, but the shared staged trees `$W/tree-*`,
+`out/native-build.json` and the goldens are now O's).**
+
+| Step | Result |
+|---|---|
+| goldens (`lean/goldens/`) | REQUIRED-GATES PASS; CLICK-ALL GATE PASS: 135 links (129 MakeEditLink + 6 Try-this), clean 135, all 15 env runs broken 0; 31 goldens regenerated (`lean/expect/**`) |
+| native | widgets header gate 64/64 modules; DistLens closure 413 modules (1,221 files) PASS; reuse gate 0 new oleans |
+| stage | G0–G6 OK: `tree-slim-w7` 5,195, `tree-slim-w8` 5,758, `tree-fat` 5,759 |
+| bake w7 | `JUDGE w7: GREEN N=5195 raw=1151111821 widgets.4f02caae6eb88d1d.snapz` (335 s, peak tree RSS 8.43 GiB) |
+| bake w8 | `JUDGE w8: GREEN N=5758 raw=1255464357 widgets.37b2f0a943e8307c.snapz` (337 s, peak 8.68 GiB); PAIRING GREEN both |
+| preflight | `PREFLIGHT OK buildId=wasm64-36d7f415704473d9` for widgets7 and widgets8 (boot smoke 8.3 s each) |
+| headless | `CONTROLS PASS` 11/11 (chain 2, 48 s); stage4 `0 failing`: E1 8/8 + 7/7, E3 1167/1167 (w8) + 1038/1038 (w7), E3b 49/49 + 44/44; E2 7/8, tree-scope `Demo.lean:104` on L1 (root-caused; native 4.35 builds that Demo); gate `stage4Green`, `E2Green` (headless floor 12 GiB, the user's call 2026-10-27) |
+| record-overlays, verify | `RECORDED overlays widgets7 … widgets8 …`; `pin-qed64.mjs verify --pin 521cf3f` VERIFY OK (62 OK, #7 docker included); `pin-switch check 521cf3f --full` PIN CHECK OK |
+| switch | `showcase.sh pin use 521cf3f`: PIN CURRENT OK; `showcase.sh gallery` GREEN on `047aa584…` (examples.json regenerated for the dist-lens/graph-scope edits); `showcase.sh verify` all checks OK (I/J RETIRED); `deploy-manifest generate --overlays widgets8,widgets7` OK, 77 assets / 93 R2 objects |
+
+**Browser gate (pin O active, `SHOWCASE_LANE=pinO`, floor 16 GiB; gallery `047aa584…`).**
+
+| Run | When | Result | Evidence |
+|---|---|---|---|
+| thumbnails (`bringup/widgets.mjs --thumbs`) | 19:14Z | WIDGETS OK 8/8, THUMBS OK 8/8; all eight PNGs **byte-identical** to the 2026-10-01 set, so `thumbs.json`'s new `madeAt`/`run` were reverted (gallery hash unchanged) | `pinO-thumbs.log` |
+| X4 (`tests/experiments/x4-click-paths.mjs`) | 19:19–19:20Z | `pass`; **D1 and D2 no longer reproduce on the plain stock page**: `a:raw` core Try-this applies in 102 ms, `b:raw` the `conv?` panel renders and Generate-conv applies in 101 ms (on 1859b83/9fdf9b8 both were BROKEN); bridge modes work; `b:strip` (bridge with edits off) does not apply. The verdict rule `makeEditLinkStockApplyEdit` read `b:strip` only and said BROKEN; it now reads `b:raw` once its panel renders | `out/experiments/x4.json`, previous `$W/logs/x4.before-pinO.json` |
+| `o-c13` (`--grep C13`) | 19:22Z | 2/3: `C13-gallery-graph-scope.png` differed, every changed pixel in the editor's doc-comment lines 4–13 and the card blurb (this re-pin's graph-scope edit); re-approved | `pinO-ux-c13.log` |
+| `o-c13b` | 19:26–19:27Z | 3/3 | `pinO-ux-c13b.log` |
+| `o-t1` (C3, C4, C10, C23, W8, C20, C22) | 19:29–19:37Z | 7/7; C10 storm peak renderer 4.45 GB, `panelEqual`; the gallery on embedding v1 (`editorRpc`, `widgetSourceCache`: bridge stood down) | `pinO-ux-t1.log` |
+| `v1-smoke` | 19:39–19:40Z | 23/23, ready 9.6 s | `out/ux/v1-smoke.O1` |
+| `o-full1` | 19:42–19:57Z | **VERDICT** (34 passed, C19 skipped; 15.1 min) | `pinO-ux-full1.log` |
+| `o-full2` | 19:59–20:14Z | **VERDICT**; the recorded verdict | `pinO-ux-full2.log` |
+| `o-c20-1/2/3` | 20:16–20:33Z | 135/135 each (405/405), 4.2–4.3 min | `pinO-ux-c20-{1,2,3}.log` |
+| `o-headed1..3` | 20:35–21:26Z | 34/35 each: C13a, the HEADED baseline `headed/C13-gallery-graph-scope.png` (not re-approved with the headless one; the three captures byte-identical, the same two regions); re-approved | `pinO-ux-headed{1,2,3}.log` |
+| `o-headed4` | 21:29–21:45Z | **HEADED SIGN-OFF** 35/35 (C19 included) | `pinO-ux-headed4.log` |
+| `o-throttle-t10p` (10 Mbit/s / 40 ms) | 21:47–21:56Z | **`RESULT PASS`**, ready at **513.9 s** (N 519.0 s); progress visible in 512 of 513 samples, error card in 0, longest unchanged progress 6.0 s; 635.8 MB at 9.9 Mbit/s | `pinO-tp-t10.log` |
+| `deploy-manifest generate` / `--check` / `--record-verdict` | 21:56–22:01Z | `DEPLOY-MANIFEST CHECK OK`, G2 `verdict run o-full2 … on THIS gallery 047aa584…, lock ffb9bb09…`; 77 assets, 93 R2 objects; `infra/ux-verdict.json` → `o-full2` | `pinO-dm-*.log` |
+
+**Incidents.**
+
+* *A node exit deadlock held the headless lane for 2 h 16 min.* The control `e-e1-flipped-index` printed its expected
+  verdict (E1 FAIL, exit 1 wanted) and then hung in `process.exit`: the main thread joined a V8 background baseline
+  compiler job that was waiting for a GC only the main thread could run (`sample`: `DisposePlatform` →
+  `WorkerThreadsTaskRunner::Shutdown` → `uv_thread_join`, the worker in `CollectionBarrier::AwaitCollectionBackground`;
+  node 26.3.0). Killed by PID; `run-controls.sh` now runs each control under `CONTROL_LIMIT_S` (default 900 s; each
+  takes seconds), so a hang costs minutes.
+* *`showcase.sh verify` had been red since K.* L and N gated on `pin-qed64.mjs verify` + `pin check --full`, so two
+  things went unseen: (1) cleanup round 1 (2026-10-25) trashed ten registered pins' QED64 worktrees, whose source
+  checks then fail; recreated with `qed64-src.mjs ensure` (sources only, ≈20 MB each); (2) pins I `385a1ac` and J
+  `5e63edd` cannot be switched to any more: K rebaked the f69cca24 overlay store they share for K's widgets
+  (`widgets.557ea1a8…`, `WIDGETS_COMMIT 6b31bba`, 2026-10-12), replacing their `widgets.ebd0fc1b…` (`90e415c`). New
+  optional `pin.json` field `"retired"`: `pin-switch check --if-materialized` reports such a pin as `RETIRED` (exit 0)
+  and `pin use` refuses it; I and J carry it.
+* *The host lock (`with-browser-lock.sh`), eight rounds of fixes with adversarial verification (`78306aa`).* Two pin O
+  lanes sat in a FIFO that a waiter could overtake, and a takeover paused between its read and its check could remove the
+  next owner's live lock. Now: FIFO tickets that a waiter without a ps start time re-files at every poll; a takeover
+  (`TAKEOVER_PL`) that decides staleness under a flock plus the old directory and removes the lock only if it is unchanged
+  (dev, inode, line); a release (`RELEASE_PL`) that checks and unlinks in one process while the wrapper is its parent;
+  every catchable terminating signal except the synchronous faults (SEGV, BUS, ILL, FPE) and the real-time signals
+  trapped once the lock is held (an untrapped HUP/USR1/ABRT released it while the
+  command ran on). What remains is in the script's header limits (1)–(6): SIGKILL or an untrapped fault of the wrapper alone, pid reuse,
+  and what older copies of the script can still do. `tests/ux/bringup/lockfifo.sh` (fault and takeover cases, each failing on
+  the mutant it was written for) and `lockrace.sh`.
+* *Two memory meters.* The user lowered the headless floor to 12 GiB (2026-10-27). The chain's prewait read
+  `reclaimable_gib` (free + inactive + speculative, rounded: 13), the in-lock guard `free_inactive_gib` (no speculative
+  pages, truncated: 11), so stage4 was refused inside the lock after the prewait passed. The chain now waits on the guard's
+  figure; the two differ by up to 2 GiB on this host (0–2 in the chain log, usually 1). The browser lanes kept 16 GiB.
+* *Docker Desktop's engine was down with the app up* (API 500, no VM process): `docker desktop restart`, then `pin-qed64.mjs
+  verify --pin 521cf3f` passed #7.
+
+**The review of this re-pin's harness changes, and what it changed.** An adversarial review of the uncommitted pin O
+diff (five dimensions, each finding verified by a second agent; read-only) confirmed 15 of 18 findings, one high: the
+staged trees `$W/tree-slim-w7|w8` and `$W/tree-fat` (and the controls' `$W/tree-stock`) are shared by every pin with no
+record of whom they were staged for. O is the first pin whose base trees and module counts differ (K's restage changed only widget oleans, at the same N, and J's trees were backed up by hand), so after O's stage a `showcase.sh all` for N
+would have skipped stage, seen a red judge and let `bake.sh` delete N's green bake before baking N's runtime against O's
+4.35 tree. The fixes (a 29-file patch, three verify rounds per group, then a fresh three-lens review of the whole patch:
+9 findings, 6 confirmed and fixed; tests on macOS bash 3.2 and Linux bash 5.2 in the local `node:26-bookworm` image):
+
+* each staged tree carries `<tree>.STAGED.json` (pin, runtime, served base, `WIDGETS_SOURCE_HASH`, EXPECTED-N), written
+  only after every gate passed; `bake.sh` (before anything is deleted), `judge-bake.mjs`, headless stage4/e2,
+  `hang-repro.mjs` and `all` refuse a tree whose record is not the target pin's (`stage-trees.mjs --check-provenance`);
+  `all` restages instead of baking; `$W/tree-stock` gets a `.SOURCE.json` sidecar (`--stock-copy`);
+* stage's new N0 gate: the clone, the kernel build and the native build record (`out/native-build.json`, plus a per-clone
+  `.lake/showcase-native-build.json`) must be the target pin's, re-checked before the record is written;
+* `QED64_KERNEL_BUILD` may be a `:` list; the env layer picks the target pin's build like TC and `MATHLIB_CLONE`, and
+  `verify` says N/A for a build of another release instead of FAIL; a TC whose Lean differs from the packages'
+  `lean-toolchain` is refused; no silent v4.34 TC fallback for a non-legacy pin; golden envs carry a `BUILT-FROM` stamp;
+  `verify` and `pin use` name the `$W/widgets-src` restore command; the deploy guide states the E1 pack-manifest hazard.
+
+Applied 22:21Z with nothing running. After it, on pin O: `stage all --force` restaged the three trees with records and
+**byte-identical** content (a sha256 over every file, before and after), `judge-bake w7|w8` GREEN on the same `.snapz`, the
+golden envs rebuilt with stamps, `tree-stock.SOURCE.json` backfilled after G0, `verify`, `pin check --full` and
+`deploy-manifest --check` OK. A consequence: an older pin cannot be restaged on this branch (its native delta lists are
+O's), so restaging N needs N's branch; serving or rolling back to N is unaffected (its overlay stores are intact).
+
+**The node exit deadlock, root-caused.** The first post-patch controls run hung again on `e-e1-flipped-index` (the
+900 s bound ended it: `CONTROLS FAIL`, `neg-got-142`). `sample` showed the same two stacks as in chain 1: the main thread
+in `node::DisposePlatform` → `WorkerThreadsTaskRunner::Shutdown` → `uv_thread_join`, the joined thread V8's
+`ConcurrentBaselineCompiler` (Sparkplug) in `CollectionBarrier::AwaitCollectionBackground`. The control alone, 30 runs
+each: plain `node` hung in **14 of 30**, `node --no-concurrent-sparkplug` in **0 of 30**. `scripts/lib/platform.sh`
+`NODE_TOOL` now runs the headless tools that way (run-controls, run-stage4); the 900 s bound stays as the backstop.
+Then: controls ×3 `CONTROLS PASS` (49 s, 44 s, 44 s), stage4 `0 failing` through the patched runner (22:51–22:55Z), E2 7/8 on L1 (22:55–23:04Z), and the
+summary's gate `stage4Green`, `E2Green` (`$W/logs/pinO-pf2-*.log`).
+
+### Not done (pin O, 2026-10-27 ~23:10Z)
+
+1. Committed on `port-lean-4.35` (not pushed): the host lock `78306aa`, the control bound `61ed105`, the I/J retirement
+   `5660c6d`, O's harness `07d015b`, the review fixes and `NODE_TOOL` `0ab384a`, pin O itself `546d110`, and these docs.
+   Next: the qed64-static CI mirror on that commit and the deploy rehearsal (a new rehearsal
+   state: runtime 36d7f415, 93 objects; `old-shell` against the live H, whose E1 MEASURE lines now also cover the pack
+   manifests).
+2. The user's decisions: the push (it deploys O over H; or N first); E1, now including the pack manifests (above and
+   docs/DEPLOY-CLOUDFLARE.md 3.2; a question to QED64 about per-release manifest URLs is drafted in docs/UPSTREAM-REPORT-QED64.md, last section, for the user to relay); `.env.local`'s `QED64_KERNEL_BUILD`
+   (it names a deleted dir; suggested the list `$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`; `.env.local` expands `$HOME`, not `$W`);
+   alias policy and stale tabs as for I; whether to keep N's and H's build stores.
+3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3).

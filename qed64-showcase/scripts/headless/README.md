@@ -37,14 +37,29 @@ mkdir -p $W/runtimes/wasm64-f69cca24d0878a58/stage1 && cp -Rc $W/toolchains/lean
 # raw stock snapshots (122,364,117 and 1,127,272,685 bytes; .snapz digests checked against the index,
 # raw sha256 recorded in $W/raw/<name>.snap.provenance.json and re-verified on every rerun)
 scripts/headless/derive-raw.sh
-# olean tree for the stock controls: the tree the served mathlib region was baked from (5,004 .olean;
-# bump-0035's is byte-identical to bump-51's, docs/REPIN-LOG.md; pin I's is digest-identical to H's)
-cp -Rc $Q/work/bump-0035/slim/lib-tree-slim $W/tree-stock
+# olean tree for the stock controls, $W/tree-stock: the tree the served mathlib region was baked from (the target pin's
+# servedTrees.baseSlim; 5,004 .olean up to 58ebbad, bump-0035's byte-identical to bump-51's, docs/REPIN-LOG.md; 5,092
+# for 521cf3f). Not cloned by hand: run-controls.sh makes it when missing, together with its sidecar
+# $W/tree-stock.SOURCE.json {schema, base, pin, n, clonedAt}, which a hand-made copy lacks: on a pin that records servedTrees.baseSlimDigest (521cf3f) it is written once the copy passes G0; on any other pin such a copy is refused
+node scripts/stage-trees.mjs --stock-copy $W/tree-stock
 ```
 
-Every wasm tool refuses to run when `buildIdOf(--artifact)` is not the pinned buildId. `run-controls.sh` also runs
-`stage-trees.mjs --check-digest baseSlim --tree $W/tree-stock` (G0) for a pin whose descriptor records
-`servedTrees.baseSlimDigest`; pin I records none, so it prints `SKIP G0 baseSlim` (`$W/logs/pinI-hl-controls.log`).
+Every wasm tool refuses to run when `buildIdOf(--artifact)` is not the pinned buildId. `$W/tree-stock` is one copy shared
+by every pin, so `run-controls.sh` checks it against the target pin before any control runs
+(`stage-trees.mjs --stock-copy`), in both switching directions:
+
+* a pin whose descriptor records `servedTrees.baseSlimDigest` (`521cf3f` is the first; its base tree has 5,092 modules):
+  G0, the tree digest of the copy == that digest. A copy cloned for an older pin FAILs it. A copy that passes with no
+  sidecar, or with one naming another pin or base (a copy moved back by hand), gets one written for the target pin.
+* a pin that records none (every pin before `521cf3f`, which until then printed `SKIP G0 baseSlim`): the sidecar's `base`
+  must be the pin's expanded `servedTrees.baseSlim` and the copy must hold `servedTrees.baseN` `.olean` files. A copy
+  cloned for `521cf3f`, or one with no sidecar, is refused. Pins with textually different but byte-identical bases
+  (bump-51 vs bump-0035b) are refused too, and recloning costs only an APFS clone.
+
+Each refusal (exit 2) names the pin the copy was cloned for and prints the command that moves it aside together with
+its sidecar, e.g. `mv "$W/tree-stock" "$W/tree-stock.prev-521cf3f" && mv "$W/tree-stock.SOURCE.json"
+"$W/tree-stock.prev-521cf3f.SOURCE.json"`; the rerun then clones the copy again from the target pin's tree. Moving a
+copy back (both files) is how to return to it: its sidecar travels with it.
 
 *Note (2026-10-08, updated 2026-10-09).* The `$Q/pipeline/toolchain/work/` copy is how every pin up to H was set up;
 QED64 `385a1ac` (pin I) has no such tree. The kernel fork's toolchain releases ship the runtime instead
@@ -161,7 +176,24 @@ panel, selection, hover, Try-this and click logic is copied from there.
 5. It sets up the stdin ring.
 6. It installs a per-byte stdout tap that feeds the product's own `LspFrameDecoder`
    (`deps/qed64/public/workers/lsp-frames.js`).
-7. It calls `callMain(["--worker", "-Dserver.reportDelayMs=0"])`.
+7. It calls `callMain(RESIDENT_ARGV)`: the resident FileWorker's command line, parsed from the pin's own
+   `public/workers/lean.worker.js` (`residentArgv()` in `wasm-lsp.mjs`), so the lane runs exactly what the browser
+   worker runs. For pin K `62a06e2` on that is `["--worker", "-Dserver.reportDelayMs=0", "-DElab.async=false"]`
+   (QED64 HARDENING #70). A pin whose worker has no `RESIDENT_ARGV` (before K: the argv is inlined in `callMain`) is
+   refused before anything boots. The log names the argv (`lean --worker … (RESIDENT_ARGV of …)`).
+
+*Note (2026-10-27): `Elab.async`.* Until 2026-10-27 `wasm-lsp.mjs` hard-coded `["--worker",
+"-Dserver.reportDelayMs=0"]`, so every E3 result up to pin N (`58ebbad`), whose worker already ran
+`-DElab.async=false`, elaborated with asynchronous elaboration ON (the FileWorker's default when the command line leaves
+it unset), unlike the browser. From the Lean 4.35 re-pin (QED64 `521cf3f`) on, the runs that boot this transport use
+QED64's argv, i.e. `Elab.async=false`, as QED64's EMBEDDING §12 (`c512c21`) advises for embedders that lint their own
+tactic blocks (the widgets do: SimpLens, DistLens). Those are E3 (`rpc-probe.mjs`: stage 4's E3 steps and the wasm E3
+controls), E3b (it renders the panels E3 produced) and `hang-repro.mjs`; their 4.35 results are **not directly
+comparable** with N's or earlier: a difference between them may come from the flag as well as from Lean 4.35. E1
+(`exact-header.mjs`, QED64's `snapshot-probe.mjs` batch compile) and E2 (`run-e2.sh`, QED64's `supervised-run.mjs` →
+`node-runner.mjs` CLI, no `-D` option) do not use `wasm-lsp.mjs`: they keep their own command lines and this change
+does not touch them. The native side (`NativeLsp`, stock `lean --server`, and the goldens) is unchanged and still runs
+with Lean's default.
 
 **Front-door rules.** Client frames follow `lsp-front-door.js`:
 
@@ -284,6 +316,12 @@ scripts/headless/run-stage4.sh all        # w8 block (8 packages) then w7 block 
 scripts/headless/run-e2.sh                # E2: each Demo.lean verbatim on $W/tree-fat (serial)
 node scripts/headless/summarize-stage4.mjs   # -> out/headless/summary.json + markdown tables
 ```
+
+Before any step, `run-stage4.sh` and `run-e2.sh` refuse (exit 2) an olean tree that was not staged for the target pin
+(`stage-trees.mjs --check-provenance $W/tree-slim-w8`: `<tree>.STAGED.json` names the runtime, served base and widget
+export it was staged for). The trees are shared by every pin, so after another pin's `stage` the remedy is the one the
+refusal prints, `SHOWCASE_PIN=<id> scripts/showcase.sh stage w7|w8|fat --force`. The direct commands below take `--lib`
+as given and check nothing: run `--check-provenance` on the tree first.
 
 `run-stage4.sh` runs, per package and bake, exactly these three commands (w8 shown; dist-lens
 uses `--budget-ms 900000 --timeout-ms 900000`; w7 swaps every `w8`/`widgets8` for `w7`/`widgets7`

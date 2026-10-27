@@ -244,6 +244,9 @@ noncomputable def weather : Fin 2 → PMF (Fin 2) :=
 example : twoDice 5 = 1/6 := by unfold twoDice die; pmf_num
 Evidence: Demo.lean:18-21, :26-28, :40-47, :79-81, :113-118.
 
+Mathlib v4.35.0 form (note added 2026-10-27; the snippet above is the v4.34.0 one, kept as recorded). Mathlib v4.35.0 (#42909) made its uniform constructors Measure-valued, so DistLens ships the `PMF`-valued ones itself as `DistLens.uniformOfFintype` / `DistLens.uniformOfFinset` (DistLens/Uniform.lean). Write `open PMF DistLens` in place of `open PMF`, at top level (inside a `namespace Foo.DistLens`, `open DistLens` opens `Foo.DistLens`), or spell `DistLens.uniformOfFintype (Fin 6)`. With `open PMF` alone the bare `uniformOfFintype (Fin 6)` no longer elaborates: in QED64, whose covered region imports no `Mathlib.Probability.Distributions.Uniform`, it is an unknown identifier; with all of Mathlib it is the deprecated Measure-valued alias `PMF.uniformOfFintype`. The showcase example lean/examples/dist-lens.lean uses `open PMF DistLens`.
+  - EVIDENCE: packages/dist-lens/README.md ("The uniform constructors are DistLens's own") and DistLensTests/MathlibUniformTests.lean; Mathlib v4.35.0 Mathlib/Probability/Distributions/Uniform.lean:272 (`@[deprecated (since := "2026-10-04")] alias _root_.PMF.uniformOfFintype := uniformOfFinset`); no Mathlib module imports Distributions.Uniform (only the `Mathlib` umbrella does), and the 4,438-module essential list has no `Mathlib.Probability` module.
+
 ### chart-kit showcase snippet (from ChartKit/Demo.lean §1 and §5)
 1. import ChartKit   -- stock page: import QED64.Widgets.ChartKit
 open ChartKit
