@@ -26,7 +26,8 @@
 //                                                    --full adds the release and overlay sha256s (pin-qed64.mjs verify
 //                                                    --pin <id> does the whole chain). --if-materialized: a registered pin
 //                                                    this checkout never bootstrapped (no release/<id>, no sources, no
-//                                                    stores) prints NOT MATERIALIZED and exits 0
+//                                                    stores) prints NOT MATERIALIZED and exits 0, and so does a RETIRED
+//                                                    one (pin.json "retired": why it can no longer be switched to)
 //   node scripts/pin-switch.mjs use <id> [--dry-run] [--allow-incomplete] [--no-deploy]
 //                                                    make <id> the active pin. Guards: registered; complete stores
 //                                                    (--allow-incomplete only for bringing up a new runtime, whose stage1,
@@ -261,7 +262,8 @@ if (cmd === 'list') {
     // a headed run (UX_HEADED_ALL=1) is never a verdict: it is judged as a HEADED SIGN-OFF (scripts/lib/ux-record.mjs)
     const judge = (x) => (x.headed ? (whyNotSignOff(x).length ? 'NOT A HEADED SIGN-OFF' : 'HEADED SIGN-OFF') : (whyNotVerdict(x).length ? 'NOT A VERDICT' : 'VERDICT'));
     const vt = v.error ? `ux: ${v.error}` : `full UX runs on its current lock: ${v.full} (${v.headed} headed), VERDICT ${v.verdicts}${v.lastVerdict ? ` (last ${v.lastVerdict.run} ${v.lastVerdict.end})` : ''}, HEADED SIGN-OFF ${v.signOffs}${v.lastSignOff ? ` (last ${v.lastSignOff.run} ${v.lastSignOff.end})` : ''}${v.last && v.last !== v.lastVerdict && v.last !== v.lastSignOff ? `; newest ${v.last.run}: ${judge(v.last)}` : ''}`;
-    console.log(`${p.id === act ? '* ACTIVE' : '  staged'} ${p.id}  QED64 ${p.qed64.commit.slice(0, 12)}  runtime ${p.buildId}  ${p.label}`);
+    console.log(`${p.id === act ? '* ACTIVE' : p.retired ? ' RETIRED' : '  staged'} ${p.id}  QED64 ${p.qed64.commit.slice(0, 12)}  runtime ${p.buildId}  ${p.label}`);
+    if (p.retired) console.log(`         retired: ${p.retired}`);
     // pin.json's status is hand-written when a lane registers or re-chooses a pin: a dated role note, never the current verdict
     // state (final audit, 2026-10-03); the verdicts and sign-offs on the pin's lock are COMPUTED on the line after it
     console.log(`         role (hand-written note, history): ${p.status || '-'}; liveness builtIn=${p.liveness && p.liveness.builtIn}; stores ${c.every((r) => r.ok) ? 'complete' : `INCOMPLETE (${c.filter((r) => !r.ok).length} FAIL: ${c.filter((r) => !r.ok).map((r) => r.msg.slice(0, 70)).join('; ')})`}`);
@@ -297,10 +299,14 @@ if (cmd === 'list') {
 } else if (cmd === 'check') {
   const id = argv[1];
   if (!ID_RE.test(id || '')) { console.error('usage: pin-switch.mjs check <pin id: 7-hex QED64 commit> [--full]'); process.exit(2); }
+  // a retired pin stays registered as history; its stores are known not to match its lock (e.g. a shared runtime store
+  // rebaked for a later pin), so `showcase.sh verify` reports it instead of failing on it; `use` refuses it anyway
+  if (flag('--if-materialized') && pinDescriptor(id).retired) { console.log(`RETIRED ${id}: ${pinDescriptor(id).retired}`); process.exit(0); }
   if (flag('--if-materialized') && !materialized(id)) {
     console.log(`NOT MATERIALIZED ${id}: registered (pins/${id}/), but this checkout has no release/${id} and no QED64 sources at its commit; bootstrap it with: scripts/showcase.sh bootstrap --pin ${id}`);
     process.exit(0);
   }
+  if (pinDescriptor(id).retired) console.log(`NOTE pin ${id} is retired (pin.json): ${pinDescriptor(id).retired}`);
   const good = printChecks(checkPin(id, { full: flag('--full') }));
   console.log(good ? `PIN CHECK OK ${id}${flag('--full') ? ' (full)' : ' (cheap)'}` : `PIN CHECK FAILED ${id}`);
   process.exit(good ? 0 : 1);
@@ -310,6 +316,7 @@ if (cmd === 'list') {
   const refuse = (m) => { console.log(`REFUSED: ${m}`); process.exit(3); };
   const from = activeOrNull();
   try { pinDescriptor(to); } catch (e) { refuse(e.message); }
+  if (pinDescriptor(to).retired) refuse(`pin ${to} is retired: ${pinDescriptor(to).retired}`);
   const rows = checkPin(to);
   const incomplete = rows.filter((r) => !r.ok && !r.link); // the links themselves are what `use` (re)makes
   if (incomplete.length) {

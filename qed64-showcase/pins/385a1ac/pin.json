@@ -6,6 +6,7 @@
   "registeredAt": "2026-10-09T00:00:00Z",
   "label": "I: QED64 385a1ac (main: the lean-v4.34.0-e1a79c1 adoption, kernel patch 0037, HARDENING #61-#66), runtime f69cca24 (kernel e1a79c1ce9)",
   "status": "staged 2026-10-09: registered from our own worktree $W/qed64-pins/385a1ac; overlays rebaked against f69cca24",
+  "retired": "2026-10-27: its widgets8 overlay is gone. Pin K (62a06e2) rebaked the overlay store of runtime f69cca24, which it shares with I and J, on 2026-10-12 for K's widgets (WIDGETS_COMMIT 6b31bba: widgets.557ea1a8\u2026), replacing this lock's widgets.ebd0fc1b\u2026 (WIDGETS_COMMIT 90e415c). Switching to it needs that overlay rebaked at 90e415c; kept registered as history",
   "qed64": {
     "commit": "385a1ac5f3bc33cd607c1cc2d03f4d8979ef4684",
     "promote": "fc945e4726ad68e1fc5fcfe745ec924eca8f02a7",

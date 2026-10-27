@@ -6,6 +6,7 @@
   "registeredAt": "2026-10-09T19:00:00Z",
   "label": "J: QED64 5e63edd (main: 385a1ac + the worker's engine-stack probe at 8192 slots, HARDENING #67, the interim for kernel 0036's Chrome regression), runtime f69cca24 (kernel e1a79c1ce9), as I",
   "status": "registered 2026-10-09 (first as a staged test pin from our worktree of QED64's branch fix/stack-probe-headroom, then confirmed: QED64 pushed the same commit to main as a fast-forward, CI and deploy green); targeted run j-dl1 recovers all 9 DistLens clicks I lost (C20 135/135)",
+  "retired": "2026-10-27: its widgets8 overlay is gone. Pin K (62a06e2) rebaked the overlay store of runtime f69cca24, which it shares with I and J, on 2026-10-12 for K's widgets (WIDGETS_COMMIT 6b31bba: widgets.557ea1a8\u2026), replacing this lock's widgets.ebd0fc1b\u2026 (WIDGETS_COMMIT 90e415c). Switching to it needs that overlay rebaked at 90e415c; kept registered as history",
   "qed64": {
     "commit": "5e63edd8a73403f9a3b4142a976a852ea656a338",
     "promote": "fc945e4726ad68e1fc5fcfe745ec924eca8f02a7",

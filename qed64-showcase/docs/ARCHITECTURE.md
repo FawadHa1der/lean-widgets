@@ -148,7 +148,10 @@ origin either points `--origin` at someone's served checkout or rebuilds the ove
 A checkout that serves fetched artifacts has no build stores of its runtime (`$W/runtimes/<bid>/`, `out/headless`).
 `pin current`, `pin check` and `verify` print them as **ABSENT**, and print a staged pin that was never bootstrapped as
 **NOT MATERIALIZED**. Neither counts as a failure, because what is served is still checked file by file against the
-lock. **N/A** marks a rebuild-only input that is missing on this host, such as the kernel build or a downloaded
+lock. `verify` prints a pin whose `pin.json` carries `"retired": "<why>"` as **RETIRED**, also not a failure. Such a
+pin's stores are known not to match its lock: pins I and J lost their overlay when K rebaked the runtime store they
+share. `pin list` and `pin check` name the reason, and `pin use` refuses the pin. **N/A** marks a rebuild-only
+input that is missing on this host, such as the kernel build or a downloaded
 browser. **DRIFT** marks a rebuild-only input that differs from the lock: the Docker image behind a tag that QED64
 rewrites (unless its id is a recorded equivalent: the current `8228ea564e7b` rebuilt all 7,616 native output files
 byte for byte, BUILD-FROM-SOURCE.md), or the Node version the bakes ran on. All of these are printed, counted and named in the verify summary.

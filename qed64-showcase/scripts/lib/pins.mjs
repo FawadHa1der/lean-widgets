@@ -75,6 +75,8 @@ export function checkDescriptorSchema(p, where = 'pin.json') {
   if (!p || !PIN_SCHEMAS.includes(p.schema)) throw new Error(`${where}: schema ${p && p.schema} is not one of ${PIN_SCHEMAS.join(', ')}`);
   if (p.schema === PIN_SCHEMA_V2 && p.overlayDirs !== undefined) throw new Error(`${where}: schema ${PIN_SCHEMA_V2} serves bare overlay names and takes no overlayDirs (got ${JSON.stringify(p.overlayDirs)}); per-runtime directories need ${PIN_SCHEMA_V3}`);
   if (p.schema === PIN_SCHEMA_V3 && p.overlayDirs !== OVERLAY_DIRS_PER_RUNTIME) throw new Error(`${where}: schema ${PIN_SCHEMA_V3} requires "overlayDirs": "${OVERLAY_DIRS_PER_RUNTIME}" (got ${JSON.stringify(p.overlayDirs)})`);
+  // "retired": why the pin can no longer be switched to (scripts/pin-switch.mjs: check --if-materialized reports it, use refuses it)
+  if (p.retired !== undefined && !(typeof p.retired === 'string' && p.retired.trim())) throw new Error(`${where}: "retired" must be a non-empty string (got ${JSON.stringify(p.retired)})`);
   return p;
 }
 /** The served directory of logical overlay `o` for descriptor `desc` (pure; overlayDir reads the descriptor by id). */
