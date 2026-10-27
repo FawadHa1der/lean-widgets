@@ -6,7 +6,7 @@
 #   with the `import Mathlib` line blanked (kept as an EMPTY line so every LSP
 #   line number is unchanged) and compiled with `lake env lean` from the
 #   package's own built tree (read-only use) on the package's own toolchain (its lean-toolchain, via
-#   elan's `lake`; superset mode uses $TC, which must be the same version):
+#   elan's `lake`; superset mode uses $TC and refuses, exit 2, unless it is that version: need_tc_packages):
 #   proves every name the example uses lives inside the package closure,
 #   hence inside the bake superset.
 # superset: the source is copied UNMODIFIED (header `import Mathlib`) to
@@ -25,6 +25,7 @@ mkdir -p "$W/examples-native/$pkg" "$W/logs"
 grep -qx 'import Mathlib' "$src" || { echo "no 'import Mathlib' line in $src" >&2; exit 90; }
 start=$(date +%s)
 if [ "$mode" = superset ]; then
+  need_tc_packages   # before starting Lean: stock Lean of another version cannot load the packages' oleans
   defenv=w7; [ "$pkg" = dist-lens ] && defenv=w8
   envname="${GOLDEN_ENV:-$defenv}"
   [ "$pkg" = dist-lens ] && [ "$envname" != w8 ] && { echo "dist-lens exists only in w8" >&2; exit 91; }

@@ -51,10 +51,12 @@
 // SOURCE-HASH.txt line 1; verify recomputes it from the file contents AND re-derives every file's git blob id against
 // `git ls-tree -r WIDGETS_COMMIT packages/`.
 //
-// Locations (scripts/lib/env.mjs): QED64_REPO (only for `pin`), QED64_KERNEL_BUILD (the kernel build, read-only; `pin`
-// reads the native toolchain record from it, or carries the active pin's record when it is unset, and refuses either one
-// when it disagrees with the pin's QED64 release record; `verify` checks it when set), QED64_SHOWCASE_WORK ($W). The lock
-// records them as placeholders, never as this machine's paths.
+// Locations (scripts/lib/env.mjs): QED64_REPO (only for `pin`), QED64_KERNEL_BUILD (the kernel build, read-only: one dir
+// or a ':'-separated list, of which the pin's own is used: env.mjs pinKernelBuild; `pin` reads the native toolchain record
+// from the one built from the native64/Mathlib commits the pin's QED64 release record names, or carries the active pin's
+// record when it is unset, and refuses either one when it disagrees with that record; `verify` checks the one built from
+// the lock's commits, N/A when none is), QED64_SHOWCASE_WORK ($W). The lock records them as placeholders, never as this
+// machine's paths.
 //
 // Every operation on a QED64 tree is read-only: git rev-parse / status / show / ls-tree (with --no-optional-locks on
 // QED64_REPO), and copy-on-write file clones (new inodes, never hard links).
@@ -73,11 +75,11 @@ const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const cmd0 = process.argv[2];
 let Q = '', K = '';
 try {
-  // pin: QED64_KERNEL_BUILD set -> the native toolchain record is read from it; unset (a host without the native kernel
-  // build, e.g. after it was removed) -> carried from the active pin's lock, said so (verify #7 is then N/A here, as in CI).
-  // Either way pin refuses a record that is not the native toolchain the pin's release record names (recordChecks)
-  if (cmd0 === 'pin') { Q = ENV.need('QED64_REPO'); if (ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); }
-  if (cmd0 === 'verify' && ENV.K) K = ENV.need('QED64_KERNEL_BUILD'); // optional for verify: set -> checked, unset -> N/A
+  // pin: QED64_KERNEL_BUILD set -> the native toolchain record is read from the pin's kernel build among the ones it names
+  // (pin(), once the release record is read); unset (a host without the native kernel build, e.g. after it was removed) ->
+  // carried from the active pin's lock, said so (verify #7 is then N/A here, as in CI). Either way pin refuses a record
+  // that is not the native toolchain the pin's release record names (recordChecks)
+  if (cmd0 === 'pin') Q = ENV.need('QED64_REPO');
 } catch (e) { console.error(`pin-qed64: ${e.message}`); process.exit(2); }
 const QED64_UPSTREAM = 'https://github.com/FawadHa1der/QED64';
 // --pin <id> (default: the active pin). Its descriptor names the QED64 commit (QPIN), the promote, the runtime buildId and
@@ -89,6 +91,10 @@ const pinArg = process.argv.indexOf('--pin');
 const ID = pinArg > 0 ? process.argv[pinArg + 1] : activePinId();
 if (!ID_RE.test(ID || '')) { console.error(`--pin needs a pin id: the 7-hex prefix of the QED64 commit (got ${ID})`); process.exit(2); }
 const DESC = pinDescriptor(ID);
+// verify: the kernel build of THIS pin (--pin, not SHOWCASE_PIN): the QED64_KERNEL_BUILD candidate built from its lock's
+// native64/Mathlib commits. Optional: unset, or none of the candidates (another release's build) -> #7 N/A, naming them
+const KB = cmd0 === 'verify' ? ENV.pinKernelBuild(ID) : null;
+if (KB) K = KB.dir;
 const BID = DESC.buildId;
 const QPIN = DESC.qed64.commit;
 const QPROMOTE = DESC.qed64.promote;
@@ -293,6 +299,12 @@ async function pin() {
   // QPIN (null for pins A–H) names the native toolchain the pin's kernel release was built with: the record read from
   // QED64_KERNEL_BUILD, or carried from another pin's lock, must be that one (recordChecks), else pin refuses.
   const rec = recordAt(QPIN);
+  // the kernel build: the QED64_KERNEL_BUILD candidate built from the native64/Mathlib commits the record names (pins
+  // A–H have none: this pin's lock, else a single dir unchecked, as before). Candidates given and none of them -> refuse
+  const kb = ENV.pinKernelBuild(ID, rec?.native64?.commit && rec?.mathlib?.commit ? { native: rec.native64.commit, mathlib: rec.mathlib.commit, from: `${RELEASE_RECORD_PATH} (${rec.id})` } : undefined);
+  if (ENV.K_CANDIDATES.length && !kb.dir) throw new Error(`QED64_KERNEL_BUILD names no kernel build of pin ${ID}: ${kb.why}`);
+  K = kb.dir;
+  if (K && !fs.existsSync(K)) throw new Error(`QED64_KERNEL_BUILD=${K} does not exist`);
   const { id: DOCKER_ID, from: dockerFrom } = dockerIdOf(rec);
   const refuseOn = (checks, why) => {
     const bad = checks.filter((c) => c.level === 'fail');
@@ -316,9 +328,10 @@ async function pin() {
     mathlib = { commit: fs.readFileSync(path.join(K, 'mathlib/MATHLIB-COMMIT'), 'utf8').trim(), proofwidgets: pw.rev };
   } else {
     // the native toolchain is a rebuild-only input shared by every pin built with it: carry its record from the active
-    // pin's lock (never invent one); `verify` checks it wherever QED64_KERNEL_BUILD is set. A pin whose release record
-    // names another native64 or Mathlib commit (a re-pin to a new Lean, e.g. lean-v4.35.0-b081e7c while the active pin
-    // serves a 4.34 one) is refused: its toolchain can only be read from its own kernel build.
+    // pin's lock (never invent one); `verify` checks it wherever QED64_KERNEL_BUILD holds this pin's kernel build (env.mjs
+    // pinKernelBuild). A pin whose release record names another native64 or Mathlib commit (a re-pin to a new Lean, e.g.
+    // lean-v4.35.0-b081e7c while the active pin serves a 4.34 one) is refused: its toolchain can only be read from its
+    // own kernel build.
     let src = null; try { src = activePinId(); } catch { /* none */ }
     const tc0 = src && src !== ID ? (readJson(path.join(repoPinDir(src), 'QED64.lock.json')).toolchain || {}) : {};
     if (!tc0.native64 || !tc0.mathlib) throw new Error('QED64_KERNEL_BUILD is not set and no active pin lock (other than this pin) records the native toolchain to carry: set QED64_KERNEL_BUILD');
@@ -494,17 +507,19 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   for (const f of have.filter((f) => /^dist\/assets\/.*\.js$/.test(f))) for (const m of fs.readFileSync(path.join(R, f), 'latin1').matchAll(/wasm64-[0-9a-f]{16}/g)) ids.add(m[0]);
   ok(ids.size === 1 && ids.has(BID), `#6 bundle buildIds in dist/assets/*.js == {${[...ids].join(',')}}`);
   // 7. toolchain pins. The native64 toolchain, its Docker image, Mathlib and ProofWidgets are REBUILD-ONLY inputs (the
-  // native widget oleans: `showcase.sh native`, `stage`); a checkout without QED64_KERNEL_BUILD cannot rebuild and does
-  // not need them to serve (the served files are checked by #1-#6, #10 and the overlays by #11), so they print N/A.
+  // native widget oleans: `showcase.sh native`, `stage`); a checkout without this pin's kernel build (QED64_KERNEL_BUILD
+  // unset, or naming only other releases' builds: K is the candidate built from the lock's native64/Mathlib commits)
+  // cannot rebuild it and does not need them to serve (the served files are checked by #1-#6, #10 and the overlays by
+  // #11), so they print N/A.
   // Where QED64's release record exists at QPIN (QED64 >= 4f46477), it is the non-circular reference (the lock was written
-  // from the kernel build, the record was not): the kernel build when QED64_KERNEL_BUILD is set, else the lock's
+  // from the kernel build, the record was not): the pin's kernel build when QED64_KERNEL_BUILD holds it, else the lock's
   // native64/Mathlib commits, are checked against it (recordChecks). A malformed record already FAILs #9.
   const tc = lock.toolchain;
   let rec = null; try { rec = recordAt(QPIN); } catch { /* reported by #9 */ }
   const report = (checks) => { for (const c of checks) if (c.level === 'warn') warn(c.msg, c.detail); else ok(c.level === 'ok', c.msg, c.detail); };
   if (!K) {
-    na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake/lib sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: QED64_KERNEL_BUILD is not set`,
-      'rebuild-only inputs of the native widget oleans (docs/BUILD-FROM-SOURCE.md); set it to check them');
+    na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake/lib sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: ${KB.why || 'QED64_KERNEL_BUILD is not set'}`,
+      `rebuild-only inputs of the native widget oleans (docs/BUILD-FROM-SOURCE.md); ${KB.why ? `add pin ${ID}'s kernel build to QED64_KERNEL_BUILD` : 'set it'} to check them`);
     if (rec) report(recordChecks(rec, { native: [tc.native64.NATIVE_COMMIT, 'lock toolchain.native64.NATIVE_COMMIT'], mathlib: [tc.mathlib.commit, 'lock toolchain.mathlib.commit'] }));
   } else {
     ok(fs.readFileSync(path.join(K, 'native/NATIVE-COMMIT'), 'utf8').trim() === tc.native64.NATIVE_COMMIT, `#7 NATIVE-COMMIT == ${tc.native64.NATIVE_COMMIT.slice(0, 10)}`);
@@ -554,23 +569,27 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   }
   // WIDGETS_SOURCE_HASH: recomputed from the bytes of every file in $W/widgets-src; WIDGETS_COMMIT: the export is
   // exactly `git archive WIDGETS_COMMIT packages/` (file set + git blob ids re-derived from the bytes)
+  // $W/widgets-src is ONE export shared by every pin: after `pin use` of a pin built from other widget sources it is the
+  // previous pin's, so each mismatch names the restore command (it moves the current export aside; nothing is deleted)
+  const wc = lock.WIDGETS_COMMIT, wcOk = /^[0-9a-f]{40}$/.test(wc || '');
+  const restoreCmd = `restore this pin's export: node scripts/export-widgets.mjs --commit ${wc}`;
+  const restore = (good) => (good || !wcOk ? '' : `; ${restoreCmd}`);
   if (!lock.WIDGETS_SOURCE_HASH) ok(false, '#7 WIDGETS_SOURCE_HASH present in QED64.lock.json', 'missing (run: pin-qed64.mjs record-widgets-hash)');
-  else if (!fs.existsSync(WIDGETS_SRC)) ok(false, `#7 ${WIDGETS_SRC} exists`, 'run: node scripts/export-widgets.mjs');
+  else if (!fs.existsSync(WIDGETS_SRC)) ok(false, `#7 ${WIDGETS_SRC} exists`, `run: node scripts/export-widgets.mjs${wcOk ? ` --commit ${wc}` : ''}`);
   else {
     const { hash, files } = await widgetsSourceHash();
-    ok(hash === lock.WIDGETS_SOURCE_HASH, `#7 WIDGETS_SOURCE_HASH recomputed over $W/widgets-src (${files} files) == lock`, `${hash.slice(0, 16)}… vs lock ${String(lock.WIDGETS_SOURCE_HASH).slice(0, 16)}…`);
+    ok(hash === lock.WIDGETS_SOURCE_HASH, `#7 WIDGETS_SOURCE_HASH recomputed over $W/widgets-src (${files} files) == lock`, `${hash.slice(0, 16)}… vs lock ${String(lock.WIDGETS_SOURCE_HASH).slice(0, 16)}…${restore(hash === lock.WIDGETS_SOURCE_HASH)}`);
     const rec = recordedWidgetsHash();
-    ok(rec === lock.WIDGETS_SOURCE_HASH, '#7 widgets-src/SOURCE-HASH.txt == lock WIDGETS_SOURCE_HASH', rec.slice(0, 16));
-    const wc = lock.WIDGETS_COMMIT;
-    if (!/^[0-9a-f]{40}$/.test(wc || '')) ok(false, '#7 WIDGETS_COMMIT (a full commit id) present in QED64.lock.json', `${wc || 'missing'} (run: node scripts/export-widgets.mjs; pin-qed64.mjs record-widgets-hash)`);
+    ok(rec === lock.WIDGETS_SOURCE_HASH, '#7 widgets-src/SOURCE-HASH.txt == lock WIDGETS_SOURCE_HASH', `${rec.slice(0, 16)}${restore(rec === lock.WIDGETS_SOURCE_HASH)}`);
+    if (!wcOk) ok(false, '#7 WIDGETS_COMMIT (a full commit id) present in QED64.lock.json', `${wc || 'missing'} (run: node scripts/export-widgets.mjs; pin-qed64.mjs record-widgets-hash)`);
     else {
       let present = true; try { WSRC.git('cat-file', '-e', `${wc}^{commit}`); } catch { present = false; }
       ok(present, `#7 WIDGETS_COMMIT ${wc.slice(0, 12)} present in the repository's object store`);
-      ok(WSRC.recordedCommit() === wc, '#7 widgets-src/SOURCE-COMMIT.txt == lock WIDGETS_COMMIT', String(WSRC.recordedCommit()).slice(0, 12));
+      ok(WSRC.recordedCommit() === wc, '#7 widgets-src/SOURCE-COMMIT.txt == lock WIDGETS_COMMIT', `${String(WSRC.recordedCommit()).slice(0, 12)}${restore(WSRC.recordedCommit() === wc)}`);
       if (present) {
         const c = WSRC.compareWithCommit(wc);
         ok(c.ok, `#7 $W/widgets-src == git archive ${wc.slice(0, 7)} packages/ (${c.files} files: same set, every blob id re-derived from the bytes)`,
-          [c.missing.length && `missing ${c.missing.slice(0, 3)}`, c.extra.length && `extra ${c.extra.slice(0, 3)}`, c.differ.length && `differ ${c.differ.slice(0, 3)}`].filter(Boolean).join('; '));
+          [c.missing.length && `missing ${c.missing.slice(0, 3)}`, c.extra.length && `extra ${c.extra.slice(0, 3)}`, c.differ.length && `differ ${c.differ.slice(0, 3)}`, !c.ok && restoreCmd].filter(Boolean).join('; '));
         // the checkout's packages/ moved on since the build: the served overlays no longer come from HEAD's sources
         let head = null, at = null; try { head = WSRC.packagesTree('HEAD'); at = WSRC.packagesTree(wc); } catch {}
         drift(head !== null && head === at, `#7 HEAD:packages == WIDGETS_COMMIT:packages (the checkout's widget sources are the built ones)`, `${String(head).slice(0, 12)} vs ${String(at).slice(0, 12)}`);

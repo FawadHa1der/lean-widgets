@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Golden generator for the QED64 widget showcase examples.
 //
-// Drives the STOCK native Lean language server (`lean --server` of LEAN_TOOLCHAIN_DIR, which must be the packages' toolchain) over
+// Drives the STOCK native Lean language server (`lean --server` of LEAN_TOOLCHAIN_DIR, refused unless it runs the packages' Lean) over
 // LSP exactly the way the InfoView drives QED64's wasm worker:
 //   didOpen(example text) -> waitForDiagnostics -> $/lean/rpc/connect ->
 //   per cursor: Lean.Widget.getWidgets, getInteractiveGoals/TermGoal,
@@ -41,13 +41,19 @@
 //
 // Usage: node lsp-golden.mjs --pkg <pkg> [--mode superset|closure]
 //          [--env w7|w8] [--update-spec] [--click-all] [--out <file>]
+// Exit 2 (REFUSED, before Lean starts): TC is not the packages' Lean, or (superset) the golden env is not a successful
+// golden-env.sh build (golden-env.sh check) of QED64_KERNEL_BUILD's essential list.
 import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
 const SC = path.resolve(import.meta.dirname, '..', '..');
-const { W, TC, need } = await import(path.join(SC, 'scripts/lib/env.mjs')); // work dir (QED64_SHOWCASE_WORK), stock toolchain (LEAN_TOOLCHAIN_DIR)
+const { W, TC, need, tcPackagesMismatch } = await import(path.join(SC, 'scripts/lib/env.mjs')); // work dir (QED64_SHOWCASE_WORK), stock toolchain (LEAN_TOOLCHAIN_DIR)
+// a refusal is one `REFUSED: <why>` line, last in the log (run-all.sh's TSV detail), and exit 2, before any Lean starts
+const refuse = (why) => { console.error(`REFUSED: ${why}`); process.exit(2); };
+// both modes load the packages' .lake oleans with TC's lean: refuse before starting it unless it is the packages' Lean
+try { need('LEAN_TOOLCHAIN_DIR'); const why = tcPackagesMismatch(); if (why) throw new Error(why); } catch (e) { refuse(e.message); }
 const LEAN = `${TC}/bin/lean`;
 const ENV_SH = path.join(SC, 'lean/goldens/golden-env.sh');
 
@@ -224,13 +230,18 @@ if (!/^import Mathlib\n/.test(text)) throw new Error('example must start with `i
 let leanPath;
 let essentialN = null; // QED64.Essential's module count (superset): the list golden-env.sh built the shadow umbrella from
 if (MODE === 'superset') {
+  // golden-env.sh build writes the source BEFORE compiling it and BUILT-FROM (the source's sha256) only after the build
+  // succeeded: `check` refuses a source without its stamp (a failed or interrupted build, or a pre-stamp env), naming
+  // the rebuild; its REFUSED line is passed on as ours
+  try { execFileSync(ENV_SH, ['check', ENV], { stdio: ['ignore', 'ignore', 'pipe'] }); }
+  catch (e) { refuse(String(e.stderr || '').trim().replace(/^REFUSED: /, '') || `golden-env.sh check ${ENV} failed (${e.status ?? e.message})`); }
   leanPath = execFileSync(ENV_SH, ['path', ENV]).toString().trim();
   const ess = fs.readFileSync(path.join(need('QED64_KERNEL_BUILD'), 'mathlib/essential-modules.txt'), 'utf8').split('\n').filter((l) => l.trim());
   const umbrella = path.join(W, 'golden-env', ENV, 'src', 'Mathlib.lean');
   const imports = fs.readFileSync(umbrella, 'utf8').split('\n').filter((l) => l.startsWith('import ')).map((l) => l.slice(7).trim());
   // the umbrella is the essential list followed by the bake roots: a differing list means a stale golden env
   if (imports.length <= ess.length || ess.some((m, i) => imports[i] !== m))
-    throw new Error(`${umbrella} does not import QED64_KERNEL_BUILD's essential-modules.txt (${ess.length} modules): rebuild it with golden-env.sh build`);
+    refuse(`${umbrella} does not import QED64_KERNEL_BUILD's essential-modules.txt (${ess.length} modules): rebuild it with lean/goldens/golden-env.sh build`);
   essentialN = ess.length;
 } else {
   leanPath = execFileSync(ENV_SH, ['closure', PKG]).toString().trim();

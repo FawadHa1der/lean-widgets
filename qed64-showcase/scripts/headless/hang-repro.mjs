@@ -38,13 +38,15 @@
 //          [--storm K] [--panel-storm K] [--hang-ms 30000] [--links 1-47|30] [--jitter-ms 0]
 //          [--snap $W/raw/init.snap --snap $W/raw/widgets8.snap] [--lib $W/tree-slim-w8]
 //          [--index $W/bake-out-w8/index.json] [--min-free-gb 20]
-// exit 0 = no hang in the budget, 1 = HANG reproduced (see the JSON), 2 = setup error, 3 = host rules.
+// exit 0 = no hang in the budget, 1 = HANG reproduced (see the JSON), 2 = setup error (also: a --lib that is one of W's
+// staged trees, tree-slim-w7/w8 or tree-fat, not staged for the target pin: scripts/lib/staged-tree.mjs), 3 = host rules.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { SC, W, BID, DEFAULT_ARTIFACT, parseArgs, requirePairedArtifact, acquireLock, checkSnapProvenance } from './lib.mjs';
 import { WasmLsp } from './wasm-lsp.mjs';
 import { browserLockFile } from '../lib/browser-lock.mjs';
+import { checkProvenance, stagedTreeOf } from '../lib/staged-tree.mjs';
 
 let o;
 try { o = parseArgs(process.argv.slice(2), { multi: ['snap', 'index'], flags: ['cancel'] }); } catch (e) { console.error(e.message); process.exit(2); }
@@ -96,6 +98,14 @@ const write = () => { result.wallMs = Date.now() - t0; fs.writeFileSync(OUT, JSO
 let lsp;
 try {
   await requirePairedArtifact(DEFAULT_ARTIFACT);
+  // a staged tree of W (the default --lib; also named through a symlink, an alias of W or another letter case) is shared
+  // by every pin: it must have been staged for the target pin
+  const staged = stagedTreeOf(lib, W);
+  if (staged) {
+    const prov = checkProvenance(staged);
+    log(prov.line);
+    if (!prov.ok) throw new Error(prov.line);
+  }
   const checks = [];
   result.provenance = await checkSnapProvenance(snaps, { indexes, check: (ok, what, d) => checks.push({ ok, what, d }), log });
   if (result.provenance.some((r) => !r.ok)) throw new Error(`snapshot provenance failed: ${JSON.stringify(checks)}`);

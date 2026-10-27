@@ -16,6 +16,11 @@
 #   AWAKE                    array: a process-scoped "do not idle-sleep" prefix for long commands. macOS: (caffeinate -i)
 #                              unless NO_CAFFEINATE=1; elsewhere empty (a CI runner or a Linux host does not idle-sleep
 #                              a running job the way a laptop does). Use as: "${AWAKE[@]+"${AWAKE[@]}"}" cmd …
+#   NODE_TOOL                array: the node command for our short-lived headless tools, node --no-concurrent-sparkplug.
+#                              node 26.3 deadlocked in process.exit after the verdict in 14 of 30 runs of one control
+#                              (2026-10-27): the main thread joins a V8 concurrent Sparkplug job that waits for a GC only
+#                              the main thread can run (DisposePlatform -> uv_thread_join); with that background compiler
+#                              off, 0 of 30 (code is still baseline-compiled, on the main thread). Use as: "${NODE_TOOL[@]}" x.mjs …
 case "$(uname -s)" in Darwin) PLATFORM=darwin ;; Linux) PLATFORM=linux ;; *) PLATFORM=other ;; esac
 
 reclaimable_gib() {
@@ -45,5 +50,6 @@ clone_tree() {
 file_size() { case "$PLATFORM" in darwin) stat -f %z "$1" ;; *) stat -c %s "$1" ;; esac; }
 file_nlink() { case "$PLATFORM" in darwin) stat -f %l "$1" ;; *) stat -c %h "$1" ;; esac; }
 file_mtime() { case "$PLATFORM" in darwin) stat -f %Sm "$1" ;; *) date -r "$1" ;; esac; }
+NODE_TOOL=(node --no-concurrent-sparkplug)
 AWAKE=()
 if [ "$PLATFORM" = darwin ] && command -v caffeinate >/dev/null 2>&1 && [ "${NO_CAFFEINATE:-0}" != 1 ]; then AWAKE=(caffeinate -i); fi

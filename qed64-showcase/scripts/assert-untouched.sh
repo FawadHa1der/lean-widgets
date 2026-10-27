@@ -26,15 +26,21 @@
 set -u
 export GIT_OPTIONAL_LOCKS=0
 
-. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # SC, REPO_ROOT, WS, Q, K, KR, LG: scripts/lib/env.sh
-# The read-only trees come from the environment / .env.local. QED64_REPO and QED64_KERNEL_BUILD are required; the
-# kernel source and lean4game checkouts are watched when configured (QED64_KERNEL_SRC, LEAN4GAME_DIR) and the output
-# says which trees are not configured. The widget sources are this repository's packages/ (WS): only that subtree
-# is watched (git state limited to the pathspec packages/), because qed64-showcase/ itself lives in the same
-# repository and writes its own out/.
-need QED64_REPO QED64_KERNEL_BUILD
+. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # SC, REPO_ROOT, WS, Q, K_CANDIDATES, KR, LG: scripts/lib/env.sh
+# The read-only trees come from the environment / .env.local. QED64_REPO and QED64_KERNEL_BUILD are required, and
+# EVERY kernel build QED64_KERNEL_BUILD names is watched (K_CANDIDATES, one per Lean release; each must exist, none
+# needs to be the target pin's), not only K: a lane under SHOWCASE_PIN reads another release's build, and `check` runs
+# without it. The kernel source and lean4game checkouts are watched when configured (QED64_KERNEL_SRC, LEAN4GAME_DIR)
+# and the output says which trees are not configured. The widget sources are this repository's packages/ (WS): only
+# that subtree is watched (git state limited to the pathspec packages/), because qed64-showcase/ itself lives in the
+# same repository and writes its own out/.
+need QED64_REPO
+[ -n "$K_CANDIDATES" ] || need QED64_KERNEL_BUILD   # unset, or env.mjs did not answer: refuses (exit 2)
+IFS=: read -r -a KBS <<< "$K_CANDIDATES"
+missing=""; for k in "${KBS[@]}"; do [ -e "$k" ] || missing="$missing${missing:+; }$k"; done
+[ -z "$missing" ] || { echo "[env] ERROR: QED64_KERNEL_BUILD names kernel builds that do not exist: $missing ($(__env_hint QED64_KERNEL_BUILD))." >&2; exit 2; }
 GIT_TREES=("$Q")                       # HEAD + porcelain + diff hash compared to the stamp
-MTIME_TREES=("$Q" "$K")                # nothing may be newer than the stamp (except .git lock churn)
+MTIME_TREES=("$Q" "${KBS[@]}")         # nothing may be newer than the stamp (except .git lock churn)
 NOT_CONFIGURED=()
 if [ -n "$KR" ]; then need QED64_KERNEL_SRC; GIT_TREES+=("$KR"); MTIME_TREES+=("$KR"); else NOT_CONFIGURED+=(QED64_KERNEL_SRC); fi
 if [ -n "$LG" ]; then need LEAN4GAME_DIR; GIT_TREES+=("$LG"); else NOT_CONFIGURED+=(LEAN4GAME_DIR); fi

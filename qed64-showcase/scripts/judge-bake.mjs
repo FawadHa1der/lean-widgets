@@ -4,12 +4,18 @@
 //   J1 the bake log has no line matching  : error|PANIC|ABORT:|uncaught|RuntimeError|object compactor:
 //   J2 "Loading N modules" with N == EXPECTED-N (from stage-trees.mjs) and an "N/N:" progress line
 //   J3 a "baked …/widgets.<d16>.snapz (…) … runtime <the active pin's buildId>" line, and the bake exited 0
-//   J4 raw bytes of <work>/widgets.snap == stock region + k x (.olean bytes of delta+own), k in [0.6, 1.2];
+//   J4 raw bytes of <work>/widgets.snap == stock region + k x (.olean bytes of delta+own), k in [0.6, 1.2], the delta
+//      read from $W/logs/stage-trees-<tag>.json, which must be this tree's report (into: the same real path, as
+//      checkProvenance compares it, so an alias of W judges like W; expectedN; no FAIL; else RED, k not computed);
 //      the plan's estimate range (w7 [1.13, 1.30] GB, w8 [1.35, 1.75] GB) is reported as INFO/WARN
 //   J5 <out>/index.json: exactly {init (verbatim served entry), widgets}; widgets.bytes == raw size,
 //      widgets.imports == BAKE-KEY lines, widgets.runtime == BID, widgets.url names an existing .snapz
 //
-//   node scripts/judge-bake.mjs w7|w8        exit 0 = GREEN
+// Before any of that, $W/tree-slim-<tag> (whose EXPECTED-N and stage report J2/J4 read) must have been staged for the
+// target pin (scripts/lib/staged-tree.mjs checkProvenance): the trees are shared by every pin, so another pin's tree would
+// judge this bake against that pin's EXPECTED-N; refused (exit 3), not judged.
+//
+//   node scripts/judge-bake.mjs w7|w8        exit 0 = GREEN, 1 = RED, 3 = REFUSED (the tree is not the target pin's)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { W } = await import(path.join(SC, 'scripts/lib/env.mjs')); // the work dir (QED64_SHOWCASE_WORK)
 const { targetPinId, targetBuildId, releaseOf, storePath } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
+const { checkProvenance, samePath } = await import(path.join(SC, 'scripts/lib/staged-tree.mjs'));
 // the TARGET pin (SHOWCASE_PIN=<id>, else the active pin; scripts/lib/pins.mjs): its runtime, release and bake stores
 const PIN = targetPinId();
 const BID = targetBuildId();
@@ -25,9 +32,13 @@ const tag = process.argv[2];
 const RANGE = { w7: [1.13e9, 1.30e9], w8: [1.35e9, 1.75e9] };
 if (!RANGE[tag]) { console.error('usage: judge-bake.mjs w7|w8'); process.exit(2); }
 const n = tag.slice(1);
+const tree = path.join(W, `tree-slim-${tag}`);
+const prov = checkProvenance(tree, { id: PIN });
+console.log(prov.ok ? `     ${prov.line.slice(5)}` : prov.line);
+if (!prov.ok) { console.log(`JUDGE ${tag}: REFUSED (not judged: ${path.basename(tree)} was not staged for the target pin ${PIN})`); process.exit(3); }
 const BL = storePath('bake-logs');
 const log = fs.readFileSync(path.join(BL, `bake-widgets${n}.log`), 'utf8');
-const expectedN = Number(fs.readFileSync(path.join(W, `tree-slim-${tag}.EXPECTED-N`), 'utf8').trim());
+const expectedN = Number(fs.readFileSync(`${tree}.EXPECTED-N`, 'utf8').trim());
 const key = fs.readFileSync(storePath(`BAKE-KEY-${tag}.txt`), 'utf8').split('\n').filter(Boolean).map((l) => l.replace(/^import\s+/, ''));
 const work = storePath(`bake-work-${tag}`), out = storePath(`bake-out-${tag}`);
 console.log(`     pin ${PIN}, runtime ${BID}: ${out}`);
@@ -60,11 +71,14 @@ const rawBytes = fs.existsSync(raw) ? fs.statSync(raw).size : -1;
 // (BUILD-PLAN §5 C5 / §9) is printed alongside; for w8 it was an over-estimate (WARN, not a gate).
 // (the stock size comes from the pinned release's index: 1,127,272,685 B for both the 0034 and the 0035 runtime)
 const STOCK = JSON.parse(fs.readFileSync(path.join(RELEASE, 'public/snapshots/index.json'), 'utf8')).snapshots.find((s) => s.name === 'mathlib').bytes;
-const st = JSON.parse(fs.readFileSync(path.join(W, `logs/stage-trees-${tag}.json`), 'utf8'));
-const tree = path.join(W, `tree-slim-${tag}`);
-const dOlean = [...st.delta.dep, ...st.delta.core, ...st.own].reduce((a, m) => a + fs.statSync(path.join(tree, ...m.split('.')) + '.olean').size, 0);
-const k = (rawBytes - STOCK) / dOlean;
-ok(k >= 0.6 && k <= 1.2, `J4 raw bytes ${rawBytes} = stock ${STOCK} + k x delta .olean bytes ${dOlean}, k=${k.toFixed(3)} in [0.6, 1.2]`, `${(rawBytes / 1e9).toFixed(3)} GB; +${((rawBytes - STOCK) / 1e6).toFixed(1)} MB`);
+let st = null; try { st = JSON.parse(fs.readFileSync(path.join(W, `logs/stage-trees-${tag}.json`), 'utf8')); } catch { /* RED below */ }
+const mine = !!st && samePath(String(st.into), tree) && st.expectedN === expectedN && st.fails === 0 && !!st.delta;
+ok(mine, `J4 logs/stage-trees-${tag}.json is the report of this ${path.basename(tree)} (into, expectedN ${expectedN}, no FAIL)`, st ? `${st.into}, expectedN ${st.expectedN}, fails ${st.fails}, ${st.at}` : 'missing or unreadable');
+if (mine) { // another tree's report (or a failed stage's) has no delta of this tree: k is not computed, J4 is RED above
+  const dOlean = [...st.delta.dep, ...st.delta.core, ...st.own].reduce((a, m) => a + fs.statSync(path.join(tree, ...m.split('.')) + '.olean').size, 0);
+  const k = (rawBytes - STOCK) / dOlean;
+  ok(k >= 0.6 && k <= 1.2, `J4 raw bytes ${rawBytes} = stock ${STOCK} + k x delta .olean bytes ${dOlean}, k=${k.toFixed(3)} in [0.6, 1.2]`, `${(rawBytes / 1e9).toFixed(3)} GB; +${((rawBytes - STOCK) / 1e6).toFixed(1)} MB`);
+}
 const [lo, hi] = RANGE[tag];
 console.log(`${rawBytes >= lo && rawBytes <= hi ? 'INFO' : 'WARN'} plan estimate range [${lo / 1e9}, ${hi / 1e9}] GB ${rawBytes >= lo && rawBytes <= hi ? 'holds' : 'MISSED'} (raw ${(rawBytes / 1e9).toFixed(3)} GB)`);
 

@@ -25,8 +25,8 @@
 set -uo pipefail
 
 SC="$(cd "$(dirname "$0")/.." && pwd)"
-. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # W, K (QED64_KERNEL_BUILD), MATHLIB_CLONE, QED64_TOOLCHAIN_IMAGE
-need QED64_KERNEL_BUILD MATHLIB_CLONE
+. "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # W, K (the target pin's among QED64_KERNEL_BUILD, K_CANDIDATES), MATHLIB_CLONE, QED64_TOOLCHAIN_IMAGE
+need QED64_KERNEL_BUILD MATHLIB_CLONE   # refuses a QED64_KERNEL_BUILD that holds no kernel build of the target pin
 MC="$MATHLIB_CLONE"   # the target pin's Mathlib clone (lock toolchain.mathlib.commit): the one tree this script writes
 IMG="$QED64_TOOLCHAIN_IMAGE"
 LOGS="$W/logs"
@@ -39,13 +39,19 @@ GATE_MODULES="Mathlib.Order.Basic Mathlib.Tactic ProofWidgets.Component.HtmlDisp
 die() { echo "build-native: $*" >&2; exit 2; }
 
 # Refuse to run if a read-only tree could be the write target, or if the clone is not of the kernel build's Mathlib
-# (QED64_KERNEL_BUILD of one release with SHOWCASE_PIN of another would build the delta against the wrong tree).
+# (an explicit MATHLIB_CLONE of another release would build the delta against the wrong tree; K itself is the target
+# pin's, chosen by its lock's Mathlib and native commits). Every kernel build QED64_KERNEL_BUILD lists is read-only,
+# not only K: a clone inside another release's build of the same Mathlib would pass the Mathlib check.
 [ -d "$MC/.lake/build/lib/lean/Mathlib" ] || die "no clone at $MC (run B0: cp -cpR $K/mathlib/mathlib4 $MC)"
-case "$(cd "$MC" && pwd -P)/" in "$(cd "$K" && pwd -P)/"*) die "the clone $MC is inside the read-only kernel build $K: refusing" ;; esac
+IFS=: read -r -a KBS <<< "$K_CANDIDATES"
+for k in "${KBS[@]}"; do
+  [ -d "$k" ] || continue   # a missing candidate holds nothing (and cd would fail to '', matching every path)
+  case "$(cd "$MC" && pwd -P)/" in "$(cd "$k" && pwd -P)/"*) die "the clone $MC is inside the read-only kernel build $k: refusing" ;; esac
+done
 . "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # file_nlink (stat -f %l / stat -c %h)
 [ "$(file_nlink "$MC/.lake/build/lib/lean/Mathlib/Order/Basic.olean")" = 1 ] || die "clone shares inodes (nlink != 1): refusing"
 MC_HEAD="$(git --no-optional-locks -C "$MC" rev-parse HEAD 2>/dev/null)"; K_MATHLIB="$(cat "$K/mathlib/MATHLIB-COMMIT" 2>/dev/null)"
-[ -n "$MC_HEAD" ] && [ "$MC_HEAD" = "$K_MATHLIB" ] || die "the clone $MC is at Mathlib ${MC_HEAD:-?}, but $K/mathlib/MATHLIB-COMMIT is ${K_MATHLIB:-missing}: QED64_KERNEL_BUILD does not match the target pin"
+[ -n "$MC_HEAD" ] && [ "$MC_HEAD" = "$K_MATHLIB" ] || die "the clone $MC is at Mathlib ${MC_HEAD:-?}, but the target pin's kernel build $K has mathlib/MATHLIB-COMMIT ${K_MATHLIB:-missing}: MATHLIB_CLONE is not the target pin's Mathlib clone (unset it for the default \$W/mathlib4.${K_MATHLIB:0:8}, or point it at a clone at ${K_MATHLIB:-that commit})"
 [ -f "$W/widgets-src/SOURCE-HASH.txt" ] || die "no widget export at $W/widgets-src"
 
 # run <step-name> <bash command>  — one container, logged, stats-sampled, timed.

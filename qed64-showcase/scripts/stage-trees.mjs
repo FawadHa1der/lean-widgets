@@ -8,9 +8,43 @@
 //        --clone defaults to MATHLIB_CLONE (scripts/lib/env.mjs: the target pin's clone, W/mathlib4.<Mathlib commit 8> or
 //        the legacy W/mathlib4; REFUSED with the expected path when it does not resolve)
 //   node scripts/stage-trees.mjs --check-digest baseSlim|baseFat|coreSrc [--tree <dir>]
-//        only G0 below for one served tree (default: the target pin's servedTrees.<key>; --tree checks a copy of it,
-//        e.g. run-controls.sh's W/tree-stock); exit 0 OK or SKIP (no digest recorded), 1 FAIL, 2 setup error
+//        only G0 below for one served tree (default: the target pin's servedTrees.<key>; --tree checks a copy of it);
+//        exit 0 OK or SKIP (no digest recorded), 1 FAIL, 2 setup error
+//   node scripts/stage-trees.mjs --check-provenance <tree> [<tree>…]
+//        is each staged tree the TARGET pin's? <tree>.STAGED.json (below) == its runtime, served base and widget export
+//        (scripts/lib/staged-tree.mjs checkProvenance); one OK/REFUSED line per tree; exit 0 all OK, 3 refused, 2 usage.
+//        bake.sh, judge-bake.mjs, headless stage4/e2 and hang-repro.mjs refuse a tree it refuses; `showcase.sh all`
+//        restages it for its target pin
+//   node scripts/stage-trees.mjs --check-native
+//        N0's native build record check alone (below; scripts/lib/staged-tree.mjs checkNativeBuild, with --clone's
+//        default): one OK/REFUSED line; exit 0 OK, 3 refused. `showcase.sh all` skips native only when it is OK
+//   node scripts/stage-trees.mjs --stock-copy <dir>
+//        run-controls.sh's W/tree-stock: cloned from the target pin's servedTrees.baseSlim when missing (with
+//        <dir>.SOURCE.json: where from, for which pin; one left by a removed copy is removed first, so an interrupted
+//        clone has none), then checked: G0 for a pin that records baseSlimDigest (a missing sidecar, or one naming
+//        another pin or base, is rewritten once G0 passes), else the sidecar must name that baseSlim and the copy hold
+//        baseN .olean (scripts/lib/staged-tree.mjs checkStockCopy); exit 0 OK, 1 G0 FAIL, 3 refused, 2 setup error; a
+//        refusal prints the command that moves the copy aside with its sidecar
 //
+// The staged trees under W are ONE set shared by every pin (not per-runtime stores): staging for one pin replaces the
+// trees another pin's lanes read. So --into gets <into>.STAGED.json {schema, tree, mode, pin, buildId, base,
+// widgetsSourceHash, expectedN, report, stagedAt}: removed before the tree is replaced, written (tmp + rename) only when
+// every gate below passed; readers refuse a tree without one, with one for another runtime / base / widget export, or
+// whose EXPECTED-N or --report no longer is this tree's.
+//
+// N0 (before anything is cloned): the native inputs are the target pin's: --clone HEAD and QED64_KERNEL_BUILD
+//    mathlib/MATHLIB-COMMIT == its lock's toolchain.mathlib.commit, QED64_KERNEL_BUILD BUILT-COMMIT ==
+//    toolchain.native64.BUILT_COMMIT, and the native build record (the last COMPLETE `native all`'s in --clone,
+//    <clone>/.lake/showcase-native-build.json, else out/native-build.json, the last one in any clone; a `showcase.sh
+//    native` step that rewrites the clone removes both, and a clone-writing build step stamped in the clone after it
+//    refuses) is --clone's, with the lock's Mathlib and native commits and WIDGETS_SOURCE_HASH: pins of one Mathlib
+//    commit share a clone (the legacy W/mathlib4) and its record but not their widget export (A–J c2efe78f, K/L/N
+//    b81f1b75), and the clone holds the widget oleans of the last native run, which no gate below compares (own modules
+//    have no G2). Nothing else ties them to the pin (an overriding MATHLIB_CLONE / --clone, a kernel build of another
+//    Lean release), and another pin's would surface only as G2 byte mismatches after the clone, or not at all; G1 also
+//    compares every delta facet's Lean version with the served core's. The clone is read from the closure walk through
+//    G2, and nothing stops a `showcase.sh native` step (another lane, another pin) from rewriting it meanwhile, so the
+//    record check runs again after G6 ("N0 again", below).
 // G0 (before anything is cloned; only for a pin whose descriptor records the digest, pins/<id>/pin.json
 //    servedTrees.baseSlimDigest / baseFatDigest / coreDigest; pins A–H record none): the tree digest of --base (when it
 //    is the pin's servedTrees.baseSlim for --slim, servedTrees.baseFat for --fat) and of --core-src (when it is
@@ -29,9 +63,13 @@
 //    (+ .olean.private with --fat), exactly the facet set the served slim tree holds for comparable
 //    modules; legacy (non-`module`) widget files have only .olean, their IR decls live inside it
 //    (Lean.IR.declMapExt entries), which is checked here.
-// Gates (each prints OK/FAIL; any FAIL -> exit 1, report still written):
-//   G1 header gate on every delta facet: "olean", version 2|3, flags 0 (no GMP), githash bytes 40..80
-//      all zero (core delta: identical header to the served core instead, which carries a githash)
+// Gates (each prints OK/FAIL; any FAIL -> exit 1). A FAIL of G0/N0 before the clone writes nothing, so an existing
+// --into, its EXPECTED-N, record and --report stay that tree's; from the clone on --into is replaced (its record removed
+// first), and a FAIL there still writes the report:
+//   G1 header gate on every delta facet: "olean", version 2|3, flags 0 (no GMP), Lean version (bytes 7..40) == the
+//      served core's (the base tree's Init/Prelude.olean: a delta built by another pin's toolchain, e.g. 4.34 oleans
+//      into a 4.35 tree, is refused), githash bytes 40..80 all zero (core delta: identical header to the served core
+//      instead, which carries a githash)
 //   G2 byte identity, for every closure module already in the tree, of each facet the tree holds vs the
 //      native build the delta was compiled against: full file for Mathlib/ProofWidgets/Batteries/Aesop/
 //      Qq/…; bytes 80.. for core (headers differ only in githash). Mismatch = delta compiled against
@@ -41,6 +79,11 @@
 //   G5 QED64's `olean-imports.mjs --audit <tree>`: no `import all` edge outside Init/Std/Lean/Lake that
 //      the base tree does not already have
 //   G6 EXPECTED-N = base-n + |delta| + |own| == |closure|; written to <into>.EXPECTED-N
+//   N0 again, just before the report and record: the native build record still passes N0's check AND is the very file
+//      N0 read (same path, mtime and size): a step that rewrote the clone while it was read removed it (`showcase.sh
+//      native`), stamped the clone after it (build-native.sh) or, as a complete `native all`, replaced it. A FAIL
+//      removes nothing more (the tree stays replaced, without a record) and the report records it
+// No FAIL: <into>.STAGED.json is written for the target pin (above).
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -101,6 +144,40 @@ if (process.argv[2] === '--check-digest') {
   console.log(`${r.skip ? 'SKIP' : r.ok ? 'OK  ' : 'FAIL'} ${r.line}${r.detail ? ' — ' + r.detail : ''}`);
   process.exit(r.ok ? 0 : 1);
 }
+// ---- the shared trees' records (scripts/lib/staged-tree.mjs; see the header): --check-provenance, --check-native and
+// --stock-copy ----
+const ST = await import(path.join(SC, 'scripts/lib/staged-tree.mjs'));
+if (process.argv[2] === '--check-provenance') {
+  const trees = process.argv.slice(3);
+  if (!trees.length) { console.error('usage: stage-trees.mjs --check-provenance <tree> [<tree>…]'); process.exit(2); }
+  let refused = 0;
+  for (const t of trees) { const r = ST.checkProvenance(t); console.log(r.line); if (!r.ok) refused++; }
+  process.exit(refused ? 3 : 0);
+}
+if (process.argv[2] === '--check-native') {
+  if (process.argv.length > 3) { console.error('usage: stage-trees.mjs --check-native'); process.exit(2); }
+  const r = ST.checkNativeBuild();
+  console.log(r.line);
+  process.exit(r.ok ? 0 : 3);
+}
+if (process.argv[2] === '--stock-copy') {
+  const [, dir, extra] = process.argv.slice(2);
+  if (!dir || extra !== undefined) { console.error('usage: stage-trees.mjs --stock-copy <dir>'); process.exit(2); }
+  try {
+    const id = PINS.targetPinId(), copy = path.resolve(dir);
+    if (!fs.existsSync(copy)) {
+      const base = ST.servedPath(id, 'baseSlim');
+      if (!fs.existsSync(base)) throw new Error(`pin ${id}'s servedTrees.baseSlim ${base} is missing`);
+      fs.rmSync(ST.sourcePath(copy), { force: true }); // a removed copy's sidecar never vouches for a clone that may not finish
+      cloneTree(base, copy); // cp -cR on macOS, cp -R --reflink=auto on Linux (scripts/lib/platform.mjs)
+      const s = ST.writeStockSource(copy, { id, base });
+      console.log(`cloned ${base} -> ${copy}: ${s.n} .olean; ${path.basename(ST.sourcePath(copy))} records pin ${id}`);
+    }
+    const r = ST.checkStockCopy(copy, { id, g0: () => servedDigest('baseSlim', copy) });
+    for (const l of r.lines) console.log(l);
+    process.exit(r.rc);
+  } catch (e) { console.error(`REFUSED: ${e.message}`); process.exit(2); }
+}
 const OLEAN_IMPORTS = path.join(PINS.storePath('qed64'), 'pipeline/artifacts/olean-imports.mjs');
 const { oleanImportEntries } = await import(OLEAN_IMPORTS);
 const { oleanExtEntryCounts } = await import(path.join(SC, 'scripts/lib/olean-entries.mjs'));
@@ -114,7 +191,8 @@ const READ_ONLY = [Q, K, KR, LG, WS].filter(Boolean);
 const args = process.argv.slice(2);
 // default --core-src / --base-n: the target pin's served core lib (pins/<id>/pin.json servedTrees; scripts/lib/pins.mjs);
 // default --clone: its Mathlib clone (scripts/lib/env.mjs MATHLIB_CLONE; '' when it does not resolve, refused below)
-const SERVED = PINS.pinDescriptor(PINS.targetPinId()).servedTrees;
+const TARGET = PINS.targetPinId();
+const SERVED = PINS.pinDescriptor(TARGET).servedTrees;
 const opt = { clone: ENV.MATHLIB_CLONE, coreSrc: ENV.expandPath(SERVED.coreSrc),
   nativeCore: path.join(K, 'native/stage1/lib/lean'), essential: path.join(K, 'mathlib/essential-modules.txt'),
   baseN: SERVED.baseN, rootHeaders: [] };
@@ -173,17 +251,38 @@ for (const [key, dir] of [[opt.mode === 'fat' ? 'baseFat' : 'baseSlim', opt.base
   digests.push({ key: r.key, dir: r.dir, want: r.want, got: r.got, ok: r.ok });
   gate(r.ok, r.line, r.detail);
 }
+// ---- N0 native inputs == the target pin's lock (see the header) ----
+let LOCK;
+try { LOCK = PINS.lockOf(TARGET); } catch (e) { console.error(`REFUSED: pins/${TARGET}/QED64.lock.json unreadable (${e.message}): register the pin first (pin-qed64.mjs pin --pin ${TARGET})`); process.exit(2); }
+const TOOLCHAIN = LOCK.toolchain || {};
+const readTrim = (p) => { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return null; } };
+const sh = (v) => (v ? String(v).slice(0, 12) : 'missing');
+let cloneHead = null;
+try { cloneHead = execFileSync('git', ['--no-optional-locks', '-C', opt.clone, 'rev-parse', 'HEAD'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* null: FAIL below */ }
+for (const [got, want, what, field] of [
+  [cloneHead, TOOLCHAIN.mathlib && TOOLCHAIN.mathlib.commit, `--clone ${opt.clone} HEAD`, 'toolchain.mathlib.commit'],
+  [readTrim(path.join(K, 'mathlib/MATHLIB-COMMIT')), TOOLCHAIN.mathlib && TOOLCHAIN.mathlib.commit, 'QED64_KERNEL_BUILD mathlib/MATHLIB-COMMIT', 'toolchain.mathlib.commit'],
+  [readTrim(path.join(K, 'BUILT-COMMIT')), TOOLCHAIN.native64 && TOOLCHAIN.native64.BUILT_COMMIT, 'QED64_KERNEL_BUILD BUILT-COMMIT', 'toolchain.native64.BUILT_COMMIT'],
+]) {
+  gate(!!want && got === want, `N0 ${what} == pins/${TARGET}/QED64.lock.json ${field}`,
+    `${sh(got)} vs ${sh(want)}${want && got === want ? '' : ` (a native build of another pin: point QED64_KERNEL_BUILD / MATHLIB_CLONE at pin ${TARGET}'s)`}`);
+}
+// the native build record N0 vouches for (ST.nativeBuildFile: --clone's own, else out/native-build.json), as read now:
+// N0 again (after G6) requires the same file
+const nbSeen = () => { const f = ST.nativeBuildFile(opt.clone); try { const s = fs.statSync(f); return `${f}\0${s.mtimeMs}/${s.size}`; } catch { return null; } };
+const nbReadAtN0 = ST.nativeBuildFile(opt.clone), nbAtN0 = nbSeen();
+{ const r = ST.checkNativeBuild({ id: TARGET, clone: opt.clone, file: nbReadAtN0 }); gate(r.ok, `N0 ${r.line.replace(/^(OK {3}|REFUSED: )/, '')}`); }
+// a FAIL so far leaves everything as it was (no report either: --report is the existing tree's, which judge-bake J4 reads)
 if (fails) {
-  if (opt.report) fs.writeFileSync(opt.report, JSON.stringify({ schema: 'qed64-showcase.stage-trees/v1', at: new Date().toISOString(), mode: opt.mode, base: opt.base, into: opt.into, digests, fails }, null, 1) + '\n');
-  console.log(`STAGE-TREES FAILED (${fails} FAIL) before cloning ${opt.into}: a served tree is not the one the pin records`);
+  console.log(`STAGE-TREES FAILED (${fails} FAIL) before cloning ${opt.into}: a served tree or a native input is not the one the pin records; ${opt.into}, its EXPECTED-N, record and report are untouched`);
   process.exit(1);
 }
 
 // ---- 1. clone the base tree ----
-if (fs.existsSync(opt.into)) {
-  if (!opt.force) { console.error(`REFUSED: ${opt.into} exists (pass --force to replace)`); process.exit(2); }
-  fs.rmSync(opt.into, { recursive: true, force: true });
-}
+if (fs.existsSync(opt.into) && !opt.force) { console.error(`REFUSED: ${opt.into} exists (pass --force to replace)`); process.exit(2); }
+// the tree is replaced from here on: its provenance record goes first, and a new one is written only if every gate passes
+ST.removeRecord(opt.into);
+if (fs.existsSync(opt.into)) fs.rmSync(opt.into, { recursive: true, force: true });
 fs.mkdirSync(path.dirname(opt.into), { recursive: true });
 cloneTree(opt.base, opt.into); // cp -cR on macOS, cp -R --reflink=auto on Linux (scripts/lib/platform.mjs)
 const baseInventory = new Set();
@@ -272,6 +371,8 @@ gate(true, `legacy delta IR lives inside the .olean: ${legacyIrCheck.filter((x) 
 
 // ---- G1 header gate ----
 const servedCoreHeader = (() => { const b = Buffer.alloc(80); const fd = fs.openSync(path.join(opt.into, 'Init/Prelude.olean'), 'r'); fs.readSync(fd, b, 0, 80, 0); fs.closeSync(fd); return b; })();
+const leanVersion = (h) => h.toString('latin1', 7, 40).replace(/\0+$/, ''); // header bytes 7..40, NUL-padded
+const servedLean = leanVersion(servedCoreHeader);
 const g1bad = [];
 for (const { m, f, dst } of copied) {
   const h = Buffer.alloc(80); const fd = fs.openSync(dst, 'r'); const n = fs.readSync(fd, h, 0, 80, 0); fs.closeSync(fd);
@@ -279,11 +380,12 @@ for (const { m, f, dst } of copied) {
   if (n < 80 || h.toString('latin1', 0, 5) !== 'olean') p.push('marker');
   if (h[5] !== 2 && h[5] !== 3) p.push(`version ${h[5]}`);
   if (h[6] !== 0) p.push(`flags 0x${h[6].toString(16)}`);
+  if (leanVersion(h) !== servedLean) p.push(`Lean ${leanVersion(h) || '?'} != served ${servedLean}`);
   if (kind(m) === 'core') { if (Buffer.compare(h.subarray(0, 80), servedCoreHeader.subarray(0, 80)) !== 0 && h.subarray(40, 80).some((b) => b !== 0)) p.push('core header differs from served core'); }
   else if (h.subarray(40, 80).some((b) => b !== 0)) p.push('githash');
   if (p.length) g1bad.push(`${m}${f}: ${p.join(',')}`);
 }
-gate(!g1bad.length, `G1 header gate on ${copied.length} delta facet files (olean marker, v2|3, flags 0 = no GMP, empty githash)`, g1bad.slice(0, 5).join('; '));
+gate(!g1bad.length, `G1 header gate on ${copied.length} delta facet files (olean marker, v2|3, flags 0 = no GMP, Lean ${servedLean} as the served core, empty githash)`, g1bad.slice(0, 5).join('; '));
 
 // ---- G2 byte identity of closure modules already in the tree vs the native build ----
 const g2 = { compared: 0, full: 0, tail80: 0, noNative: [], mismatch: [] };
@@ -356,6 +458,11 @@ gate(baseInventory.size === opt.baseN, `G6 base tree holds base-n = ${opt.baseN}
 gate(N === closure.size, `G6 EXPECTED-N = ${opt.baseN} + ${deltaDep.length + deltaCore.length} + ${own.length} = ${N} == |closure| ${closure.size}`);
 fs.writeFileSync(`${opt.into}.EXPECTED-N`, `${N}\n`);
 
+// ---- N0 again (see the header): the clone was not rewritten while it was read ----
+{ const r = ST.checkNativeBuild({ id: TARGET, clone: opt.clone }), same = nbSeen() === nbAtN0;
+  gate(r.ok && same, `N0 again before the record: ${!r.ok ? r.line.replace(/^REFUSED: /, '')
+    : same ? r.line.slice(5) : `${nbReadAtN0 === ST.NATIVE_BUILD ? path.relative(SC, nbReadAtN0) : nbReadAtN0} was replaced since N0 read it: a native step rewrote the clone while it was read; stage again`}`); }
+
 const report = {
   schema: 'qed64-showcase.stage-trees/v1', at: new Date().toISOString(), mode: opt.mode, base: opt.base, into: opt.into,
   roots: rootSet, closure: closure.size, baseN: opt.baseN, expectedN: N, digests,
@@ -364,5 +471,9 @@ const report = {
   audit: { base: aBase, into: aInto }, fails, seconds: Math.round((Date.now() - t0) / 1000),
 };
 if (opt.report) fs.writeFileSync(opt.report, JSON.stringify(report, null, 1) + '\n');
+if (!fails) { // every gate passed: the tree is the target pin's (scripts/lib/staged-tree.mjs; its readers check this record)
+  const rec = ST.writeRecord(opt.into, { mode: opt.mode, id: TARGET, base: opt.base, expectedN: N, report: opt.report || null });
+  console.log(`provenance ${path.basename(ST.recordPath(opt.into))}: pin ${rec.pin}, runtime ${rec.buildId}, base ${rec.base}, WIDGETS_SOURCE_HASH ${String(rec.widgetsSourceHash).slice(0, 12)}…`);
+}
 console.log(fails ? `STAGE-TREES FAILED (${fails} FAIL) ${opt.into}` : `STAGE-TREES OK ${opt.into} EXPECTED-N=${N} (${report.seconds}s)`);
 process.exit(fails ? 1 : 0);

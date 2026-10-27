@@ -114,12 +114,16 @@ if (ONLY !== 'public') {
 if (argv.includes('--git-only')) { if (ONLY === 'overlays') usage('--git-only installs public/ manifests; not with --only overlays'); plan.splice(0, plan.length, ...plan.filter((x) => x.from !== 'origin')); }
 /* QED64's files: the showcase's origin first, then QED64's, which answers only for the release it deploys now (header:
    since 4b98279 no bucket-root fallback), so for any other pin it is a 404 and only --origin can deliver; every byte is
-   checked against the lock either way. The overlays exist only on the showcase's origin. qedOriginHint: what a QED64
-   file that no origin delivered adds to its failure when QED64's origin was the last one tried. (Block comments: the
-   usage text is every line that starts with //.) */
+   checked against the lock either way. The overlays exist only on the showcase's origin. A file that no origin delivered
+   fails with each origin's own last error, in the order tried (errs), not only the last origin's (a 503 of --origin
+   would hide behind QED64's 404). qedOriginHint: what it adds when QED64's origin was the last one tried: --origin
+   when none was given, else that --origin (always tried first) failed too, and what a 404 there means. (Block
+   comments: the usage text is every line that starts with //.) */
 const origins = (it) => (it.kind === 'overlay' ? [ORIGIN] : [ORIGIN, QORIGIN]).filter(Boolean);
-const qedOriginHint = (it, last) => (it.kind === 'qed64' && QORIGIN && String(last).startsWith(QORIGIN)
-  ? ` — QED64's origin serves only what its live site deploys now (/runtime/ and /profiles/<not index.json> of ONE release since QED64 4b98279; its 2026-10-23 sweep kept only the live and the previous pairing's /snapshots/): fetch pin ${ID}'s files from the showcase's own origin (--origin)` : '');
+const qedOriginHint = (it, errs) => (it.kind === 'qed64' && QORIGIN && String(errs[errs.length - 1]).startsWith(QORIGIN)
+  ? ` — QED64's origin serves only what its live site deploys now (/runtime/ and /profiles/<not index.json> of ONE release since QED64 4b98279; its 2026-10-23 sweep kept only the live and the previous pairing's /snapshots/): ${ORIGIN
+    ? `the showcase's own origin ${ORIGIN}, tried first, did not deliver it either (its error is the first one on this line; a 404 there means pin ${ID}'s files are not under that Worker's prefix: was pin ${ID} uploaded to it?)`
+    : `fetch pin ${ID}'s files from the showcase's own origin (--origin)`}` : '');
 
 async function have(it) {
   try { const st = fs.statSync(it.dest); return st.isFile() && st.size === it.bytes && (await sha256File(it.dest)) === it.sha256; } catch { return false; }
@@ -137,7 +141,7 @@ if (REMOTE) {
   for (const it of plan.filter((x) => x.from === 'origin')) {
     const os = origins(it);
     if (!os.length) { console.log(`NO ORIGIN ${it.url}`); bad++; continue; }
-    let good = null, last = '';
+    let good = null; const errs = [];
     for (const o of os) {
       try {
         let r = await fetch(o + it.url, { method: 'HEAD', headers: { 'user-agent': UA } });
@@ -149,11 +153,11 @@ if (REMOTE) {
         }
         const len = Number(r.headers.get('content-length'));
         if (r.status === 200 && len === it.bytes) { good = o; break; }
-        last = `${o}: ${how} ${r.status} content-length ${r.headers.get('content-length')}`;
-      } catch (e) { last = `${o}: ${e.message}`; }
+        errs.push(`${o}: ${how} ${r.status} content-length ${r.headers.get('content-length')}`);
+      } catch (e) { errs.push(`${o}: ${e.message}`); }
     }
     n++;
-    if (!good) { bad++; console.log(`FAIL ${it.url} (lock ${it.bytes} B): ${last}${qedOriginHint(it, last)}`); }
+    if (!good) { bad++; console.log(`FAIL ${it.url} (lock ${it.bytes} B): ${errs.join('; ')}${qedOriginHint(it, errs)}`); }
   }
   console.log(bad ? `REMOTE-CHECK FAILED: ${bad} of ${n}` : `REMOTE-CHECK OK: all ${n} files to fetch answer 200 with the lock's size (${[ORIGIN, QORIGIN].filter(Boolean).join(', ')})`);
   process.exit(bad ? 1 : 0);
@@ -184,8 +188,9 @@ async function install(it) {
     return { how: `git ${gp}`, bytes: 0 };
   }
   const part = `${it.dest}.partial`;
-  let lastErr = '';
+  const errs = [];
   for (const o of origins(it)) {
+    let lastErr = ''; // this origin's, after up to 3 attempts
     for (let attempt = 1; attempt <= 3; attempt++) {
       let have0 = 0; try { have0 = fs.statSync(part).size; } catch { /* fresh */ }
       if (have0 > it.bytes) { fs.renameSync(part, `${part}.oversize-${stamp()}`); have0 = 0; }
@@ -212,8 +217,9 @@ async function install(it) {
       fs.renameSync(part, it.dest);
       return { how: `${append ? `resumed at ${have0} B from` : 'from'} ${o}`, bytes: got };
     }
+    errs.push(lastErr);
   }
-  throw new Error(`no origin delivered ${it.url}: ${lastErr}${qedOriginHint(it, lastErr)}`);
+  throw new Error(`no origin delivered ${it.url}: ${errs.join('; ')}${qedOriginHint(it, errs)}`);
 }
 
 const t0 = Date.now();

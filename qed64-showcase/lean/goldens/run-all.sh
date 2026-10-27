@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Full regeneration + gate for the showcase examples (native, stock Lean: $TC = LEAN_TOOLCHAIN_DIR for the superset
-# gates and the LSP; the closure gates use each package's lean-toolchain via elan, which must be the same version).
+# gates and the LSP; the closure gates use each package's lean-toolchain via elan). Refused (exit 2) before any gate
+# unless $TC runs that same Lean (need_tc_packages: the target pin, SHOWCASE_PIN else the active pin, must be on the
+# packages' Lean, or LEAN_TOOLCHAIN_DIR set to it), QED64_KERNEL_BUILD holds the target pin's kernel build and every
+# golden env the packages use is a successful golden-env.sh build (golden-env.sh check: its BUILT-FROM stamp).
 #   run-all.sh [pkg ...]      (default: all eight)
 # Environments: w7 = phase-1 bake (Essential + 7 roots), w8 = phase-2 bake (+ DistLens).
 # The primary env is w7 for the 7 phase-1 packages and w8 for dist-lens; phase-1
@@ -22,8 +25,13 @@
 set -uo pipefail
 . "$(cd "$(dirname "$0")/../../scripts/lib" && pwd)/env.sh"   # SC, W: scripts/lib/env.sh
 need QED64_KERNEL_BUILD   # lsp-golden.mjs (superset) checks the golden env against $K/mathlib/essential-modules.txt
+need_tc_packages          # every superset gate and LSP golden loads the packages' oleans with $TC
 G="$SC/lean/goldens"
 PKGS=("$@"); [ ${#PKGS[@]} -eq 0 ] && PKGS=(chart-kit expr-xray simp-lens interval-inspector graph-scope tree-scope hasse-view dist-lens)
+# lsp-golden.mjs refuses an env without its stamp: refuse once here, not as a FAIL row per LSP gate (w8 for every
+# package, w7 for the phase-1 ones)
+genvs=w8; for p in "${PKGS[@]}"; do [ "$p" = dist-lens ] || genvs="w7 w8"; done
+for e in $genvs; do "$G/golden-env.sh" check "$e" || exit 2; done
 mkdir -p "$W/goldens" "$W/logs"
 TSV="$W/goldens/run-all.tsv"; : > "$TSV"
 fail=0

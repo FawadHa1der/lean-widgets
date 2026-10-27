@@ -196,7 +196,10 @@ const verdict = {
   applyEditStockPage: all['a:raw'] ? (all['a:raw'].textChanged ? 'works' : 'BROKEN') : 'not run',
   rpcPanelStockPage: all['b:raw'] ? (all['b:raw'].panelError ? 'BROKEN' : 'renders') : 'not run',
   applyEditWithBridge: all['a:bridge'] ? (all['a:bridge'].pass ? 'works' : 'fails') : 'not run',
-  makeEditLinkStockApplyEdit: all['b:strip'] ? (all['b:strip'].textChanged ? 'works' : 'BROKEN') : 'not run',
+  // the stock wiring's MakeEditLink applyEdit: b:raw itself once its panel renders (QED64 521cf3f on), else b:strip, which
+  // repairs only the abortSignal so the panel can render (on a page that repairs D1/D2 itself, strip mode does not apply)
+  makeEditLinkStockApplyEdit: all['b:raw'] && !all['b:raw'].panelError ? (all['b:raw'].textChanged ? 'works' : 'BROKEN')
+    : all['b:strip'] ? (all['b:strip'].textChanged ? 'works' : 'BROKEN') : 'not run',
   makeEditLinkWithBridge: all['b:bridge'] ? (all['b:bridge'].pass ? 'works' : 'fails') : 'not run',
 };
 const pass = !!(all['a:bridge']?.pass && all['b:bridge']?.pass);

@@ -45,7 +45,11 @@
 //                                                    switch is visible to `current` and is finished by re-running `use`.
 //                                                    Then gallery/pin.json is regenerated (build-gallery.mjs), and the
 //                                                    deploy inputs too when out/deploy exists (deploy-manifest generate +
-//                                                    --stage-assets, which refuse/report on their own gates).
+//                                                    --stage-assets, which refuse/report on their own gates). A NOTE names
+//                                                    what `verify` would otherwise fail or skip on, never changing it: the
+//                                                    restore command when $W/widgets-src (one export, shared by every pin)
+//                                                    is not the new pin's WIDGETS_COMMIT, and a QED64_KERNEL_BUILD that
+//                                                    holds no kernel build of the new pin.
 // Exit: 0 ok · 1 a check failed · 2 usage · 3 refused by a guard.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -53,6 +57,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SC, W, ID_RE, OVERLAYS, activeLinks, activePinId, listPins, pinDescriptor, lockOf, repoPinDir, releaseDir, outRtDir, wRtDir, mainBundle, hasBuildStores, overlayUrl } from './lib/pins.mjs';
 import { SUBMODULE, SUBMODULE_REL, checkSrc, ensureSrc, srcDir, headOf, worktreeDir } from './lib/qed64-src.mjs';
+import { K_CANDIDATES, pinKernelBuild } from './lib/env.mjs';
+import { recordedCommit } from './lib/widgets-src.mjs';
 import { readRuns, whyNotVerdict, whyNotSignOff } from './lib/ux-record.mjs';
 import { browserLockFile } from './lib/browser-lock.mjs';
 
@@ -390,6 +396,11 @@ if (cmd === 'list') {
   fs.writeFileSync(jf, JSON.stringify(journal, null, 2) + '\n');
   fs.appendFileSync(path.join(SC, 'out', 'pins', 'history.jsonl'), JSON.stringify(journal) + '\n');
   console.log(`PIN SWITCHED ${from || '(none)'} -> ${to}`);
+  // hints only (no re-export, no env change): what `verify` of the new active pin would otherwise FAIL or print N/A on
+  const wc = lockOf(to).WIDGETS_COMMIT, have = recordedCommit();
+  if (/^[0-9a-f]{40}$/.test(wc || '') && have !== wc) console.log(`NOTE $W/widgets-src is ${have ? `the export of ${have.slice(0, 12)}` : 'missing'}, not pin ${to}'s WIDGETS_COMMIT ${wc.slice(0, 12)} (verify #7 FAILs on it): node scripts/export-widgets.mjs --commit ${wc}`);
+  const kb = K_CANDIDATES.length ? pinKernelBuild(to) : null;
+  if (kb && !kb.dir) console.log(`NOTE ${kb.why} (verify #7 prints N/A; native, stage and the goldens refuse): add pin ${to}'s kernel build to QED64_KERNEL_BUILD`);
   // deploy inputs: regenerate for the new pin when a deploy staging exists (its own gates decide; a red one writes nothing)
   if (exists(path.join(SC, 'out', 'deploy', 'manifest.json')) && !flag('--no-deploy')) {
     for (const a of [[], ['--stage-assets']]) {

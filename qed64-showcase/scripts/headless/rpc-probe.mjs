@@ -220,7 +220,8 @@ try {
       check(ld.sha256 === pv.sha256 && ld.bytes === pv.bytes, `raw ${path.basename(ld.snap)}: bytes loaded into wasm == the verified file`, `${ld.sha256?.slice(0, 16)} vs ${pv.sha256.slice(0, 16)}`);
     }
   } else {
-    const { TC } = await import(path.join(SC, 'scripts/lib/env.mjs')); // the stock v4.34.0 toolchain (LEAN_TOOLCHAIN_DIR)
+    // the stock Lean of the target pin (LEAN_TOOLCHAIN_DIR, else env.mjs's v<the pin's runtime leanVersion>), which must be the packages' toolchain
+    const { TC } = await import(path.join(SC, 'scripts/lib/env.mjs'));
     const leanPath = execFileSync(path.join(SC, 'lean/goldens/golden-env.sh'), ['path', nativeEnv]).toString().trim();
     fs.writeFileSync(path.join(runDir, 'Showcase.lean'), text);
     uri = 'file://' + path.join(runDir, 'Showcase.lean');

@@ -6,15 +6,20 @@
 # Every step is logged to $W/logs/s4-<step>.log (with /usr/bin/time -l), its exit code is
 # collected, AND its verdict line is required (an uncaught crash that happens to exit 1/0
 # never counts as a PASS). The script continues past a failing step so one run shows every
-# result, and exits 1 if any step failed. A summary TSV is written to $W/logs/s4-steps.tsv.
+# result, and exits 1 if any step failed. A summary TSV is written to $W/logs/s4-steps.tsv. Refused (exit 2) before any
+# step unless each $W/tree-slim-<bake> it reads was staged for the target pin.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 . "$HERE/../lib/env.sh"   # W: scripts/lib/env.sh
+. "$HERE/../lib/platform.sh"   # NODE_TOOL
 cd "$ROOT" || exit 2
 # the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin) and its runtime's stores: raw regions,
 # bakes, bake keys and the headless results (the active links, or that pin's own store paths)
 P="$ROOT/scripts/lib/pins.mjs"
+# the staged trees this run reads ($W/tree-slim-w8/w7) are shared by every pin: each must have been staged for the target
+# pin (stage-trees.mjs --check-provenance: <tree>.STAGED.json), checked before anything runs or is written
+for b in w8 w7; do case "${1:-all}" in "$b"|all) node "$ROOT/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-$b" || exit 2 ;; esac; done
 RAW="$(node "$P" store raw)" || exit 2; HOUT="$(node "$P" store headless)" || exit 2
 BW7="$(node "$P" store bake-work-w7)"; BW8="$(node "$P" store bake-work-w8)"; BO7="$(node "$P" store bake-out-w7)"; BO8="$(node "$P" store bake-out-w8)"
 BK7="$(node "$P" store BAKE-KEY-w7.txt)"; BK8="$(node "$P" store BAKE-KEY-w8.txt)"
@@ -60,13 +65,13 @@ run_bake() { # run_bake w7|w8
     rm -f "$HOUT/$p.$snapset".{e1,rpc,html,react}.json
     local B=120000 T=300000
     [ "$p" = dist-lens ] && { B=900000; T=900000; }
-    step $b $p E1 "^E1 (PASS|FAIL) " -- node "$HERE/exact-header.mjs" --pkg $p --bake-key "$bk" \
+    step $b $p E1 "^E1 (PASS|FAIL) " -- "${NODE_TOOL[@]}" "$HERE/exact-header.mjs" --pkg $p --bake-key "$bk" \
       --snap "$bw/widgets.snap" --index "$idx" --lib $W/tree-slim-$b --snapset $snapset --budget-ms $B
-    step $b $p E3 "^E3 (PASS|FAIL) " -- node "$HERE/rpc-probe.mjs" --pkg $p --golden-env $b \
+    step $b $p E3 "^E3 (PASS|FAIL) " -- "${NODE_TOOL[@]}" "$HERE/rpc-probe.mjs" --pkg $p --golden-env $b \
       --snap "$RAW/init.snap" --snap "$bw/widgets.snap" --index "$idx" \
       --lib $W/tree-slim-$b --snapset $snapset --timeout-ms $T
     if [ -f "$HOUT/$p.$snapset.html.json" ]; then
-      step $b $p E3b "^react verification: " -- node "$HERE/react-contract.mjs" --in "$HOUT/$p.$snapset.html.json"
+      step $b $p E3b "^react verification: " -- "${NODE_TOOL[@]}" "$HERE/react-contract.mjs" --in "$HOUT/$p.$snapset.html.json"
     else
       step $b $p E3b "^react verification: " -- sh -c "echo 'no html.json from E3 (E3 crashed?)'; exit 1"
     fi

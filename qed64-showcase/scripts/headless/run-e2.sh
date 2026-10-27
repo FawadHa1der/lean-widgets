@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # E2 (BUILD-PLAN §6): every package's Demo.lean, verbatim, compiled by the pinned wasm runtime
-# (QED64's supervised-run.mjs -> node-runner.mjs, from the pin's source dependency) against $W/tree-fat. Serial.
+# (QED64's supervised-run.mjs -> node-runner.mjs, from the pin's source dependency) against $W/tree-fat, refused (exit 2)
+# unless that tree was staged for the target pin. Serial.
 #
 #   scripts/headless/run-e2.sh [pkg …]
 #
@@ -15,6 +16,9 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 . "$HERE/../lib/env.sh"   # W: scripts/lib/env.sh
 # the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin): QED64's runner at its commit and its stage1
 P="$ROOT/scripts/lib/pins.mjs"
+# $W/tree-fat is shared by every pin: it must have been staged for the target pin (stage-trees.mjs --check-provenance:
+# tree-fat.STAGED.json), checked before anything runs or is written
+node "$ROOT/scripts/stage-trees.mjs" --check-provenance "$W/tree-fat" || exit 2
 SR="$(node "$P" store qed64)/pipeline/snapshot/supervised-run.mjs" || exit 2
 ART="$(cd "$(node "$P" store stage1)" && pwd -P)" || exit 2
 BIDT="$(node "$P" target-bid)" || exit 2

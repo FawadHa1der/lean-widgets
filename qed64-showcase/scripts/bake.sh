@@ -7,8 +7,9 @@
 # Runs QED64's bake-snapshot.mjs from the pin's SOURCE dependency (the submodule deps/qed64 at the pin's commit, or
 # the pin's worktree: scripts/lib/qed64-src.mjs; never another QED64 checkout) with absolute
 # --artifact/--lib/--work/--out under W (no write can land in a QED64 tree). Steps:
-#   0. refuse if another bake runs (pgrep bake-snapshot), a browser runs (chrome-headless-shell /
-#      Chrome for Testing), a Docker container runs, or free+inactive memory < MIN_FREE_GB (vm_stat)
+#   0. refuse if $W/tree-slim-<tag> was not staged for the target pin (stage-trees.mjs --check-provenance: checked
+#      first, before any store is touched), another bake runs (pgrep bake-snapshot), a browser runs
+#      (chrome-headless-shell / Chrome for Testing), a Docker container runs, or free+inactive memory < MIN_FREE_GB (vm_stat)
 #   1. C3 seed: out dir = clone of the served init .snapz + index.json holding the init entry verbatim
 #   2. write BAKE-KEY-<tag>.txt (the probe's import lines = the exact env-cache key E1 uses)
 #   3. bake with QED64_ALLOW_LEGACY_IMPORTS=1 (harmless, C4) under /usr/bin/time -l, while a sampler
@@ -36,10 +37,15 @@ case "$tag" in
 esac
 while [ $# -gt 0 ]; do case "$1" in --reserve) RESERVE="$2"; shift 2 ;; *) echo "unknown arg $1"; exit 2 ;; esac; done
 n="${tag#w}"
+# the staged tree must be the TARGET pin's: $W/tree-slim-<tag> is shared by every pin (another pin's `stage` replaces it),
+# and its <tree>.STAGED.json names the runtime, served base and widget export it was staged for. Checked before anything
+# below touches a store, so for a tree staged for another pin the rm -rf of the bake-out (step 1) is never reached.
+LIB="$W/tree-slim-$tag"
+node "$SC/scripts/stage-trees.mjs" --check-provenance "$LIB" || exit 3
 # the bake stores are pin links into $W/runtimes/<buildId>/: pass their REAL paths to the wasm tools (Node loads lean.js
 # from its realpath, and the runtime's own file lookups must fall inside the mounted directory; see wasm-lsp.mjs)
 real() { mkdir -p "$1" 2>/dev/null; (cd "$1" && pwd -P); }
-LIB="$W/tree-slim-$tag"; WORK="$(real "$(store "bake-work-$tag")")"; OUT="$(real "$(store "bake-out-$tag")")"; ART="$(real "$(store stage1)")"
+WORK="$(real "$(store "bake-work-$tag")")"; OUT="$(real "$(store "bake-out-$tag")")"; ART="$(real "$(store stage1)")"
 # the bake log, metrics and RSS samples belong to the runtime they bake against ($W/bake-logs is a pin link into
 # $W/runtimes/<buildId>/bake-logs; judge-bake.mjs reads them there)
 BL="$(real "$(store bake-logs)")"
