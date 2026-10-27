@@ -1,41 +1,41 @@
 {
  "package": "dist-lens",
  "mode": "superset",
- "generatedAt": "2026-10-01T04:04:15.942Z",
+ "generatedAt": "2026-10-27T10:33:39.806Z",
  "generator": "lean/goldens/lsp-golden.mjs --click-all",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import DistLens"
   ],
   "golden": "w8",
-  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
- "exampleSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
+ "exampleSha256": "f39b68de986902a3b371dd5a28d9a2d503f5cc7ec8a1942472c4371627777e84",
  "documentDiagnostics": [],
- "probes": 233,
+ "probes": 234,
  "panelsRendered": 5,
  "links": [
   {
@@ -77,10 +77,10 @@
    "classification": "clean",
    "diagnosticsVersion": 2,
    "editedVersion": 2,
-   "reElaborationMs": 523,
+   "reElaborationMs": 515,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8329ae9d9deedad40863f6e3519957466183d63a9d0674a639a6c7e03f4cf1f8",
+   "editedSha256": "a8e291a3e1bf31d915150216f8d9affb155d1c8d31f1dde1790cc07bcb73959b",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link1.lean"
   },
   {
@@ -122,10 +122,10 @@
    "classification": "clean",
    "diagnosticsVersion": 3,
    "editedVersion": 3,
-   "reElaborationMs": 517,
+   "reElaborationMs": 514,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "4592dcdbda5ec0403e6fed1a00ab4ef7398e9988e6891875e7417400afe0cd16",
+   "editedSha256": "e9808b235bef589c8ab25278c08e52ff097b6f4a4db1a05aecc016be86758ab9",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link2.lean"
   },
   {
@@ -167,10 +167,10 @@
    "classification": "clean",
    "diagnosticsVersion": 4,
    "editedVersion": 4,
-   "reElaborationMs": 525,
+   "reElaborationMs": 514,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "5462ff405149387f54769f8cffcd5771d228101d44918b6f980551c9c4e9c6a8",
+   "editedSha256": "4c437ebfb2366fb27e066310c0a95741d8a30775b2754ca7cc2f97e4b2b0cf4a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link3.lean"
   },
   {
@@ -212,10 +212,10 @@
    "classification": "clean",
    "diagnosticsVersion": 5,
    "editedVersion": 5,
-   "reElaborationMs": 525,
+   "reElaborationMs": 515,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "c28434f13a5616b4ba406f72832559de36a30df134084ee1a4ac98cab116777f",
+   "editedSha256": "4c98f17fb0ed8e023f6cf510865cbced8cba6fbdcbee0ff31d7c93282d6687a4",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link4.lean"
   },
   {
@@ -257,10 +257,10 @@
    "classification": "clean",
    "diagnosticsVersion": 6,
    "editedVersion": 6,
-   "reElaborationMs": 520,
+   "reElaborationMs": 511,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "724ad9e2b36809d761815446afd3a5ba944a32bbf2e0652eec53c9969e92885d",
+   "editedSha256": "2d95bdac723d0edc406d26243b3b37c459d5a1b0b2eded5e2f1129131a71d1ec",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link5.lean"
   },
   {
@@ -302,10 +302,10 @@
    "classification": "clean",
    "diagnosticsVersion": 7,
    "editedVersion": 7,
-   "reElaborationMs": 527,
+   "reElaborationMs": 513,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "9744904118db45e92904f7f5c82944de3960e3a4e258d261b39e896bf22a07b8",
+   "editedSha256": "8e3c13338c603101a4ad9ff46b3d8a8f4caf2db8e02ab6e28132211e57208ce4",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link6.lean"
   },
   {
@@ -347,10 +347,10 @@
    "classification": "clean",
    "diagnosticsVersion": 8,
    "editedVersion": 8,
-   "reElaborationMs": 594,
+   "reElaborationMs": 541,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "0eabe9a2791976f8bf65f7d04d0d16d8ba0198ec1966a5f90f7ace7d00ebc4c1",
+   "editedSha256": "58bfa2ef9a47b2fb795c94a7882aea3e067db1fe0b87547fccf5ad12935ace90",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link7.lean"
   },
   {
@@ -392,10 +392,10 @@
    "classification": "clean",
    "diagnosticsVersion": 9,
    "editedVersion": 9,
-   "reElaborationMs": 652,
+   "reElaborationMs": 592,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "9f37484f50a04f32554249f109f63787854d6be51c341aa5f203e3017806bef2",
+   "editedSha256": "be0e7b7366dc599f0e63ee829e94d645170b968d95c6c4fcff6efec55284370e",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link8.lean"
   },
   {
@@ -437,10 +437,10 @@
    "classification": "clean",
    "diagnosticsVersion": 10,
    "editedVersion": 10,
-   "reElaborationMs": 693,
+   "reElaborationMs": 641,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "de6a3c2b79fdb255a7a22976ca53b95c46ed2129b8252b5b8628fc0a6e776d5d",
+   "editedSha256": "0e6b9dd4c2fc9533c6f3ad6b7acb56d7528b7f77ec7cca9bf7a5849f7cf345ae",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link9.lean"
   },
   {
@@ -482,10 +482,10 @@
    "classification": "clean",
    "diagnosticsVersion": 11,
    "editedVersion": 11,
-   "reElaborationMs": 776,
+   "reElaborationMs": 709,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "c6b23868971a4391eceeb28cc08b6bc154db51427bf16acfb65bd1d247e34cad",
+   "editedSha256": "67bd9c4653c26d7feb284b6f6205209580ab970035ae35a8edf3b93bcdc0e947",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link10.lean"
   },
   {
@@ -527,10 +527,10 @@
    "classification": "clean",
    "diagnosticsVersion": 12,
    "editedVersion": 12,
-   "reElaborationMs": 850,
+   "reElaborationMs": 774,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "c95c62a720d741ff19a8d962628ab5ec52188d59452484a69bc12c84325d5bf2",
+   "editedSha256": "9c20c7478c3cb8b4eee3486ff70e7179f2f46591b52ab7bddabc4b01e382e0d6",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link11.lean"
   },
   {
@@ -572,10 +572,10 @@
    "classification": "clean",
    "diagnosticsVersion": 13,
    "editedVersion": 13,
-   "reElaborationMs": 942,
+   "reElaborationMs": 867,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "71f574dd971a5d847bbe1e30cbec99b7ea7e37ee4394eec33f972bf4b01b13b0",
+   "editedSha256": "7ecb69f40f54fffadc101127b152c57b76e44470658469a916ebe84e0aa44762",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link12.lean"
   },
   {
@@ -617,10 +617,10 @@
    "classification": "clean",
    "diagnosticsVersion": 14,
    "editedVersion": 14,
-   "reElaborationMs": 904,
+   "reElaborationMs": 808,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "e482325418bb1a32b972bb1c464d99b3adc8ea8c8064099440894f1c2eb27c35",
+   "editedSha256": "c0e6f777eccc1b12a19bcf92091b3aa23b7430844cd6bd48880b5f3bc57fd911",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link13.lean"
   },
   {
@@ -662,10 +662,10 @@
    "classification": "clean",
    "diagnosticsVersion": 15,
    "editedVersion": 15,
-   "reElaborationMs": 811,
+   "reElaborationMs": 755,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "ac7bc08ab5e4894dc01e375455ea1cd8116e83c605c2157ee75ad86f33fadc58",
+   "editedSha256": "246a1918653d4fff2bab5fb18e5a79ae8b2b2c390aa537134fc4f0c0e84928bc",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link14.lean"
   },
   {
@@ -707,10 +707,10 @@
    "classification": "clean",
    "diagnosticsVersion": 16,
    "editedVersion": 16,
-   "reElaborationMs": 741,
+   "reElaborationMs": 701,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "f6233818a963a14b6acccfa7515c183a5e0769265d6a81557c109828c5672e9a",
+   "editedSha256": "ab16654b54a96c31f9241af434f81f4c678cfe4f0a9a8e1d9d412d226216488a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link15.lean"
   },
   {
@@ -752,10 +752,10 @@
    "classification": "clean",
    "diagnosticsVersion": 17,
    "editedVersion": 17,
-   "reElaborationMs": 689,
+   "reElaborationMs": 655,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "ab1cf51bb6194a89b09a19888fa139e9f4b96f336dd44f590ab5ebd1ed0fb18b",
+   "editedSha256": "090f1f1c3f36762b08f7654f6d5c7a51bdc5792c05f4b3e82b21600ae18ff83c",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link16.lean"
   },
   {
@@ -797,10 +797,10 @@
    "classification": "clean",
    "diagnosticsVersion": 18,
    "editedVersion": 18,
-   "reElaborationMs": 664,
+   "reElaborationMs": 621,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "7989e0725d88f2d1ed46cfe1daa02a2d65f121451d5c1f8eafff7265da21fb71",
+   "editedSha256": "98a83994e549dae01e0b4669df82c63e0e9567eb337d3bd837c2735a100f0ec0",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link17.lean"
   },
   {
@@ -842,10 +842,10 @@
    "classification": "clean",
    "diagnosticsVersion": 19,
    "editedVersion": 19,
-   "reElaborationMs": 683,
+   "reElaborationMs": 659,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "627730e1615b54b96f8a3536162e8d3c41b7a608239dd5612566242543e2e1a1",
+   "editedSha256": "4118c5b22e5c1336f59b70eec9990bcb99d15bb4c736d48e9e24fc3a86808b08",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link18.lean"
   },
   {
@@ -887,10 +887,10 @@
    "classification": "clean",
    "diagnosticsVersion": 20,
    "editedVersion": 20,
-   "reElaborationMs": 537,
+   "reElaborationMs": 516,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "b3d6f37c56445e07467ce8f35b4e0e7d8d88ec0032d9acaa0c488a5cedeb598f",
+   "editedSha256": "674649d1e799a4d0f07596d2dce2a9d958dcd4c6cdd441b031acc25ce5cda9c0",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link19.lean"
   },
   {
@@ -932,10 +932,10 @@
    "classification": "clean",
    "diagnosticsVersion": 21,
    "editedVersion": 21,
-   "reElaborationMs": 537,
+   "reElaborationMs": 521,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "dd4b48396dc15f83178cd68202c0b9ac2bf20a823f10b8a8dc60aa7c09bbee28",
+   "editedSha256": "be7d447d62bbbd84e9b81ee69dd96211d2ce796be866fb06223f0803e9458e4e",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link20.lean"
   },
   {
@@ -977,10 +977,10 @@
    "classification": "clean",
    "diagnosticsVersion": 22,
    "editedVersion": 22,
-   "reElaborationMs": 537,
+   "reElaborationMs": 519,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "9b3e9ef6f241fd5626e425a5fa36c12b6d5244fd0b423cdfefc6c6847cc59d7c",
+   "editedSha256": "0b98afaf2969cc53f6c6923e224f057882bf70bc04683160e73c5bb649dfd390",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset-clickall/Showcase.link21.lean"
   }
  ],
@@ -993,5 +993,5 @@
  },
  "declaredClicksCovered": "3/3",
  "ok": true,
- "totalMs": 16784
+ "totalMs": 15620
 }

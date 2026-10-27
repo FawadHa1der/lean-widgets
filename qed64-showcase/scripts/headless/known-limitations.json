@@ -13,10 +13,11 @@
         "wasm (fresh import from tree-fat, which DOES contain Lean/Data/RBMap.olean.private): same AXIOM lines ($W/logs/s4-diag-rb-whnf.fat.log)",
         "native lean v4.34.0, w8 golden LEAN_PATH: 'Lean.RBMap.ofList: defn … regular=6', 'whnf rbSample head = @Subtype.mk'",
         "native lean on the verbatim tree-scope Demo.lean: rc=0, 0 errors, 0 warnings ($W/logs/s4-E2native-tree-scope.log)",
-        "wasm Demo.lean minus line 104 only: supervised-run 'Demo.olean stable at 319072 bytes' rc=0 ($W/logs/s4-diag-tree-scope-no104.log)"
+        "wasm Demo.lean minus line 104 only: supervised-run 'Demo.olean stable at 319072 bytes' rc=0 ($W/logs/s4-diag-tree-scope-no104.log)",
+        "pin O (QED64 521cf3f, Lean 4.35.0, 2026-10-27): the same verbatim E2 error ($W/logs/showcase-showcase.sh-headless-e2.log), while native Lean 4.35.0 builds the same Demo (packages/tree-scope/.lake/build/lib/lean/TreeScope/Demo.olean)"
       ],
       "fixableInOurRepo": false,
-      "why": "The import level is compiled into the pinned runtime (every pin so far: kernels 0034 and 0035, kernel patch policy); the private facets are already staged in tree-fat and are ignored. The Demo is run verbatim from the read-only widget sources and the showcase example (lean/examples/tree-scope.lean) does not use reflect := true on a core module-system type (E3 tree-scope PASS on both bakes).",
+      "why": "The import level is compiled into the pinned runtime (every pin so far: kernels 0034 and 0035 (0035b for D–H), the kernel releases lean-v4.34.0-e1a79c1 (pins I–K) and lean-v4.34.0-53cb11e (L, N), and the Lean 4.35 release lean-v4.35.0-b081e7c of pin O, whose PATCHES.md:321 keeps the policy; kernel patch policy); the private facets are already staged in tree-fat and are ignored. The Demo is run verbatim from the read-only widget sources and the showcase example (lean/examples/tree-scope.lean) does not use reflect := true on a core module-system type (E3 tree-scope PASS on both bakes).",
       "userImpact": "In QED64, `#tree_scope (reflect := true) v` fails with the 'does not reduce to a constructor application' error for values whose definitions live in non-exposed `module` code (e.g. Lean.RBMap built by ofList/insert). The default semantic view of the same value works (Demo.lean:101 elaborates clean in wasm)."
     }
   ]

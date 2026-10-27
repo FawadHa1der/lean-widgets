@@ -1,0 +1,713 @@
+{
+  "schema": "qed64-showcase.lock/v2",
+  "pinnedAt": "2026-10-27T10:19:26.467Z",
+  "qed64": {
+    "repo": "https://github.com/FawadHa1der/QED64",
+    "commit": "521cf3f3672fcf497a398f569b7d5b79e36f94b4",
+    "promote": "add01f8e1e7fb9bf1526ba310be857ce6face3ce",
+    "buildId": "wasm64-36d7f415704473d9",
+    "kernel": "b081e7c041da4490f997ec18ccb9b9ea38f5f68f"
+  },
+  "source": {
+    "kind": "git-submodule",
+    "path": "qed64-showcase/deps/qed64",
+    "url": "https://github.com/FawadHa1der/QED64.git",
+    "commit": "521cf3f3672fcf497a398f569b7d5b79e36f94b4",
+    "staged": "a pin that is not the submodule's commit: git worktree of the submodule's repository at ${QED64_SHOWCASE_WORK}/qed64-pins/<id> (scripts/lib/qed64-src.mjs)"
+  },
+  "shell": {
+    "dir": "dist",
+    "build": "npm ci --prefix frontend && npm run build:site (QED64's own build, in the source checkout)",
+    "verify": "every built dist/ file byte-identical to release.files (sha256): the build is deterministic (docs/ARCHITECTURE.md \"Shell from source\")"
+  },
+  "artifacts": {
+    "fromGit": [
+      "public/runtime/runtime-manifest.json",
+      "public/profiles/index.json",
+      "public/profiles/lean-core.manifest.json",
+      "public/profiles/mathlib-essential.manifest.json",
+      "public/snapshots/index.json",
+      "public/runtime/runtime-manifest.wasm64-36d7f415704473d9 copy of public/runtime/runtime-manifest.json (verify #2)"
+    ],
+    "fetched": "every other public/ file of release.files, by URL path (public/<p> is served at /<p>) from an artifact origin, sha256 == release.files (scripts/fetch-artifacts.mjs)"
+  },
+  "release": {
+    "dir": "release/521cf3f",
+    "files": {
+      "dist/assets/JuliaMono-Regular-DZU_3trF.ttf": {
+        "bytes": 3163136,
+        "sha256": "a5deccd5c7cb334bca80d94104ddcbe89f335cb11482b904ef2f892fcb6e5ece"
+      },
+      "dist/assets/NotoColorEmoji-Subset-CA2l4IMG.ttf": {
+        "bytes": 39532,
+        "sha256": "74549749cee38e61df009757009569993a51f27097862abee60df05b849bed90"
+      },
+      "dist/assets/cobalt2-CKS12fXC.json": {
+        "bytes": 25883,
+        "sha256": "94f2c3cc54841501018cade9faa1ae57d4742caaa60cdb92f9b22a2ff32c5865"
+      },
+      "dist/assets/codicon.ttf": {
+        "bytes": 90136,
+        "sha256": "6f4c1d092bc162c8336b025740df44b8b81ec6345d93eb7e16d0451eeccafac5"
+      },
+      "dist/assets/dark_modern-Ce6bt2vs.json": {
+        "bytes": 4550,
+        "sha256": "bf416659256e4de595bb70672de258fb1fd7580b699bc2236480bb9743a83543"
+      },
+      "dist/assets/dark_vs-Dl7OJvYM.json": {
+        "bytes": 6105,
+        "sha256": "342bb46f69952b9b5f6a63b01df35530559a69d95196a37d0d858a289963cf00"
+      },
+      "dist/assets/editor.worker-B2cu4IM1.js": {
+        "bytes": 333483,
+        "sha256": "0cfb8b16eca59d54f7c988fda9029732cf43509162a02eb0011df96174c09506"
+      },
+      "dist/assets/extensionHost.worker-DGgU6ino.js": {
+        "bytes": 1393572,
+        "sha256": "8955c9ba6d88354040d0356f0078bb3de1e4d8979786ceb68b34e64680c87c89"
+      },
+      "dist/assets/hc_black-lC_SmiRj.json": {
+        "bytes": 7042,
+        "sha256": "a2fb4ec64771aa2df10d28356a9745f63b6e78cdfbea6cdae504dd53fd966436"
+      },
+      "dist/assets/hc_light-BDvlmg8q.json": {
+        "bytes": 8628,
+        "sha256": "fc104efe3e04d65d7d70424532bdcfda971840f864f01a3460e22337d1fd3818"
+      },
+      "dist/assets/iconv-lite-umd-xaWb3e4Y.js": {
+        "bytes": 294856,
+        "sha256": "405241da7fa2ae2312eff337025c177378b5d9ba3fced8bd7a559486879b6a2c"
+      },
+      "dist/assets/index-BcCr_hPg.js": {
+        "bytes": 8317979,
+        "sha256": "fa6d93864f13fa8ed859360ea531bb384cd8d7ca5373ec95e69e905ac757244c"
+      },
+      "dist/assets/index-CTbQl5CA.js": {
+        "bytes": 26045,
+        "sha256": "143f2edca39044a2c774d692f02881796364b7eab294683c10244a61b5787c88"
+      },
+      "dist/assets/index-D5UA3W1K.js": {
+        "bytes": 335708,
+        "sha256": "77f2f51ebc4462aaffd3ca19563763041cae3a54280cd6241064afbc6e91798b"
+      },
+      "dist/assets/lean4-markdown-BC4Z7L46.json": {
+        "bytes": 99069,
+        "sha256": "64f46664c7529484ad4cd4409d746f40a044f40524535c54cc4aee4e8cffd792"
+      },
+      "dist/assets/lean4-wQW0htAe.json": {
+        "bytes": 7744,
+        "sha256": "ac004106cdefc8567ce32250a677e4b3635864e04d5aafcbdab33778d6f81e0b"
+      },
+      "dist/assets/light_modern-CqFs6KiQ.json": {
+        "bytes": 5301,
+        "sha256": "c298ecc0e3ac7600fb6bba949125d065feacd48cd88a93fcfb403980f62df9c3"
+      },
+      "dist/assets/light_vs-DwwM7VRG.json": {
+        "bytes": 7014,
+        "sha256": "6970360c40edfd5effa360efe914d91b16b452dce6f28b1128c718dea5165f6d"
+      },
+      "dist/assets/onig-Du5pRr7Y.wasm": {
+        "bytes": 466610,
+        "sha256": "fd885c2d12e5951e59d761ebd4a006e06254b1491fd6f530c92b69fb4d8d77d9"
+      },
+      "dist/assets/webWorkerExtensionHostIframe-gIqsUtfW.html": {
+        "bytes": 4022,
+        "sha256": "1633eaef9974d016d309fe378664d4936e17ab223cab4875459685897e3652d2"
+      },
+      "dist/assets/worker-D0lXeX9a.js": {
+        "bytes": 453173,
+        "sha256": "b8ea70f8fc0ccc54ea3cd526b55d8903e6f92f93ef64292722f162f102067f8e"
+      },
+      "dist/index.html": {
+        "bytes": 9218,
+        "sha256": "ac2d14844cab6db44eef269e6bbbe4b6fcc6a36ca3a62b2fd008175ea03bafd5"
+      },
+      "dist/infoview/codicon.ttf": {
+        "bytes": 90136,
+        "sha256": "6f4c1d092bc162c8336b025740df44b8b81ec6345d93eb7e16d0451eeccafac5"
+      },
+      "dist/infoview/esm-shims/react-dom.d.ts": {
+        "bytes": 621,
+        "sha256": "71ca657cf84f42275c6f5459e0d978d66c2b960da19906b7a191847cec6e4d54"
+      },
+      "dist/infoview/esm-shims/react-jsx-runtime.d.ts": {
+        "bytes": 214,
+        "sha256": "1490ee5195e662eed38b719ba8e579e94d5a74abc8b9a7636bd263c958bb3761"
+      },
+      "dist/infoview/esm-shims/react.d.ts": {
+        "bytes": 1133,
+        "sha256": "5569f0724ca2b4979091ef24a146ce81bb2e54820efb91e35bf45323b79a28d2"
+      },
+      "dist/infoview/index.css": {
+        "bytes": 157861,
+        "sha256": "d9fe4399d2491efb196c7f410e44da491584f940f1f63b87bf17d3bc6dae1cfb"
+      },
+      "dist/infoview/index.d.ts": {
+        "bytes": 1205,
+        "sha256": "701e17f13a4a3d3920405bf98df6ea83e7f7415cf3c8daa3953f21c3fd381e4a"
+      },
+      "dist/infoview/index.production.min.js": {
+        "bytes": 2359375,
+        "sha256": "962664081b39e8b26a66ea67293707da34a9dbe96aea44b306b05d915b6db229"
+      },
+      "dist/infoview/infoview/collapsing.d.ts": {
+        "bytes": 915,
+        "sha256": "49aa407e466aa86754ce9145e58f22988c23e70e79ed1d9268ae967a7ce8dd50"
+      },
+      "dist/infoview/infoview/contexts.d.ts": {
+        "bytes": 2424,
+        "sha256": "cb250bdea4916b734f49bbcceb0aef612aeaa41e0a2047c27340d5eafbc882ae"
+      },
+      "dist/infoview/infoview/editorConnection.d.ts": {
+        "bytes": 1482,
+        "sha256": "e366fe9e846b4456e716246a9e1f2165e3bd7f7161aabd200cae74a649b3258f"
+      },
+      "dist/infoview/infoview/errors.d.ts": {
+        "bytes": 546,
+        "sha256": "915968164b9c09938c25b46fad983ca574c13b12803f8a941964f4916095addf"
+      },
+      "dist/infoview/infoview/event.d.ts": {
+        "bytes": 1296,
+        "sha256": "c9c71eb07acae55428ccf2a7ddc2ab00abe70d73583600e84e45036b51c1f7e8"
+      },
+      "dist/infoview/infoview/goalLocation.d.ts": {
+        "bytes": 3115,
+        "sha256": "5a106ce1d2975b73594d333e1fbddc342a2e020b4b8478cd34f08c70dbdb8bfa"
+      },
+      "dist/infoview/infoview/goals.d.ts": {
+        "bytes": 2458,
+        "sha256": "96e48cc015f6654164648792dc7d39d0968bd60375f3d0578c6da5701caad8e1"
+      },
+      "dist/infoview/infoview/hoverHighlight.d.ts": {
+        "bytes": 1220,
+        "sha256": "5167868203f5ee4226895d55e15183734878e9f36864f27ccd6dd134f680a18a"
+      },
+      "dist/infoview/infoview/info.d.ts": {
+        "bytes": 752,
+        "sha256": "663ca65c7fb8eb20316bc2e9e206b3bc0da19fa0c5fc6996ec3d768549a99d8f"
+      },
+      "dist/infoview/infoview/infos.d.ts": {
+        "bytes": 158,
+        "sha256": "3d2e0489d4688d9e6495ca26e996bd450b148be2320523a4f7c20bdb5e7be146"
+      },
+      "dist/infoview/infoview/interactiveCode.d.ts": {
+        "bytes": 1366,
+        "sha256": "1c97a395615d9121b28f70f9adefd8c0141c3fe402deaed6c197eaf959c7e694"
+      },
+      "dist/infoview/infoview/main.d.ts": {
+        "bytes": 698,
+        "sha256": "898c62164bd8886798e66b3cc173e028f8a16fc209754ea8820bb9a4860ee545"
+      },
+      "dist/infoview/infoview/messages.d.ts": {
+        "bytes": 1614,
+        "sha256": "4043c8c8d5070a3f7251c984727bc854c86d89f0e21749232ef0b50dce1792da"
+      },
+      "dist/infoview/infoview/rpcSessions.d.ts": {
+        "bytes": 1010,
+        "sha256": "b289c5b865a53f79d75c0d7a2872bcba271f873bf617b29900e761267e8ef206"
+      },
+      "dist/infoview/infoview/serverVersion.d.ts": {
+        "bytes": 215,
+        "sha256": "c6e83cc86fadd66e19a5119e9167c1aecf0ce90a327b69966aed07d22c032420"
+      },
+      "dist/infoview/infoview/tooltips.d.ts": {
+        "bytes": 2392,
+        "sha256": "738f179f422908f18bf63096dd6b1e97097ef0203d8bfe4cf1e0336c1b728e4f"
+      },
+      "dist/infoview/infoview/traceExplorer.d.ts": {
+        "bytes": 619,
+        "sha256": "770a13390c5a6ee425aa65c71e32205fccea38eb71666850296f08b6e1798d15"
+      },
+      "dist/infoview/infoview/userWidget.d.ts": {
+        "bytes": 2819,
+        "sha256": "cdc56013fa5095652ec6399dc4bbb19b80c6fd70e9442ba7f319da5084b022f0"
+      },
+      "dist/infoview/infoview/util.d.ts": {
+        "bytes": 8221,
+        "sha256": "b2b153ece12e99ad683fb41796e7f4386ea0dc39a9de5fef5d006bb10a45a436"
+      },
+      "dist/infoview/loader.d.ts": {
+        "bytes": 1205,
+        "sha256": "7f481c5062c40b16b08c36abceef351a07f118ec66d13090737b4f1f9bac0573"
+      },
+      "dist/infoview/loader.production.min.js": {
+        "bytes": 37726,
+        "sha256": "6cfaa3152f38662ad0b071e39554d1ca5a1a5a34e6a85902c9153872cfe3a297"
+      },
+      "dist/infoview/react-dom.production.min.js": {
+        "bytes": 133826,
+        "sha256": "98535758db10ee96f1e7510b20d6da31ab2d22005847b4d4bf5995c72a49387b"
+      },
+      "dist/infoview/react-jsx-runtime.production.min.js": {
+        "bytes": 1209,
+        "sha256": "0cc1933f4339a0aa39c6d69852cf55d87b4181076cd2e27aee49d9e35353ed98"
+      },
+      "dist/infoview/react.production.min.js": {
+        "bytes": 8191,
+        "sha256": "2efd959da0123131f2c68e3673f7f8ee93b521bb3ff3f360af81e3724f23ea9f"
+      },
+      "dist/infoview/webview.js": {
+        "bytes": 41718,
+        "sha256": "fe9ccdd2ec5d0996afc3ef22cdf186f57f5ac30b6a6c1760dee0374f3c060c90"
+      },
+      "dist/qed64-build.json": {
+        "bytes": 340,
+        "sha256": "7516d91d20fb05fbe9b7520ca8457431d6b0307add6e60ddeea59fa7cd7f55e9"
+      },
+      "dist/workers/lean.worker.js": {
+        "bytes": 109817,
+        "sha256": "fb1034e2d283e1202d894a9260ea0753e15c4c03f70a68de2ef7c7ce1f5f079f"
+      },
+      "dist/workers/lsp-frames.js": {
+        "bytes": 8803,
+        "sha256": "7ff1f2361c3f0cbab90bc7e1e023a975165c3a75d5119a73abfc4034310c481f"
+      },
+      "dist/workers/lsp-front-door.js": {
+        "bytes": 23649,
+        "sha256": "20d983c0414fd5b1aff72af758f1cd8205bcecfccdef641e2ce60eef2be0baea"
+      },
+      "dist/workers/memory64-probe.js": {
+        "bytes": 1805,
+        "sha256": "16f8b41c1481e43c0d61255f92093c2ae856837a7052c424c9f375f2ca9a54b6"
+      },
+      "dist/workers/snapshot-prefetch.worker.js": {
+        "bytes": 8983,
+        "sha256": "bb45253fd2e68ab3a80e8a981ee5c97b497730475ea29e5f56754721f4732eb5"
+      },
+      "public/runtime/runtime-manifest.json": {
+        "bytes": 2377,
+        "sha256": "db7cb64f0efc73d328b1cd34ca1beaa02768457647129e577172d8fd312c5cc2"
+      },
+      "public/runtime/runtime-manifest.wasm64-36d7f415704473d9.json": {
+        "bytes": 2377,
+        "sha256": "db7cb64f0efc73d328b1cd34ca1beaa02768457647129e577172d8fd312c5cc2"
+      },
+      "public/runtime/chunks/lean.js.8ab1123642a7d68c8d33.part-000": {
+        "bytes": 120123,
+        "sha256": "8ab1123642a7d68c8d330166638778f34e5e611067aa1e857491676bf4b6fb74"
+      },
+      "public/runtime/chunks/lean.wasm.a08eb400ce68b7356f0d.part-000": {
+        "bytes": 16777216,
+        "sha256": "a08eb400ce68b7356f0ded55f8047c4c4d623d5a51d21e15dd23d4f29c3045f5"
+      },
+      "public/runtime/chunks/lean.wasm.5deb15eb1265f2382fe1.part-001": {
+        "bytes": 16777216,
+        "sha256": "5deb15eb1265f2382fe153de19752d0c023e7686079d23c664d4eeabab29c6c3"
+      },
+      "public/runtime/chunks/lean.wasm.fb71e01ac008cd79671a.part-002": {
+        "bytes": 16777216,
+        "sha256": "fb71e01ac008cd79671a0d7918ade254919942a7d87b6271bd0b43f001886f38"
+      },
+      "public/runtime/chunks/lean.wasm.668483d061c8457fb555.part-003": {
+        "bytes": 16777216,
+        "sha256": "668483d061c8457fb555a17b46f680a1de61dd981eed087aa2d91f80ba47672c"
+      },
+      "public/runtime/chunks/lean.wasm.ac8dfe5a2fa35ad9cccd.part-004": {
+        "bytes": 16777216,
+        "sha256": "ac8dfe5a2fa35ad9cccdef9bfc797effbbd8c370ef958d50b04ea2f455545a97"
+      },
+      "public/runtime/chunks/lean.wasm.5c841ecc222298aeedf7.part-005": {
+        "bytes": 16777216,
+        "sha256": "5c841ecc222298aeedf7394c0a614352ed69d2c591138c1d29df351d6af7b937"
+      },
+      "public/runtime/chunks/lean.wasm.f968bd11a44cd7654eb3.part-006": {
+        "bytes": 5494315,
+        "sha256": "f968bd11a44cd7654eb3ef4385b48f67882a0d9a3b09f81f4686ed7a7a36c819"
+      },
+      "public/profiles/index.json": {
+        "bytes": 513,
+        "sha256": "63c5afb371a0f9a78c7bf19a289e9dbd80ec9df09b691570e9c85640711551d5"
+      },
+      "public/profiles/lean-core.manifest.json": {
+        "bytes": 1535491,
+        "sha256": "9a523e05003da8dcd2c273e86e210df593f7571b146c583e6b09146abd2d2aff"
+      },
+      "public/profiles/lean-core.pack.gzip.314b26786023baf1d609.part-000": {
+        "bytes": 16777216,
+        "sha256": "314b26786023baf1d609267c6e302c68ad3ed09dee49f840458153d2a9217781"
+      },
+      "public/profiles/lean-core.pack.gzip.f689a646761e7881bc7b.part-001": {
+        "bytes": 16777216,
+        "sha256": "f689a646761e7881bc7bd535ba4f3dcfaf8c394c316ea5fdea10dd14c3d3a4f3"
+      },
+      "public/profiles/lean-core.pack.gzip.6690f289ba255d1550f0.part-002": {
+        "bytes": 16777216,
+        "sha256": "6690f289ba255d1550f0211881da9668fbab80e0650f398bbb4bf6fa46124503"
+      },
+      "public/profiles/lean-core.pack.gzip.7b2fbeadde9827be2ae9.part-003": {
+        "bytes": 16777216,
+        "sha256": "7b2fbeadde9827be2ae9230d3d2a35bbf719ae105e0d302c8b902ec8d34d9c4e"
+      },
+      "public/profiles/lean-core.pack.gzip.09744e39e012e2ff49e3.part-004": {
+        "bytes": 16777216,
+        "sha256": "09744e39e012e2ff49e34bf388dc212ba6799c207b8a06a54348ec101a4c47f6"
+      },
+      "public/profiles/lean-core.pack.gzip.c4ed140457523ee6cca8.part-005": {
+        "bytes": 16777216,
+        "sha256": "c4ed140457523ee6cca8fdf08edf18459f8ed72b05fc790886cf80806caed8a2"
+      },
+      "public/profiles/lean-core.pack.gzip.f107010d0a7fc3170868.part-006": {
+        "bytes": 16777216,
+        "sha256": "f107010d0a7fc3170868ca827f2ea61d326c3312a81e9bbc2cb0a3593376a41f"
+      },
+      "public/profiles/lean-core.pack.gzip.0941f1306a2869d0f91f.part-007": {
+        "bytes": 1365632,
+        "sha256": "0941f1306a2869d0f91f66f63f052f8e93c93fffa35a3f8805c832adb0ca3d82"
+      },
+      "public/profiles/mathlib-essential.manifest.json": {
+        "bytes": 10555974,
+        "sha256": "68bdff72f7dfdac6d7d90898c2fbbede0d166e692a3fbfe2d141638087764344"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.50c3cae0c6a3dac667df.part-000": {
+        "bytes": 16777216,
+        "sha256": "50c3cae0c6a3dac667dfb6a2552dea76ca6f8385fcbc73afb433b1bceb5447dc"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.8cd7cdc2af9ddd063fbc.part-001": {
+        "bytes": 16777216,
+        "sha256": "8cd7cdc2af9ddd063fbccf5957f7a901de0a57595a20cac7d283ca00810c5728"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.d2836d811a1ea1f787a4.part-002": {
+        "bytes": 16777216,
+        "sha256": "d2836d811a1ea1f787a4a987590b4c7dcbbd2beefbc61a6dc59b72eff68aaad9"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.459e37e43c7d28533723.part-003": {
+        "bytes": 16777216,
+        "sha256": "459e37e43c7d2853372337fc6a383e53a8ee5c94fdcd026c1087602bde7c86b8"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.44b4f905f975e0d5d901.part-004": {
+        "bytes": 16777216,
+        "sha256": "44b4f905f975e0d5d901f7b8b225bd48e9ccf1c37fceec7630735aca55a3ed49"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.fb91a29af770b906f65f.part-005": {
+        "bytes": 16777216,
+        "sha256": "fb91a29af770b906f65ffe4ce1ba98d60491b0ad4527b8ddd51f1b0ba28dcae8"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.dbcb0fc959adee474640.part-006": {
+        "bytes": 16777216,
+        "sha256": "dbcb0fc959adee47464055648b672802b425d1a53df0a9835a93b6475ae3e931"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.11fb36049f92ea3fb6c0.part-007": {
+        "bytes": 16777216,
+        "sha256": "11fb36049f92ea3fb6c075a991075648b9934fbdd79500012ed5ab7d8f7c340a"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.56161ffead5bc87b2f56.part-008": {
+        "bytes": 16777216,
+        "sha256": "56161ffead5bc87b2f567517a07326d0d42b4b102cada18049adaec254fef50e"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.3230b722fea3db522164.part-009": {
+        "bytes": 16777216,
+        "sha256": "3230b722fea3db52216475ddbec470e8b6a27155ad397e89274890ef34423ae4"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.b3a37f3f24845bd591dd.part-010": {
+        "bytes": 16777216,
+        "sha256": "b3a37f3f24845bd591dd9ef7921f00fb29cc761e583740f8866972ed1b6d5652"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.2f7ddf685a878e79e2de.part-011": {
+        "bytes": 16777216,
+        "sha256": "2f7ddf685a878e79e2de827e70816b9ccafb666f08c370e1295f905db48c3904"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.bbff0c87014ddd352d81.part-012": {
+        "bytes": 16777216,
+        "sha256": "bbff0c87014ddd352d81aada6db4d640121c8cd7a021f15612706c63d6f8d49f"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.c21e4c96b6ac6f56234d.part-013": {
+        "bytes": 16777216,
+        "sha256": "c21e4c96b6ac6f56234de07c49ee0363739bdb41a3a4f903c95a076f3b4a9123"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.f534e3c4a91aca869f36.part-014": {
+        "bytes": 16777216,
+        "sha256": "f534e3c4a91aca869f36348c05c0fed0b188f97e5686575871aef66425ac2fd2"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.6eef2f51f0e12b1a0c18.part-015": {
+        "bytes": 16777216,
+        "sha256": "6eef2f51f0e12b1a0c1833c6d05f0b302086100ec16e8552aa893bf2b4b15d13"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.bf09bf9e2f7d6c1120ef.part-016": {
+        "bytes": 16777216,
+        "sha256": "bf09bf9e2f7d6c1120efe7e79931c81cd75e9f02af454633de0ca3eaed5b777e"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.25215d61a721d5f7f5ad.part-017": {
+        "bytes": 16777216,
+        "sha256": "25215d61a721d5f7f5ad90c8fb8290896bfd5f22cf46714ff5e9975d9e4c87ba"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.0edf44777531395d2e54.part-018": {
+        "bytes": 16777216,
+        "sha256": "0edf44777531395d2e5468ef8194a32d2ec8dfbc9431b4622eaf3b0383e3c607"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.4684471229b1dd114dac.part-019": {
+        "bytes": 16777216,
+        "sha256": "4684471229b1dd114dacd283994bf43d102fa14223e2faaf825584b38524c963"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.afdeaaafb00baa2f320c.part-020": {
+        "bytes": 16777216,
+        "sha256": "afdeaaafb00baa2f320c3a80acf098730bfa06b0589b6aa03cbe0dc925c2c1eb"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.eaf2299458eca9c5e8c5.part-021": {
+        "bytes": 16777216,
+        "sha256": "eaf2299458eca9c5e8c505f32650009a21fcb5bdbf954a8951b27b87cf21e3b1"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.de4e629a12e018f8e460.part-022": {
+        "bytes": 16777216,
+        "sha256": "de4e629a12e018f8e46064674a5a4ec94042b6f1bae57bdd391ceb71bb8595a9"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.7730f8429403add97d8f.part-023": {
+        "bytes": 16777216,
+        "sha256": "7730f8429403add97d8f652273551a46c7cccdbb935f217e70e19e60ab4b6773"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.608f481d42287aeae81a.part-024": {
+        "bytes": 16777216,
+        "sha256": "608f481d42287aeae81a1d3567d2b7e22b2f1fd157828ae8e25000ba572a5dc3"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.204ca3c575fb7871c140.part-025": {
+        "bytes": 16777216,
+        "sha256": "204ca3c575fb7871c140b4bfbd03b327ff1aca01469f8c6dbbf7792666233b6c"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.dfeb39487f8f2781f021.part-026": {
+        "bytes": 16777216,
+        "sha256": "dfeb39487f8f2781f0214d956dfd509e56eb026e4cacb3418d5d40b4312cf54c"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.563560657b1965f0fd86.part-027": {
+        "bytes": 16777216,
+        "sha256": "563560657b1965f0fd86142e12f15a44f6b81dfe4235eafadaa42c7c0b3f18bc"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.886906184c92ef7ac2b3.part-028": {
+        "bytes": 16777216,
+        "sha256": "886906184c92ef7ac2b33fa37c0dfa7c208c880c587999b59d2ae6e5b38f1983"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.69e081b5717f0b0985e7.part-029": {
+        "bytes": 16777216,
+        "sha256": "69e081b5717f0b0985e76414dfb6df5ed0a9ca34c4e17de7b3a5554dcdbba190"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.7bea1e8937d4cb7d6321.part-030": {
+        "bytes": 16777216,
+        "sha256": "7bea1e8937d4cb7d63214d96c1adb4383c7b205e06d12ebe42983c30b0668f7e"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.26ab45e133fc642e5e0f.part-031": {
+        "bytes": 16777216,
+        "sha256": "26ab45e133fc642e5e0fe5d864153060adb387baa31f84a9b5cb9af9285cdf37"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.20a5f557aeaaa982d8ff.part-032": {
+        "bytes": 16777216,
+        "sha256": "20a5f557aeaaa982d8ff8514d624773a25b2a707a201a8b63c1e18e184b03029"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.b19f8839d86b59fd61f6.part-033": {
+        "bytes": 16777216,
+        "sha256": "b19f8839d86b59fd61f6424dd74f320904ca1ec33a2d189b26b5c4c9a8252367"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.6ef3e500dd851e3a1882.part-034": {
+        "bytes": 16777216,
+        "sha256": "6ef3e500dd851e3a188200cc238343082128a5fb8e6f1a21384a20dac73ca1b6"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.c154c250f63a8e6a7ee5.part-035": {
+        "bytes": 16777216,
+        "sha256": "c154c250f63a8e6a7ee5d704162b62982e7d7e06c90eacab53f97c8ec7b5b51f"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.5edbeff4f2e59c311eaf.part-036": {
+        "bytes": 16777216,
+        "sha256": "5edbeff4f2e59c311eaf8b0efb7283875c3d3c28558b9019160978a33732d377"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.adfe9fce28275e7760e4.part-037": {
+        "bytes": 16777216,
+        "sha256": "adfe9fce28275e7760e4d705f787004855377cf1b95276763e71f97b4de3e275"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.e16c769c2f52e2d3e680.part-038": {
+        "bytes": 16777216,
+        "sha256": "e16c769c2f52e2d3e68020ac8ecaf48524f69f46217d7196ab167a4c1028cdbe"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.303a4c55c501544c0e29.part-039": {
+        "bytes": 16777216,
+        "sha256": "303a4c55c501544c0e299a186642c5a5d30a5894209415d75772b69683926c75"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.7ece18b212c7d2f50089.part-040": {
+        "bytes": 16777216,
+        "sha256": "7ece18b212c7d2f50089cf0a640372cf7a7688e60ed2b78e0feb83343582e505"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.2f8f7aefadd300ca9734.part-041": {
+        "bytes": 16777216,
+        "sha256": "2f8f7aefadd300ca9734db4da0d5689d7daf17458e0a37a06e7fe58c26507ffd"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.24814a94a72196e7f8b8.part-042": {
+        "bytes": 16777216,
+        "sha256": "24814a94a72196e7f8b8c0f3a312e42bb258b9283a83fdc86cd88da330ef7590"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.bed48c33d0e5bb36e1a5.part-043": {
+        "bytes": 16777216,
+        "sha256": "bed48c33d0e5bb36e1a5fd263f151f26923da8dc7d345dabe434802a4979a6bf"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.5007fcb7d3ec17c70b16.part-044": {
+        "bytes": 16777216,
+        "sha256": "5007fcb7d3ec17c70b169d8b9b1bf053cae7c1d0b7f55e6496a9cab6487fad68"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.4da66d0a2b2acfc8f7f0.part-045": {
+        "bytes": 16777216,
+        "sha256": "4da66d0a2b2acfc8f7f0aea11d65c57882abd66910c19115dfd20e6ed276de17"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.4400e50e2163aff67400.part-046": {
+        "bytes": 16777216,
+        "sha256": "4400e50e2163aff67400b7487528dc2f2c191b7c0604ed8fad0722f2d45920db"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.ed22cc29613371d5dd66.part-047": {
+        "bytes": 16777216,
+        "sha256": "ed22cc29613371d5dd66075d88e81233a371669542da2780ca0bb387c560b188"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.a77b93f06a6257240648.part-048": {
+        "bytes": 16777216,
+        "sha256": "a77b93f06a62572406482f4290568a950bcc4849f3118814af862d9556acf616"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.4562e006f8a4f73fa118.part-049": {
+        "bytes": 16777216,
+        "sha256": "4562e006f8a4f73fa118a8c68cf9edd0d4d18c3f3186393ab08a6f0bd43ae992"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.0f3cd8775fd749d4df4f.part-050": {
+        "bytes": 16777216,
+        "sha256": "0f3cd8775fd749d4df4fead7932b50066ccd21d46a9f11eacd97818e818d2f45"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.66b480f3dea5c44ec1b7.part-051": {
+        "bytes": 16777216,
+        "sha256": "66b480f3dea5c44ec1b7b088f5a8b0caebc985a048bf445b061442a25898f99f"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.f52f35f81da3944852f4.part-052": {
+        "bytes": 16777216,
+        "sha256": "f52f35f81da3944852f4d9ee09b8820018d9219dd816dd71226a7eb1d10a3319"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.d2132a6643df738c44df.part-053": {
+        "bytes": 16777216,
+        "sha256": "d2132a6643df738c44dfcbd943f762e6877b072db8712090c97d1459b17c1492"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.0396ac3d0d969b8f8946.part-054": {
+        "bytes": 16777216,
+        "sha256": "0396ac3d0d969b8f8946bc97106b1f5fa33803715710307896bcbd15ea238a5a"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.600b33b762c923ac9bbf.part-055": {
+        "bytes": 16777216,
+        "sha256": "600b33b762c923ac9bbf7ea0739b15ba29a6a54275a374b3206e25d2dc13603c"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.143034ca6d45c7b2b585.part-056": {
+        "bytes": 16777216,
+        "sha256": "143034ca6d45c7b2b585c45284741471b3f7860692e57820ec2c5c05e078715a"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.af5dabf2db4f9f94ba38.part-057": {
+        "bytes": 16777216,
+        "sha256": "af5dabf2db4f9f94ba38a025fbb483884d51b815fb36251020b406788d1c501e"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.5478314465c8d08e992f.part-058": {
+        "bytes": 16777216,
+        "sha256": "5478314465c8d08e992fd0a078178408391712d58202a0d5145a69037aa23bf2"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.771cda0b07e421dfe00e.part-059": {
+        "bytes": 16777216,
+        "sha256": "771cda0b07e421dfe00e9917e9f79add126c87fdb08f21ee4d9fb68770a6fdb2"
+      },
+      "public/profiles/mathlib-essential.pack.gzip.10a250c5896c4f7501b9.part-060": {
+        "bytes": 16269202,
+        "sha256": "10a250c5896c4f7501b9407e8d79d85f50110125f16fb557c9149cb3fba6db69"
+      },
+      "public/snapshots/index.json": {
+        "bytes": 701,
+        "sha256": "52fc2caa68ea856e5ae4ce1d2e6aece8a9fd7ff5c7cb238c2740b58ce433f089"
+      },
+      "public/snapshots/init.81276a747b990f32.snapz": {
+        "bytes": 31719003,
+        "sha256": "81276a747b990f320b76afa182192d188aeb0cec6b50b63d19bbda812e9168ba"
+      },
+      "public/snapshots/mathlib.79936198cd60caf2.snapz": {
+        "bytes": 319645483,
+        "sha256": "79936198cd60caf2d5ab88ad15772a1412edd1bf03aec9b96109dfb540456d26"
+      }
+    }
+  },
+  "anchors": {
+    "public/runtime/runtime-manifest.json": {
+      "gitBlob": "50190ac228576fd6fc090dd32d57a161e980ea52",
+      "sha256": "db7cb64f0efc73d328b1cd34ca1beaa02768457647129e577172d8fd312c5cc2"
+    },
+    "public/profiles/index.json": {
+      "gitBlob": "f2d635e30329fa3a13315ab5d41451d86d3c75c2",
+      "sha256": "63c5afb371a0f9a78c7bf19a289e9dbd80ec9df09b691570e9c85640711551d5"
+    },
+    "public/profiles/lean-core.manifest.json": {
+      "gitBlob": "e89299f754894dbe7a4f246f5631d34534b0b969",
+      "sha256": "9a523e05003da8dcd2c273e86e210df593f7571b146c583e6b09146abd2d2aff"
+    },
+    "public/profiles/mathlib-essential.manifest.json": {
+      "gitBlob": "b6c0cdc4a86a9fcc4ae5c4f781d36dc24f371532",
+      "sha256": "68bdff72f7dfdac6d7d90898c2fbbede0d166e692a3fbfe2d141638087764344"
+    },
+    "public/snapshots/index.json": {
+      "gitBlob": "b2d1fc03999b88a5fcd03a2d22df5667b6392b47",
+      "sha256": "52fc2caa68ea856e5ae4ce1d2e6aece8a9fd7ff5c7cb238c2740b58ce433f089"
+    }
+  },
+  "toolchain": {
+    "native64": {
+      "dir": "${QED64_KERNEL_BUILD}/native",
+      "NATIVE_COMMIT": "b081e7c041da4490f997ec18ccb9b9ea38f5f68f",
+      "BUILT_COMMIT": "b081e7c041da4490f997ec18ccb9b9ea38f5f68f",
+      "stage1/bin/lean": "42a5c2b0ccf3e65f6e574bb81601052d52d95d8c651d8ce9d0e6104655d7398c",
+      "stage1/bin/lake": "5b44c7513193f8e1d9edfba26583961ab3ff6927ccaa2ae78a522344bba8a9a4",
+      "stage1/lib/lean/libleanshared.so": "dbf570599b73e046e7c6c7d62574c61de9683f5bd3f8b8cda33077e78b916211",
+      "stage1/lib/lean/libLake_shared.so": "1a73a1aed877bbe442b3037ff910fc9e298849d2a754a5596afff358de427dc5",
+      "stage1/lib/lean/libInit_shared.so": "f45ee0dcb42b5f8a05add0685c1678f5c21cc22d8ef66f6531f5c08822df57ec"
+    },
+    "docker": {
+      "image": "qed64-toolchain:emsdk-6.0.5",
+      "id": "9563286ca922"
+    },
+    "mathlib": {
+      "commit": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+      "proofwidgets": "df72b022e558978a1c50264cfc4d7fec86fa8e04"
+    },
+    "node": "v26.3.0",
+    "playwright": {
+      "version": "1.62.1",
+      "browserRevision": "1234"
+    }
+  },
+  "WIDGETS_SOURCE_HASH": "4a1f4902faff2dfb967e63a730b52e0270385ecf6882147d86151ab05ec3a02f",
+  "WIDGETS_COMMIT": "1a610034b75e00ea26ab48e2423886660ac3be18",
+  "WIDGETS_SOURCE": {
+    "dir": "${QED64_SHOWCASE_WORK}/widgets-src",
+    "files": 232,
+    "algorithm": "sha256 of concatenated \"<sha256>  <relpath>\\n\" lines, relpaths in byte order, excluding SOURCE-HASH.txt, SOURCE-FILES.sha256 and SOURCE-COMMIT.txt",
+    "repo": "https://github.com/FawadHa1der/lean-widgets",
+    "export": "git archive 1a610034b75e00ea26ab48e2423886660ac3be18 packages/ (prefix packages/ stripped): scripts/export-widgets.mjs"
+  },
+  "overlays": {
+    "widgets7": {
+      "dir": "out/runtimes/wasm64-36d7f415704473d9/overlay/widgets7",
+      "url": "/snapshots/widgets7.36d7f415704473d9/",
+      "files": {
+        "index.json": {
+          "bytes": 854,
+          "sha256": "3c0603c1ad630255963fcfca3823b9adef719f5d5ef952b63662e04ee6ab9d2a"
+        },
+        "init.81276a747b990f32.snapz": {
+          "bytes": 31719003,
+          "sha256": "81276a747b990f320b76afa182192d188aeb0cec6b50b63d19bbda812e9168ba"
+        },
+        "widgets.4f02caae6eb88d1d.snapz": {
+          "bytes": 329857835,
+          "sha256": "4f02caae6eb88d1d893230bd0116b122b19918a9af0f132e361c146ee63d1f6b"
+        }
+      }
+    },
+    "widgets8": {
+      "dir": "out/runtimes/wasm64-36d7f415704473d9/overlay/widgets8",
+      "url": "/snapshots/widgets8.36d7f415704473d9/",
+      "files": {
+        "index.json": {
+          "bytes": 874,
+          "sha256": "a57cde34ac38e02afc611332a564c3e0b27c1db24ce2af02c54ab62af57ac346"
+        },
+        "init.81276a747b990f32.snapz": {
+          "bytes": 31719003,
+          "sha256": "81276a747b990f320b76afa182192d188aeb0cec6b50b63d19bbda812e9168ba"
+        },
+        "widgets.37b2f0a943e8307c.snapz": {
+          "bytes": 361999671,
+          "sha256": "37b2f0a943e8307c0f7306a425bb0c88a3dcf2e078a9689282cae3273e081602"
+        }
+      }
+    }
+  }
+}

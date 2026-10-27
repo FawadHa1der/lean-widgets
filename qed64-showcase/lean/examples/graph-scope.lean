@@ -5,12 +5,12 @@ import GraphScope
 Cursor on a `#graph_scope` line: the panel draws the graph (forests as layered
 trees, other graphs on a circle) plus a stats block — degrees, components,
 connectivity, bipartiteness with evidence (a 2-colouring or an odd cycle).
-The drawing is clickable: an EDGE inserts `example : G.Adj a b := by decide`,
-a VERTEX its degree fact, the components line `G.Connected` (or `¬`), each on
-a new line after the command and verified to compile before it is offered.
-`walk [...]` numbers the steps of a walk, `highlight [...]` rings vertices,
-`layout circle|layered` forces a layout.  (`pathGraph` is decidable here via
-the global instance shipped by GraphScope's demo module.) -/
+The drawing is clickable: an EDGE inserts `example : G.Adj a b := by decide`, a
+VERTEX its degree fact, the components line `G.Connected` (or `¬`), each on a new
+line after the command, if its labels round-trip; the components link only if a
+calibrated cost model fits `decide` in half the heartbeat budget.  `walk [...]`
+numbers a walk, `highlight [...]` rings vertices, `layout circle|layered` forces
+a layout.  (`pathGraph` is decided here by GraphScope's demo instance.) -/
 
 open SimpleGraph
 

@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-01T04:05:17.084Z",
+ "generatedAt": "2026-10-27T10:34:29.309Z",
  "generator": "lean/goldens/summary.mjs",
  "primary": {
   "packages": 8,
@@ -178,7 +178,7 @@
    "designed": 0,
    "broken": 0,
    "panelsRendered": 5,
-   "probes": 255,
+   "probes": 259,
    "declaredClicksCovered": "4/4",
    "cli": {
     "compiled": 58,
@@ -198,7 +198,7 @@
    "designed": 0,
    "broken": 0,
    "panelsRendered": 5,
-   "probes": 255,
+   "probes": 259,
    "declaredClicksCovered": "4/4",
    "cli": null,
    "brokenLinks": []
@@ -289,7 +289,7 @@
    "designed": 0,
    "broken": 0,
    "panelsRendered": 5,
-   "probes": 233,
+   "probes": 234,
    "declaredClicksCovered": "3/3",
    "cli": {
     "compiled": 21,

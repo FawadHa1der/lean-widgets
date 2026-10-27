@@ -5,7 +5,7 @@
   "overlayDirs": "per-runtime",
   "registeredAt": "2026-10-16T17:30:00Z",
   "label": "N: QED64 58ebbad (main, pushed 2026-10-16: #74 stale page on a lost own chunk, #75 Firefox, #76 memory sampled at ready, the adversarial --browser switch), runtime 5650321f",
-  "status": "active and gated 2026-10-16: VERDICTs n-full1/n-full2, C20 405/405 (DistLens 21/21 in ~42 s), headed n-headed1 35/35, 10 Mbit/s first visit PASS at 519.0 s; QED64 main (pushed, live)",
+  "status": "gated 2026-10-16: VERDICTs n-full1/n-full2, C20 405/405 (DistLens 21/21 in ~42 s), headed n-headed1 35/35, 10 Mbit/s first visit PASS at 519.0 s; QED64 main and live when pushed (2026-10-16; QED64 main is 521cf3f since pin O); active until 2026-10-27 (pin O); its trees are no longer staged here (restaging needs its own branch: this one carries O's native delta lists)",
   "qed64": {
     "commit": "58ebbad671fed524ab9877f08e64d960945df935",
     "promote": "d1646ae82b252918fb2dee232752ef3a12292f1f",

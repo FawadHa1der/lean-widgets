@@ -5,7 +5,7 @@
   "overlayDirs": "per-runtime",
   "registeredAt": "2026-10-12T16:40:00Z",
   "label": "K: QED64 62a06e2 (main, pushed 2026-10-12: #68 own-predecessor wait, pool diagnostic, #69 thread budget n=8, #70 Elab.async=false, #71 runtime-default probe 16384 (no 8192), #72 stack backstop: pause on the first engine-stack death, ENGINE_STACK_OVERFLOW note), runtime f69cca24",
-  "status": "active and gated 2026-10-13: VERDICTs k-full1/k-full5, C20 405/405 (DistLens 21/21 at the runtime-default probe 16384), headed k-headed1 35/35, 10 Mbit/s first visit PASS; paired with DistLens's tactics as elaborators (widgets 6b31bba) so the deep DistLens examples fit the probe (docs/REPIN-LOG.md, pin K)",
+  "status": "gated 2026-10-13 (active until 2026-10-16, pin L/N): VERDICTs k-full1/k-full5, C20 405/405 (DistLens 21/21 at the runtime-default probe 16384), headed k-headed1 35/35, 10 Mbit/s first visit PASS; paired with DistLens's tactics as elaborators (widgets 6b31bba) so the deep DistLens examples fit the probe (docs/REPIN-LOG.md, pin K)",
   "qed64": {
     "commit": "62a06e2632b56931b077bdadd751bac23f000919",
     "promote": "fc945e4726ad68e1fc5fcfe745ec924eca8f02a7",

@@ -1,0 +1,39 @@
+{
+  "schema": "qed64-showcase.pin/v3",
+  "id": "521cf3f",
+  "buildId": "wasm64-36d7f415704473d9",
+  "overlayDirs": "per-runtime",
+  "registeredAt": "2026-10-27T09:53:22Z",
+  "label": "O: QED64 521cf3f (main: the lean-v4.35.0-b081e7c adoption add01f8, Lean 4.35.0, Mathlib 56a00585, ProofWidgets df72b022, kernel patch 0042; #77-#81 over N), runtime 36d7f415",
+  "status": "active and gated 2026-10-27 (Lean 4.35.0): VERDICTs o-full1/o-full2, C20 405/405 (DistLens 21/21 in ~42 s), headed o-headed4 35/35, 10 Mbit/s first visit PASS at 513.9 s, headless stage4/E2 green (E2 7/8, L1); QED64 main; not deployed",
+  "qed64": {
+    "commit": "521cf3f3672fcf497a398f569b7d5b79e36f94b4",
+    "promote": "add01f8e1e7fb9bf1526ba310be857ce6face3ce",
+    "kernel": "b081e7c041da4490f997ec18ccb9b9ea38f5f68f"
+  },
+  "mainBundle": "/assets/index-BcCr_hPg.js",
+  "consoleSites": {
+    "627": "47afcccfa5dd025090f57cf263ae86a1563ebf533f75ce516f8c946fcdce9417"
+  },
+  "servedTrees": {
+    "baseSlim": "${QED64_SHOWCASE_WORK}/lib-tree-slim.36d7f415704473d9",
+    "baseFat": "${QED64_SHOWCASE_WORK}/lib-tree.36d7f415704473d9",
+    "coreSrc": "${QED64_SHOWCASE_WORK}/core-lib-slim.36d7f415704473d9",
+    "baseN": 5092,
+    "baseSlimDigest": "sha256:58113bceaf0c922b53aefde24639aadd886883543d9fd80461fa4761a2723577",
+    "baseFatDigest": "sha256:a33a51a849c2bb1720caad764ee1a5177eb78e38425bb98f9740242cb4beeec4",
+    "coreDigest": "sha256:d42722f8d3e1ff542fa55033c51f0918ba52dd7a4c51e6b77dede5fd91a0ce03"
+  },
+  "liveness": {
+    "builtIn": true,
+    "note": "As in H: the page API projects the #52 worker liveness (status().liveness, the `liveness` event); the gallery's own probe stands down on capabilities.liveness."
+  },
+  "hardening": {
+    "earlyUnpaired": true,
+    "networkPreboot": true,
+    "pinnedIndexes": true,
+    "note": "QED64's fixes for the showcase's reports: #62 an unpaired snapshot is refused before the runtime starts (9045b86); #63 a network failure before boot is one named death, not a reboot loop (e10454b, 3524618); #64 per-build index copies, read only when the mutable index names another runtime (5952e32, 3bd5521). The UX suite enforces each only through these flags (C9, C11, C1/C14)."
+  },
+  "knownLimitations": [],
+  "notes": "New runtime 36d7f415 (Lean 4.35.0, kernel b081e7c, patch 0042), new packs and stock snapshots: needs the native rebuild against Mathlib 56a00585 (its clone $W/mathlib4.56a00585), restaged trees, new bakes and per-runtime overlays. servedTrees are work-dir copies of the 521cf3f release (base-tree.json digests: core-lib-slim 10175 files, lib-tree-slim 20365, lib-tree 25456; 5092 modules in each base tree). consoleSites line 627 is still the notify line in this bundle."
+}

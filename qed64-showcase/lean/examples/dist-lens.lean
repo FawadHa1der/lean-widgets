@@ -11,7 +11,7 @@ builds `p`.  Cursor on `#chain step`: the transition graph with exact edge
 labels and the exact stationary distribution π, whose per-state equations
 are insertable too; `init [i] steps n` adds a power-iteration filmstrip. -/
 
-open PMF
+open PMF DistLens
 open scoped ENNReal
 
 namespace Showcase.DistLens

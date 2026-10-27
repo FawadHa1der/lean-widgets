@@ -1,41 +1,41 @@
 {
  "package": "dist-lens",
  "mode": "superset",
- "generatedAt": "2026-10-01T04:03:42.410Z",
+ "generatedAt": "2026-10-27T10:33:07.107Z",
  "generator": "lean/goldens/lsp-golden.mjs",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import DistLens"
   ],
   "golden": "w8",
-  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
- "exampleSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
- "documentSha256": "5e161f7dbedff772b887f667671d6bc465098af17b59e714c4c9d5bc70eeffb0",
- "elaborationMs": 7983,
+ "exampleSha256": "f39b68de986902a3b371dd5a28d9a2d503f5cc7ec8a1942472c4371627777e84",
+ "documentSha256": "f39b68de986902a3b371dd5a28d9a2d503f5cc7ec8a1942472c4371627777e84",
+ "elaborationMs": 2479,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "dd258cd73bf37eb42e668fbee76e07a43a01cfa605c81a8e7942a37b6a00a935",
       "importsInfoview": true
      },
-     "rpcMs": 6,
+     "rpcMs": 11,
      "error": null,
      "tagCounts": {
       "div": 12,
@@ -935,7 +935,7 @@
       "sha256": "27904afaa5a6a3884437020f6ec49b7f408b328c971b537444a8df31e62a0489",
       "importsInfoview": true
      },
-     "rpcMs": 2,
+     "rpcMs": 3,
      "error": null,
      "tagCounts": {
       "circle": 4,
@@ -1230,10 +1230,10 @@
      "line": 21
     }
    },
-   "editedSha256": "8329ae9d9deedad40863f6e3519957466183d63a9d0674a639a6c7e03f4cf1f8",
+   "editedSha256": "a8e291a3e1bf31d915150216f8d9affb155d1c8d31f1dde1790cc07bcb73959b",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click1.lean",
    "diagnosticsVersion": 2,
-   "reElaborationMs": 525,
+   "reElaborationMs": 515,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -1269,10 +1269,10 @@
      "line": 25
     }
    },
-   "editedSha256": "71f574dd971a5d847bbe1e30cbec99b7ea7e37ee4394eec33f972bf4b01b13b0",
+   "editedSha256": "7ecb69f40f54fffadc101127b152c57b76e44470658469a916ebe84e0aa44762",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click2.lean",
    "diagnosticsVersion": 4,
-   "reElaborationMs": 897,
+   "reElaborationMs": 867,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -1308,10 +1308,10 @@
      "line": 32
     }
    },
-   "editedSha256": "627730e1615b54b96f8a3536162e8d3c41b7a608239dd5612566242543e2e1a1",
+   "editedSha256": "4118c5b22e5c1336f59b70eec9990bcb99d15bb4c736d48e9e24fc3a86808b08",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/dist-lens-superset/Showcase.click3.lean",
    "diagnosticsVersion": 6,
-   "reElaborationMs": 536,
+   "reElaborationMs": 531,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -1441,5 +1441,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 11555
+ "totalMs": 6005
 }

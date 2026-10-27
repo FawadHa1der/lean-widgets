@@ -1,41 +1,41 @@
 {
  "package": "simp-lens",
  "mode": "superset",
- "generatedAt": "2026-10-01T03:51:20.849Z",
+ "generatedAt": "2026-10-27T10:23:06.066Z",
  "generator": "lean/goldens/lsp-golden.mjs",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import SimpLens"
   ],
   "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
  "exampleSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
  "documentSha256": "37b8da4821ef0ef979d177273a80ef242f269934048c939da637a2b9c31c130c",
- "elaborationMs": 2598,
+ "elaborationMs": 2312,
  "documentDiagnostics": [
   {
    "severity": "information",
@@ -108,7 +108,7 @@
       "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
       "importsInfoview": true
      },
-     "rpcMs": 1,
+     "rpcMs": 0,
      "error": null,
      "tagCounts": {
       "b": 3,
@@ -670,7 +670,7 @@
    "editedSha256": "32d3871f35c50c4865e65b4551bdabc066952a29315ea887c88b299527f19c6a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click1.lean",
    "diagnosticsVersion": 2,
-   "reElaborationMs": 511,
+   "reElaborationMs": 507,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -737,7 +737,7 @@
    "editedSha256": "b77e54020e8b7df35334d4e17afc9862cc0f504b8a9ff3f3aea1188b7f60cdd8",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click2.lean",
    "diagnosticsVersion": 4,
-   "reElaborationMs": 512,
+   "reElaborationMs": 507,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -804,7 +804,7 @@
    "editedSha256": "310716e229624898b045f5d38ef1504f4b7a127e8d0f8e921757bbfbcf40551b",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click3.lean",
    "diagnosticsVersion": 6,
-   "reElaborationMs": 516,
+   "reElaborationMs": 508,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -871,7 +871,7 @@
    "editedSha256": "2ca0ff4530ce20bc2a2de145358dc4b327ea03618ee3ee907e2a4fdd7e087829",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click4.lean",
    "diagnosticsVersion": 8,
-   "reElaborationMs": 516,
+   "reElaborationMs": 505,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -938,7 +938,7 @@
    "editedSha256": "764f50c9a71c6cd6db7e74733da37327b2cf13cfb7d3439951174e2a3f11f4fc",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click5.lean",
    "diagnosticsVersion": 10,
-   "reElaborationMs": 516,
+   "reElaborationMs": 509,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -1005,7 +1005,7 @@
    "editedSha256": "9b8e75dcb56851bf1bf6a48e290349476338f99a896417fd29750c4577375830",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/simp-lens-superset/Showcase.click6.lean",
    "diagnosticsVersion": 12,
-   "reElaborationMs": 517,
+   "reElaborationMs": 510,
    "postClickDiagnostics": [
     {
      "severity": "information",
@@ -1546,5 +1546,5 @@
  ],
  "ok": true,
  "failures": [],
- "totalMs": 8856
+ "totalMs": 8490
 }

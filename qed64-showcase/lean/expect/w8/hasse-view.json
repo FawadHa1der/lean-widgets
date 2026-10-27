@@ -1,41 +1,41 @@
 {
  "package": "hasse-view",
  "mode": "superset",
- "generatedAt": "2026-10-01T04:02:06.856Z",
+ "generatedAt": "2026-10-27T10:31:46.810Z",
  "generator": "lean/goldens/lsp-golden.mjs",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import HasseView"
   ],
   "golden": "w8",
-  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
  "exampleSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
  "documentSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
- "elaborationMs": 2756,
+ "elaborationMs": 2560,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 31,
+     "rpcMs": 30,
      "error": null,
      "tagCounts": {
       "div": 11,
@@ -610,7 +610,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 4,
+     "rpcMs": 3,
      "error": null,
      "tagCounts": {
       "div": 11,
@@ -1123,7 +1123,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 27,
+     "rpcMs": 25,
      "error": null,
      "tagCounts": {
       "div": 14,
@@ -2018,7 +2018,7 @@
    "editedSha256": "67f4dd46b0222a9147d264f3eedcb468e6831cde321d38dbf4255c18c19c0f67",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click1.lean",
    "diagnosticsVersion": 2,
-   "reElaborationMs": 556,
+   "reElaborationMs": 571,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2057,7 +2057,7 @@
    "editedSha256": "89fd4edd78cc02d2f26b06a8a9456a02925e684cae29fb19ecafc1aa7b944ad6",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click2.lean",
    "diagnosticsVersion": 4,
-   "reElaborationMs": 544,
+   "reElaborationMs": 554,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2096,7 +2096,7 @@
    "editedSha256": "9052daeb559b613bbdfc4bbce0a525c216cdb1ac3ac28cc357fcb574780d8a2c",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click3.lean",
    "diagnosticsVersion": 6,
-   "reElaborationMs": 553,
+   "reElaborationMs": 561,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2135,7 +2135,7 @@
    "editedSha256": "d10f11a680e5869c47f74789fbe42b783443519f07b3a3b3d143c2ba7a0732ef",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click4.lean",
    "diagnosticsVersion": 8,
-   "reElaborationMs": 526,
+   "reElaborationMs": 522,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2174,7 +2174,7 @@
    "editedSha256": "3a95db69b39cbf4fcf65e0cdfcc5f99382b4f11fd02bc357d121565fe4e8b893",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click5.lean",
    "diagnosticsVersion": 10,
-   "reElaborationMs": 529,
+   "reElaborationMs": 523,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2312,5 +2312,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 8301
+ "totalMs": 8112
 }

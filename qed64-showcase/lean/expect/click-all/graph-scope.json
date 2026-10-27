@@ -1,41 +1,41 @@
 {
  "package": "graph-scope",
  "mode": "superset",
- "generatedAt": "2026-10-01T03:56:02.815Z",
+ "generatedAt": "2026-10-27T10:26:34.114Z",
  "generator": "lean/goldens/lsp-golden.mjs --click-all",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import GraphScope"
   ],
   "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4354) + bake roots",
+  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
- "exampleSha256": "fc68ee30a02b4ade3abc20902503e711d8880fca2a1ba6cd80c0b5060e6ec6c5",
+ "exampleSha256": "20a3c1258f03d7e6677083856098fc64407b1942dfdcd3f3425ac91ff77e21d0",
  "documentDiagnostics": [],
- "probes": 255,
+ "probes": 259,
  "panelsRendered": 5,
  "links": [
   {
@@ -77,10 +77,10 @@
    "classification": "clean",
    "diagnosticsVersion": 2,
    "editedVersion": 2,
-   "reElaborationMs": 509,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d812ffb09c21ed201219df1b6e40bf58eb758d77f03e08a5f2b71028da8044e5",
+   "editedSha256": "e7b9876cc7a0950329c358b9ff982308b9c24bde5140a0810572f142d901fb46",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link1.lean"
   },
   {
@@ -122,10 +122,10 @@
    "classification": "clean",
    "diagnosticsVersion": 3,
    "editedVersion": 3,
-   "reElaborationMs": 508,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "ce6869b4564682ff2049bdefff88b2b861d9a1f22c28995762daa4ce72fc5025",
+   "editedSha256": "8d04e65c0aae3b38f8d4730bb0ec742e1a9dff475e4e45cd1e5c1cdec7f1f504",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link2.lean"
   },
   {
@@ -167,10 +167,10 @@
    "classification": "clean",
    "diagnosticsVersion": 4,
    "editedVersion": 4,
-   "reElaborationMs": 511,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "809937196a5f8bbe951fd288c816d04af020cd1dfe56982c9a02a61344813e68",
+   "editedSha256": "28773e1fb46ed572664e47c0fd61c04bcdd132c5499c186bba3f499466364e9a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link3.lean"
   },
   {
@@ -212,10 +212,10 @@
    "classification": "clean",
    "diagnosticsVersion": 5,
    "editedVersion": 5,
-   "reElaborationMs": 515,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "ef010c9e288d7725e5823a1c78c72f4fd1ecc507e58c2ddac24cbfd7d7fe0b80",
+   "editedSha256": "5bbc5ee0091e6892646bb9e05e805709600c2d464524a58e136787a883f73511",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link4.lean"
   },
   {
@@ -257,10 +257,10 @@
    "classification": "clean",
    "diagnosticsVersion": 6,
    "editedVersion": 6,
-   "reElaborationMs": 506,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "0d24eb5ed28cc8542e29b33195dc240902f81d0e24b70d624a0c440747be8fbf",
+   "editedSha256": "24e6892bd8d9ee19e299849f66e1d47a2d6ed101384ce6da90657996635d8058",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link5.lean"
   },
   {
@@ -302,10 +302,10 @@
    "classification": "clean",
    "diagnosticsVersion": 7,
    "editedVersion": 7,
-   "reElaborationMs": 513,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "34924ce5c0fa9e2bf75142f2f604d7c2559b719cf36e9756946789c1b9f4ef2f",
+   "editedSha256": "6de934f566815602644f36b3d11e67987dadc40f895f03306628343ac2630d89",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link6.lean"
   },
   {
@@ -347,10 +347,10 @@
    "classification": "clean",
    "diagnosticsVersion": 8,
    "editedVersion": 8,
-   "reElaborationMs": 516,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "e1802adf85295d7bffbbc37543ad3d1d7fa89e85ea15f35f111291730a98285d",
+   "editedSha256": "fc841fe8caad6b29efcbd6e0b5a98d27bc8dc2001852cbb4c23e97a2bad4aa72",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link7.lean"
   },
   {
@@ -392,10 +392,10 @@
    "classification": "clean",
    "diagnosticsVersion": 9,
    "editedVersion": 9,
-   "reElaborationMs": 512,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "79d64855ab38ece7fa3d7e09f32b40066f48a5b62496aae052d0bef97b183e82",
+   "editedSha256": "5364e4dd2336a9cc8f384cf16ae47997a765832ccae71d66d6b5e2895d757f26",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link8.lean"
   },
   {
@@ -437,10 +437,10 @@
    "classification": "clean",
    "diagnosticsVersion": 10,
    "editedVersion": 10,
-   "reElaborationMs": 514,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "b14abe7dcb1f8018c146c0f559951de50b2519dc2b04b4a7a92225aa536f1c76",
+   "editedSha256": "11a0aab3561633fcc69add055f9e428c189e1f53bee3e8596e2339d787332827",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link9.lean"
   },
   {
@@ -482,10 +482,10 @@
    "classification": "clean",
    "diagnosticsVersion": 11,
    "editedVersion": 11,
-   "reElaborationMs": 506,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "2d97e438a80ccf581b93a7db5559f1b58253f014e9f77cbe81c4635687117797",
+   "editedSha256": "68dc5e4f5a3edb6356aebe9efba8b210d2551c66bec0976a73fb2cb1d3b76dc5",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link10.lean"
   },
   {
@@ -527,10 +527,10 @@
    "classification": "clean",
    "diagnosticsVersion": 12,
    "editedVersion": 12,
-   "reElaborationMs": 506,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8f08978f4c1565d7183191ddac9974e2b75bf417e407dd1bdfddf1ab187f0acf",
+   "editedSha256": "8b5f6e2ef8a8064fcc42e1baf8d4bf976f68b9e9c33e14b96c04816720c90845",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link11.lean"
   },
   {
@@ -575,7 +575,7 @@
    "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "189104810bfc8be12cfaea9700382f5ab523d69f4181b987e316ebf20304b39e",
+   "editedSha256": "f24276b67f795a7345495ebe81600e316c27ee6db00483d75f2e3f9d415694eb",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link12.lean"
   },
   {
@@ -617,10 +617,10 @@
    "classification": "clean",
    "diagnosticsVersion": 14,
    "editedVersion": 14,
-   "reElaborationMs": 514,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8dcb3e339b66be0a2005328da8ab03d5786f435005e39ac218d69c40401aa693",
+   "editedSha256": "a8a0be233190f47d4f9434d7bf450c18936831b8cfc9c02f9e0385a75ffed72c",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link13.lean"
   },
   {
@@ -662,10 +662,10 @@
    "classification": "clean",
    "diagnosticsVersion": 15,
    "editedVersion": 15,
-   "reElaborationMs": 514,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "40f9026cc28fb397c4858d0eb1ee5b045e1ceb5bc6f33e0ddd373c5e575e9b43",
+   "editedSha256": "a006f182e2299efeea92ea127931ac6482c22928c284cf277eb18df04b5245c2",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link14.lean"
   },
   {
@@ -707,10 +707,10 @@
    "classification": "clean",
    "diagnosticsVersion": 16,
    "editedVersion": 16,
-   "reElaborationMs": 515,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "99b860eac33c52f0a5bc8502dffb2cfab98ce0f2a78ffc8c5f07c032f5ab3142",
+   "editedSha256": "9ed9ba8c5cd4f575a89a059063587cb6e253b9f3683bc3b23ad573a35ac944e4",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link15.lean"
   },
   {
@@ -752,10 +752,10 @@
    "classification": "clean",
    "diagnosticsVersion": 17,
    "editedVersion": 17,
-   "reElaborationMs": 514,
+   "reElaborationMs": 505,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "84f5f595a8b93ae43d651cef52dd2c7df2cbb2d6277ec5cfbb62c7ce3bc2b4d9",
+   "editedSha256": "e6e4ef0e73961f4ce20321e34a5535ad8f5899288590c04e3e1f5a8ef1b43b36",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link16.lean"
   },
   {
@@ -797,10 +797,10 @@
    "classification": "clean",
    "diagnosticsVersion": 18,
    "editedVersion": 18,
-   "reElaborationMs": 507,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "5b08439af51088730bd3127755b8689fcdc64a34a5bf4449472947026f4f8453",
+   "editedSha256": "f5ecadb4f2fba6053ffea4afe8760073feb45131e2d02187fd39bef4e6fae7bb",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link17.lean"
   },
   {
@@ -842,10 +842,10 @@
    "classification": "clean",
    "diagnosticsVersion": 19,
    "editedVersion": 19,
-   "reElaborationMs": 514,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "a64441f1955786111c4ce3b28499604a7dc410c19acf8c953ef4308694d5f02c",
+   "editedSha256": "b2f226eb6682c6347c5d9f4b7c000f2a5b0bb7c032ecd4280e9a0ba402a5d645",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link18.lean"
   },
   {
@@ -887,10 +887,10 @@
    "classification": "clean",
    "diagnosticsVersion": 20,
    "editedVersion": 20,
-   "reElaborationMs": 516,
+   "reElaborationMs": 503,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d7c5ebf2ba1df369e655a861e7e5b89b80bd003daa454448f44a98cb897bd99b",
+   "editedSha256": "e8b6259f8eb523945dca2175fabb6b7e38e864cf7a37a3d51a7fa1a48e621c4b",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link19.lean"
   },
   {
@@ -932,10 +932,10 @@
    "classification": "clean",
    "diagnosticsVersion": 21,
    "editedVersion": 21,
-   "reElaborationMs": 515,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "c12d92aa3315691cac12bc1333612ddf060a6220e801bf1095b1cd0949183398",
+   "editedSha256": "4b7ae1652b4bd6a6d8c429a2479a5632dfe10da027f7fb4b436512611e9352e7",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link20.lean"
   },
   {
@@ -977,10 +977,10 @@
    "classification": "clean",
    "diagnosticsVersion": 22,
    "editedVersion": 22,
-   "reElaborationMs": 515,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "2e78f0f471286525239a24aceebcb48b69c8df3a73b8c4a854e77a40ca99be02",
+   "editedSha256": "87b70e1da0d911ef3b73a6a4a964c8b86ea2f1aa8a6793963ec205191ce2b708",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link21.lean"
   },
   {
@@ -1022,10 +1022,10 @@
    "classification": "clean",
    "diagnosticsVersion": 23,
    "editedVersion": 23,
-   "reElaborationMs": 515,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "2bba8c5a7af9ce4a049c13221720230225b9e2d69b2998c604bc9235e967043d",
+   "editedSha256": "68de8e46fd4c10decce0f9bb827854eff252f24f233f56243347473d152d47ce",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link22.lean"
   },
   {
@@ -1067,10 +1067,10 @@
    "classification": "clean",
    "diagnosticsVersion": 24,
    "editedVersion": 24,
-   "reElaborationMs": 507,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8a4085cf9e9c02f1bb66060a6f6bcf5f5eae7f065fd386c2d7fcba752a2fc047",
+   "editedSha256": "d04498db548324799c25c85a2874294b61dd9b3adae6871f50ed3c66a84ca247",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link23.lean"
   },
   {
@@ -1112,10 +1112,10 @@
    "classification": "clean",
    "diagnosticsVersion": 25,
    "editedVersion": 25,
-   "reElaborationMs": 512,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "fa8427d87c400f17453c9861b5464732fef28922691fe88eb6ad6c3adafedfbe",
+   "editedSha256": "401081d2ceae6d3ee820ee4cd5924c247fca7d6c7983b1ecb3011f24bba7597a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link24.lean"
   },
   {
@@ -1157,10 +1157,10 @@
    "classification": "clean",
    "diagnosticsVersion": 26,
    "editedVersion": 26,
-   "reElaborationMs": 515,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "f30f7754c4e121465955dc3bf7314517809194eceaffc35fb5da50a615256ad2",
+   "editedSha256": "a86727464d13cb565742a7470563a74980983278fb9b037e2ec4053b3547c907",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link25.lean"
   },
   {
@@ -1202,10 +1202,10 @@
    "classification": "clean",
    "diagnosticsVersion": 27,
    "editedVersion": 27,
-   "reElaborationMs": 507,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "dec21409bf49a0c528b1c6fbaa7b480996b123c8f2dff0dcc38bb7e0686869cf",
+   "editedSha256": "0f9f0cfd9e51a93f1a94332cbb03954ab08e812961f48bd982051ff53af8a471",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link26.lean"
   },
   {
@@ -1247,10 +1247,10 @@
    "classification": "clean",
    "diagnosticsVersion": 28,
    "editedVersion": 28,
-   "reElaborationMs": 515,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "27f024bc01a6aa11db2ccd013363f548513bc5df478c4f509ac6ad460d48e832",
+   "editedSha256": "f85a6b3a45425b4c09de1e1baa7104943bcd5fc692eaadfde537a33b82590dc4",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link27.lean"
   },
   {
@@ -1292,10 +1292,10 @@
    "classification": "clean",
    "diagnosticsVersion": 29,
    "editedVersion": 29,
-   "reElaborationMs": 515,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "465b9301c8474496ef346b60a33f25a18c82c2e74470c9391e7e95b4a12b271e",
+   "editedSha256": "1feed322a0326adb13d11fd213c347267f0d22ec41dc8a3ccd14096cb39df2e2",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link28.lean"
   },
   {
@@ -1337,10 +1337,10 @@
    "classification": "clean",
    "diagnosticsVersion": 30,
    "editedVersion": 30,
-   "reElaborationMs": 507,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8ff5c56c0e31d9097518d3b2360f82c2e159bc210fa095d9148bf89091917c44",
+   "editedSha256": "3a927a921d975ac32fe3c083c23fe79bc129860aed558176c50ddae222adc8a2",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link29.lean"
   },
   {
@@ -1382,10 +1382,10 @@
    "classification": "clean",
    "diagnosticsVersion": 31,
    "editedVersion": 31,
-   "reElaborationMs": 514,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d2e4dae15400db2b71c0cdfc938125fd89b6f99313ac7c903a3d374be77ff33a",
+   "editedSha256": "7638185106f9104c8a422e9ec17b8ce6dfaab02bdd1dd1a83c3e4ada78a09c89",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link30.lean"
   },
   {
@@ -1427,10 +1427,10 @@
    "classification": "clean",
    "diagnosticsVersion": 32,
    "editedVersion": 32,
-   "reElaborationMs": 514,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "e5eeb13a36ced59ae608d4237fe2c8cbf1d5589d63af30dafb1ddda8f3430750",
+   "editedSha256": "49423f17b757b59fc67ebaaf291fd32c322061e7bbe3f2f131cd991df661dab1",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link31.lean"
   },
   {
@@ -1475,7 +1475,7 @@
    "reElaborationMs": 506,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "3ec55f0d838fd78e36e3041bee10f93cf771277a917c15d20d834439035f1ce5",
+   "editedSha256": "895fbf91511d891eb9ea1ca671e25e47609e3cc66889a5f42905ff95d6174744",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link32.lean"
   },
   {
@@ -1517,10 +1517,10 @@
    "classification": "clean",
    "diagnosticsVersion": 34,
    "editedVersion": 34,
-   "reElaborationMs": 513,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "fd072210e7c4073236ce1903c83ff26ee3cccddb53c9fac512d8c770ba6234c8",
+   "editedSha256": "42de91d0779b09aa33cbb951ebf4d989c9a78cdd88bdd928a9f084ea4ef166c0",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link33.lean"
   },
   {
@@ -1562,10 +1562,10 @@
    "classification": "clean",
    "diagnosticsVersion": 35,
    "editedVersion": 35,
-   "reElaborationMs": 515,
+   "reElaborationMs": 504,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d9e3011b82a589265f17f4ef3083bf8c1b9502cb1fc14f031980cac98fcef194",
+   "editedSha256": "f79989a89b9ea88811a1aaa949cf4b492c8214422d854da3f1642b24f9a71b7a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link34.lean"
   },
   {
@@ -1607,10 +1607,10 @@
    "classification": "clean",
    "diagnosticsVersion": 36,
    "editedVersion": 36,
-   "reElaborationMs": 572,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "4ecaafbd5123eda4ec1c558051fa59a997750e292bc07617ec816e0050a05685",
+   "editedSha256": "82b5ae8e5543db8a28330992f100b661443456bedd78af0ef5479a5a0a3ff48e",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link35.lean"
   },
   {
@@ -1652,10 +1652,10 @@
    "classification": "clean",
    "diagnosticsVersion": 37,
    "editedVersion": 37,
-   "reElaborationMs": 507,
+   "reElaborationMs": 512,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "b616fdd59c317cd63fc42c07532d10f6f3733110bc8c9b29535aa7a239d24c1f",
+   "editedSha256": "087a31aa061d2af32a2fe6e478e76a75d1caaae0f531056c345fc0ddacb7215c",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link36.lean"
   },
   {
@@ -1697,10 +1697,10 @@
    "classification": "clean",
    "diagnosticsVersion": 38,
    "editedVersion": 38,
-   "reElaborationMs": 510,
+   "reElaborationMs": 513,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "85263296345a3db893bdc08956614bbfe8a8e0e837c5887b01ef50ef5da404b8",
+   "editedSha256": "6634ef965494172758b8395d9e76d76dc59e587b985939618d99a7af90ea84ba",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link37.lean"
   },
   {
@@ -1742,10 +1742,10 @@
    "classification": "clean",
    "diagnosticsVersion": 39,
    "editedVersion": 39,
-   "reElaborationMs": 513,
+   "reElaborationMs": 512,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "6db37b3b731da6e36286837562e6becb2d605fe10bde87bdfb130611f209c4f7",
+   "editedSha256": "13f02ca5a788d1fb07119450ac944dfe150e5fd81058fe9ed82e9d4a0ea1c172",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link38.lean"
   },
   {
@@ -1787,10 +1787,10 @@
    "classification": "clean",
    "diagnosticsVersion": 40,
    "editedVersion": 40,
-   "reElaborationMs": 506,
+   "reElaborationMs": 511,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "8bd2c06506ef3391db7d4e5b24433a2e911888980e65eb56b275540d6379f9a8",
+   "editedSha256": "72b3e59c9e915a17e1487cbd4b806bbba7dda80fc165bddb6c7e9b4e920f2133",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link39.lean"
   },
   {
@@ -1832,10 +1832,10 @@
    "classification": "clean",
    "diagnosticsVersion": 41,
    "editedVersion": 41,
-   "reElaborationMs": 509,
+   "reElaborationMs": 510,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "0331ea8caf28b7818aadad18028a73c607d91fa85e8d48f5dd036137232fdb0f",
+   "editedSha256": "390509c419ce2edef778f3097f862f6504f737980bf54bf0ba63d70f0812771e",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link40.lean"
   },
   {
@@ -1877,10 +1877,10 @@
    "classification": "clean",
    "diagnosticsVersion": 42,
    "editedVersion": 42,
-   "reElaborationMs": 515,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "ee1338a0badc3b4a2b1f9ae7c606aa54e221de8b6681c9020f781c1cadbc0804",
+   "editedSha256": "42b8dd6ace8e5002caa0e3a71b294d51ad917f6af2807a077b2ab6cce1d5757d",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link41.lean"
   },
   {
@@ -1922,10 +1922,10 @@
    "classification": "clean",
    "diagnosticsVersion": 43,
    "editedVersion": 43,
-   "reElaborationMs": 513,
+   "reElaborationMs": 511,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "bfbc306c107e5e80ea41cf29ced132136fc0eca4a346ac7f2e05e604ed13344e",
+   "editedSha256": "0380a20b09487e7a34bc2a3cff073b3814c58083644e70cec8882b9366bc6691",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link42.lean"
   },
   {
@@ -1967,10 +1967,10 @@
    "classification": "clean",
    "diagnosticsVersion": 44,
    "editedVersion": 44,
-   "reElaborationMs": 505,
+   "reElaborationMs": 511,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "b15ed4f1b45336f6c6ee0760b8dc810a8ba14401af98433cef920d09791b6e7f",
+   "editedSha256": "df95507eb175acc636e259b1a2e3a654a77e3379d139374e81c9282559c2f966",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link43.lean"
   },
   {
@@ -2012,10 +2012,10 @@
    "classification": "clean",
    "diagnosticsVersion": 45,
    "editedVersion": 45,
-   "reElaborationMs": 514,
+   "reElaborationMs": 511,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "6d5d9cee000981054eef38284846c40291d518ce02c860b2684074bb9aa97ff4",
+   "editedSha256": "2ea08eaa12f90cc2db554401093de082f1cebda6b8251976b5c53337172b6c42",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link44.lean"
   },
   {
@@ -2057,10 +2057,10 @@
    "classification": "clean",
    "diagnosticsVersion": 46,
    "editedVersion": 46,
-   "reElaborationMs": 515,
+   "reElaborationMs": 506,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "6210c22a7e61239be9b1a58fd612676e1f46863268e52d5d54ad0569f3e9a233",
+   "editedSha256": "a8c375775eff9fff68aa4d583c8eda2c4af7c20da67e14f6fc8cf1b457927043",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link45.lean"
   },
   {
@@ -2102,10 +2102,10 @@
    "classification": "clean",
    "diagnosticsVersion": 47,
    "editedVersion": 47,
-   "reElaborationMs": 509,
+   "reElaborationMs": 514,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "f90ef72b9d59886e0bd8a1afd7335ff3879b9147e1fe642272f4149b79e71f74",
+   "editedSha256": "1a24c4e2b1dcad133fab583a59b7696f90420918a74b3daff733a17250226905",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link46.lean"
   },
   {
@@ -2147,10 +2147,10 @@
    "classification": "clean",
    "diagnosticsVersion": 48,
    "editedVersion": 48,
-   "reElaborationMs": 515,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "bee703869b6dda8b2c3febe706fed334c7d9ecaacbefd3b9c3a2e038c57de200",
+   "editedSha256": "a21d178b0aefa9051e03f7c716859d358bb0093bb8e0400ec45292699ba63917",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link47.lean"
   },
   {
@@ -2192,10 +2192,10 @@
    "classification": "clean",
    "diagnosticsVersion": 49,
    "editedVersion": 49,
-   "reElaborationMs": 515,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "515d73afae79cefaa34b22fa58332e94adf574ce0b0a76aeb4ad33f7276e8a06",
+   "editedSha256": "987a674455be6aecb61ec88a8ee3bf441e4a9f6faf9170b0c48bbdd035519b94",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link48.lean"
   },
   {
@@ -2237,10 +2237,10 @@
    "classification": "clean",
    "diagnosticsVersion": 50,
    "editedVersion": 50,
-   "reElaborationMs": 508,
+   "reElaborationMs": 513,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "dea61403954a92aeb71f60dd4bbd698f4e45771be3b3ddb22b896462e9a5bb83",
+   "editedSha256": "d37b066bb7f74435edd00b3455f4ccaef03fee15878b173d03680a94f9cfef3c",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link49.lean"
   },
   {
@@ -2282,10 +2282,10 @@
    "classification": "clean",
    "diagnosticsVersion": 51,
    "editedVersion": 51,
-   "reElaborationMs": 520,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "252e42ed4d4b5cd91773b35810f4929bde845b4c50bc34af2ff2ac2c14aed8d8",
+   "editedSha256": "3b01e56985381fe545f44811ab5fb310000214658b3875dd84da5cc6263ebe27",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link50.lean"
   },
   {
@@ -2330,7 +2330,7 @@
    "reElaborationMs": 514,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "29ff9d96c84d4903c9ddff87b858d487fc5721eb382b2fc77ffe0caae92e3327",
+   "editedSha256": "09a4cfbf586462fe0fa401a7410e106f3992d93a78d4609c5ba294758fa397f2",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link51.lean"
   },
   {
@@ -2372,10 +2372,10 @@
    "classification": "clean",
    "diagnosticsVersion": 53,
    "editedVersion": 53,
-   "reElaborationMs": 504,
+   "reElaborationMs": 509,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "a212288f378fd7c37d2ae98abe72e2fe80efbfce114266de0f14561c6e341e98",
+   "editedSha256": "1e471cc8588052fa1d5596de059ec6daf72edd9a3baebdda1eff73bd09dff50b",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link52.lean"
   },
   {
@@ -2417,10 +2417,10 @@
    "classification": "clean",
    "diagnosticsVersion": 54,
    "editedVersion": 54,
-   "reElaborationMs": 511,
+   "reElaborationMs": 510,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d9fa00d93dc49d0e45d70491a8fc76e4d2afd8a845a494193222a65e62147493",
+   "editedSha256": "5c1f79a1c6b645f8fc85213e3af7919676077d23b3a99bd0e6ae07742867db44",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link53.lean"
   },
   {
@@ -2462,10 +2462,10 @@
    "classification": "clean",
    "diagnosticsVersion": 55,
    "editedVersion": 55,
-   "reElaborationMs": 515,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "a9244cf4407ac510bf8a4fb0db9157242afaa6c58a8bd25b8df91705f70b5950",
+   "editedSha256": "57f1ac9d6187919e9849da1b51c28ba5c69f108d0964497bef6fc1ad708bd751",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link54.lean"
   },
   {
@@ -2507,10 +2507,10 @@
    "classification": "clean",
    "diagnosticsVersion": 56,
    "editedVersion": 56,
-   "reElaborationMs": 507,
+   "reElaborationMs": 506,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "92cc3755b47045beb1e0630aafea9d3f4efd6e42c13273ef87781da7059a1453",
+   "editedSha256": "2770a75037f980cf94a9ac1cf84ca3e9827b64d5875010f27c996c66cabd547e",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link55.lean"
   },
   {
@@ -2552,10 +2552,10 @@
    "classification": "clean",
    "diagnosticsVersion": 57,
    "editedVersion": 57,
-   "reElaborationMs": 514,
+   "reElaborationMs": 508,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "18eb89737a0bc9ff11898472c80d804ecdaaedcb9b9839bee3c66963b7ae8d82",
+   "editedSha256": "e68206a5a633302b14266cd83189f447b23a8893a8275c93dd9328417430ba5a",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link56.lean"
   },
   {
@@ -2597,10 +2597,10 @@
    "classification": "clean",
    "diagnosticsVersion": 58,
    "editedVersion": 58,
-   "reElaborationMs": 515,
+   "reElaborationMs": 507,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "d262b4cd391d2fcef9d451c15606247e445825d42548ccd6fefde6c777e3c22f",
+   "editedSha256": "43c1a43a92ed0ac881d4d4f5a0ae5dff5ef2f6124a4ebb7cfd012facc4a1cabb",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link57.lean"
   },
   {
@@ -2642,10 +2642,10 @@
    "classification": "clean",
    "diagnosticsVersion": 59,
    "editedVersion": 59,
-   "reElaborationMs": 617,
+   "reElaborationMs": 552,
    "errorsWarnings": [],
    "infoCount": 0,
-   "editedSha256": "156fa6529f6d3eb03bf929c6f906f74686a95a0ebab0f39ab60b3421604c6228",
+   "editedSha256": "a54afd6c644a7241e0e858b6b9c9b7fc2e04472e92088cdcdc0319cc9bd763e5",
    "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-clickall/Showcase.link58.lean"
   }
  ],
@@ -2658,5 +2658,5 @@
  },
  "declaredClicksCovered": "4/4",
  "ok": true,
- "totalMs": 33176
+ "totalMs": 32001
 }

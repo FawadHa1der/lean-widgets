@@ -1,7 +1,7 @@
 {
   "package": "graph-scope",
   "title": "GraphScope",
-  "blurb": "Concrete SimpleGraphs drawn with stats and evidence; click an edge, a vertex or the components line to insert a verified `by decide` example.",
+  "blurb": "Concrete SimpleGraphs drawn with stats and evidence; click an edge, a vertex or the components line to insert its `by decide` example.",
   "header": [
     "import Mathlib",
     "import GraphScope"

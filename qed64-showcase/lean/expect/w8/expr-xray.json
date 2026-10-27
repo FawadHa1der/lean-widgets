@@ -1,41 +1,41 @@
 {
  "package": "expr-xray",
  "mode": "superset",
- "generatedAt": "2026-10-01T03:51:02.609Z",
+ "generatedAt": "2026-10-27T10:22:47.448Z",
  "generator": "lean/goldens/lsp-golden.mjs",
- "toolchain": "Lean (version 4.34.0, arm64-apple-darwin24.6.0, commit 293d5d0c0c3f3dded4688b3ccd6a33939ac5102b, Release)",
+ "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
   "header": [
    "import Mathlib",
    "import ExprXRay"
   ],
   "golden": "w8",
-  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4354) + bake roots incl. DistLens",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/chart-kit/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/expr-xray/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/graph-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/hasse-view/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/simp-lens/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/tree-scope/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/dist-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/hasse-view/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/simp-lens/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/tree-scope/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/dist-lens/.lake/build/lib/lean",
    "/Users/fawadhaider/code/qed64-showcase-work/golden-env/pw-merged",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
-   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
-   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.34.0/lib/lean"
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Cli/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/batteries/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/Qq/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/aesop/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/importGraph/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/LeanSearchClient/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/plausible/.lake/build/lib/lean",
+   "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/interval-inspector/.lake/packages/mathlib/.lake/build/lib/lean",
+   "/Users/fawadhaider/.elan/toolchains/leanprover--lean4---v4.35.0/lib/lean"
   ]
  },
  "exampleSha256": "4f95808c4a557f109f5fcfd5602560a837be0d67f2dcecce23cb25f8d2954763",
  "documentSha256": "4f95808c4a557f109f5fcfd5602560a837be0d67f2dcecce23cb25f8d2954763",
- "elaborationMs": 2667,
+ "elaborationMs": 2456,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
       "importsInfoview": true
      },
-     "rpcMs": 0,
+     "rpcMs": 1,
      "error": null,
      "tagCounts": {
       "code": 103,
@@ -1661,7 +1661,7 @@
    ],
    "selectedLocations": [
     {
-     "mvarId": "_uniq.633.3",
+     "mvarId": "_uniq.626.3",
      "loc": {
       "target": "/0/1"
      }
@@ -1988,13 +1988,13 @@
    ],
    "selectedLocations": [
     {
-     "mvarId": "_uniq.633.3",
+     "mvarId": "_uniq.626.3",
      "loc": {
       "target": "/0/1"
      }
     },
     {
-     "mvarId": "_uniq.633.3",
+     "mvarId": "_uniq.626.3",
      "loc": {
       "target": "/1"
      }
@@ -2023,7 +2023,7 @@
       "sha256": "531e7bb65217a938a6ba86afcf7c0574bd3bab3a3d049585472d52afa49a236a",
       "importsInfoview": true
      },
-     "rpcMs": 8,
+     "rpcMs": 9,
      "error": null,
      "tagCounts": {
       "code": 55,
@@ -2298,7 +2298,7 @@
   },
   {
    "ok": true,
-   "what": "selection @39 [{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":0}]: text \"ite\""
+   "what": "selection @39 [{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":0}]: text \"clean (explicit only) app if n = n then 1 else 0 : ℕ\""
   },
   {
    "ok": true,
@@ -2306,7 +2306,11 @@
   },
   {
    "ok": true,
-   "what": "selection @39 [{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":0},{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":1}]: text \"Decidable\""
+   "what": "selection @39 [{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":0},{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":1}]: text \"mismatches (1, ranked)\""
+  },
+  {
+   "ok": true,
+   "what": "selection @39 [{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":0},{\"goal\":0,\"target\":\"if n = n then 1 else 0\",\"occurrence\":1}]: text \"instance argument #3 of ite differs\""
   },
   {
    "ok": true,
@@ -2317,5 +2321,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 2771
+ "totalMs": 2554
 }
