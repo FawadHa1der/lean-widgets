@@ -15,8 +15,10 @@ sh -c 'exit 0' & dead=$!; wait $dead   # a pid that is certainly gone
 # SKIP_COOLDOWN_FOR_TEST=1 (honoured only for a non-default lock): the race is about the lock, not the host; without it a
 # racer that wins while another session's chrome-headless-shell runs would sit in the cooldown and the others time out
 # (restructure audit a1, 2026-10-04)
+unset BROWSER_LOCK_FILE   # it would override BROWSER_LOCK_DIR: never race on an inherited (real) lock file
 export BROWSER_LOCK_DIR="$T/out" NO_CAFFEINATE=1 SKIP_COOLDOWN_FOR_TEST=1
 LOCKF="$(bash "$T/scripts/with-browser-lock.sh" --print-lock)"
+[ "$LOCKF" = "$T/out/browser.lock" ] || { echo "LOCKRACE FAIL: --print-lock gave $LOCKF, not the scratch lock"; rm -rf "$T"; exit 1; }
 echo "stale-lane $dead 2000-01-01T00:00:00Z" > "$LOCKF"
 now() { perl -MTime::HiRes=time -e 'printf "%.4f\n", time'; }
 export -f now 2>/dev/null || true
