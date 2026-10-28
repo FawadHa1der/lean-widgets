@@ -40,7 +40,9 @@
 //   node scripts/deploy-manifest.mjs --smoke <origin> [--out out/deploy] [--all] [--range]
 //       HEAD the manifest's URLs on a live origin (the deployed Worker, or scripts/serve.mjs locally) and
 //       check status 200, content-length == size, COOP/COEP/CORP, the QED64 cache rule, and no
-//       Content-Encoding on artifacts. Default: every index/manifest, every .snapz, every asset, and
+//       Content-Encoding on artifacts; also GET every index/manifest (the mutable keys) and compare its sha256 with
+//       the manifest's, as --published does (an older one of the same length passes a HEAD); immutable keys are
+//       HEAD only. Default: every index/manifest, every .snapz, every asset, and
 //       one runtime chunk and profile part per file; --all checks every key. --range (the Worker, not
 //       scripts/serve.mjs) also checks single-range GETs on the largest .snapz: bytes=0-99 -> 206 with
 //       Content-Range and Content-Length 100, a range past the end -> 416, a mismatched If-Range -> 200.
@@ -419,6 +421,20 @@ function r3Index(m, BID, ix, j) {
   return ok(!errs.length, `R3 ${ix.url}: runtime == ${BID}, ${snaps.length} entries [${names}] present with sha256 == digest, size == transfer`, errs.join('; '));
 }
 
+// GET one mutable R2 object o (a manifest or index: replaced in place under the same URL by each release, so a HEAD's
+// content-length cannot tell an older one of the same length from this release's) on origin, with accept-encoding:
+// identity, and compare its bytes with the manifest's entry. { body } when they match, else { why }. --published and
+// --smoke share it.
+async function getMutable(origin, o) {
+  const r = await fetch(origin + o.url, { headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}` }));
+  if (r.status !== 200) return { why: `status ${r.status}` };
+  let body;
+  try { body = Buffer.from(await r.arrayBuffer()); } catch (e) { return { why: `body ERR ${e.message}` }; }
+  const h = createHash('sha256').update(body).digest('hex');
+  if (body.length !== o.size || h !== o.sha256) return { why: `published ${body.length} B sha256 ${h.slice(0, 16)}… != manifest ${o.size} B ${o.sha256.slice(0, 16)}… (not this release's upload)` };
+  return { body };
+}
+
 // The committed G2 record (infra/ux-verdict.json) when it names exactly these inputs, else null.
 function committedVerdict({ gallery, lockSha256, overlays }) {
   if (!fs.existsSync(VERDICT_FILE)) return null;
@@ -588,22 +604,19 @@ if (MODE === 'published') {
   const m = loadManifest(); const BID = m.pin.buildId;
   let bad = 0, n = 0; const t0 = Date.now();
   const fail = (u, why) => { bad++; if (bad <= 20) console.log(`FAIL ${u} — ${why}`); };
-  const req = (u, method) => fetch(origin + u, { method, headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}`, headers: new Headers(), arrayBuffer: async () => new ArrayBuffer(0) }));
+  const head = (u) => fetch(origin + u, { method: 'HEAD', headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}`, headers: new Headers() }));
   const fetched = new Map();
   for (const o of m.r2) {
     n++;
     if (o.immutable) {
-      const r = await req(o.url, 'HEAD');
+      const r = await head(o.url);
       if (r.status !== 200) fail(o.url, `status ${r.status}`);
       else if (Number(r.headers.get('content-length')) !== o.size) fail(o.url, `content-length ${r.headers.get('content-length')} != ${o.size}`);
       continue;
     }
-    const r = await req(o.url, 'GET');
-    if (r.status !== 200) { fail(o.url, `status ${r.status}`); continue; }
-    const body = Buffer.from(await r.arrayBuffer());
-    const h = createHash('sha256').update(body).digest('hex');
-    if (body.length !== o.size || h !== o.sha256) { fail(o.url, `published ${body.length} B sha256 ${h.slice(0, 16)}… != manifest ${o.size} B ${o.sha256.slice(0, 16)}… (not this release's upload)`); continue; }
-    fetched.set(o.url, body);
+    const g = await getMutable(origin, o);
+    if (g.why) { fail(o.url, g.why); continue; }
+    fetched.set(o.url, g.body);
   }
   ok(!bad, `PUBLISHED-OBJECTS ${origin}: ${n - bad}/${n} R2 objects of this manifest are published (immutable: HEAD status 200 + content-length; manifests and indexes: GET sha256 == manifest) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   // R3 on the overlay indexes, which a --from-lock manifest could not read locally (they are not tracked in git)
@@ -628,8 +641,9 @@ if (MODE === 'smoke') {
   // ROOT_REDIRECTed to the gallery, so the root page is checked at "/?smoke=1" (a query, like the gallery's
   // "/?snapshots=…" iframe). Redirects are not followed: a 3xx is reported, never measured on its target.
   const assetUrl = (p) => (p === 'index.html' ? '/?smoke=1' : p.endsWith('/index.html') ? `/${p.slice(0, -'index.html'.length)}` : `/${p}`);
-  const targets = [...m.assets.map((a) => ({ url: assetUrl(a.path), size: a.size, artifact: false })), ...pick.map((o) => ({ url: o.url, size: o.size, artifact: true }))];
-  let bad = 0;
+  const targets = [...m.assets.map((a) => ({ url: assetUrl(a.path), size: a.size, artifact: false })), ...pick.map((o) => ({ url: o.url, size: o.size, artifact: true, r2: o }))];
+  const nMutable = pick.filter((o) => !o.immutable).length;
+  let bad = 0, mutableOk = 0;
   for (const t of targets) {
     const head = (u) => fetch(origin + u, { method: 'HEAD', headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}`, headers: new Headers() }));
     let r = await head(t.url);
@@ -659,7 +673,15 @@ if (MODE === 'smoke') {
     } else if (Number(h.get('content-length')) !== t.size) errs.push(`content-length ${h.get('content-length')} != ${t.size}`);
     const ctErr = contentTypeProblem(t.url, h.get('content-type'));
     if (ctErr) errs.push(ctErr);
-    if (errs.length) { bad++; if (bad <= 20) console.log(`FAIL HEAD ${t.url} — ${errs.join('; ')}`); }
+    const lines = errs.length ? [`FAIL HEAD ${t.url} — ${errs.join('; ')}`] : [];
+    // A manifest or index answers HEAD with the right size whenever an older one of the same length is still up (the
+    // deploy rehearsal of pin O, order B: snapshots/index.json, 701 B at H and at O), so GET it and compare its sha256
+    // as --published does. Immutable keys stay HEAD-only: their URL names their content, and packs reach hundreds of MB.
+    if (t.r2 && !t.r2.immutable && r.status === 200) {
+      const g = await getMutable(origin, t.r2);
+      if (g.why) lines.push(`FAIL GET ${t.url} — ${g.why}`); else mutableOk++;
+    }
+    if (lines.length) { bad++; if (bad <= 20) for (const l of lines) console.log(l); }
   }
   if (flag('--range')) {
     // single-range GETs on the largest .snapz (infra/worker.js; lean4game parity). Bodies are tiny or aborted.
@@ -681,7 +703,7 @@ if (MODE === 'smoke') {
     const c = await rget({ range: 'bytes=0-99', 'if-range': '"not-this-version"' });
     ok(c.r.status === 200 && Number(c.r.headers.get('content-length')) === z.size, `RANGE GET with a mismatched If-Range -> ${c.r.status} (full object, content-length ${c.r.headers.get('content-length')})`);
   }
-  ok(!bad, `SMOKE ${origin}: ${targets.length} URLs (${m.assets.length} assets + ${pick.length}/${m.r2.length} R2 keys) answer 200 with size, isolation, cache and content-type headers${bad ? `; ${bad} bad` : ''}`);
+  ok(!bad, `SMOKE ${origin}: ${targets.length} URLs (${m.assets.length} assets + ${pick.length}/${m.r2.length} R2 keys) answer 200 with size, isolation, cache and content-type headers, and ${mutableOk}/${nMutable} manifests and indexes GET with the manifest's sha256${bad ? `; ${bad} bad` : ''}`);
   console.log(fails ? 'SMOKE FAILED' : 'SMOKE OK');
   process.exit(fails ? 1 : 0);
 }

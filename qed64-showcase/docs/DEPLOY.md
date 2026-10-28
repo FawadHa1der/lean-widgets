@@ -242,7 +242,8 @@ three `.snapz` over 300 MiB (wrangler's `r2 object put` caps a single object at 
 only with a JSON type, `qed64-boot.ts:67-70`) and `application/octet-stream` for `.snapz` / `.part-N` (the gallery's
 preflight refuses HTML); the smoke then checks every URL for status 200, `content-length == size`, COOP/COEP/CORP, the
 QED64 cache rule, a JSON type on JSON and no `Content-Encoding` on artifacts (QED64's worker refuses transformed runtime
-chunks, `public/workers/lean.worker.js:594-596`, and the gallery refuses content-encoded snapz). Then open `/showcase/`;
+chunks, `public/workers/lean.worker.js:594-596`, and the gallery refuses content-encoded snapz), and GETs every manifest
+and index to compare its sha256 with the manifest's (DEPLOY-CLOUDFLARE.md §3.4). Then open `/showcase/`;
 the gallery runs its own pairing preflight before it navigates.
 
 ## Consistency rules (carried over from QED64)

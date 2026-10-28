@@ -20,7 +20,8 @@
 #                                                   object this shell needs answers on the live origin (HEAD size; GET
 #                                                   sha256 of every manifest and index). Unset with DEPLOY_FROM_LOCK=1 =
 #                                                   the very first deploy (no origin yet): skipped with a log line; the
-#                                                   post-deploy `--smoke --all` then checks every R2 key.
+#                                                   post-deploy `--smoke --all` then checks every R2 key (HEAD; the
+#                                                   manifests and indexes also by GET sha256).
 #   ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh    deploy although this remote's newest release records for exactly these R2
 #                                                   keys uploaded only some phases (PHASES=1-objects,2-manifests: the split
 #                                                   upload of decision E1, whose 3-indexes go up right after this deploy)
@@ -110,7 +111,7 @@ if [ -n "${PUBLISHED_ORIGIN:-}" ]; then
   node "$SC/scripts/deploy-manifest.mjs" --published "$PUBLISHED_ORIGIN" --out "$DEPLOY_OUT" \
     || die "the artifacts this shell needs are not (all) published on $PUBLISHED_ORIGIN: upload them first (scripts/upload-artifacts.sh on the machine that has them), nothing deployed"
 elif [ "$FROM_LOCK" = 1 ]; then
-  echo "PUBLISHED CHECK SKIPPED: PUBLISHED_ORIGIN is not set, i.e. the very first deploy (no live origin to ask yet). The artifacts must have been uploaded with scripts/upload-artifacts.sh; the post-deploy smoke (--smoke --all) checks every R2 key on the new deployment."
+  echo "PUBLISHED CHECK SKIPPED: PUBLISHED_ORIGIN is not set, i.e. the very first deploy (no live origin to ask yet). The artifacts must have been uploaded with scripts/upload-artifacts.sh; the post-deploy smoke (--smoke --all) checks every R2 key on the new deployment (HEAD; the manifests and indexes also by GET sha256)."
 fi
 
 node "$SC/scripts/deploy-manifest.mjs" --stage-assets --out "$DEPLOY_OUT" || die "--stage-assets FAILED"

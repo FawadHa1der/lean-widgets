@@ -46,9 +46,7 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
 3. **Follow-up (ours, design):** move the staged trees, their reports and the native build record into per-runtime
    stores (`$W/runtimes/<bid>/`, as the bakes already are), so alternating pins needs no restage; today the provenance
    records make the sharing fail closed (an older pin's lanes refuse O's trees), and restaging an older pin needs that
-   pin's branch (its native delta lists). And the smoke (`deploy-manifest.mjs --smoke`) should GET every manifest and
-   index and compare its sha256 as the published check does: it compares their size only, so a stale index of the same
-   length passes (O's rehearsal, order B; on a first deploy the smoke is the only check).
+   pin's branch (its native delta lists).
 4. **Upstream, drafted, not sent:** the pack-manifest URL question above, and an FYI on the node 26.3 exit deadlock
    (docs/UPSTREAM-REPORT-QED64.md, last section; the user relays them).
 

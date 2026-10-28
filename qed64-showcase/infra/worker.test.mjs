@@ -16,7 +16,11 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import worker, { isImmutable, artifactKey, parseRange, resolveRange } from "./worker.js";
@@ -414,4 +418,59 @@ test("per-runtime overlay dir: a range GET resumes; the other runtime's or the b
   }
   const frame = await worker.fetch(req(`/?snapshots=snapshots/${RT_DIR}`), env({ ROOT_REDIRECT: "/showcase/" }));
   assert.equal(frame.status, 200, "the gallery's per-runtime iframe URL is never redirected");
+});
+
+// scripts/deploy-manifest.mjs --smoke against this Worker (the fake R2 behind a local HTTP server). A manifest or index
+// is replaced in place under the same URL, so the stale one an origin still serves can have this release's size: pin
+// O's deploy rehearsal (order B) passed the old snapshots/index.json, 701 B at H and at O, on its HEAD content-length.
+test("deploy-manifest --smoke: an index of the manifest's size with other bytes FAILS (GET + sha256); immutable keys stay HEAD-only", async () => {
+  const INDEX = "/profiles/index.json";
+  const fresh = new TextEncoder().encode('{"release":"new"}');   // this manifest's upload
+  const stale = new TextEncoder().encode('{"release":"old"}');   // what the origin still serves: same length, other bytes
+  assert.equal(stale.length, fresh.length);
+  const sha = (b) => createHash("sha256").update(b).digest("hex");
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), "deploy-manifest-smoke-"));
+  fs.writeFileSync(path.join(out, "manifest.json"), JSON.stringify({
+    pin: { buildId: PINS.activeBuildId() }, options: { overlays: [] }, assets: [],
+    r2: [{ url: INDEX, key: INDEX.slice(1), size: fresh.length, sha256: sha(fresh), immutable: false },
+      { url: SNAPZ, key: SNAPZ.slice(1), size: BYTES.length, sha256: sha(BYTES), immutable: true }],
+  }));
+  const serve = (e) => new Promise((resolve) => {
+    const srv = http.createServer(async (rq, rs) => {
+      const headers = Object.fromEntries(Object.entries(rq.headers).filter(([k]) => k !== "host" && k !== "connection"));
+      const r = await worker.fetch(new Request(ORIGIN + rq.url, { method: rq.method, headers }), e);
+      rs.writeHead(r.status, Object.fromEntries(r.headers));
+      rs.end(rq.method === "HEAD" ? undefined : Buffer.from(await r.arrayBuffer()));
+    });
+    srv.listen(0, "127.0.0.1", () => resolve(srv));
+  });
+  // async (the server answers in this process); --no-concurrent-sparkplug as NODE_TOOL (scripts/lib/platform.sh)
+  const smoke = (origin) => new Promise((resolve) => execFile(process.execPath,
+    ["--no-concurrent-sparkplug", path.join(SC, "scripts/deploy-manifest.mjs"), "--out", out, "--smoke", origin, "--all"],
+    { timeout: 60_000 }, (err, stdout, stderr) => resolve({ code: err ? err.code : 0, stdout, stderr })));
+  try {
+    for (const served of [fresh, stale]) {
+      const e = env({ ARTIFACTS: fakeBucket({
+        [INDEX.slice(1)]: { bytes: served, contentType: "application/json" },
+        [SNAPZ.slice(1)]: { bytes: BYTES },
+      }) });
+      const srv = await serve(e);
+      const r = await smoke(`http://127.0.0.1:${srv.address().port}`);
+      srv.closeAllConnections(); srv.close();
+      const log = `${r.stdout}${r.stderr}`;
+      assert.ok(!log.includes(`FAIL HEAD ${INDEX}`), `the HEAD passes either way (same size):\n${log}`);
+      if (served === fresh) {
+        assert.equal(r.code, 0, log);
+        assert.match(r.stdout, /1\/1 manifests and indexes GET with the manifest's sha256/, log);
+        assert.match(r.stdout, /^SMOKE OK$/m, log);
+      } else {
+        assert.equal(r.code, 1, log);
+        assert.ok(r.stdout.includes(`FAIL GET ${INDEX} — published ${stale.length} B sha256 ${sha(stale).slice(0, 16)}… != manifest ${fresh.length} B ${sha(fresh).slice(0, 16)}…`), log);
+        assert.match(r.stdout, /^SMOKE FAILED$/m, log);
+      }
+      const ops = (k) => e.ARTIFACTS.calls.filter((c) => c.key === k.slice(1)).map((c) => c.op);
+      assert.deepEqual(ops(INDEX), ["head", "get"], "the index: HEAD for the headers, then GET for the sha256");
+      assert.deepEqual(ops(SNAPZ), ["head"], "an immutable key is never fetched by the smoke");
+    }
+  } finally { fs.rmSync(out, { recursive: true, force: true }); }
 });

@@ -2240,7 +2240,8 @@ objects, E's 93) measured E1 (`old-shell/e1-measure.txt`, `old-shell/pack-fetche
   K; a Worker deployed without it now **fails its smoke** before phase 3: `HEAD /profiles/index.json — content-length
   514 != 513`. H's (and every earlier pin's) `profiles/index.json` is 514 B and O's 513 B; at J and K the old and new
   index had the same length, so the smoke, which compares only the size of a mutable object, passed on the stale index.
-  `snapshots/index.json` is 701 B in both H and O, so the smoke passes it in the window even now. In the window the new
+  `snapshots/index.json` is 701 B in both H and O, so the smoke of `9eed0e9` passed it in the window; the smoke now
+  also GETs every manifest and index and compares its sha256 (DEPLOY-CLOUDFLARE 3.4), so it fails there too. In the window the new
   gallery and the new shell's `/` stock boot are OK (#64's per-build copies), and after phase 3 the published check and
   the smoke are OK.
 
@@ -2257,7 +2258,4 @@ deploy must run the smoke after phase 3.
    docs/DEPLOY-CLOUDFLARE.md 3.2; a question to QED64 about per-release manifest URLs is drafted in docs/UPSTREAM-REPORT-QED64.md, last section, for the user to relay); `.env.local`'s `QED64_KERNEL_BUILD`
    (it names a deleted dir; suggested the list `$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`; `.env.local` expands `$HOME`, not `$W`);
    alias policy and stale tabs as for I; whether to keep N's and H's build stores.
-3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3); the smoke should GET every
-   manifest and index and compare its sha256, as the published check does (it compares their size only, so a stale
-   index of the same length passes: `snapshots/index.json` at O, both indexes at J and K; on a first deploy, which
-   skips the published check, the smoke is the only check).
+3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3).
