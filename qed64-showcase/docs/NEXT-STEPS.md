@@ -3,9 +3,9 @@
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
 
-## Pin O `521cf3f`: active and gated (Lean 4.35); the commit, the CI mirror and the rehearsal, then the user's decisions
+## Pin O `521cf3f`: active, gated, committed and rehearsed (Lean 4.35); the user's decisions
 
-**Where it stands (2026-10-27 ~23:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
+**Where it stands (2026-10-28 ~01:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
 from `d60b15e`, which is `origin/main`). The active pin of this checkout is **O `521cf3f`** since 2026-10-27: QED64 main on
 the kernel release `lean-v4.35.0-b081e7c`, Lean 4.35.0, runtime `wasm64-36d7f415704473d9`, with the widgets ported to
 Lean 4.35 (`1a61003`). It is gated: headless `CONTROLS PASS`, stage4 and E2 green (E2 7/8 on L1), VERDICTs `o-full1` and
@@ -13,10 +13,11 @@ Lean 4.35 (`1a61003`). It is gated: headless `CONTROLS PASS`, stage4 and E2 gree
 OK with `infra/ux-verdict.json` naming `o-full2` (docs/REPIN-LOG.md, pin O). Pins K, L and N came between J and O; I and
 J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O and the Lean 4.35 port on top of `origin/main`.
 
-1. **Ours, next:** the pin O work is committed on `port-lean-4.35` (O's harness `07d015b`, the review fixes and
-   `NODE_TOOL` `0ab384a`, pin O `546d110`, then these docs); then the qed64-static CI mirror on that commit (`node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job qed64-static`) and the
-   deploy rehearsal (`ci/rehearse-deploy.sh`: a new rehearsal state for runtime 36d7f415, and `old-shell` against the
-   live H with its E1 MEASURE lines, which now also cover the pack manifests).
+1. **Done:** the pin O work is committed on `port-lean-4.35` (O's harness `07d015b`, the review fixes and `NODE_TOOL`
+   `0ab384a`, pin O `546d110`, the docs `9eed0e9` and the rehearsal record after it). On `9eed0e9` the qed64-static CI
+   mirror is `JOB SUCCESS` (12/12, the shell from source byte-identical to O's lock) and `ci/rehearse-deploy.sh` is
+   `REHEARSE-DEPLOY OK` with all eight scenarios; `old-shell` against the live H measured the pack-manifest window
+   (docs/REPIN-LOG.md, pin O, "CI mirror and deploy rehearsal").
 2. **The user's decisions:**
    * **The push.** A push of `port-lean-4.35` to main deploys O over the live H (`.github/workflows/qed64-deploy.yml`;
      G2 reads the committed `infra/ux-verdict.json`). The deploy manifest has 93 R2 objects, 2.367 GB, most of them new
@@ -25,7 +26,13 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
    * **E1, now wider.** O's pack manifests change under the same URL (`/profiles/lean-core.manifest.json`,
      `/profiles/mathlib-essential.manifest.json`) in upload phase 2. The live H shell has no release check on a pack
      install (QED64 #81 is new at O), so an H tab open between that upload and the Worker deploy can install O's 4.35
-     pack under its 4.34 runtime. Options in docs/DEPLOY-CLOUDFLARE.md 3.2 (keep that window short; or the other order).
+     pack under its 4.34 runtime. The rehearsal measured it: in that window every boot of H's gallery and stock page
+     fetched O's `lean-core` manifest and 8 parts of O's pack; before phase 3 both still booted (from their own
+     snapshots), and in order A after phase 3 H's stock page fails on the replaced indexes, as at J and K. What H's
+     runtime does with those oleans on a later import was not measured. Options in docs/DEPLOY-CLOUDFLARE.md 3.2: keep
+     that window short, or change the deploy order; neither rehearsed order closes it, since both upload the pack
+     manifests in phase 2. Separately, a split deploy (order B, which removes only the index window) must run the
+     smoke after phase 3.
      A question to QED64, whether per-release manifest URLs are possible, is drafted in docs/UPSTREAM-REPORT-QED64.md
      (last section) for the user to relay.
    * **`.env.local`:** its `QED64_KERNEL_BUILD` names `~/code/wasm64-lean-kernel-build-v4.34.0`, which no longer
@@ -39,7 +46,9 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
 3. **Follow-up (ours, design):** move the staged trees, their reports and the native build record into per-runtime
    stores (`$W/runtimes/<bid>/`, as the bakes already are), so alternating pins needs no restage; today the provenance
    records make the sharing fail closed (an older pin's lanes refuse O's trees), and restaging an older pin needs that
-   pin's branch (its native delta lists).
+   pin's branch (its native delta lists). And the smoke (`deploy-manifest.mjs --smoke`) should GET every manifest and
+   index and compare its sha256 as the published check does: it compares their size only, so a stale index of the same
+   length passes (O's rehearsal, order B; on a first deploy the smoke is the only check).
 4. **Upstream, drafted, not sent:** the pack-manifest URL question above, and an FYI on the node 26.3 exit deadlock
    (docs/UPSTREAM-REPORT-QED64.md, last section; the user relays them).
 

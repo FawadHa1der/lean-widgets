@@ -1226,7 +1226,12 @@ serves H `bf9d947`.
   the first time (every earlier pin of ours recorded the same two files). Your #81 makes an O tab refuse another release's
   pack as stale, but a shell from before #81, such as the live H, installs whatever the URL holds. When the showcase
   uploads O's manifests before its new Worker is live, an H tab open or booted in that window (the stock page and each
-  gallery frame install the core pack at boot) can therefore install the 4.35 pack under its 4.34 runtime. Would
+  gallery frame install the core pack at boot) can therefore install the 4.35 pack under its 4.34 runtime. Our deploy
+  rehearsal measured this against `d60b15e` with local fakes: every H boot after that upload fetched the new
+  `lean-core.manifest.json` and 8 parts of the 4.35 pack, none of its own release. Before our shared indexes were
+  replaced, both the stock page and the gallery still reached ready, since the boot elaborates from its snapshot; with
+  the indexes replaced too (our order A), the stock page fails at boot, as it did before the packs changed. We did not
+  measure what the 4.34 runtime does on a later import of one of those oleans. Would
   per-release manifest URLs (as #64 did for the snapshot indexes) be possible on your side? How we handle the window
   until then is still open on our side (our decision E1, docs/DEPLOY-CLOUDFLARE.md 3.2): keep the time from that upload
   to the Worker deploy short, or change the deploy order.

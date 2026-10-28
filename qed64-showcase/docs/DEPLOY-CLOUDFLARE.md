@@ -356,7 +356,9 @@ What the script does (each step was exercised in the rehearsal):
    `PHASES=3-indexes` after it, so the shared indexes an older live shell reads change only once the new shell is live
    (decision E1 of pin I, docs/REPIN-LOG.md pin I entry; QED64 hit this window on 2026-10-08, its HARDENING #64). By
    hand: `PHASES=1-objects,2-manifests scripts/upload-artifacts.sh`, then `ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh`
-   (no `PUBLISHED_ORIGIN`), then `PHASES=3-indexes scripts/upload-artifacts.sh`. **Not through the CI deploy yet:** its
+   (no `PUBLISHED_ORIGIN`), then `PHASES=3-indexes scripts/upload-artifacts.sh`, and only then the smoke of 3.4 (before
+   phase 3 it fails on every old index that differs from the new one: on its size, as O's `profiles/index.json`, 514
+   against 513 B, or on its sha256, as O's `snapshots/index.json`, 701 B in both). **Not through the CI deploy yet:** its
    published check (section 9) compares the phase-3 indexes too and refuses until they are up. Which path to take is
    the user's decision; `ci/rehearse-deploy.sh old-shell` measures both orders.
 
@@ -377,7 +379,12 @@ What the script does (each step was exercised in the rehearsal):
    closed, like the rollback in section 5, but it is the same window. `upload-artifacts.sh` prints an `E1 HAZARD` line
    (with `DRY_RUN=1` too) when its phase 2 changes a pack manifest compared with the newest release record that
    uploaded phase 2 (`E1 HAZARD UNCHECKED` when no such record exists). The `old-shell` rehearsal reports the hazard
-   and the pack fetches of the old shell's boots. How to handle this window is part of decision E1, which is still
+   and the pack fetches of the old shell's boots. For O against the live H (2026-10-28, docs/REPIN-LOG.md pin O) every
+   H boot in the window fetched O's `lean-core.manifest.json` and 8 pack parts, all of O's release. Between phase 2
+   and phase 3 both H boots still booted (the stock page ready in 13 s, the gallery's panel rendered), since a boot
+   elaborates from its own snapshot; in order A, once phase 3 is up, H's stock boot fails on the replaced indexes, as
+   at J and K, while H's gallery still boots. What H's runtime does on a later import of one of those oleans was not
+   measured. How to handle this window is part of decision E1, which is still
    open with the owner. The options so far are to keep the time from phase 2 to the Worker deploy as short as
    possible, or to change the deploy order. The rehearsal's orders A and B differ only in phase 3, so both open this
    window at phase 2.
@@ -447,7 +454,14 @@ it checks:
 * COOP `same-origin`, COEP `require-corp`, CORP `same-origin`;
 * QED64's cache rule (digest-named files immutable, every index and manifest `must-revalidate`);
 * a JSON type on every `*.json` and a non-HTML type on binaries;
-* no `Content-Encoding` on artifacts.
+* no `Content-Encoding` on artifacts;
+* for every manifest and index (the R2 keys QED64's cache rule does not make immutable: 10 at pin O, about 12 MB, nearly
+  all of it the two pack manifests), also a GET with `accept-encoding: identity` whose body must have the manifest's
+  sha256, through the same helper as `--published` (section 9). These keep their URL from release to release, so a
+  HEAD cannot tell an older one of the same length from this release's (`snapshots/index.json` is 701 B at H and at O:
+  the smoke passed the stale one in O's rehearsal, order B). A mismatch prints `FAIL GET <url> — published <n> B sha256
+  <16 hex>… != manifest <n> B <16 hex>…`. Immutable keys stay HEAD only: their URL names their content, and pack parts
+  and snapshots reach hundreds of MB.
 
 `--range` also sends single-range GETs to the largest `.snapz`. It expects 206 with `Content-Range bytes 0-99/<size>`,
 416 past the end, and a full 200 for a mismatched `If-Range`. Every check must print `OK`, and the run must end with
@@ -696,7 +710,10 @@ Worker in both orders (A: phase 3 before the deploy, B: after it), printing `E1 
 decision E1, not failures). It needs `OLD_REF` and a rehearsal state of the new pin built into another directory than
 `OLD_STATE`; without `OLD_REF` it is skipped and named on the last line, never counted as OK. It ran for pins J and K
 against the live H (docs/REPIN-LOG.md: J's "Not done / running", K's "Gates (K)"), before any release changed the
-packs.
+packs, and for O (pin O, "CI mirror and deploy rehearsal"), the first that changes them: `REPLACED-KEYS OK 3`, two of
+them pack manifests, and in order B the new Worker's smoke before phase 3 failed on the old `profiles/index.json`'s
+size (at J and K the old and new index had the same length). The smoke has since compared the sha256 of every
+manifest and index too (3.4), so it no longer passes an old index of the same length.
 
 ## 10. Troubleshooting
 

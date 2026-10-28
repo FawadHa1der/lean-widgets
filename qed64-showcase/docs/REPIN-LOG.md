@@ -2213,15 +2213,51 @@ each: plain `node` hung in **14 of 30**, `node --no-concurrent-sparkplug` in **0
 Then: controls ×3 `CONTROLS PASS` (49 s, 44 s, 44 s), stage4 `0 failing` through the patched runner (22:51–22:55Z), E2 7/8 on L1 (22:55–23:04Z), and the
 summary's gate `stage4Green`, `E2Green` (`$W/logs/pinO-pf2-*.log`).
 
-### Not done (pin O, 2026-10-27 ~23:10Z)
+**CI mirror and deploy rehearsal on `9eed0e9`** (`$W/pinI/chainRHO.sh`, 2026-10-27 23:27Z – 10-28 00:50Z, fresh
+clones, local fakes only). **qed64-static** (`node ci/run-local.mjs --workflow .github/workflows/lean-ci.yml --job
+qed64-static`, `$W/logs/pinO-ci-local.log`): **JOB SUCCESS**, 12/12 steps, among them QED64's page built from source
+byte-identical to O's lock (60/60 files), the Worker tests, CHECK-GALLERY OK 157 and SIM-GALLERY OK 244. **O's
+rehearsal state** (`$W/deploy-rehearsal-O`, `$W/logs/pinO-rh-state.log`): `UPLOAD OK` in three phases, `FAKE-BUCKET OK:
+93 objects`, `LOAD-R2 OK: 93 objects, 2.367 GB`; the upload printed the `E1 HAZARD` line for both pack manifests.
+**`ci/rehearse-deploy.sh`** (run dir `$W/pinO/rehearse-deploy-O1`, `$W/logs/pinO-rehearse-deploy.log`):
+**`REHEARSE-DEPLOY OK: skip dry-run unpublished deploy first no-verdict tamper old-shell`** (tamper on
+`/snapshots/widgets8.36d7f415704473d9/index.json`). **`old-shell` against the live H** (`d60b15e`, OLD_STATE the live
+objects, E's 93) measured E1 (`old-shell/e1-measure.txt`, `old-shell/pack-fetches.txt`):
+
+* phases 1–2 under the live shell: H's published check OK without the replaced keys, `REPLACED-KEYS OK 3` (the runtime
+  manifest, as at J and K, and **both pack manifests, each an E1 HAZARD**: `/profiles/lean-core.manifest.json` now
+  serves O's release `lean-core-4.35.0-wasm64-36d7f415704473d9`, `/profiles/mathlib-essential.manifest.json` O's
+  `mathlib-essential-56a0058-wasm64-36d7f415704473d9`); the 6 bare `snapshots/widgets{7,8}/` objects untouched;
+* in that window **H's boots fetch O's pack**: the old gallery and the old bare `/` stock page each fetched the new
+  `lean-core.manifest.json` and 8 pack parts, all 8 of O's release, none of H's. Both still booted (stock ready in
+  13 s; the gallery's HasseView panel rendered), because a boot elaborates from its own snapshot. What H's 4.34 runtime
+  does when it later reads one of those 4.35 oleans (an import outside the snapshot, "Load exact imports") was not
+  measured; QED64's #81 says such oleans are misread (the olean githash gate is compiled off);
+* **order A** (phase 3 before the deploy): as at J and K, H's bare `/` stock boot FAILS in the window (the replaced
+  `snapshots/index.json` and `profiles/index.json`; `bootFailed`, halted after 420 s), the old gallery boots OK; then
+  the new workflow (published check, deploy, smoke) succeeds and the new gallery and stock boots are OK;
+* **order B** (phase 3 after the deploy): the CI published check refuses the deploy before phase 3 (rc 1), as at J and
+  K; a Worker deployed without it now **fails its smoke** before phase 3: `HEAD /profiles/index.json — content-length
+  514 != 513`. H's (and every earlier pin's) `profiles/index.json` is 514 B and O's 513 B; at J and K the old and new
+  index had the same length, so the smoke, which compares only the size of a mutable object, passed on the stale index.
+  `snapshots/index.json` is 701 B in both H and O, so the smoke passes it in the window even now. In the window the new
+  gallery and the new shell's `/` stock boot are OK (#64's per-build copies), and after phase 3 the published check and
+  the smoke are OK.
+
+So the gallery still boots in the window in either order (it has no index window), but every boot of an H page, the
+gallery's included, between phase 2 and the deploy now fetches O's pack (E1, DEPLOY-CLOUDFLARE 3.2), and a split
+deploy must run the smoke after phase 3.
+
+### Not done (pin O, 2026-10-28 ~01:00Z)
 
 1. Committed on `port-lean-4.35` (not pushed): the host lock `78306aa`, the control bound `61ed105`, the I/J retirement
-   `5660c6d`, O's harness `07d015b`, the review fixes and `NODE_TOOL` `0ab384a`, pin O itself `546d110`, and these docs.
-   Next: the qed64-static CI mirror on that commit and the deploy rehearsal (a new rehearsal
-   state: runtime 36d7f415, 93 objects; `old-shell` against the live H, whose E1 MEASURE lines now also cover the pack
-   manifests).
+   `5660c6d`, O's harness `07d015b`, the review fixes and `NODE_TOOL` `0ab384a`, pin O itself `546d110`, the docs
+   `9eed0e9`, and this record. Done since: the qed64-static CI mirror and the deploy rehearsal on `9eed0e9` (above).
 2. The user's decisions: the push (it deploys O over H; or N first); E1, now including the pack manifests (above and
    docs/DEPLOY-CLOUDFLARE.md 3.2; a question to QED64 about per-release manifest URLs is drafted in docs/UPSTREAM-REPORT-QED64.md, last section, for the user to relay); `.env.local`'s `QED64_KERNEL_BUILD`
    (it names a deleted dir; suggested the list `$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`; `.env.local` expands `$HOME`, not `$W`);
    alias policy and stale tabs as for I; whether to keep N's and H's build stores.
-3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3).
+3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3); the smoke should GET every
+   manifest and index and compare its sha256, as the published check does (it compares their size only, so a stale
+   index of the same length passes: `snapshots/index.json` at O, both indexes at J and K; on a first deploy, which
+   skips the published check, the smoke is the only check).

@@ -20,7 +20,8 @@ to 2026-10-12):
   widgets were ported to Lean 4.35 first (`1a61003`). Its gates (gallery `047aa584…`): headless `CONTROLS PASS`, stage4
   green, E2 7/8 on L1; VERDICTs `o-full1` and `o-full2`; C20 405/405; the headed sign-off `o-headed4` (35/35); the
   10 Mbit/s first visit `RESULT PASS` (ready at 513.9 s); `deploy-manifest --check` OK with `infra/ux-verdict.json` naming
-  `o-full2`. On O's page the stock InfoView applies Try-this and MakeEditLink edits itself (X4: D1/D2 no longer
+  `o-full2`; on the commit, the qed64-static CI mirror `JOB SUCCESS` and `REHEARSE-DEPLOY OK` (all eight scenarios,
+  `old-shell` against the live H). On O's page the stock InfoView applies Try-this and MakeEditLink edits itself (X4: D1/D2 no longer
   reproduce). Pins K `62a06e2`, L `37ff491` and N `58ebbad` came between J and O and are registered; I and J are retired
   (pin K rebaked the overlay store they share). Since O the staged trees carry provenance records, so on this branch an older pin's
   lanes refuse O's trees. Restaging an older pin needs that pin's branch, whose harness checks no record: run
