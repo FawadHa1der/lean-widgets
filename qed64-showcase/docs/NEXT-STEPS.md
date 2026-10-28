@@ -1,11 +1,11 @@
-# Next steps (updated 2026-10-27, pin O)
+# Next steps (updated 2026-10-28, pin O)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
 
 ## Pin O `521cf3f`: active, gated, committed and rehearsed (Lean 4.35); the user's decisions
 
-**Where it stands (2026-10-28 ~01:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
+**Where it stands (2026-10-28 ~03:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
 from `d60b15e`, which is `origin/main`). The active pin of this checkout is **O `521cf3f`** since 2026-10-27: QED64 main on
 the kernel release `lean-v4.35.0-b081e7c`, Lean 4.35.0, runtime `wasm64-36d7f415704473d9`, with the widgets ported to
 Lean 4.35 (`1a61003`). It is gated: headless `CONTROLS PASS`, stage4 and E2 green (E2 7/8 on L1), VERDICTs `o-full1` and
@@ -14,10 +14,12 @@ OK with `infra/ux-verdict.json` naming `o-full2` (docs/REPIN-LOG.md, pin O). Pin
 J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O and the Lean 4.35 port on top of `origin/main`.
 
 1. **Done:** the pin O work is committed on `port-lean-4.35` (O's harness `07d015b`, the review fixes and `NODE_TOOL`
-   `0ab384a`, pin O `546d110`, the docs `9eed0e9` and the rehearsal record after it). On `9eed0e9` the qed64-static CI
-   mirror is `JOB SUCCESS` (12/12, the shell from source byte-identical to O's lock) and `ci/rehearse-deploy.sh` is
-   `REHEARSE-DEPLOY OK` with all eight scenarios; `old-shell` against the live H measured the pack-manifest window
-   (docs/REPIN-LOG.md, pin O, "CI mirror and deploy rehearsal").
+   `0ab384a`, pin O `546d110`, the docs `9eed0e9`, the rehearsal record `6330f6d`, the smoke's sha256 of every manifest
+   and index `dbacd2c` and its follow-ups `b939b10`). On `9eed0e9` and again on `dbacd2c` the qed64-static CI mirror is
+   `JOB SUCCESS` (12/12, the shell from source byte-identical to O's lock) and `ci/rehearse-deploy.sh` is
+   `REHEARSE-DEPLOY OK` with all eight scenarios; `old-shell` against the live H measured the pack-manifest window, and
+   on `dbacd2c` order B's smoke before phase 3 fails on both stale indexes. On `b939b10`, `dry-run deploy first` are OK
+   (docs/REPIN-LOG.md, pin O, "CI mirror and deploy rehearsal", "Rerun on `dbacd2c`" and "`b939b10`").
 2. **The user's decisions:**
    * **The push.** A push of `port-lean-4.35` to main deploys O over the live H (`.github/workflows/qed64-deploy.yml`;
      G2 reads the committed `infra/ux-verdict.json`). The deploy manifest has 93 R2 objects, 2.367 GB, most of them new
@@ -32,7 +34,7 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
      runtime does with those oleans on a later import was not measured. Options in docs/DEPLOY-CLOUDFLARE.md 3.2: keep
      that window short, or change the deploy order; neither rehearsed order closes it, since both upload the pack
      manifests in phase 2. Separately, a split deploy (order B, which removes only the index window) must run the
-     smoke after phase 3.
+     smoke after phase 3 (since `b939b10`, `deploy-app.sh`'s last line says so).
      A question to QED64, whether per-release manifest URLs are possible, is drafted in docs/UPSTREAM-REPORT-QED64.md
      (last section) for the user to relay.
    * **`.env.local`:** its `QED64_KERNEL_BUILD` names `~/code/wasm64-lean-kernel-build-v4.34.0`, which no longer

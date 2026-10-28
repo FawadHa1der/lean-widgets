@@ -445,11 +445,11 @@ node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.work
 curl -sI https://qed64-showcase.<subdomain>.workers.dev/showcase/ | grep -i cross-origin
 curl -s -o /dev/null -D - -H 'Range: bytes=1000000-1000099' https://qed64-showcase.<subdomain>.workers.dev/snapshots/<dir>/<widgets.….snapz>
 ```
-(`<dir>`: `node scripts/lib/pins.mjs overlay-dir widgets8`, i.e. `widgets8` on pins A–H and
-`widgets8.f69cca24d0878a58` on pin I.)
+(`<dir>`: `node scripts/lib/pins.mjs overlay-dir widgets8`, i.e. `widgets8` on pins A–H, then `widgets8.<runtime bid16>`:
+`widgets8.f69cca24d0878a58` on pin I, `widgets8.36d7f415704473d9` on pin O.)
 
-`--smoke --all` sends a HEAD request to every asset and every R2 key in the manifest (168 URLs). For each one
-it checks:
+`--smoke --all` sends a HEAD request to every asset and every R2 key in the manifest (170 URLs at pin O: 77 assets
+and 93 R2 keys). For each one it checks:
 * status 200 and `content-length == size`;
 * COOP `same-origin`, COEP `require-corp`, CORP `same-origin`;
 * QED64's cache rule (digest-named files immutable, every index and manifest `must-revalidate`);
@@ -459,8 +459,8 @@ it checks:
   all of it the two pack manifests), also a GET with `accept-encoding: identity` whose body must have the manifest's
   sha256, through the same helper as `--published` (section 9). These keep their URL from release to release, so a
   HEAD cannot tell an older one of the same length from this release's (`snapshots/index.json` is 701 B at H and at O:
-  the smoke passed the stale one in O's rehearsal, order B). A mismatch prints `FAIL GET <url> — published <n> B sha256
-  <16 hex>… != manifest <n> B <16 hex>…`. Immutable keys stay HEAD only: their URL names their content, and pack parts
+  the HEAD-only smoke of `9eed0e9` passed the stale one in O's rehearsal, order B; since `dbacd2c` it fails it). A
+  mismatch prints `FAIL GET <url> — published <n> B sha256 <16 hex>… != manifest <n> B <16 hex>…`. Immutable keys stay HEAD only: their URL names their content, and pack parts
   and snapshots reach hundreds of MB.
 
 `--range` also sends single-range GETs to the largest `.snapz`. It expects 206 with `Content-Range bytes 0-99/<size>`,

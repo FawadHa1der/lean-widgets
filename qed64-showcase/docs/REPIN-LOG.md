@@ -2239,7 +2239,8 @@ objects, E's 93) measured E1 (`old-shell/e1-measure.txt`, `old-shell/pack-fetche
 * **order B** (phase 3 after the deploy): the CI published check refuses the deploy before phase 3 (rc 1), as at J and
   K; a Worker deployed without it now **fails its smoke** before phase 3: `HEAD /profiles/index.json — content-length
   514 != 513`. H's (and every earlier pin's) `profiles/index.json` is 514 B and O's 513 B; at J and K the old and new
-  index had the same length, so the smoke, which compares only the size of a mutable object, passed on the stale index.
+  index had the same length, so the smoke, which until `dbacd2c` compared only the size of a mutable object, passed on the
+stale index.
   `snapshots/index.json` is 701 B in both H and O, so the smoke of `9eed0e9` passed it in the window; the smoke now
   also GETs every manifest and index and compares its sha256 (DEPLOY-CLOUDFLARE 3.4), so it fails there too. In the window the new
   gallery and the new shell's `/` stock boot are OK (#64's per-build copies), and after phase 3 the published check and
@@ -2249,11 +2250,39 @@ So the gallery still boots in the window in either order (it has no index window
 gallery's included, between phase 2 and the deploy now fetches O's pack (E1, DEPLOY-CLOUDFLARE 3.2), and a split
 deploy must run the smoke after phase 3.
 
-### Not done (pin O, 2026-10-28 ~01:00Z)
+**Rerun on `dbacd2c`** (the smoke's GET sha256 of every manifest and index; `$W/pinI/chainRHO2.sh`, 2026-10-28
+01:10–02:34Z, fresh clones, local fakes only). qed64-static **JOB SUCCESS** 12/12 (`$W/logs/pinO-ci-local2.log`: 60/60
+byte-identical, CHECK-GALLERY OK 157, SIM-GALLERY OK 244, the Worker tests 27/27 with the new one, "an index of the
+manifest's size with other bytes FAILS"); O's rehearsal state rebuilt (`pinO-rh-state2.log`: `FAKE-BUCKET OK: 93
+objects`, `LOAD-R2 OK: 93 objects, 2.367 GB`); **`REHEARSE-DEPLOY OK: skip dry-run unpublished deploy first no-verdict
+tamper old-shell`** (`pinO-rehearse-deploy2.log`, run dir `$W/pinO/rehearse-deploy-O2`). `old-shell/e1-measure.txt` is
+the one above line for line (only the run dir differs). What changed is order B's smoke before phase 3, which now fails
+on both indexes (`old-shell-B-new.log`): `FAIL GET /profiles/index.json — published 514 B … != manifest 513 B …` and
+`FAIL GET /snapshots/index.json — published 701 B sha256 12c670a3b176e981… != manifest 701 B 52fc2caa68ea856e… (not
+this release's upload)`, "8/10 manifests and indexes GET with the manifest's sha256; 2 bad". The second is the stale
+index the size-only smoke of `9eed0e9` had passed.
 
-1. Committed on `port-lean-4.35` (not pushed): the host lock `78306aa`, the control bound `61ed105`, the I/J retirement
+**`b939b10`** (the two follow-ups of the `dbacd2c` review): after a split deploy (`ALLOW_PARTIAL_UPLOAD=1`, order B)
+`scripts/deploy-app.sh` records the missing phases in `out/deploy/record-gap.txt`, and its last line names them first:
+`DEPLOYED (split upload). Next: PHASES=3-indexes scripts/upload-artifacts.sh, then node scripts/deploy-manifest.mjs …
+--smoke … (until then the smoke fails on the old indexes: not this release's upload)`. A full deploy prints the line it
+printed before, and so does CI (`DEPLOY_FROM_LOCK=1` skips the record check, so no gap is recorded). The workflow's
+header and its smoke step name now mention the sha256 (the new name still matches `ci/rehearse-deploy.sh`'s
+`step N SUCCESS.*Smoke` check, the only other reader of it). `bash -n`, the Worker tests 27/27, `check-portable` and
+`showcase.sh verify` OK; `ci/rehearse-deploy.sh dry-run deploy first` on `b939b10` (`$W/logs/pinO-rehearse-deploy3.log`,
+run dir `$W/pinO/rehearse-deploy-O3`, 02:35–02:53Z): **`REHEARSE-DEPLOY OK: dry-run deploy first`**, the deploy printing
+`DEPLOYED. Next: node scripts/deploy-manifest.mjs --out out/deploy --smoke http://127.0.0.1:8792 --all --range`. No
+rehearsal scenario deploys with `ALLOW_PARTIAL_UPLOAD=1`, so the split line was checked on a copy of the script's tail
+(gap, no gap and no URL each print the expected line; the record check's new write line, given the gap `3-indexes`,
+writes `3-indexes`).
+
+### Not done (pin O, 2026-10-28 ~03:00Z)
+
+1. Committed on `port-lean-4.35` (not pushed): the Lean 4.35 port `1a61003`, the host lock `78306aa`, the control bound `61ed105`, the I/J retirement
    `5660c6d`, O's harness `07d015b`, the review fixes and `NODE_TOOL` `0ab384a`, pin O itself `546d110`, the docs
-   `9eed0e9`, and this record. Done since: the qed64-static CI mirror and the deploy rehearsal on `9eed0e9` (above).
+   `9eed0e9`, the rehearsal record `6330f6d`, the smoke's sha256 `dbacd2c` (the smoke-fix session), its follow-ups
+   `b939b10`, and this record. Done since: the qed64-static CI mirror and the deploy rehearsal on `9eed0e9`, rerun on
+   `dbacd2c`, and the deploy scenarios on `b939b10` (above).
 2. The user's decisions: the push (it deploys O over H; or N first); E1, now including the pack manifests (above and
    docs/DEPLOY-CLOUDFLARE.md 3.2; a question to QED64 about per-release manifest URLs is drafted in docs/UPSTREAM-REPORT-QED64.md, last section, for the user to relay); `.env.local`'s `QED64_KERNEL_BUILD`
    (it names a deleted dir; suggested the list `$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`; `.env.local` expands `$HOME`, not `$W`);
