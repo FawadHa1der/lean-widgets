@@ -12,7 +12,8 @@
 #     this shell needs must already answer there (HEAD size; GET sha256 of every manifest and index); unset = the very
 #     first deploy, skipped with a log line
 #   * `wrangler deploy` (wrangler 4.125.0 pinned in qed64-showcase/infra), then the smoke test of the deployed URL:
-#     every asset and every R2 key (status, size, isolation, cache and content-type headers) plus Range requests.
+#     every asset and every R2 key (status, size, isolation, cache and content-type headers; GET sha256 of every
+#     manifest and index) plus Range requests.
 # Secrets: CLOUDFLARE_API_TOKEN (an API token with Account > Workers Scripts > Edit only; no R2 permission) and
 # CLOUDFLARE_ACCOUNT_ID. Without them the job logs a skip line and does nothing else, like lean4game's deploy.yml.
 # workflow_dispatch: dry_run=true runs everything up to `wrangler deploy --dry-run` (no secrets needed);
@@ -107,7 +108,7 @@ jobs:
           if [ -z "$origin" ]; then echo "::error::no deployment URL in wrangler's output and vars.SHOWCASE_ORIGIN is not set"; exit 1; fi
           echo "origin=$origin" >> "$GITHUB_OUTPUT"
       - if: steps.gate.outputs.mode == 'deploy' && steps.deploy.outputs.origin != ''
-        name: Smoke test the deployment (every asset and R2 key, isolation and cache headers, Range)
+        name: Smoke test the deployment (every asset and R2 key, isolation and cache headers, sha256 of manifests and indexes, Range)
         env:
           ORIGIN: ${{ steps.deploy.outputs.origin }}
         run: |

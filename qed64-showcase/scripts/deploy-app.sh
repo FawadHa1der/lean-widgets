@@ -62,6 +62,7 @@ manifest_preflight
 # show up in the post-deploy smoke as 404s or SNAPSHOT_UNPAIRED. ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately
 # (e.g. the upload ran on another machine whose release record you do not have).
 REC=$(newest_record_for_remote "$R2_REMOTE")
+rm -f "$DEPLOY_OUT/record-gap.txt"   # written below only when ALLOW_PARTIAL_UPLOAD=1 deploys with phases missing
 if [ "$FROM_LOCK" = 1 ]; then
   echo "release-record check: not applicable with DEPLOY_FROM_LOCK=1 (the records live on the machine that uploaded); the published check below takes its place"
 elif ! node - "$DEPLOY_OUT/manifest.json" "${REC:-}" "$R2_BUCKET" "$R2_PREFIX" "$R2_REMOTE" <<'JS'
@@ -97,6 +98,7 @@ if (gap.length) {
   const msg = `RECORD PARTIAL: release record(s) ${used.join(', ')} uploaded phase(s) ${ALL.filter((p) => have.has(p)).join(', ')} of these R2 keys; NOT ${gap.join(', ')}`;
   if (process.env.ALLOW_PARTIAL_UPLOAD !== '1') { console.error(`${msg}: upload them first (PHASES=${gap.join(',')} scripts/upload-artifacts.sh), or set ALLOW_PARTIAL_UPLOAD=1 for a split upload (decision E1) and upload them right after this deploy`); process.exit(1); }
   console.log(`${msg} — proceeding because ALLOW_PARTIAL_UPLOAD=1; next: PHASES=${gap.join(',')} scripts/upload-artifacts.sh right after the deploy`);
+  fs.writeFileSync(path.join(path.dirname(mPath), 'record-gap.txt'), `${gap.join(',')}\n`);
 }
 console.log(`RECORD OK: this shell's ${a.size} R2 keys (pin ${cur.pin.buildId}, prefix '${prefix}') are what release record ${label} published to ${remote}:${bucket}${used.length > 1 || gap.length ? ` (phases ${ALL.filter((p) => have.has(p)).join(', ')} by ${used.join(', ')})` : ''}`);
 JS
@@ -160,4 +162,10 @@ rm -f "$DEPLOY_OUT/deployed-url.txt"
 # wrangler prints the workers.dev URL of the deployment; the smoke needs it (a custom domain: pass it yourself)
 URL=$(grep -oE 'https?://[A-Za-z0-9.:-]+' "$DEPLOY_OUT/wrangler-deploy.log" | grep -E '\.workers\.dev$|^http://127\.0\.0\.1:' | tail -1 || true)
 if [ -n "$URL" ]; then echo "$URL" > "$DEPLOY_OUT/deployed-url.txt"; echo "DEPLOYED-URL $URL"; fi
-echo "DEPLOYED. Next: node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke ${URL:-https://$WORKER_NAME.<your-subdomain>.workers.dev} --all --range"
+SMOKE_CMD="node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke ${URL:-https://$WORKER_NAME.<your-subdomain>.workers.dev} --all --range"
+# a split upload (decision E1): the smoke compares every index's sha256, so it fails until the missing phases are up
+if [ -s "$DEPLOY_OUT/record-gap.txt" ]; then
+  echo "DEPLOYED (split upload). Next: PHASES=$(tr -d '\n' < "$DEPLOY_OUT/record-gap.txt") scripts/upload-artifacts.sh, then $SMOKE_CMD (until then the smoke fails on the old indexes: not this release's upload)"
+else
+  echo "DEPLOYED. Next: $SMOKE_CMD"
+fi
