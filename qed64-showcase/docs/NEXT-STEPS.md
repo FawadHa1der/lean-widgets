@@ -105,7 +105,9 @@ tracing").
    full gate (TwoDice stays a browser regression case). QED64's **#68** (a page that replaces its own runtime waits for
    all of its Workers) is the branch `fix/own-predecessor-wait`, **not on QED64 main**; re-pin when it lands.
 5. **Follow-up: a Chrome-budget headless lane** (the kernel session's guidance, 2026-10-09): run E3's persistent path
-   through the toolchain package's `snapshot-probe.mjs` with `LEAN4_WASM64_PTHREAD_STACK_MB=0.68` (Node 0.68 MB = a macOS
+   through the toolchain package's `snapshot-probe.mjs` (from the next kernel release QED64's
+   `pipeline/snapshot/snapshot-probe.mjs`: the package drops its copy, kernel `408859aed0`, D4 (a); 2026-11-01)
+   with `LEAN4_WASM64_PTHREAD_STACK_MB=0.68` (Node 0.68 MB = a macOS
    Chrome Worker; chrome-headless-shell measured within 1 % of it). The probe honours the knob only from kernel
    `0249065cc0` (release `-r3`, not yet published), and on runtime f69cca24 `lean_wasm_compile` starts with
    `Elab.async` off, so the probe file needs `set_option Elab.async true` for the proofs to run on the sized Workers.
@@ -197,6 +199,15 @@ pushed**.
   (`5e63edd`, the same fixes; the section above). The UX suite asserts them on I and J through the descriptor's
   `hardening` flags (C9, C11, the network oracle).
 * **Kernel patch 0038 and QED64's #68:** each a re-pin with the full gate once it is on QED64 main (the section above).
+* **The next kernel release (expected with the v4.36 import; the kernel session's heads-up, 2026-11-01):**
+  * the FileWorker's refused-header text becomes generic: it drops `use "Load exact imports"` and keeps
+    `are not loaded in this session`. C7 (`tests/ux/specs/30-robustness.spec.mjs:97`) compares the whole text, so in
+    that same re-pin it must match the substring instead (the user's OK; the re-pin's fresh G2 verdict covers it);
+  * the `lean4-wasm64` package no longer ships `snapshot-probe.mjs`, `bake-snapshot.mjs` or `snapshot-index.mjs`
+    (kernel `408859aed0`, D4 (a)). Our scripts already use QED64's `pipeline/snapshot/` copies; only the step-5
+    lane above named the package's probe.
+* **QED64's D1 (retiring "Load exact imports"):** QED64 sets `capabilities.offers` to false (its `main.ts:33`), and
+  C16 is rewritten on that flag in the re-pin that carries it ($W/reports/r1-review-showcase-2026-10-30.md).
 * **Our steps 5 and 6** ("heavy path from a fetched release" and "drop the submodule and the source build"), after QED64
   publishes its release bundle (B2: `release.json`, the shell tarball, the manifests, the umbrella pair, `SHA256SUMS`)
   and names pushed SHAs for A2 (`qed64/edge` etc.) and B2. Agreed with QED64 (handover §16, §23):
