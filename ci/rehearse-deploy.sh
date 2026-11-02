@@ -15,7 +15,8 @@
 #   unpublished push over the empty R2                   -> the pre-promotion check refuses; nothing is promoted
 #   no-preview  push, wrangler prints no preview URL     -> refused with the reason; nothing is promoted
 #   deploy      push, SHOWCASE_ORIGIN = the live stand-in -> pre-promotion check OK, promoted, smoke OK on the origin
-#   first       push, no SHOWCASE_ORIGIN                 -> the same; smoke on the URL deploy-app.sh derived
+#   no-origin   push, no SHOWCASE_ORIGIN                 -> the same; smoke on the URL deploy-app.sh derived (and that
+#                                                           derivation on a workers.dev URL, which the stand-in has not)
 #   no-verdict  push of a commit that changes the gallery without a new infra/ux-verdict.json -> G2 refuses
 #   tamper      `deploy-manifest --published` of the deploy scenario's manifest with one index sha256 and one object
 #               size altered, against the live stand-in -> FAIL (the check can see a wrong upload). The index is the
@@ -117,6 +118,8 @@ runlocal() {
   [ "$rc" = "$want" ] || { fail "$name" "run-local rc $rc, expected $want (log $RUN/$name.log)"; return 1; }
 }
 has() { grep -qE -e "$2" "$RUN/$1.log"; }
+# the workflow's own smoke step passed ('SMOKE OK' alone also matches deploy-app.sh's pre-promotion smoke)
+SMOKE_STEP='step [0-9]+ SUCCESS.*Smoke'
 # the wrangler stand-in as runner-level variables (an array: the shim's path has a space)
 shim_env() { SHIM_ENV=(--runner-env "WRANGLER_BIN=$SHIM" --runner-env "REHEARSAL_STATE=$1" --runner-env "REHEARSAL_PORT=$2" --runner-env "REHEARSAL_RUN_DIR=$3"); }
 SECRETS=(--secret CLOUDFLARE_API_TOKEN=rehearsal-placeholder-not-a-token --secret CLOUDFLARE_ACCOUNT_ID=rehearsal-placeholder)
@@ -198,8 +201,11 @@ measure() { echo "E1 MEASURE $*" | tee -a "$RUN/old-shell/e1-measure.txt"; }
 otab() {
   local u line
   u=$(node -p 'const m=require(process.argv[1]);`/runtime/runtime-manifest.${m.pin.buildId}.json`' "$OS_OLD_MANIFEST")
-  line=$(curl -s -o /dev/null -D - "http://127.0.0.1:$OLD_PORT$u" | grep -iE '^HTTP|^cache-control' | tr -d '\r' | tr '\n' ' ')
+  line=$(curl -s -o /dev/null -D - "http://127.0.0.1:$OLD_PORT$u" | grep -iE '^HTTP|^cache-control' | tr -d '\r' | tr '\n' ' ') || line="no answer (${line:-no headers})"
   measure "$1: an old tab's fetch of $u through the new Worker: $line"
+  # the pack manifest: one URL in both releases, and a shell before QED64 HARDENING #81 has no release check on it
+  line=$(curl -s "http://127.0.0.1:$OLD_PORT/profiles/lean-core.manifest.json" | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{try{console.log(`release ${JSON.parse(s).content.release}`)}catch(e){console.log(`unreadable: ${s.slice(0,80)}`)}})') || line="no answer"
+  measure "$1: an old tab's fetch of /profiles/lean-core.manifest.json through the new Worker: $line"
 }
 
 # Prepare: the inputs, the phase split of the new manifest (upload-artifacts.sh's own rule), the overlap checks against the
@@ -347,7 +353,7 @@ old_shell() {
       cp -cR "$OS_STATE" "$D/state" || { errs+=("$order: cannot clone OLD_STATE"); continue; }
       shim_env "$D/state" "$OLD_PORT" "$D/server"
       if runlocal "old-shell-$order-old" 0 --ref "$oref" --event push "${SECRETS[@]}" "${SHIM_ENV[@]}"; then
-        has "old-shell-$order-old" 'Deployed \(rehearsal' && has "old-shell-$order-old" 'SMOKE OK' \
+        has "old-shell-$order-old" 'Deployed \(rehearsal' && has "old-shell-$order-old" "$SMOKE_STEP" \
           || errs+=("$order: the old workflow did not show the deploy and SMOKE OK on the live objects ($RUN/old-shell-$order-old.log)")
       else errs+=("$order: the old workflow failed on the live objects ($RUN/old-shell-$order-old.log)"); fi
       cfg_old=$(oconfig "old-shell-$order-old"); oldsc=${cfg_old%/wrangler.toml}
@@ -415,7 +421,7 @@ old_shell() {
       # 5A. the NEW workflow: pre-promotion check (everything is up), promotion, smoke
       shim_env "$D/state" "$OLD_PORT" "$D/server"
       if runlocal "old-shell-A-new" 0 --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$OLD_PORT" "${SHIM_ENV[@]}"; then
-        has old-shell-A-new 'PUBLISHED OK' && has old-shell-A-new 'Deployed \(rehearsal' && has old-shell-A-new 'SMOKE OK' \
+        has old-shell-A-new 'PUBLISHED OK' && has old-shell-A-new 'Deployed \(rehearsal' && has old-shell-A-new "$SMOKE_STEP" \
           || errs+=("A: the new workflow did not show PUBLISHED OK, the deploy and SMOKE OK ($RUN/old-shell-A-new.log)")
       else errs+=("A: the new workflow failed ($RUN/old-shell-A-new.log)"); fi
       cfg_new=$(oconfig old-shell-A-new); newsc=${cfg_new%/wrangler.toml}
@@ -436,7 +442,7 @@ old_shell() {
       node "$ROOT/ci/run-local.mjs" --workflow "$WF" --ref "$REF" --out "$RUN/old-shell-B-new" --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" --runner-env ALLOW_PARTIAL_UPLOAD=1 \
         > "$RUN/old-shell-B-new.log" 2>&1 || rcnew=$?
       has old-shell-B-new 'Deployed \(rehearsal' || errs+=("B: the new Worker was not deployed ($RUN/old-shell-B-new.log)")
-      measure "B: the new Worker's post-deploy smoke before phase 3: $(has old-shell-B-new 'SMOKE OK' && echo OK || echo "FAILED (rc $rcnew)")"
+      measure "B: the new Worker's post-deploy smoke before phase 3: $(has old-shell-B-new "$SMOKE_STEP" && echo OK || echo "FAILED (rc $rcnew)")"
       cfg_new=$(oconfig old-shell-B-new); newsc=${cfg_new%/wrangler.toml}
       [ -n "$cfg_new" ] || { errs+=("B: no wrangler.toml from the new deploy"); ostop "$D" || true; continue; }
       if ogallery "$newsc" "B-window-new-gallery"; then measure "B: the NEW gallery in the window (no phase 3 yet): OK"
@@ -494,16 +500,20 @@ scenario() {
   deploy)
     shim_env "$RUN/state" "$PORT" "$RUN/server"
     runlocal deploy 0 --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$PORT" "${SHIM_ENV[@]}" || return 0
-    if has deploy 'PUBLISHED OK http://127.0.0.1:'"$PORT" && has deploy 'PRE-PROMOTION OK' && has deploy 'Deployed \(rehearsal' && has deploy 'SMOKE OK' \
+    if has deploy 'PUBLISHED OK http://127.0.0.1:'"$PORT" && has deploy 'PRE-PROMOTION OK' && has deploy 'Deployed \(rehearsal' && has deploy "$SMOKE_STEP" \
        && has deploy 'G2 UX: verdict run .*committed record infra/ux-verdict.json' && [ -d "$RUN/server/wrangler-dry-run" ] && grep -q '@100%$' "$RUN/server/promoted"; then
       pass deploy "G2 from the committed verdict, wrangler versions upload --dry-run + wrangler dev, pre-promotion check OK, promoted, SMOKE OK"
     else fail deploy "expected PUBLISHED OK, PRE-PROMOTION OK, the promotion and SMOKE OK (log $RUN/deploy.log)"; fi ;;
-  first)
+  no-origin)
     shim_env "$RUN/state" "$PORT" "$RUN/server"
-    runlocal first 0 --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" || return 0
-    if has first 'PRE-PROMOTION OK' && has first "DEPLOYED-URL http://127.0.0.1:$PORT" && has first 'SMOKE OK'; then
-      pass first "no SHOWCASE_ORIGIN: the pre-promotion check, then the smoke on the URL deploy-app.sh derived"
-    else fail first "expected PRE-PROMOTION OK, DEPLOYED-URL and SMOKE OK (log $RUN/first.log)"; fi ;;
+    runlocal no-origin 0 --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" || return 0
+    # (the stand-in's URL has no version in it: the derivation on a real preview URL is asserted here)
+    local derived
+    derived=$(bash -c '. "$1/scripts/lib/deploy-common.sh"; worker_url_of_preview https://abcd1234-qed64-showcase.example.workers.dev' _ "$SC")
+    if has no-origin 'PRE-PROMOTION OK' && has no-origin "DEPLOYED-URL http://127.0.0.1:$PORT" && has no-origin "$SMOKE_STEP" \
+       && [ "$derived" = https://qed64-showcase.example.workers.dev ]; then
+      pass no-origin "no SHOWCASE_ORIGIN: the pre-promotion check, then the smoke on the URL deploy-app.sh derived"
+    else fail no-origin "expected PRE-PROMOTION OK, DEPLOYED-URL, the smoke step and the derivation (got '$derived'; log $RUN/no-origin.log)"; fi ;;
   no-verdict)
     # a scratch clone with ONE extra commit that changes the gallery (a CSS comment) and nothing else
     local S="$RUN/no-verdict-repo"
@@ -527,20 +537,25 @@ scenario() {
       const u=`/snapshots/${(m.options.overlayDirs||{}).widgets8||"widgets8"}/index.json`;
       const ix=m.r2.find(o=>o.url===u); if(!ix){console.error(`no ${u} in the manifest`);process.exit(1);} ix.sha256="0".repeat(64);
       const big=m.r2.find(o=>o.immutable&&o.url.endsWith(".snapz")); big.size+=1;
-      fs.writeFileSync(process.argv[2],JSON.stringify(m)); console.log(u);' "$M" "$RUN/tamper/out/manifest.json") \
+      const relo=m.release.objects.find(o=>o.immutable); relo.size+=1;
+      fs.writeFileSync(process.argv[2],JSON.stringify(m)); console.log(u+" "+relo.url);' "$M" "$RUN/tamper/out/manifest.json") \
       || { fail tamper "the deploy scenario's manifest has no widgets8 overlay index"; return 0; }
-    local rc=0
+    local rc=0 rcs=0 RELU=${IXU#* }; IXU=${IXU%% *}
     (cd "$(dirname "$(dirname "$(dirname "$M")")")" && node scripts/deploy-manifest.mjs --published "http://127.0.0.1:$PORT" --out "$RUN/tamper/out") > "$RUN/tamper.log" 2>&1 || rc=$?
-    tail -4 "$RUN/tamper.log"
-    if [ "$rc" = 1 ] && grep -qF "FAIL $IXU" "$RUN/tamper.log" && has tamper 'content-length [0-9]+ != [0-9]+' && has tamper 'PUBLISHED FAILED'; then
-      pass tamper "--published caught a wrong index sha256 ($IXU) and a wrong object size"
-    else fail tamper "expected two FAIL lines (one for $IXU) and PUBLISHED FAILED, rc 1 (got rc $rc; log $RUN/tamper.log)"; fi ;;
+    tail -5 "$RUN/tamper.log"
+    # the toolchain release's objects count too: the Worker reads them, and nothing of ours can vouch for them
+    (cd "$(dirname "$(dirname "$(dirname "$M")")")" && node scripts/deploy-manifest.mjs --smoke "http://127.0.0.1:$PORT" --all --out "$RUN/tamper/out") > "$RUN/tamper-smoke.log" 2>&1 || rcs=$?
+    tail -2 "$RUN/tamper-smoke.log"
+    if [ "$rc" = 1 ] && grep -qF "FAIL $IXU" "$RUN/tamper.log" && grep -qF "FAIL $RELU" "$RUN/tamper.log" && has tamper 'content-length [0-9]+ != [0-9]+' && has tamper 'PUBLISHED FAILED' \
+       && [ "$rcs" = 1 ] && grep -qF "FAIL HEAD $RELU" "$RUN/tamper-smoke.log"; then
+      pass tamper "--published caught a wrong index sha256 ($IXU) and wrong object sizes, ours and the release's ($RELU), and --smoke the release's"
+    else fail tamper "expected FAIL lines for $IXU and $RELU and PUBLISHED FAILED, rc 1, and FAIL HEAD $RELU from --smoke (got rc $rc, $rcs; logs $RUN/tamper.log, $RUN/tamper-smoke.log)"; fi ;;
   old-shell)
     old_shell ;;
   *) die "unknown scenario $1" ;;
   esac
 }
-SCEN=("$@"); [ ${#SCEN[@]} -gt 0 ] || SCEN=(skip dry-run unpublished no-preview deploy first no-verdict tamper old-shell)
+SCEN=("$@"); [ ${#SCEN[@]} -gt 0 ] || SCEN=(skip dry-run unpublished no-preview deploy no-origin no-verdict tamper old-shell)
 for s in "${SCEN[@]}"; do scenario "$s"; done
 cleanup; trap - EXIT
 # the old-shell ports only when that scenario ran (it creates <run>/old-shell; skipped without OLD_REF): a default run on a

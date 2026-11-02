@@ -5,7 +5,7 @@
 # Target: infra/deploy.env (R2_REMOTE, R2_BUCKET, R2_PREFIX, WORKER_NAME); an environment variable of the same name
 # wins, subject to the shared-bucket guard (scripts/lib/deploy-env.mjs). Other knobs: DEPLOY_OUT (default
 # out/deploy: manifest.json, rclone lists, assets/, published/ release records), MANIFEST_ARGS (extra options for
-# `deploy-manifest.mjs` generate, e.g. "--overlays widgets8 --no-stock-snapshots --no-essential-pack"),
+# `deploy-manifest.mjs` generate, e.g. "--overlays widgets8 --no-stock-snapshots"),
 # ALLOW_NO_UX_VERDICT=1 (proceed although G2 found no verdict UX run for this gallery + lock + overlays).
 
 die() { echo "$(basename "$0"): $*" >&2; exit 3; }
@@ -13,8 +13,8 @@ die() { echo "$(basename "$0"): $*" >&2; exit 3; }
 load_deploy_env() {
   # One implementation for bash and JS: scripts/lib/deploy-env.mjs reads infra/deploy.env, applies the environment
   # overrides, validates every value ([A-Za-z0-9._/-] only, so the lines are safe to read back here) and applies the
-  # SHARED-BUCKET GUARD: in bucket qed64-artifacts an empty prefix (QED64's root) or one inside lean4game/, runtime/,
-  # profiles/, snapshots/ is refused outright, and any prefix other than qed64-showcase/ needs ALLOW_SHARED_PREFIX=1.
+  # SHARED-BUCKET GUARD: in bucket qed64-artifacts an empty prefix (QED64's root) or one inside lean4game/, lean4-wasm64/,
+  # runtime/, profiles/, snapshots/ is refused outright, and any prefix other than qed64-showcase/ needs ALLOW_SHARED_PREFIX=1.
   local resolved line
   resolved=$(node "$SC/scripts/lib/deploy-env.mjs") || die "deploy target refused (see above): nothing uploaded, deployed or rolled back"
   while IFS= read -r line; do
@@ -37,6 +37,12 @@ newest_record_for_remote() {
     [ -f "$d/target.env" ] && [ -f "$d/manifest.json" ] || continue
     if [ "$(sed -n 's/^remote=//p' "$d/target.env")" = "$1" ]; then echo "$d"; return 0; fi
   done < <(find "$DEPLOY_OUT/published" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort -r)
+}
+
+# The Worker's own URL, from a version's preview URL: https://<8 hex>-<worker>.<subdomain>.workers.dev without the version.
+# A local stand-in has one URL for both, unchanged. (A custom domain: pass it yourself.)
+worker_url_of_preview() {
+  case "$1" in https://*.workers.dev) echo "https://${1#https://*-}" ;; *) echo "$1" ;; esac
 }
 
 # Regenerate the manifest with the target's prefix, then the dry-run --check (G1 included); refuse unless both are

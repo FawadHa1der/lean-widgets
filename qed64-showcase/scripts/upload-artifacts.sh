@@ -11,7 +11,7 @@
 #                                               only those phases (below; default all three, in order). A SPLIT upload:
 #                                               phases 1-2 before the Worker deploy, `PHASES=3-indexes` after it, so the
 #                                               mutable shared indexes an older live shell reads (/snapshots/index.json,
-#                                               /profiles/index.json, the bare overlay /snapshots/widgets{7,8}/index.json)
+#                                               /profiles/index.json)
 #                                               change only once the new shell is live (decision E1 of the pin I plan;
 #                                               QED64 HARDENING #64). A per-runtime overlay index
 #                                               (/snapshots/widgets{7,8}.<bid16>/index.json, pin.json v3) is a NEW key no
@@ -24,7 +24,7 @@
 #
 # Target: infra/deploy.env (R2_REMOTE=qed64-r2, R2_BUCKET=qed64-artifacts, R2_PREFIX=qed64-showcase/); environment
 # variables of the same name override it. MANIFEST_ARGS passes extra options to the manifest generator (smaller
-# variants: "--overlays widgets8 --no-stock-snapshots --no-essential-pack"; --overlays takes the LOGICAL names, which
+# variants: "--overlays widgets8 --no-stock-snapshots"; --overlays takes the LOGICAL names, which
 # deploy-manifest.mjs uploads under each pin's served directory, /snapshots/<dir>/ = scripts/lib/pins.mjs overlayDir: the
 # bare name for pins A–H, '<o>.<bid16>' for a per-runtime pin). DEPLOY_OUT (default out/deploy).
 # VERIFY=0 skips the post-upload `rclone check`.
@@ -37,7 +37,7 @@
 #    mid-upload never learns a name whose object is not there yet (R2 has no multi-object atomic publish):
 #      phase 1 every digest-named object (.snapz)
 #      phase 2 the indexes no older shell reads (below)
-#      phase 3 the index.json files an older shell reads (profiles, stock snapshots, each bare overlay directory)
+#      phase 3 the index.json files an older shell reads (profiles, stock snapshots)
 #    (a per-build index copy, snapshots/index.<buildId>.json or snapshots/profiles-index.<buildId>.json, which
 #    deploy-manifest.mjs adds for a pin with hardening.pinnedIndexes (R6, QED64 HARDENING #64), is not an index.json, and a per-runtime overlay
 #    directory's index.json (snapshots/widgets8.<bid16>/, read only by the shell of that runtime) replaces nothing an
@@ -47,9 +47,8 @@
 #    Keep phaseOf on ONE line:
 #    ci/rehearse-deploy.sh (old-shell) evaluates it from this file)
 #    Every list is homogeneous in content type and is uploaded with an explicit
-#    --header-upload "Content-Type: …" (application/json for *.json, application/octet-stream for .snapz /
-#    .part-N): the pinned shell refuses a runtime manifest whose type is not JSON (qed64-boot.ts:67-70) and the
-#    gallery's preflight refuses an HTML-typed snapshot. rclone's s3 backend already guesses these from the
+#    --header-upload "Content-Type: …" (application/json for *.json, application/octet-stream for .snapz):
+#    the gallery's preflight refuses an HTML-typed snapshot. rclone's s3 backend already guesses these from the
 #    extension, and --header-upload overrides the guess on both PutObject and CreateMultipartUpload (verified
 #    against scripts/deploy-rehearsal/fake-s3.mjs), so the type no longer depends on the host's mime tables.
 #    Objects over 200 MiB (rclone's --s3-upload-cutoff default) go multipart in 64 MiB chunks; wrangler's
@@ -81,6 +80,15 @@ case " ${MANIFEST_ARGS:-} " in *" --from-lock "*) die "MANIFEST_ARGS has --from-
 manifest_preflight
 [ "$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).options.source || ""' "$DEPLOY_OUT/manifest.json")" = "" ] \
   || die "$DEPLOY_OUT/manifest.json is a --from-lock (shell-only) manifest: nothing to upload from"
+
+# An own bucket (infra/deploy.env, "Own-bucket alternative") must already hold the toolchain release: nothing here copies it,
+# and the Worker reads /runtime/ and /profiles/ from it. The shared bucket has it from the kernel's publish; the pre-promotion
+# check (deploy-app.sh) asks either way.
+if [ "$R2_BUCKET" != qed64-artifacts ]; then
+  REL=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).release.prefix' "$DEPLOY_OUT/manifest.json")
+  [ "$(rclone lsf "$R2_REMOTE:$R2_BUCKET/${REL}release.json" 2>/dev/null || true)" = release.json ] \
+    || die "bucket $R2_BUCKET has no ${REL}release.json: the Worker reads /runtime/ and /profiles/ from that prefix. Copy the release there first (docs/DEPLOY-CLOUDFLARE.md, own bucket)"
+fi
 
 # The phased, content-typed lists, straight from manifest.json (the generator already enforced every invariant).
 PLAN="$DEPLOY_OUT/upload"

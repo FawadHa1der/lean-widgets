@@ -16,13 +16,16 @@
 //                              out/runtimes/<buildId>/overlay/<o>/ (the per-runtime overlay store, by logical name).
 //
 // Origins (an origin serves the deployed layout: /runtime/…, /profiles/…, /snapshots/…, /snapshots/<dir>/…):
-//   --origin <url>         (ARTIFACT_ORIGIN)        the showcase's own origin: our deployed Worker (the upload copies,
-//                                                   never deletes, so every pin uploaded to its prefix keeps its QED64
-//                                                   files and .snapz, all digest-named; an overlay's index.json is one
+//   --origin <url>         (ARTIFACT_ORIGIN)        the showcase's own origin: our deployed Worker, or scripts/serve.mjs
+//                                                   of a checkout that has the files. Serves QED64's files AND overlays.
+//                                                   Under release routing the deployed Worker serves only the deployed
+//                                                   pin's runtime and packs (/runtime/ and /profiles/ come from that pin's
+//                                                   toolchain release); /snapshots/ is our prefix, where the upload copies
+//                                                   and never deletes, so every pin uploaded there keeps its stock .snapz
+//                                                   and overlay .snapz, all digest-named (an overlay's index.json is one
 //                                                   per /snapshots/<dir>/, the last upload's: bare for pins A–H, shared
-//                                                   by same-runtime pins from I on), or scripts/serve.mjs of a checkout
-//                                                   that has the files. Serves QED64's files AND overlays. The source
-//                                                   for any pin QED64's live site does not deploy now.
+//                                                   by same-runtime pins from I on). For another pin's runtime and packs,
+//                                                   when QED64's live site does not deploy it either: serve.mjs.
 //   --qed64-origin <url>   (QED64_ARTIFACT_ORIGIN)  an origin serving QED64's own files only; tried after --origin for
 //                                                   QED64's files. QED64's live site serves them for ONE release, the
 //                                                   one it deploys now: since QED64 4b98279 its Worker reads /runtime/*
@@ -31,7 +34,8 @@
 //                                                   were removed on 2026-10-23), and its R2 sweep of 2026-10-23 kept
 //                                                   only the live and the previous pairing's /snapshots/. Bootstrapping
 //                                                   or rolling back to any other pin (N, H, …) from it gets 404s: use
-//                                                   --origin.
+//                                                   --origin, and for that pin's runtime and packs an --origin that is
+//                                                   scripts/serve.mjs of a checkout that has them.
 //   Plain HTTP(S) GETs from Node: CORP/COEP apply to browsers, not to this client.
 //
 //   node scripts/fetch-artifacts.mjs [--pin <id>] [--origin <url>] [--qed64-origin <url>] [--only public|overlays]
@@ -122,7 +126,7 @@ if (argv.includes('--git-only')) { if (ONLY === 'overlays') usage('--git-only in
 const origins = (it) => (it.kind === 'overlay' ? [ORIGIN] : [ORIGIN, QORIGIN]).filter(Boolean);
 const qedOriginHint = (it, errs) => (it.kind === 'qed64' && QORIGIN && String(errs[errs.length - 1]).startsWith(QORIGIN)
   ? ` — QED64's origin serves only what its live site deploys now (/runtime/ and /profiles/<not index.json> of ONE release since QED64 4b98279; its 2026-10-23 sweep kept only the live and the previous pairing's /snapshots/): ${ORIGIN
-    ? `the showcase's own origin ${ORIGIN}, tried first, did not deliver it either (its error is the first one on this line; a 404 there means pin ${ID}'s files are not under that Worker's prefix: was pin ${ID} uploaded to it?)`
+    ? `the showcase's own origin ${ORIGIN}, tried first, did not deliver it either (its error is the first one on this line; a 404 there means that Worker does not serve pin ${ID}: under release routing it serves /runtime/ and /profiles/ for its own deployed pin only, so was pin ${ID} deployed?)`
     : `fetch pin ${ID}'s files from the showcase's own origin (--origin)`}` : '');
 
 async function have(it) {

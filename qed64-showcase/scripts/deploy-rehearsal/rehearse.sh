@@ -122,6 +122,9 @@ step() {
       must_refuse guard-rollback-lean4game 'deploy target refused' env R2_REMOTE=rehearsalguard R2_PREFIX=lean4game/ \
         sandbox-exec -f "$SB" scripts/rollback-artifacts.sh "$REC0" | tee -a "$LOGS/guard.log"
     fi
+    # own-bucket mode refuses to upload into a bucket that does not hold the toolchain release
+    must_refuse guard-own-bucket-no-release 'has no lean4-wasm64/' env R2_REMOTE=rehearsalguard R2_BUCKET=rehearsalownbucket R2_PREFIX= \
+      sandbox-exec -f "$SB" scripts/upload-artifacts.sh | tee -a "$LOGS/guard.log"
     # own-bucket mode (R2_BUCKET and R2_PREFIX changed together) is accepted by the same loader
     R2_BUCKET=qed64-showcase-artifacts R2_PREFIX='' node scripts/lib/deploy-env.mjs | tr '\n' ' ' | sed 's/^/own bucket accepted: /' | tee -a "$LOGS/guard.log"; echo
     after=$(tree_sum "$RD/guard-bucket")
@@ -164,13 +167,14 @@ console.log(`${bad ? 'FAKE-BUCKET FAILED' : 'FAKE-BUCKET OK'}: ${m.r2.length} ob
 process.exit(bad ? 1 : 0);
 EOF
     node - "$DO_ABS" "$SC" "$RD/bucket/$(bucket R2_BUCKET)" <<'EOF'
-// The release is not ours to upload: stage it where the kernel's publish puts it, by hard link from the pinned tree
+// The release is not ours to upload: stage it where the kernel's publish puts it. A clone, never a hard link: pin-qed64.mjs
+// verify #6 wants nlink == 1 on every file of the pinned tree.
 const fs = require('fs'), path = require('path');
 const [out, sc, root] = process.argv.slice(2); const m = JSON.parse(fs.readFileSync(path.resolve(out, 'manifest.json'), 'utf8'));
 for (const o of m.release.objects) {
   const to = path.join(root, o.key); fs.mkdirSync(path.dirname(to), { recursive: true });
   fs.rmSync(to, { force: true });
-  try { fs.linkSync(path.join(sc, o.src), to); } catch { fs.copyFileSync(path.join(sc, o.src), to, fs.constants.COPYFILE_FICLONE); }
+  fs.copyFileSync(path.join(sc, o.src), to, fs.constants.COPYFILE_FICLONE);
 }
 console.log(`RELEASE STAGED: ${m.release.objects.length} objects under ${m.release.prefix} of the fake bucket (the pinned tree's bytes; deploy-manifest L1 and L2 hold them to the lock and the release record)`);
 EOF
@@ -206,8 +210,10 @@ for (const o of m.r2) {
 const pos = (k) => order.indexOf(k);
 const lastObject = Math.max(...m.r2.filter((o) => o.phase === 'immutable').map((o) => pos(o.key)));
 const firstManifest = Math.min(...m.r2.filter((o) => o.phase === 'mutable').map((o) => pos(o.key)));
-const lastManifest = Math.max(...m.r2.filter((o) => o.phase === 'mutable' && !/\/index\.json$/.test(o.url)).map((o) => pos(o.key)));
-const firstIndex = Math.min(...m.r2.filter((o) => /\/index\.json$/.test(o.url) && !/^\/snapshots\/widgets[78]\.[0-9a-f]{16}\/index\.json$/.test(o.url)).map((o) => pos(o.key)));   // a per-runtime overlay's index is phase 2
+// a per-runtime overlay's index is phase 2 (upload-artifacts.sh phaseOf)
+const isPhase3 = (o) => /\/index\.json$/.test(o.url) && !/^\/snapshots\/widgets[78]\.[0-9a-f]{16}\/index\.json$/.test(o.url);
+const lastManifest = Math.max(...m.r2.filter((o) => o.phase === 'mutable' && !isPhase3(o)).map((o) => pos(o.key)));
+const firstIndex = Math.min(...m.r2.filter(isPhase3).map((o) => pos(o.key)));
 if (!(lastObject < firstManifest && lastManifest < firstIndex)) { bad++; console.log(`FAIL phase order: last object #${lastObject}, first manifest #${firstManifest}, last manifest #${lastManifest}, first index #${firstIndex}`); }
 const mp = ev.filter((e) => e.op === 'CompleteMultipartUpload');
 console.log(`${bad ? 'FAKE-S3 FAILED' : 'FAKE-S3 OK'}: ${done.size} objects received; Content-Type ${JSON.stringify(byType)} == manifest; ${mp.length} multipart (${mp.map((e) => `${e.key.split('/').pop()} ${e.parts} parts`).join(', ')}); phases objects -> manifests -> indexes in order`);
@@ -227,7 +233,8 @@ EOF
     R2_REMOTE=rehearsalr2 DRY_RUN=1 offline scripts/rollback-artifacts.sh "$REC" 2>&1 | tee "$LOGS/rollback-dry.log"
     [ "$(cat "$B$IDX")" = junk ] || { echo "REHEARSAL FAIL: the rollback dry run wrote"; exit 1; }
     R2_REMOTE=rehearsalr2 offline scripts/rollback-artifacts.sh "$REC" 2>&1 | tee "$LOGS/rollback.log"
-    cmp "$B$IDX" "$REC/files/$IDX" && say "rollback: $IDX restored byte-identical from ${REC##*/}"
+    cmp "$B$IDX" "$REC/files/$IDX" || { echo "REHEARSAL FAIL: the rollback left $IDX different from ${REC##*/}"; exit 1; }
+    say "rollback: $IDX restored byte-identical from ${REC##*/}"
     PART=$(cd "$B" && find . -name '*.snapz' | sed 's|^\./||' | sort | head -1)
     mv "$B$PART" "$RD/held-out.part"
     if R2_REMOTE=rehearsalr2 offline scripts/rollback-artifacts.sh "$REC" > "$LOGS/rollback-missing.log" 2>&1; then
@@ -235,6 +242,15 @@ EOF
     mv "$RD/held-out.part" "$B$PART"
     grep -E "MISSING|not in the bucket" "$LOGS/rollback-missing.log" | head -3
     say "rollback: refused while $PART was missing (negative control), object put back"
+    # the same for the toolchain release, which the Worker it goes back to reads and nothing here re-publishes
+    RB="$RD/bucket/$(bucket R2_BUCKET)"
+    RPART=$(cd "$RB" && find lean4-wasm64 -name '*.part-*' | sort | head -1)
+    mv "$RB/$RPART" "$RD/held-out.part"
+    if R2_REMOTE=rehearsalr2 offline scripts/rollback-artifacts.sh "$REC" > "$LOGS/rollback-missing-release.log" 2>&1; then
+      mv "$RD/held-out.part" "$RB/$RPART"; echo "REHEARSAL FAIL: rollback accepted a record whose release object $RPART is missing"; exit 1; fi
+    mv "$RD/held-out.part" "$RB/$RPART"
+    grep -E "MISSING|not in the bucket" "$LOGS/rollback-missing-release.log" | head -3
+    say "rollback: refused while the release object $RPART was missing (negative control), object put back"
     REC3=$(newest_record rehearsals3)
     if [ -n "$REC3" ]; then
       must_refuse rollback-other-remote "uploaded through remote 'rehearsals3'" env R2_REMOTE=rehearsalr2 DRY_RUN=1 \
@@ -246,7 +262,7 @@ EOF
     # regenerates the full one again): no record for the remote at all, then R2 keys that differ from the upload's
     must_refuse deploy-dry-no-record 'RECORD MISSING' env R2_REMOTE=rehearsalnorecord DRY_RUN=1 sandbox-exec -f "$SB" scripts/deploy-app.sh
     must_refuse deploy-dry-record-mismatch 'RECORD MISMATCH' env R2_REMOTE=rehearsalr2 DRY_RUN=1 \
-      MANIFEST_ARGS="--overlays widgets8 --no-stock-snapshots --no-essential-pack" sandbox-exec -f "$SB" scripts/deploy-app.sh
+      MANIFEST_ARGS="--overlays widgets8 --no-stock-snapshots" sandbox-exec -f "$SB" scripts/deploy-app.sh
     [ ! -f "$WRANGLER_CONFIG" ] || { echo "REHEARSAL FAIL: a refused deploy-app wrote $WRANGLER_CONFIG"; exit 1; }
     R2_REMOTE=rehearsalr2 DRY_RUN=1 offline scripts/deploy-app.sh 2>&1 | tee "$LOGS/deploy-dry.log" ;;
   load)

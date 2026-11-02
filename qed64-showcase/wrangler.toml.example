@@ -8,6 +8,8 @@ name = "qed64-showcase"
 main = "infra/worker.js"
 compatibility_date = "2026-08-01"
 # Serve on qed64-showcase.<account>.workers.dev; attach a custom domain later (guide, "Custom domain").
+# workers_dev, preview_urls and routes take effect through `wrangler triggers deploy` or a plain `wrangler deploy`, NOT through
+# the `wrangler versions` commands scripts/deploy-app.sh runs: run the former once after changing them.
 workers_dev = true
 # scripts/deploy-app.sh tests each new version on its preview URL before it takes traffic.
 preview_urls = true
@@ -20,7 +22,7 @@ preview_urls = true
 directory = "out/deploy/assets"
 binding = "ASSETS"
 # Assets are served BEFORE the worker by default, which would skip the COOP/COEP headers the page
-# cannot live without: run the worker for every request so withHeaders() applies to the shell too.
+# cannot live without: run the worker for every request so they apply to the shell too.
 run_worker_first = true
 # Missing files are a 404, never an SPA fallback (same as scripts/serve.mjs and QED64).
 not_found_handling = "none"

@@ -13,8 +13,8 @@
 // fallback to the root: QED64 infra/edge-worker.js RELEASE_R2_ROOT; lean4game serves the same release objects), and
 // wasm64-lean4game serves its own from lean4game/. An empty or foreign R2_PREFIX there would make an upload overwrite
 // another app's MUTABLE names (runtime-manifest.json, profiles/index.json, snapshots/index.json, *.manifest.json) or
-// the one copy of a release that QED64 and lean4game serve (this showcase's Worker never reads lean4-wasm64/: it serves
-// its own copies under its prefix, infra/worker.js artifactKey). lean4game falls back to its own prefix on an empty
+// the one copy of a release that QED64, lean4game and this showcase serve (infra/worker.js reads /runtime/* and
+// /profiles/<not index.json> from it, and never writes there). lean4game falls back to its own prefix on an empty
 // value (`PREFIX=${R2_PREFIX:-lean4game}`); here an empty or foreign prefix in the shared bucket is REFUSED instead,
 // loudly, because it almost always means a half-applied own-bucket setup (R2_PREFIX= without R2_BUCKET=…) or a
 // variable left over from another app's session:
@@ -22,7 +22,8 @@
 //     always refused;
 //   * any other prefix than qed64-showcase/ (e.g. a staging prefix qed64-showcase-staging/): refused unless
 //     ALLOW_SHARED_PREFIX=1 is set deliberately.
-// Own bucket (any other R2_BUCKET): any prefix, including '' — set R2_BUCKET and R2_PREFIX TOGETHER.
+// Own bucket (any other R2_BUCKET): any prefix, including '' — set R2_BUCKET and R2_PREFIX TOGETHER; that bucket must also
+// hold a copy of the release under lean4-wasm64/<id>/ (upload-artifacts.sh refuses without it).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

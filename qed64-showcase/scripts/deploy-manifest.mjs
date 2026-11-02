@@ -3,7 +3,7 @@
 // It never uploads, deploys or logs in anywhere; publishing needs the owner's account and go-ahead.
 //
 //   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8,widgets7] [--no-stock-snapshots]
-//                                    [--no-essential-pack] [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
+//                                    [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
 //       --overlays takes LOGICAL names (widgets7, widgets8; any other name is a literal directory). Each is uploaded under
 //       its SERVED directory, /snapshots/<dir>/ with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin): the bare name
 //       for pins A–H (pin.json v2), '<o>.<bid16>' for a per-runtime pin (v3, pin I on); options.overlayDirs records the
@@ -42,7 +42,8 @@
 //       Clone (copy-on-write where the file system can: scripts/lib/platform.mjs cloneFile) exactly the manifest's asset files into <out>/assets — the directory wrangler deploys —
 //       and verify every staged file's sha256 against the manifest.
 //   node scripts/deploy-manifest.mjs --commands [--out out/deploy] [--bucket <bucket>] [--remote <rclone remote>]
-//       Print the upload and deploy commands for the owner, in order. Prints only; runs nothing. Bucket and remote
+//       Print the upload and deploy commands for the owner, for review (not in upload-phase order: upload with
+//       scripts/upload-artifacts.sh). Prints only; runs nothing. Bucket and remote
 //       default to infra/deploy.env (R2_BUCKET / R2_REMOTE, overridable by those environment variables).
 //   node scripts/deploy-manifest.mjs --smoke <origin> [--out out/deploy] [--all] [--range] [--before-phase-3]
 //       HEAD the manifest's URLs on a live origin (the deployed Worker, or scripts/serve.mjs locally) and
@@ -71,7 +72,7 @@
 //   R1 runtime-manifest.json == runtime-manifest.<BID>.json (bytes), buildId == BID, every chunk present
 //      with the manifest's size and sha256
 //   R2 every profile the index lists has its manifest and every transport part present with its digest
-//      and size (with --no-essential-pack the essential profile is reported as deliberately absent); the index entry
+//      and size; the index entry
 //      names a release and it == the manifest's content.release, and the manifest's content.lean.version == the
 //      index's runtime.leanVersion (fail closed: a pack manifest has the same URL in every release, QED64 HARDENING #81)
 //   R3 every snapshot index uploaded (stock + overlays): schema, runtime == BID, every entry's URL (re-rooted
@@ -113,7 +114,7 @@ const argv = process.argv.slice(2);
 // generate is the default mode and may also be named; anything unknown prints the usage and exits 2 before any write.
 const MODES = { '--check': 'check', '--stage-assets': 'stage', '--commands': 'commands', '--smoke': 'smoke', '--published': 'published', '--record-verdict': 'record-verdict', generate: 'generate' };
 const ORIGIN_MODES = ['--smoke', '--published'];
-const BOOL_FLAGS = ['--all', '--range', '--no-essential-pack', '--no-stock-snapshots', '--from-lock', '--before-phase-3'];
+const BOOL_FLAGS = ['--all', '--range', '--no-stock-snapshots', '--from-lock', '--before-phase-3'];
 const VALUE_FLAGS = ['--out', '--overlays', '--prefix', '--bucket', '--remote']; // --smoke / --published take the origin as their value
 function usage(code, why) {
   if (why) console.error(`deploy-manifest: ${why}`);
@@ -201,7 +202,8 @@ function isImmutable(pathname) {
 // (`qed64-src check` holds its gitlink to the lock).
 const RELEASE_RECORD = path.join(SC, 'deps/qed64/toolchain/lean4-wasm64-release.json');
 function loadRelease(pinId) {
-  if (typeof qedReleaseRoutes !== 'function') throw new Error(`pin ${pinId}: QED64's ${qedIsImmutableSrc} has no release routing, so infra/worker.js cannot serve it (pins before 385a1ac: a rollback to one is 'wrangler rollback' to its Worker version, docs/DEPLOY-CLOUDFLARE.md section 5)${qedSrcError ? `; ${qedSrcError.message}` : ''}`);
+  if (qedSrcError) throw new Error(`pin ${pinId}: ${qedSrcError.message}`);
+  if (typeof qedReleaseRoutes !== 'function') throw new Error(`pin ${pinId}: QED64's ${qedIsImmutableSrc} has no release routing, so infra/worker.js cannot serve it (pins before 385a1ac: a rollback to one is 'wrangler rollback' to its Worker version, docs/DEPLOY-CLOUDFLARE.md section 5)`);
   if (!fs.existsSync(RELEASE_RECORD)) throw new Error(`${rel(RELEASE_RECORD)} missing: the Worker bundles it to route /runtime/ and /profiles/`);
   const record = readJson(RELEASE_RECORD);
   return { record, routes: qedReleaseRoutes(record) };
@@ -249,17 +251,14 @@ function build(opts) {
     ? Object.keys(lockFiles).filter((k) => k.startsWith(`public/${dir}/`)).sort().map((k) => [path.join(R, k), lockFiles[k]])
     : walk(path.join(pub, dir)).map((f) => [f, null]));
   for (const [f, k] of pubFiles('runtime')) addR2(f, `/${path.relative(pub, f)}`, 'runtime', path.join(pub, 'runtime'), k);
-  for (const [f, k] of pubFiles('profiles')) {
-    if (opts.noEssentialPack && /^mathlib-essential\.pack\./.test(path.basename(f))) continue;
-    addR2(f, `/${path.relative(pub, f)}`, 'profiles', path.join(pub, 'profiles'), k);
-  }
+  for (const [f, k] of pubFiles('profiles')) addR2(f, `/${path.relative(pub, f)}`, 'profiles', path.join(pub, 'profiles'), k);
   if (opts.stockSnapshots) for (const [f, k] of pubFiles('snapshots')) addR2(f, `/${path.relative(pub, f)}`, 'snapshots-stock', path.join(pub, 'snapshots'), k);
   // QED64 HARDENING #64 (a pin whose descriptor sets hardening.pinnedIndexes): this runtime's per-build index copies, as
   // QED64's own upload writes them (its scripts/upload-artifacts.sh: step 2 up to 58ebbad; from 4b93459 on step 3, after
   // every .snapz and before the mutable indexes): /snapshots/index.<BID>.json = the stock
   // snapshot index's bytes, /snapshots/profiles-index.<BID>.json = profiles/index.json's. This runtime's shell reads a copy
   // only while the served mutable index names another runtime (a split upload's window, decision E1; a later runtime's
-  // indexes once that is deployed), so the copies go up with the manifests (upload phase 2) and stay. QED64's git tracks
+  // indexes once that is deployed), so the copies go up in upload phase 2 and stay. QED64's git tracks
   // neither, so they are materialized under <out>/pinned-indexes/snapshots (rclone --files-from needs source name == key
   // name); --from-lock takes size + sha256 from the lock's entry of the index they copy. Pins A–H have no flag: unchanged.
   const pinnedIndexes = !!(pinDescriptor(pinId).hardening || {}).pinnedIndexes;
@@ -302,7 +301,7 @@ function build(opts) {
       note: 'Generated by scripts/deploy-manifest.mjs. Nothing is uploaded by this tool; publishing needs the owner\'s Cloudflare account and explicit go-ahead (docs/DEPLOY.md).',
       pin: { id: String(lock.qed64.commit).slice(0, 7), buildId: BID, qed64Commit: lock.qed64.commit, lockSha256: sha256File(path.join(SC, 'QED64.lock.json')), releaseDir: lock.release.dir },
       gallery: galleryContentHash(path.join(SC, 'gallery')),
-      options: { overlays: opts.overlays, overlayDirs, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
+      options: { overlays: opts.overlays, overlayDirs, stockSnapshots: opts.stockSnapshots, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
       totals: { assets: assets.length, assetBytes: sum(assets), r2Objects: r2.length, r2Bytes: sum(r2), r2Multipart: r2.filter((o) => o.multipart).length, groups, releaseObjects: releaseObjects.length, releaseBytes: sum(releaseObjects) },
       assets, r2, release: { id: routes.id, prefix: routes.prefix, objects: releaseObjects },
     },
@@ -320,7 +319,7 @@ function validate({ manifest: m, ctx }) {
     const p = path.join(SC, o.src);
     if (!fromLock) return readJson(p);
     if (!fs.existsSync(p)) {
-      if (o.group.startsWith('overlay-')) return null;
+      if (o.group?.startsWith('overlay-')) return null;
       ok(false, `${label}: ${o.src} present (a file QED64 tracks in git: run 'node scripts/fetch-artifacts.mjs --git-only')`); return undefined;
     }
     if (!ok(sha256File(p) === o.sha256, `${label}: ${o.src} sha256 == the lock's`)) return undefined;
@@ -383,8 +382,6 @@ function validate({ manifest: m, ctx }) {
         [!relIdx ? 'the index entry names no release' : '', relIdx && relIdx !== relMan ? `the manifest is release ${relMan} (a pack manifest of another release under the same URL: the shell would refuse it as stale, or an older one install it)` : '',
           !leanIdx ? 'the index records no runtime.leanVersion' : '', leanIdx && leanIdx !== leanMan ? `the manifest is Lean ${leanMan}` : ''].filter(Boolean).join('; '));
       const parts = mj.content.pack.transport.parts;
-      const absent = parts.filter((x) => !byUrl.has(x.url));
-      if (!m.options.essentialPack && p.id === 'essential' && absent.length === parts.length) { info(`R2 profile essential: ${parts.length} parts deliberately not uploaded (--no-essential-pack: "Load exact imports" will fail)`); continue; }
       const bad = parts.filter((x) => { const o = byUrl.get(x.url); return !o || o.size !== x.byteLength || `sha256:${o.sha256}` !== x.digest; });
       ok(!bad.length, `R2 profile ${p.id}: all ${parts.length} transport parts present with digest and size`, bad.slice(0, 3).map((x) => x.url).join(', '));
     }
@@ -525,10 +522,10 @@ function writeOut(m) {
 }
 const optsFromArgv = () => ({
   overlays: val('--overlays', 'widgets8,widgets7').split(',').filter(Boolean),
-  stockSnapshots: !flag('--no-stock-snapshots'), noEssentialPack: flag('--no-essential-pack'), prefix: val('--prefix', ''),
+  stockSnapshots: !flag('--no-stock-snapshots'), prefix: val('--prefix', ''),
   fromLock: flag('--from-lock'),
 });
-const optsFromManifest = (m) => ({ overlays: m.options.overlays, stockSnapshots: m.options.stockSnapshots, noEssentialPack: !m.options.essentialPack, prefix: m.options.prefix, fromLock: m.options.source === 'lock' });
+const optsFromManifest = (m) => ({ overlays: m.options.overlays, stockSnapshots: m.options.stockSnapshots, prefix: m.options.prefix, fromLock: m.options.source === 'lock' });
 const loadManifest = () => { const p = path.join(OUT, 'manifest.json'); if (!fs.existsSync(p)) { console.error(`no ${rel(p)}: run 'node scripts/deploy-manifest.mjs' first`); process.exit(2); } return readJson(p); };
 
 // ------------------------------------------------------------------------------------------ modes
@@ -592,6 +589,7 @@ if (MODE === 'commands') {
   if (m.options.source === 'lock') { console.error('--commands refused (nothing printed): this is a --from-lock (shell-only) manifest; the upload needs the full manifest of a checkout that has the artifacts'); process.exit(3); }
   // the shared-bucket guard on what the printed commands would ACTUALLY write: this manifest's prefix in that bucket
   try { checkSharedBucket(bucket, m.options.prefix); } catch (e) { console.error(`--commands refused (nothing printed): ${e.message}. Regenerate with --prefix ${E.R2_PREFIX || "''"}`); process.exit(3); }
+  if (!m.release) { console.error(`--commands refused (nothing printed): ${rel(path.join(OUT, 'manifest.json'))} predates release routing: regenerate it`); process.exit(3); }
   const q = (s) => (/[^A-Za-z0-9_./:=@,-]/.test(s) ? `'${s.replace(/'/g, `'\\''`)}'` : s);
   console.log('# NOT RUN. Publishing needs the owner\'s Cloudflare account and explicit go-ahead (docs/DEPLOY.md).');
   console.log(`# pin ${m.pin.buildId} (QED64 ${m.pin.qed64Commit.slice(0, 12)}), ${m.totals.r2Objects} R2 objects, ${m.totals.assets} assets; ${m.totals.releaseObjects} runtime and pack files come from the published release ${m.release.prefix}, not from this upload.`);
@@ -603,8 +601,8 @@ if (MODE === 'commands') {
   console.log('scripts/showcase.sh ux                              # full UX suite green on it (then `showcase.sh gallery` says UX CURRENT)');
   console.log('node scripts/deploy-manifest.mjs --check            # dry run green first (G1 OK, G2 "was on THIS gallery")');
   console.log('node scripts/deploy-manifest.mjs --stage-assets     # out/deploy/assets');
-  console.log('# 1. immutable (digest-named) artifacts first, then 2. mutable indexes/manifests, then 3. the Worker.');
-  console.log('#    (each .mutable list holds manifests AND indexes; scripts/upload-artifacts.sh splits them: manifests, then indexes)');
+  console.log('# 1. immutable (digest-named) artifacts first, then 2. mutable indexes, then 3. the Worker.');
+  console.log('#    (a review listing: scripts/upload-artifacts.sh splits the mutable lists into phases 2 and 3)');
   for (const phase of ['immutable', 'mutable']) {
     for (const [g, info0] of Object.entries(m.totals.groups)) {
       const list = path.join(OUT, 'rclone', `${g}.${phase}.files`);

@@ -277,6 +277,56 @@ test("per-runtime overlay dir: index revalidates, .snapz immutable with HEAD Con
   }
 });
 
+// A pre-promotion check that ignored the toolchain release would promote a version whose runtime is not in the bucket.
+test("deploy-manifest --published and --smoke: a release object missing from the bucket FAILS; --before-phase-3 leaves out only the shared indexes", async () => {
+  const sha = (b) => createHash("sha256").update(b).digest("hex");
+  const IX = json('{"i":1}').bytes;
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), "deploy-manifest-release-"));
+  const key = ROUTES.prefix + PACK_PART.slice(1);
+  fs.writeFileSync(path.join(out, "manifest.json"), JSON.stringify({
+    pin: { buildId: PINS.activeBuildId() }, options: { overlays: [] }, assets: [],
+    r2: [{ url: "/profiles/index.json", key: "profiles/index.json", size: IX.length, sha256: sha(IX), immutable: false }],
+    release: { id: RECORD.id, prefix: ROUTES.prefix, objects: [{ url: PACK_PART, key, size: BYTES.length, sha256: sha(BYTES), immutable: true }] },
+  }));
+  const run = (origin, ...args) => new Promise((resolve) => execFile(process.execPath,
+    ["--no-concurrent-sparkplug", path.join(SC, "scripts/deploy-manifest.mjs"), "--out", out, ...args.flatMap((a) => (a === "ORIGIN" ? [origin] : [a]))],
+    { timeout: 60_000 }, (err, stdout, stderr) => resolve({ code: err ? err.code : 0, log: `${stdout}${stderr}` })));
+  const serve = (e) => new Promise((resolve) => {
+    const srv = http.createServer(async (rq, rs) => {
+      const headers = Object.fromEntries(Object.entries(rq.headers).filter(([k]) => k !== "host" && k !== "connection"));
+      const r = await worker.fetch(new Request(ORIGIN + rq.url, { method: rq.method, headers }), e);
+      rs.writeHead(r.status, Object.fromEntries(r.headers));
+      rs.end(rq.method === "HEAD" ? undefined : Buffer.from(await r.arrayBuffer()));
+    });
+    srv.listen(0, "127.0.0.1", () => resolve(srv));
+  });
+  const bucket = (objs) => env({ ARTIFACTS: fakeBucket(objs) });
+  const index = { "profiles/index.json": { bytes: IX, contentType: "application/json" } };
+  try {
+    for (const [objs, want, title] of [
+      [{ ...index, [key]: { bytes: BYTES } }, 0, "all there"],
+      [index, 1, "the release object is missing"],
+      // our prefix holding the same file must not stand in for the release's
+      [{ ...index, [PACK_PART.slice(1)]: { bytes: BYTES } }, 1, "only under our prefix"],
+    ]) {
+      const srv = await serve(bucket(objs)); const o = `http://127.0.0.1:${srv.address().port}`;
+      const p = await run(o, "--published", "ORIGIN");
+      const s = await run(o, "--smoke", "ORIGIN", "--all");
+      srv.closeAllConnections(); srv.close();
+      assert.equal(p.code, want, `--published, ${title}:\n${p.log}`);
+      assert.equal(s.code, want, `--smoke, ${title}:\n${s.log}`);
+      if (want) { assert.ok(p.log.includes(`FAIL ${PACK_PART}`), p.log); assert.ok(s.log.includes(`FAIL HEAD ${PACK_PART}`), s.log); }
+    }
+    // the shared index still the old one (a split upload before phase 3): only --before-phase-3 lets it through
+    const srv = await serve(bucket({ "profiles/index.json": json('{"i":0}'), [key]: { bytes: BYTES } })); const o = `http://127.0.0.1:${srv.address().port}`;
+    assert.equal((await run(o, "--published", "ORIGIN")).code, 1);
+    assert.equal((await run(o, "--smoke", "ORIGIN", "--all")).code, 1);
+    assert.equal((await run(o, "--published", "ORIGIN", "--before-phase-3")).code, 0);
+    assert.equal((await run(o, "--smoke", "ORIGIN", "--all", "--before-phase-3")).code, 0);
+    srv.closeAllConnections(); srv.close();
+  } finally { fs.rmSync(out, { recursive: true, force: true }); }
+});
+
 // scripts/deploy-manifest.mjs --smoke against this Worker (the fake R2 behind a local HTTP server). A manifest or index
 // is replaced in place under the same URL, so the stale one an origin still serves can have this release's size: pin
 // O's deploy rehearsal (order B) passed the old snapshots/index.json, 701 B at H and at O, on its HEAD content-length.

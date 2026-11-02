@@ -104,7 +104,7 @@ jobs:
         run: |
           scripts/deploy-app.sh
           if [ "$DRY_RUN" = 1 ]; then echo "dry run: nothing deployed, no smoke test"; exit 0; fi
-          # the public origin when configured (a custom domain), else the workers.dev URL wrangler printed
+          # the public origin when configured (a custom domain), else the workers.dev URL deploy-app.sh derived
           origin=${SHOWCASE_ORIGIN:-$(cat out/deploy/deployed-url.txt 2>/dev/null || true)}
           if [ -z "$origin" ]; then echo "::error::no deployment URL from deploy-app.sh and vars.SHOWCASE_ORIGIN is not set"; exit 1; fi
           echo "origin=$origin" >> "$GITHUB_OUTPUT"

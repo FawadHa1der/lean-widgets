@@ -11,8 +11,9 @@
 #                                   lock or nothing installed) → QED64's binaries and our overlays fetched
 #                                   from artifact origins, sha256-checked against the lock
 #                                   (scripts/fetch-artifacts.mjs) → the active pin's serve links → verify.
-#                                   Origins: --origin / ARTIFACT_ORIGIN (the showcase's own origin, serves
-#                                   both), --qed64-origin / QED64_ARTIFACT_ORIGIN (QED64's own files only).
+#                                   Origins: --origin / ARTIFACT_ORIGIN (the showcase's own origin: overlays,
+#                                   and QED64's files of its deployed pin), --qed64-origin / QED64_ARTIFACT_ORIGIN
+#                                   (QED64's own files only).
 #   pin [--yes]                 S0  release clone + lock from a QED64 checkout with QED64's binaries
 #                                   built (QED64_REPO; registering a NEW pin). Without --yes: read-only
 #                                   precondition report only (QED64 HEAD/clean vs the pinned commit).

@@ -1,8 +1,8 @@
 #!/bin/bash
 # deploy-app.sh — deploy the app shell (the pinned QED64 dist at "/" + the gallery at "/showcase/") as a Cloudflare
 # Worker with static assets, "the lean4game way" (wasm64-lean4game/scripts/deploy-app.sh is the model). The R2
-# artifacts are uploaded separately and rarely (scripts/upload-artifacts.sh): run that FIRST whenever the pin, the
-# overlays or the packs changed, so the shell never points at objects that are not there yet.
+# artifacts are uploaded separately and rarely (scripts/upload-artifacts.sh): run that FIRST whenever the pin or the
+# overlays changed, so the shell never points at objects that are not there yet.
 # Guide: docs/DEPLOY-CLOUDFLARE.md.
 #
 #   scripts/deploy-app.sh [wrangler args…]          `wrangler versions upload` (args go here), the checks on its preview
@@ -57,14 +57,14 @@ if [ -n "${WRANGLER_BIN:-}" ]; then WR=("$WRANGLER_BIN"); echo "wrangler: $WRANG
 manifest_preflight
 
 # The shell must read exactly what the last upload (or rollback) of this remote published: same bucket, same prefix,
-# same R2 keys with the same sha256 (the mutable runtime manifest and indexes included). Running the two scripts with
+# same R2 keys with the same sha256 (the mutable indexes included). Running the two scripts with
 # different env overrides, deploying a re-pinned shell before its upload, or after a rollback, would otherwise only
 # show up in the post-deploy smoke as 404s or SNAPSHOT_UNPAIRED. ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately
 # (e.g. the upload ran on another machine whose release record you do not have).
 REC=$(newest_record_for_remote "$R2_REMOTE")
 rm -f "$DEPLOY_OUT/record-gap.txt"   # written below only when ALLOW_PARTIAL_UPLOAD=1 deploys with phases missing
 if [ "$FROM_LOCK" = 1 ]; then
-  echo "release-record check: not applicable with DEPLOY_FROM_LOCK=1 (the records live on the machine that uploaded); the published check below takes its place"
+  echo "release-record check: not applicable with DEPLOY_FROM_LOCK=1 (the records live on the machine that uploaded); the pre-promotion check below takes its place"
 elif ! node - "$DEPLOY_OUT/manifest.json" "${REC:-}" "$R2_BUCKET" "$R2_PREFIX" "$R2_REMOTE" <<'JS'
 const fs = require('fs'), path = require('path');
 const [mPath, rec, bucket, prefix, remote] = process.argv.slice(2);
@@ -138,8 +138,9 @@ echo "shell: $(find "$ASSETS" -type f | wc -l | tr -d ' ') files, $(du -sh "$ASS
 if [ ! -f "$WRANGLER_CONFIG" ]; then node "$SC/scripts/lib/wrangler-config.mjs" write "$WRANGLER_CONFIG" --assets "$ASSETS"
 else node "$SC/scripts/lib/wrangler-config.mjs" check "$WRANGLER_CONFIG" --assets "$ASSETS" || exit 3; fi
 
-# The version message names the pin and the gallery, so `wrangler versions list` shows which shell is which when
-# choosing a `wrangler rollback <version-id>` target (docs/DEPLOY-CLOUDFLARE.md, "Rollback").
+# The version message names the pin and the gallery, so `wrangler deployments list` shows which shell is which when
+# choosing a `wrangler rollback <version-id>` target (docs/DEPLOY-CLOUDFLARE.md, "Rollback"; `wrangler deployments list`
+# holds only versions that took traffic: a version this script refused stays in `wrangler versions list`).
 MSG=$(node -p 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));`pin ${m.pin.id ? `${m.pin.id} (${m.pin.buildId})` : m.pin.buildId} gallery ${m.gallery.contentSha256.slice(0,16)} prefix ${m.options.prefix}`' "$DEPLOY_OUT/manifest.json")
 # a CI deploy names its commit too (GitHub Actions sets GITHUB_SHA)
 [ -n "${GITHUB_SHA:-}" ] && MSG="$MSG ci ${GITHUB_SHA:0:12}"
@@ -149,13 +150,22 @@ if [ "${DRY_RUN:-0}" = 1 ]; then
   exit 0
 fi
 rm -f "$DEPLOY_OUT/deployed-url.txt"
-"${WR[@]}" versions upload --config "$WRANGLER_CONFIG" --message "$MSG" "$@" 2>&1 | tee "$DEPLOY_OUT/wrangler-upload.log"
+if ! "${WR[@]}" versions upload --config "$WRANGLER_CONFIG" --message "$MSG" "$@" 2>&1 | tee "$DEPLOY_OUT/wrangler-upload.log"; then
+  grep -q 'does not yet exist' "$DEPLOY_OUT/wrangler-upload.log" \
+    && die "the Worker '$WORKER_NAME' does not exist yet: run once 'npx --prefix infra wrangler deploy --config $WRANGLER_CONFIG' (live with no pre-promotion check, on a Worker with no visitors), then this script again"
+  die "wrangler versions upload failed (above): nothing deployed"
+fi
 VERSION=$(sed -n 's/^Worker Version ID: *//p' "$DEPLOY_OUT/wrangler-upload.log" | tail -1)
 PREVIEW=$(sed -n 's/^Version Preview URL: *//p' "$DEPLOY_OUT/wrangler-upload.log" | tail -1)
 [ -n "$VERSION" ] || die "no 'Worker Version ID:' line from wrangler versions upload ($DEPLOY_OUT/wrangler-upload.log): nothing deployed"
-[ -n "$PREVIEW" ] || die "version $VERSION is uploaded but has no preview URL, so it cannot be checked before it takes traffic: turn on Preview URLs for the Worker '$WORKER_NAME' (dashboard, Settings, Domains & Routes; docs/DEPLOY-CLOUDFLARE.md) and run this again. Nothing deployed; the live version still has all the traffic"
-# A split upload has not replaced the shared indexes yet (the smoke after phase 3 compares them)
-PRE=(); [ "${ALLOW_PARTIAL_UPLOAD:-0}" = 1 ] && PRE=(--before-phase-3)
+[ -n "$PREVIEW" ] || die "version $VERSION is uploaded but has no preview URL, so it cannot be checked before it takes traffic: turn on Preview URLs for the Worker '$WORKER_NAME' (dashboard, Settings, Domains & Routes; or 'npx --prefix infra wrangler triggers deploy --config $WRANGLER_CONFIG'; docs/DEPLOY-CLOUDFLARE.md) and run this again. Nothing deployed; the live version still has all the traffic"
+# A split upload has not replaced the shared indexes yet (the smoke after phase 3 compares them). The record check says
+# whether phase 3 is missing; a lock-only checkout has no records, so there the operator's word is the only evidence.
+PRE=()
+if [ "${ALLOW_PARTIAL_UPLOAD:-0}" = 1 ]; then
+  [ "$FROM_LOCK" = 1 ] && echo 3-indexes > "$DEPLOY_OUT/record-gap.txt"
+  grep -q 3-indexes "$DEPLOY_OUT/record-gap.txt" 2>/dev/null && PRE=(--before-phase-3)
+fi
 # Up to 3 attempts 20 s apart, like the smoke after a deploy: a new version can take a few seconds to reach every edge location
 for i in 1 2 3; do
   if node "$SC/scripts/deploy-manifest.mjs" --published "$PREVIEW" --out "$DEPLOY_OUT" ${PRE[@]+"${PRE[@]}"} \
@@ -166,10 +176,7 @@ for i in 1 2 3; do
   echo "pre-promotion attempt $i failed; retrying in 20 s"; sleep 20
 done
 "${WR[@]}" versions deploy "$VERSION@100%" --config "$WRANGLER_CONFIG" --message "$MSG" --yes 2>&1 | tee "$DEPLOY_OUT/wrangler-deploy.log"
-# The Worker's own URL is its preview URL without the version: https://<8 hex>-<worker>.<subdomain>.workers.dev (a local
-# stand-in has one URL for both; a custom domain: pass it yourself)
-URL=$PREVIEW
-case "$URL" in https://*.workers.dev) URL="https://${URL#https://*-}" ;; esac
+URL=$(worker_url_of_preview "$PREVIEW")
 echo "$URL" > "$DEPLOY_OUT/deployed-url.txt"; echo "DEPLOYED-URL $URL"
 SMOKE_CMD="node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke ${URL:-https://$WORKER_NAME.<your-subdomain>.workers.dev} --all --range"
 # a split upload (decision E1): the smoke compares every index's sha256, so it fails until the missing phases are up

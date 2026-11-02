@@ -1,5 +1,5 @@
 #!/bin/bash
-# rollback-artifacts.sh <release record> — re-publish the mutable names (manifests, then indexes) of an earlier
+# rollback-artifacts.sh <release record> — re-publish the mutable names (phase 2 files, then indexes) of an earlier
 # scripts/upload-artifacts.sh run, "the lean4game way": R2 is copy-only, so every digest-named object an earlier
 # release pointed at is still in the bucket and rolling back is putting the old NAMES back
 # (wasm64-lean4game/wasm/DEPLOY.md "Rollback"). Guide: docs/DEPLOY-CLOUDFLARE.md "Rollback".
@@ -13,7 +13,8 @@
 # lists is still in the bucket with its size (`rclone lsjson`, metadata only): re-publishing an index whose objects
 # are gone would strand every visitor. Then copies the record's manifests and indexes with their Content-Type, and
 # writes a new record <UTC time>-rollback (a copy) so that scripts/deploy-app.sh compares against what is live now.
-# The object check reads the record's manifest.json (every immutable R2 entry), never only the uploaded lists.
+# The object check reads the record's manifest.json (every immutable R2 entry, and every object of the toolchain
+# release for a record with release routing), never only the uploaded lists.
 # A record of a SPLIT upload (target.env phases= naming fewer than all three phases: scripts/upload-artifacts.sh PHASES,
 # decision E1: `PHASES=1-objects,2-manifests`, the Worker deploy, then `PHASES=3-indexes`) holds only those phases' lists
 # and files. Either record of such a release may be named: its COMPANION records are joined, i.e. the consecutive records
@@ -22,8 +23,8 @@
 # newest companion that uploaded it, then phase 3 from the newest that uploaded that, and the new record holds the union
 # (no phases= line: a complete release). When they do not, refused unless ALLOW_PARTIAL_ROLLBACK=1; the new record then
 # keeps the record's phases= line, so deploy-app.sh / upload-artifacts.sh never count it as a complete upload.
-# The SHELL must go back too: `npx --prefix infra wrangler versions list` (the version message names the pin and
-# gallery) and `npx --prefix infra wrangler rollback <version-id>`.
+# The SHELL must go back too: `npx --prefix infra wrangler deployments list` (the version message names the pin and
+# gallery; a refused version never appears there) and `npx --prefix infra wrangler rollback <version-id>`.
 # shellcheck disable=SC2016  # single-quoted node snippets use JS template literals on purpose
 set -euo pipefail
 SC="$(cd "$(dirname "$0")/.." && pwd)"
@@ -138,9 +139,24 @@ while IFS=$'\t' read -r _id list _root sub _ctype count _bytes; do
   echo "objects $sub: $((count - bad))/$count present with their size"
   missing=$((missing + bad))
 done < "$WORK/check/check.tsv"
+# A record with release routing: the Worker it goes back to reads the runtime and packs from the toolchain release's own
+# prefix, which `wrangler rollback` does not check either. All of them, manifests too: nothing here re-publishes those.
+REL_PREFIX=$(node -p 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));m.release?m.release.prefix:""' "$SRC/manifest.json")
+if [ -n "$REL_PREFIX" ]; then
+  node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));require("fs").writeFileSync(process.argv[2],m.release.objects.map((o)=>o.key.slice(m.release.prefix.length)).join("\n")+"\n")' "$SRC/manifest.json" "$WORK/check/release.files"
+  rclone lsjson -R --files-only --files-from-raw "$WORK/check/release.files" "$R2_REMOTE:$R2_BUCKET/$REL_PREFIX" > "$WORK/check/release.got" 2>/dev/null || echo '[]' > "$WORK/check/release.got"
+  bad=$(node -e '
+    const fs = require("fs"); const m = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const size = new Map(JSON.parse(fs.readFileSync(process.argv[2], "utf8")).map((o) => [o.Path, o.Size]));
+    const bad = m.release.objects.filter((o) => size.get(o.key.slice(m.release.prefix.length)) !== o.size);
+    for (const o of bad.slice(0, 5)) console.error(`MISSING or wrong size in the bucket: ${o.key}`);
+    console.log(bad.length);' "$SRC/manifest.json" "$WORK/check/release.got")
+  echo "objects $REL_PREFIX: $(( $(wc -l < "$WORK/check/release.files") - bad ))/$(wc -l < "$WORK/check/release.files" | tr -d ' ') present with their size"
+  [ "$bad" = 0 ] || die "$bad object(s) of the toolchain release $REL_PREFIX are not in the bucket: that Worker would serve 404s (kernel RELEASE.md, Retention: ask the owner before anything else), nothing was changed"
+fi
 [ "$missing" = 0 ] || die "$missing object(s) of this release are not in the bucket: re-upload them first (scripts/upload-artifacts.sh from that release), nothing was changed"
 
-# 2. manifests, then 3. indexes, from the record's copies
+# 2. phase 2 files, then 3. indexes, from the record's copies
 for phase in 2- 3-; do
   while IFS=$'\t' read -r id list _root sub ctype count _bytes; do
     case "$id" in "$phase"*) ;; *) continue ;; esac
@@ -158,5 +174,5 @@ cp "$SRC/manifest.json" "$NEW/"; cp -R "$SRC/upload" "$NEW/upload"; cp -R "$SRC/
 printf '%s\n' "remote=$R2_REMOTE" "bucket=$R2_BUCKET" "prefix=$R2_PREFIX" "rollback_of=${REC##*/}" ${rph:+"phases=$rph"} ${JOINED:+"joined=${JOINED%%;*}"} > "$NEW/target.env"
 echo "release record: ${NEW#"$SC"/} (a copy of ${REC##*/}${JOINED:+ joined with its companion records}; back it up with the others, docs/DEPLOY-CLOUDFLARE.md section 5)"
 echo "ROLLBACK OK: the mutable names of ${REC#"$SC"/} are re-published. Now roll the shell back to the matching version:"
-echo "  npx --prefix infra wrangler versions list      # pick the version whose message names this pin + gallery"
+echo "  npx --prefix infra wrangler deployments list   # pick the version whose message names this pin + gallery"
 echo "  npx --prefix infra wrangler rollback <version-id>"
