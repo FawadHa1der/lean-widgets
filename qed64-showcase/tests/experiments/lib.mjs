@@ -1,5 +1,4 @@
 // Shared plumbing for the Stage-1 experiments (BUILD-PLAN §3, harness rules §8.1).
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,9 +14,9 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** free + inactive + speculative bytes (macOS vm_stat; Linux MemAvailable): scripts/lib/platform.mjs, the same measure
  *  as QED64's harness.mjs reclaimableBytes(). */
-export const { reclaimableBytes } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
+export const { reclaimableBytes, procsByExe } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 export function strays() {
-  return (spawnSync('pgrep', ['-fl', 'chrome-headless-shell'], { encoding: 'utf8' }).stdout || '').trim();
+  return procsByExe(/chrome-headless-shell/).join('\n');
 }
 /** Refuse to boot unless >= 6 GB reclaimable and no chrome-headless-shell (docs/TESTING.md:85-90). */
 export async function cooldown({ gb = 6, maxS = 180 } = {}) {

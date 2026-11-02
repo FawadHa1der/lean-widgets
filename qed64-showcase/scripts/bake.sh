@@ -20,6 +20,7 @@
 set -u
 SC="$(cd "$(dirname "$0")/.." && pwd)"
 . "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # W: scripts/lib/env.sh
+. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # procs_by_exe
 # the TARGET pin (scripts/lib/pins.mjs targetPinId: SHOWCASE_PIN=<id>, else the active pin): its runtime buildId, its
 # release clone (release/<pin id>) and its stores ($W/stage1, bake-work-*, bake-out-*, BAKE-KEY-*, bake-logs: the active
 # links into $W/runtimes/<buildId>/, or with SHOWCASE_PIN that pin's store paths themselves; the links are not touched)
@@ -58,7 +59,8 @@ mkdir -p "$W/logs"
 # a real bake process is `[/usr/bin/time -l] node … bake-snapshot.mjs`; a bare `pgrep -fl bake-snapshot`
 # also matches other sessions' shells whose command text merely mentions the name
 if pgrep -fl '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs'; then echo "REFUSED: a bake is already running (above)"; exit 3; fi
-if pgrep -fl 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-'; then echo "REFUSED: a browser session is running (above); bakes never overlap a browser"; exit 3; fi
+procs_by_exe 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-'
+if [ $? != 1 ]; then echo "REFUSED: a browser session is running (above), or ps failed; bakes never overlap a browser"; exit 3; fi
 if [ -n "$(docker ps -q 2>/dev/null)" ]; then echo "REFUSED: a Docker container is running"; docker ps; exit 3; fi
 pg=$(vm_stat | awk '/page size of/ {print $8}')
 fi_pages=$(vm_stat | awk '/Pages free/ {f=$3} /Pages inactive/ {i=$3} END {gsub(/\./,"",f); gsub(/\./,"",i); print f+i}')

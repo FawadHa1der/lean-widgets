@@ -241,7 +241,7 @@ function verdicts(id) {
 function ourFollowingServers() {
   const me = path.join(SC, 'scripts', 'serve.mjs');
   let pids = [];
-  try { pids = execFileSync('pgrep', ['-f', 'scripts/serve\\.mjs']).toString().trim().split('\n').filter(Boolean); } catch { return []; }
+  try { pids = execFileSync('pgrep', ['-f', '^([^ ]*/)?node .*scripts/serve\\.mjs']).toString().trim().split('\n').filter(Boolean); } catch { return []; }
   const mine = [];
   for (const pid of pids) {
     let args = '', cwd = '', env = '';

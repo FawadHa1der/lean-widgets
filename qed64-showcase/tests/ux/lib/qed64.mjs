@@ -183,7 +183,7 @@ export function lockHeld() {
 const PLATFORM = await import('../../../scripts/lib/platform.mjs'); // vm_stat on macOS, MemAvailable on Linux
 export function reclaimableGiB() { return PLATFORM.reclaimableBytes() / 1073741824; }
 export function strayChrome() {
-  return (spawnSync('pgrep', ['-fl', 'chrome-headless-shell'], { encoding: 'utf8' }).stdout || '').trim();
+  return PLATFORM.procsByExe(/chrome-headless-shell/).join('\n');
 }
 /** §8.1 cooldown before every boot. Waits up to `ms`; throws when it cannot be met. */
 export async function cooldown({ minGiB = 6, ms = 180000 } = {}) {

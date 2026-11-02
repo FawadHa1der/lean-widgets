@@ -5,7 +5,7 @@
 #   showcase     the static React showcase: the regenerated dumps must be byte-identical to the committed ones, then
 #                assemble the site and verify every panel headlessly (fails on any React error or warning).
 #   qed64-static the qed64-showcase gates that need no browser and no artifacts: no machine paths, the browser-lock
-#                FIFO/stale-takeover tests, QED64's page rebuilt from the submodule byte-identical to the lock, the
+#                FIFO/stale-takeover/stray-browser tests, QED64's page rebuilt from the submodule byte-identical to the lock, the
 #                deploy Worker's tests, and the gallery's static gate (check-gallery + sim-gallery).
 #   pages        publishes the static showcase to GitHub Pages, only on a push to main and only when the repository
 #                variable DEPLOY_GITHUB_PAGES is 'true' (one-time settings: qed64-showcase/docs/DEPLOY-CLOUDFLARE.md
@@ -160,10 +160,12 @@ jobs:
           node-version: '26.3.0'   # the lock's toolchain.node; the page also builds byte-identically on 26.7.0
       - name: No machine paths in committed code or configuration
         run: node scripts/check-portable.mjs
-      - name: Browser-lock FIFO and stale-takeover tests (scratch lock dir; no browser)
+      - name: Browser-lock FIFO, stale-takeover and stray-browser tests (scratch lock dir; no browser)
         run: |
           MIN_FREE_GB=0 bash tests/ux/bringup/lockfifo.sh
           bash tests/ux/bringup/lockrace.sh
+          # Linux only: ci/run-local.mjs runs this natively on the shared Mac, where the test's fake browsers refuse other lanes
+          [ "$RUNNER_OS" != Linux ] || bash tests/ux/bringup/lockstray.sh
       - name: npm ci (Playwright test runner; no browser download)
         run: npm ci --no-audit --no-fund
       - name: QED64 sources = the submodule at the active pin's commit (gitlink == HEAD == lock)

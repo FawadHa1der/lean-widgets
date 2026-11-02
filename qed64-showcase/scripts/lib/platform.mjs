@@ -8,6 +8,8 @@
 //                            Linux), else a plain copy; always a new inode (never a hard link). fs.copyFileSync with
 //                            COPYFILE_FICLONE is libuv's portable form of `cp -c` / `cp --reflink=auto`.
 //   cloneTree(src, dst)      the same for a directory tree (files cloned, directories and symlinks re-created)
+//   procsByExe(re)           the running processes whose EXECUTABLE matches re, as "<pid> <executable>" lines; never the
+//                            command text (procs_by_exe in platform.sh says why). Throws when ps cannot run.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -49,6 +51,15 @@ export function cloneTree(src, dst) {
     throw new Error(`cloneTree: unsupported file type ${s}`);
   };
   walk(src, dst);
+}
+
+export function procsByExe(re) {
+  const lines = PLATFORM === 'linux'
+    ? fs.readdirSync('/proc').filter((e) => /^\d+$/.test(e)).map((pid) => {
+      try { return `${pid} ${fs.readlinkSync(`/proc/${pid}/exe`)}`; } catch { return ''; } // gone, or another user's
+    })
+    : execFileSync('/bin/ps', ['-axo', 'pid=,comm=']).toString().split('\n').map((l) => l.trim());
+  return lines.filter((l) => re.test(l));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

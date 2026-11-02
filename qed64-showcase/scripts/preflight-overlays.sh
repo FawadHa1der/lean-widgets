@@ -3,7 +3,7 @@
 #
 #   scripts/preflight-overlays.sh [widgets7 widgets8 ...]
 #
-# Memory discipline: waits (up to WAIT_S, default 900 s) until `pgrep -fl bake-snapshot` prints nothing
+# Memory discipline: waits (up to WAIT_S, default 900 s) until no real bake runs (the anchored pattern below)
 # (no bake may overlap a browser), requires >= 6 GiB free+inactive before each boot, then for each
 # overlay starts scripts/serve-start.sh (if not already serving), runs
 #   node <PRE> --url http://localhost:5190/?snapshots=snapshots/<dir> --no-boot
@@ -19,7 +19,7 @@
 set -u
 SC="$(cd "$(dirname "$0")/.." && pwd)"
 . "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # SC, W: scripts/lib/env.sh
-. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # free_inactive_gib (vm_stat / /proc/meminfo)
+. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # free_inactive_gib (vm_stat / /proc/meminfo), procs_by_exe
 QSRC="$(node "$SC/scripts/lib/pins.mjs" store qed64)" || exit 2   # QED64's preflight.mjs at the target pin's commit
 PRE="$QSRC/pipeline/release/preflight.mjs"; [ -f "$PRE" ] || PRE="$QSRC/tests/adversarial/preflight.mjs"
 [ -f "$PRE" ] || { echo "REFUSED: no preflight.mjs in $QSRC (pipeline/release/ or tests/adversarial/)"; exit 2; }
@@ -34,12 +34,14 @@ LT=""; if [ -n "${SHOWCASE_PIN:-}" ]; then LT="-$TPIN"
   [ "$PORT" != 5190 ] || { echo "REFUSED: SHOWCASE_PIN=$SHOWCASE_PIN needs its own PORT (5190 serves the active pin)"; exit 2; }; fi
 served_pin() { curl -s -D - -o /dev/null --max-time 5 "http://localhost:$PORT/showcase/pin.json" | tr -d '\r' | sed -n 's/^[Xx]-[Ss]howcase-[Pp]in: *//p' | head -1; }
 dirs=("$@"); [ ${#dirs[@]} -eq 0 ] && dirs=(widgets7 widgets8)
-needle="bake-""snapshot"   # assembled so this script's own command text never matches
+# a real bake is `[/usr/bin/time -l] node … bake-snapshot.mjs`, as in bake.sh; a bare `pgrep -fl bake-snapshot` also
+# matches other sessions' shells whose command text merely mentions the name
+needle='^(/usr/bin/time -l )?node .*bake-snapshot\.mjs'
 
 wait_no_bake() {
   local waited=0 hits
   while :; do
-    hits="$(pgrep -fl "$needle" | grep -v -E "^($$|$PPID) " || true)"
+    hits="$(pgrep -fl "$needle" || true)"
     [ -z "$hits" ] && return 0
     if [ $waited -ge "$WAIT_S" ]; then echo "REFUSED: pgrep -fl $needle still prints after ${WAIT_S}s:"; echo "$hits" | cut -c1-200; return 1; fi
     [ $waited -eq 0 ] && { echo "waiting: pgrep -fl $needle prints:"; echo "$hits" | cut -c1-160; }
@@ -72,5 +74,6 @@ for d in "${dirs[@]}"; do
   echo "[$d] .snapz requests during boot: $(grep -o '/snapshots/[^ ]*\.snapz[^ ]*' "$W/logs/preflight-$d$LT-boot.serve.log" | sort | uniq -c | tr '\n' ';')"
 done
 [ $started -eq 1 ] && PORT="$PORT" "$SC/scripts/serve-stop.sh"
-pgrep -fl chrome-headless-shell >/dev/null && echo "WARN chrome-headless-shell still running" || echo "no chrome-headless-shell left"
+procs_by_exe chrome-headless-shell >/dev/null
+[ $? = 1 ] && echo "no chrome-headless-shell left" || echo "WARN chrome-headless-shell still running, or ps failed"
 exit $rc_all

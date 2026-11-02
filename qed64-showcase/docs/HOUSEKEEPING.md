@@ -20,7 +20,7 @@ S=<the scratch directory of the lane that made the copies>
 showcase server or bake runs:
 
 ```
-test ! -e "$("$R/scripts/with-browser-lock.sh" --print-lock)" && ! pgrep -f 'serve.mjs|bake-snapshot|chrome-headless-shell' && echo idle
+test ! -e "$("$R/scripts/with-browser-lock.sh" --print-lock)" && ! pgrep -f '^(/usr/bin/time -l )?([^ ]*/)?node .*(bake-snapshot|scripts/serve)\.mjs' && bash -c '. "$1/scripts/lib/platform.sh"; procs_by_exe "chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-"; [ $? = 1 ]' - "$R" && echo idle
 ```
 
 ## 1. Scratch, backups and superseded copies (no tool reads them; no doc cites them as evidence)

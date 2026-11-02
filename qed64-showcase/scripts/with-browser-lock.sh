@@ -65,14 +65,15 @@
 #
 # Before running <cmd> it also requires >= MIN_FREE_GB (default 6) reclaimable memory (scripts/lib/platform.sh: macOS
 # free+inactive+speculative pages from vm_stat, Linux MemAvailable) and no stray Playwright browser (chrome-headless-shell,
-# or Playwright's Firefox: its binary lives under ms-playwright/firefox-<build>/; QED64's harness uses the same pattern),
-# waiting up to
+# or Playwright's Firefox: its binary lives under ms-playwright/firefox-<build>/), matched on the executable, not the
+# command text (procs_by_exe in scripts/lib/platform.sh; QED64's harness has the same regex under pgrep -fl, so it still
+# counts a shell that mentions the name). A process list that cannot be read counts as a stray. It waits up to
 # COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out, 76 cooldown refused, 2 usage, 141 a status
 # line could not be written (see say); a trapped signal once the lock is taken: 128 + its number (INT and TERM: 130),
 # after the command (or the cooldown step) has ended, and the command's own code is then not reported; otherwise the
 # command's own exit code.
 set -u
-. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # reclaimable_gib, AWAKE (caffeinate -i on macOS only)
+. "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # reclaimable_gib, procs_by_exe, AWAKE (caffeinate -i on macOS only)
 DEFAULT_DIR="$HOME/.cache/host-browser-lock"
 LOCK_DIR="${BROWSER_LOCK_DIR:-$DEFAULT_DIR}"
 LOCK="${BROWSER_LOCK_FILE:-$LOCK_DIR/browser.lock}"
@@ -323,7 +324,8 @@ COOLDOWN_WAIT_S="${COOLDOWN_WAIT_S:-3600}"; c0=$(date +%s); last=0
 # Test-only escape hatch: honoured ONLY when the lock is not the default host lock, so real runs always get the cooldown.
 if [ "$LOCK" != "$DEFAULT_DIR/browser.lock" ] && [ "${SKIP_COOLDOWN_FOR_TEST:-0}" = 1 ]; then COOLDOWN_WAIT_S=-1; fi
 while :; do
-  strays="$(pgrep -fl 'chrome-headless-shell|ms-playwright/firefox-' || true)"; free="$(reclaimable_gb)"
+  strays="$(procs_by_exe 'chrome-headless-shell|ms-playwright/firefox-')"; [ $? -lt 2 ] || strays='ps failed: cannot tell'
+  free="$(reclaimable_gb)"
   if [ "$COOLDOWN_WAIT_S" = -1 ] || { [ -z "$strays" ] && awk -v f="$free" -v m="$MIN_FREE_GB" 'BEGIN{exit !(f>=m)}'; }; then
     say "browser-lock: cooldown ok: ${free} GiB reclaimable, no chrome-headless-shell or Playwright Firefox"; break
   fi

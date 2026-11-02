@@ -13,6 +13,15 @@
 #   file_size <path>         size in bytes (stat -f %z / stat -c %s)
 #   file_nlink <path>        hard-link count (stat -f %l / stat -c %h)
 #   file_mtime <path>        modification time, human readable (stat -f %Sm / date -r)
+#   procs_by_exe <ere>       the running processes whose EXECUTABLE matches <ere>, one "<pid> <executable>" per line; exit
+#                              1 when none, 2 when the process list could not be read (/bin/ps is setuid, so a sandboxed
+#                              shell on macOS cannot run it): a guard must treat 2 as "cannot tell", not as "none". Never
+#                              the command text: `pgrep -f` also matches any shell whose command merely mentions the name
+#                              (another session's Bash wrapper, with a heredoc naming chrome-headless-shell, held the host
+#                              lock's cooldown with no browser up, 2026-11-02). macOS: ps comm, the path the process was
+#                              started as (argv[0], so /bin/zsh or -zsh); Linux: /proc/<pid>/exe (ps comm there is a bare
+#                              name cut to 15 characters; another user's process cannot be read, so it is not listed).
+#                              <ere> searches the whole path: a program under a directory named like it counts too.
 #   AWAKE                    array: a process-scoped "do not idle-sleep" prefix for long commands. macOS: (caffeinate -i)
 #                              unless NO_CAFFEINATE=1; elsewhere empty (a CI runner or a Linux host does not idle-sleep
 #                              a running job the way a laptop does). Use as: "${AWAKE[@]+"${AWAKE[@]}"}" cmd …
@@ -50,6 +59,14 @@ clone_tree() {
 file_size() { case "$PLATFORM" in darwin) stat -f %z "$1" ;; *) stat -c %s "$1" ;; esac; }
 file_nlink() { case "$PLATFORM" in darwin) stat -f %l "$1" ;; *) stat -c %h "$1" ;; esac; }
 file_mtime() { case "$PLATFORM" in darwin) stat -f %Sm "$1" ;; *) date -r "$1" ;; esac; }
+procs_by_exe() {
+  local e list
+  case "$PLATFORM" in
+    linux) list="$(for e in /proc/[0-9]*/exe; do printf '%s %s\n' "${e//[!0-9]/}" "$(readlink "$e" 2>/dev/null)"; done)" ;;
+    *) list="$(ps -axo pid=,comm=)" || return 2 ;;
+  esac
+  printf '%s\n' "$list" | sed 's/^ *//' | grep -E "$1"
+}
 NODE_TOOL=(node --no-concurrent-sparkplug)
 AWAKE=()
 if [ "$PLATFORM" = darwin ] && command -v caffeinate >/dev/null 2>&1 && [ "${NO_CAFFEINATE:-0}" != 1 ]; then AWAKE=(caffeinate -i); fi

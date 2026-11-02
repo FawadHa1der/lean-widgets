@@ -90,7 +90,8 @@
 #      dir), QED64_REPO ($Q), QED64_KERNEL_BUILD ($K); a subcommand that needs Q or K refuses with a clear error if unset.
 #      QED64's SOURCES are the submodule deps/qed64 (+ git worktrees $W/qed64-pins/<id> for staged pins), never Q.
 # Platform (scripts/lib/platform.sh): macOS and Linux. The memory probe is vm_stat / /proc/meminfo, clones are cp -c /
-#      cp --reflink=auto, and the idle-sleep guard (caffeinate) exists only on macOS.
+#      cp --reflink=auto, running browsers are found by executable (ps comm / /proc/<pid>/exe), and the idle-sleep guard
+#      (caffeinate) exists only on macOS.
 # Env: SHOWCASE_LANE (name written into lock/owner files; default "showcase.sh"), PORT (default 5190),
 #      LOCK_WAIT_S / COOLDOWN_WAIT_S (with-browser-lock.sh waits, default 3600 s each), MIN_BROWSER_GB (6),
 #      WITH_BROWSER_LOCK (the lock script — change only for tests), BROWSER_LOCK_DIR (where the host-wide lock lives,
@@ -115,7 +116,7 @@ SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 # SC, REPO_ROOT, WS, W (QED64_SHOWCASE_WORK), Q (QED64_REPO), K (QED64_KERNEL_BUILD), LOGS: scripts/lib/env.sh (reads the
 # gitignored .env.local; template .env.example). Q and K are required only by the subcommands that read them (need …).
 . "$SC/scripts/lib/env.sh"
-. "$SC/scripts/lib/platform.sh"   # PLATFORM, free_inactive_gib, clone_file/clone_tree, file_size, AWAKE (caffeinate -i on macOS)
+. "$SC/scripts/lib/platform.sh"   # PLATFORM, free_inactive_gib, clone_file/clone_tree, file_size, procs_by_exe, AWAKE (caffeinate -i on macOS)
 WBL="${WITH_BROWSER_LOCK:-$SC/scripts/with-browser-lock.sh}"
 LOCK="$(bash "$WBL" --print-lock)" || { echo "[showcase] ERROR: $WBL --print-lock failed" >&2; exit 1; }   # the file with-browser-lock.sh uses
 LANE="${SHOWCASE_LANE:-showcase.sh}"
@@ -187,7 +188,7 @@ vstep() {
 # ---------------------------------------------------------------- guards (read-only)
 free_gib() { free_inactive_gib; }   # scripts/lib/platform.sh: macOS free+inactive (vm_stat), Linux MemAvailable
 bake_pids() { pgrep -f '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs' 2>/dev/null || true; }
-browser_pids() { pgrep -f 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-' 2>/dev/null || true; }
+browser_pids() { local l; l="$(procs_by_exe 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-')"; [ $? -lt 2 ] || { echo 'unknown(ps-failed)'; return 0; }; [ -z "$l" ] || printf '%s\n' "$l" | cut -d' ' -f1; }
 docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; }
 # docker_image_guard: `native` must run in the toolchain image the TARGET pin's lock records (`pins.mjs store lock`:
 # pins/<SHOWCASE_PIN>/QED64.lock.json, else the active QED64.lock.json; toolchain.docker.id: the image its delta oleans are
@@ -350,7 +351,7 @@ cmd_pin_clone() {
     return 0
   fi
   no_bake "pinning rewrites release/$id under a running bake"
-  [ "$id" != "$(node "$SC/scripts/lib/pins.mjs" active)" ] || ! pgrep -f "$SC/scripts/serve.mjs" >/dev/null || refuse "this repo's serve.mjs is running and may serve release/$id; stop it first"
+  [ "$id" != "$(node "$SC/scripts/lib/pins.mjs" active)" ] || ! pgrep -f "^([^ ]*/)?node .*$SC/scripts/serve\.mjs" >/dev/null || refuse "this repo's serve.mjs is running and may serve release/$id; stop it first"
   must pin node "$SC/scripts/pin-qed64.mjs" pin --pin "$id"
   must record-widgets-hash node "$SC/scripts/pin-qed64.mjs" record-widgets-hash --pin "$id"
   must verify node "$SC/scripts/pin-qed64.mjs" verify --pin "$id"
