@@ -174,8 +174,10 @@ jobs:
         run: node scripts/fetch-artifacts.mjs --git-only
       - name: Widget sources export (git archive of packages/ at the lock's WIDGETS_COMMIT)
         run: node scripts/export-widgets.mjs --commit "$(node -p 'require("./QED64.lock.json").WIDGETS_COMMIT')"
-      - name: Deploy Worker tests (QED64's isImmutable imported from the submodule)
+      - name: Deploy Worker tests (QED64's createWorker with the pin's toolchain record, from the submodule)
         run: node --test infra/worker.test.mjs
+      - name: The pin tool's runtime format checks (v1 and gzip v2)
+        run: node --test scripts/pin-qed64.test.mjs
       - name: Gallery static gate (check-gallery + sim-gallery)
         run: node scripts/check-gallery.mjs
       - name: Upload the build provenance

@@ -30,7 +30,10 @@
 //                                       pin, which the lock is not written from. #12: a QED64 HARDENING fix that is an
 //                                       ancestor of the pin's commit needs its descriptor `hardening` flag true, and a
 //                                       flag true needs the fix (FAIL either way: the UX suite enforces QED64's asks
-//                                       only through these flags).
+//                                       only through these flags). #3 reads both runtime manifest formats (v1; v2, a
+//                                       gzip part checked as served, then inflated) and FAILs a runtime schema the
+//                                       pin's workers do not read (embedding/closure.json runtime.manifestSchemas,
+//                                       which `pin` refuses too).
 //   node scripts/pin-qed64.mjs record-widgets-hash [--pin <id>]
 //                                       recompute WIDGETS_SOURCE_HASH over $W/widgets-src, require it
 //                                       to equal SOURCE-HASH.txt, check the export against its commit
@@ -65,6 +68,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { activePinId, pinDescriptor, repoPinDir, releaseDir, listPins, ID_RE, OVERLAYS, outRtDir, overlayUrl } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
@@ -256,6 +260,110 @@ const kernelBuildFacts = (k) => {
     essential: [list === null ? null : list.split('\n').filter((l) => l.trim()).length, 'QED64_KERNEL_BUILD mathlib/essential-modules.txt line count'],
   };
 };
+// The runtime manifest formats (verify #3, pin): QED64 docs/EMBEDDING.md "Runtime manifest formats" (QED64 >= ef7a0d7,
+// e37b3a5), the rules of its own readers (pipeline/release/verify-release.mjs, fetch-artifacts.mjs,
+// public/workers/lean.worker.js). v1: a file's chunks are its bytes. v2: each file names its encoding, gzip or identity (a
+// closed set; a v1 file names none, or identity); its bytes/sha256 are the DECODED file's, so the buildId rule is unchanged;
+// a part's bytes/sha256 are as served, and it adds decodedBytes. Every part but the last decodes to exactly
+// RUNTIME_DECODED_SLICE (the v1 chunk size), the decodedBytes sum to the file's bytes, an identity part's is its bytes.
+const RUNTIME_V1 = 'org.lean-browser64.runtime/v1';
+const RUNTIME_V2 = 'org.lean-browser64.runtime/v2';
+const RUNTIME_ENCODINGS = { [RUNTIME_V1]: ['identity'], [RUNTIME_V2]: ['identity', 'gzip'] };
+const RUNTIME_DECODED_SLICE = 16 * 1024 * 1024;
+const CLOSURE_PATH = 'embedding/closure.json';
+/** QED64's closure.json at `rev`, parsed; null when `rev` has none (older QED64). Throws when it is not JSON. */
+function closureAt(rev) {
+  const raw = gitShowOrNull(rev, CLOSURE_PATH);
+  if (raw === null) return null;
+  try { return JSON.parse(raw.toString()); } catch (e) { throw new Error(`${CLOSURE_PATH} at ${String(rev).slice(0, 7)} is not JSON: ${e.message}`); }
+}
+/** The runtime a pin serves against the workers of its QED64 sources: {served, schema, schemas, listed, fault}. `served` is
+ *  the manifest's own schema (absent = v1), the format #3 reads it in. `schema` is the pin's: the release record's (a byte
+ *  copy of the release's release.json) runtime.schema, else `served`. `schemas` is closure.json's runtime.manifestSchemas
+ *  (`listed`); absent, or no closure.json (QED64 < e37b3a5), = [v1]. `fault` says why the pin is refused, else null: also a
+ *  record that names another schema than the manifest it is served with, as QED64's fetch-artifacts and release-manifest
+ *  refuse, and a schema the workers list but this tool cannot read. */
+export function runtimeSchemaCheck(manifest, record, closure) {
+  const served = manifest.schema ?? RUNTIME_V1;
+  const schema = record?.runtime?.schema ?? served;
+  const list = closure?.runtime?.manifestSchemas;
+  const listed = list !== undefined;
+  const schemas = listed ? list : [RUNTIME_V1];
+  let fault = null;
+  if (!Array.isArray(schemas) || !schemas.every((s) => typeof s === 'string')) fault = `${CLOSURE_PATH} runtime.manifestSchemas ${JSON.stringify(list)} is not a list of schemas`;
+  else if (schema !== served) fault = `the release record names a runtime of schema ${schema}, the served manifest's is ${served}`;
+  else if (!schemas.includes(schema)) fault = `the pinned workers do not read schema ${schema}: ${CLOSURE_PATH} runtime.manifestSchemas ${listed ? `lists ${schemas.join(', ') || 'nothing'}` : `is absent, which means ${RUNTIME_V1} only`}`;
+  else if (!Object.hasOwn(RUNTIME_ENCODINGS, schema)) fault = `schema ${schema} is not one this tool reads (${Object.keys(RUNTIME_ENCODINGS).join(', ')})`;
+  return { served, schema, schemas, listed, fault };
+}
+/** Why a runtime file's encoding or parts break its schema's rules, or null. */
+export function runtimeFileFault(schema, f) {
+  if (!Object.hasOwn(RUNTIME_ENCODINGS, schema)) return `schema ${schema} is not one this tool reads (${Object.keys(RUNTIME_ENCODINGS).join(', ')})`;
+  const allowed = RUNTIME_ENCODINGS[schema];
+  const encoding = f.encoding ?? (schema === RUNTIME_V1 ? 'identity' : undefined);
+  if (!allowed.includes(encoding)) return `encoding ${encoding === undefined ? '(none)' : JSON.stringify(encoding)} is not one ${schema} allows (${allowed.join(', ')})`;
+  if (schema !== RUNTIME_V2) return null;
+  if (!Array.isArray(f.chunks) || !f.chunks.length) return 'it has no parts';
+  let sum = 0;
+  for (const [i, c] of f.chunks.entries()) {
+    const d = c?.decodedBytes;
+    if (!Number.isSafeInteger(d) || d <= 0) return `part ${i} has no usable decodedBytes (${JSON.stringify(d) ?? 'none'})`;
+    if (i < f.chunks.length - 1 ? d !== RUNTIME_DECODED_SLICE : d > RUNTIME_DECODED_SLICE) return `part ${i} decodes to ${d} bytes; every part but the last decodes to exactly ${RUNTIME_DECODED_SLICE}, the last to at most that`;
+    if (encoding === 'identity' && d !== c.bytes) return `part ${i} is identity-encoded, but its decodedBytes ${d} is not its bytes ${c.bytes}`;
+    sum += d;
+  }
+  return sum === f.bytes ? null : `its parts decode to ${sum} bytes, the file is ${f.bytes}`;
+}
+/** #3 for one file of a runtime manifest of schema `schema`, read from the release tree `root`: {mismatches, checks}, the
+ *  parts that failed and the [{good, msg, detail}] to print. Each part is checked as served; the whole-file check is over
+ *  the decoded bytes (a v1 or identity file's parts are its bytes). A file that breaks its schema's rules is refused
+ *  before any part is read. */
+export function runtimeFileChecks(root, schema, name, f) {
+  const fault = runtimeFileFault(schema, f);
+  if (fault) return { mismatches: [], checks: [{ good: false, msg: `#3 ${name}: its entry obeys ${schema}`, detail: fault }] };
+  const gzip = f.encoding === 'gzip';
+  const [partsHow, wholeHow] = schema !== RUNTIME_V2 ? ['', ''] : gzip ? [' as served, each inflates to its decodedBytes', ' (inflated)'] : [' as served (identity)', ' (identity)'];
+  const whole = createHash('sha256'); let total = 0; const mismatches = [];
+  for (const c of f.chunks) {
+    const wire = fs.readFileSync(path.join(root, urlToPublic(c.url)));
+    const good = wire.length === c.bytes && sha256Buf(wire) === c.sha256;
+    if (!good) mismatches.push(c.url);
+    let b = wire;
+    if (gzip) {
+      // inflated only once verified as served (the inflater never sees an unverified byte), and never past its decodedBytes
+      b = Buffer.alloc(0);
+      if (good) {
+        try {
+          b = gunzipSync(wire, { maxOutputLength: c.decodedBytes });
+          if (b.length !== c.decodedBytes) mismatches.push(`${c.url} (inflates to ${b.length} bytes, its decodedBytes is ${c.decodedBytes})`);
+          // one gzip member per part, nothing after it: gunzipSync joins members and ignores trailing zeros, the worker's
+          // DecompressionStream refuses trailing junk, so the part's own size field (its last 4 bytes) must say the same
+          else if (wire.length < 4 || wire.readUInt32LE(wire.length - 4) !== c.decodedBytes) mismatches.push(`${c.url} (not one gzip member of ${c.decodedBytes} bytes: trailing bytes or several members)`);
+        } catch (e) { mismatches.push(`${c.url} (does not inflate to its decodedBytes ${c.decodedBytes}: ${e.message})`); }
+      }
+    }
+    whole.update(b); total += b.length;
+  }
+  const d = whole.digest('hex');
+  return { mismatches, checks: [
+    { good: !mismatches.length, msg: `#3 ${name}: ${f.chunks.length} chunks match manifest sha256/bytes${partsHow}`, detail: '' },
+    { good: d === f.sha256 && total === f.bytes, msg: `#3 reassembled ${name}${wholeHow} sha256 == manifest`, detail: `${d.slice(0, 24)}… ${total} B` },
+  ] };
+}
+/** All of #3's format lines for a runtime manifest `rm`, in print order: [{mismatch}] and [{good, msg, detail}]. The schema
+ *  line prints when there is something to compare, a closure.json with the list or a runtime that is not v1 (or an unreadable
+ *  closure.json): a v1 runtime beside no list (every pin up to 521cf3f) is v1 against [v1]. */
+export function runtimeChecks(root, rm, rec, closure, closureErr = '') {
+  const rs = runtimeSchemaCheck(rm, rec, closure);
+  const lines = [];
+  if (closureErr || rs.fault || rs.listed || rs.schema !== RUNTIME_V1) lines.push({ good: !closureErr && !rs.fault, msg: `#3 runtime schema ${rs.schema} is one ${CLOSURE_PATH} runtime.manifestSchemas lists at QPIN`, detail: closureErr || rs.fault || rs.schemas.join(', ') });
+  for (const [name, f] of Object.entries(rm.files)) {
+    const { mismatches, checks } = runtimeFileChecks(root, rs.served, name, f);
+    for (const mismatch of mismatches) lines.push({ mismatch });
+    lines.push(...checks);
+  }
+  return lines;
+}
 // WIDGETS_SOURCE_HASH recompute (see header; scripts/lib/widgets-src.mjs). Returns { hash, files, listing }.
 const WIDGETS_SRC = WSRC.WIDGETS_SRC;
 const widgetsSourceHash = async (dir = WIDGETS_SRC) => WSRC.widgetsSourceHash(dir);
@@ -290,6 +398,9 @@ async function pin() {
   if (dirty.trim()) throw new Error(`QED64 tree not clean:\n${dirty}`);
   const qbid = readJson(path.join(Q, 'public/runtime/runtime-manifest.json')).buildId;
   if (qbid !== BID) throw new Error(`QED64 serves runtime ${qbid}, the descriptor pins/${ID}/pin.json names ${BID}`);
+  // a runtime format the pin's workers do not read fails every boot: refused before the release clone (verify #3 too)
+  const { fault: schemaFault } = runtimeSchemaCheck(readJson(path.join(Q, 'public/runtime/runtime-manifest.json')), recordAt(QPIN), closureAt(QPIN));
+  if (schemaFault) throw new Error(`pin ${ID} refused: ${schemaFault}`);
   // dist/ is built, not tracked: snapshot its file list and mtimes so a rebuild DURING the clone is detected (S0.2 again)
   const distStamp = () => walk(path.join(Q, 'dist')).map((f) => `${f} ${fs.statSync(path.join(Q, 'dist', f)).mtimeMs} ${fs.statSync(path.join(Q, 'dist', f)).size}`).join('\n');
   const stamp0 = distStamp();
@@ -450,18 +561,11 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   const rmBid = fs.readFileSync(path.join(R, `public/runtime/runtime-manifest.${BID}.json`));
   const rm = JSON.parse(rmBuf);
   ok(Buffer.compare(rmBuf, rmBid) === 0 && rm.buildId === BID, `#2 runtime-manifest.${BID}.json identical to tracked manifest; buildId=${rm.buildId}`);
-  // 3. runtime chunks + reassembled files
-  for (const [name, f] of Object.entries(rm.files)) {
-    const whole = createHash('sha256'); let total = 0; let chunkOk = true;
-    for (const c of f.chunks) {
-      const b = fs.readFileSync(path.join(R, urlToPublic(c.url)));
-      const good = b.length === c.bytes && sha256Buf(b) === c.sha256;
-      if (!good) { chunkOk = false; console.log(`     chunk mismatch ${c.url}`); }
-      whole.update(b); total += b.length;
-    }
-    ok(chunkOk, `#3 ${name}: ${f.chunks.length} chunks match manifest sha256/bytes`);
-    const d = whole.digest('hex');
-    ok(d === f.sha256 && total === f.bytes, `#3 reassembled ${name} sha256 == manifest`, `${d.slice(0, 24)}… ${total} B`);
+  // 3. runtime chunks + reassembled files, in either manifest format; the pin's runtime schema must be one its workers read
+  let rec = null; try { rec = recordAt(QPIN); } catch { /* reported by #9 */ }
+  let closure = null, closureErr = ''; try { closure = closureAt(QPIN); } catch (e) { closureErr = e.message; }
+  for (const l of runtimeChecks(R, rm, rec, closure, closureErr)) {
+    if (l.mismatch) console.log(`     chunk mismatch ${l.mismatch}`); else ok(l.good, l.msg, l.detail);
   }
   ok(rm.files['lean.wasm'].sha256.startsWith(BID.slice('wasm64-'.length)), `#3 buildId == wasm64-sha256(lean.wasm)[0:16]`);
   // 4. profile parts (+ transport digest over the concatenation)
@@ -515,7 +619,6 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   // from the kernel build, the record was not): the pin's kernel build when QED64_KERNEL_BUILD holds it, else the lock's
   // native64/Mathlib commits, are checked against it (recordChecks). A malformed record already FAILs #9.
   const tc = lock.toolchain;
-  let rec = null; try { rec = recordAt(QPIN); } catch { /* reported by #9 */ }
   const report = (checks) => { for (const c of checks) if (c.level === 'warn') warn(c.msg, c.detail); else ok(c.level === 'ok', c.msg, c.detail); };
   if (!K) {
     na(`#7 native64 toolchain (NATIVE-COMMIT ${tc.native64.NATIVE_COMMIT.slice(0, 10)}, stage1 lean/lake/lib sha256), Docker image ${tc.docker.image} ${tc.docker.id}, Mathlib ${tc.mathlib.commit.slice(0, 7)}, ProofWidgets ${tc.mathlib.proofwidgets.slice(0, 7)}: ${KB.why || 'QED64_KERNEL_BUILD is not set'}`,
@@ -727,10 +830,16 @@ async function recordOverlays() {
   console.log(`RECORDED overlays ${Object.entries(overlays).map(([o, r]) => `${o} (${Object.keys(r.files).length} files, served at ${r.url})`).join(', ')} -> ${path.relative(SC, LOCK)}`);
 }
 
-const cmd = process.argv[2];
-const allowSkip = process.argv.includes('--allow-skip');
-if (cmd === 'pin') await pin();
-else if (cmd === 'verify') await verify({ allowSkip, strictToolchain: process.argv.includes('--strict') });
-else if (cmd === 'record-widgets-hash') await recordWidgetsHash();
-else if (cmd === 'record-overlays') await recordOverlays();
-else { console.error('usage: pin-qed64.mjs pin|verify [--allow-skip] [--strict]|record-widgets-hash|record-overlays  [--pin <id>]'); process.exit(2); }
+// Run as a script; scripts/pin-qed64.test.mjs imports the format functions above. import.meta.url is the real path, argv[1]
+// the one given: a checkout reached through a symlink must not print nothing and exit 0 (the same guard as scripts/lib/env.mjs,
+// with both sides real: node --preserve-symlinks-main keeps the symlink in import.meta.url too)
+const real = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } };
+if (process.argv[1] && real(process.argv[1]) === real(fileURLToPath(import.meta.url))) {
+  const cmd = process.argv[2];
+  const allowSkip = process.argv.includes('--allow-skip');
+  if (cmd === 'pin') await pin();
+  else if (cmd === 'verify') await verify({ allowSkip, strictToolchain: process.argv.includes('--strict') });
+  else if (cmd === 'record-widgets-hash') await recordWidgetsHash();
+  else if (cmd === 'record-overlays') await recordOverlays();
+  else { console.error('usage: pin-qed64.mjs pin|verify [--allow-skip] [--strict]|record-widgets-hash|record-overlays  [--pin <id>]'); process.exit(2); }
+}
