@@ -9,6 +9,8 @@ main = "infra/worker.js"
 compatibility_date = "2026-08-01"
 # Serve on qed64-showcase.<account>.workers.dev; attach a custom domain later (guide, "Custom domain").
 workers_dev = true
+# scripts/deploy-app.sh tests each new version on its preview URL before it takes traffic.
+preview_urls = true
 
 # App shell = the pinned QED64 dist at "/" + the gallery at "/showcase/", staged by
 #   node scripts/deploy-manifest.mjs --stage-assets      (scripts/deploy-app.sh does this)
@@ -25,13 +27,14 @@ not_found_handling = "none"
 # "/showcase" -> "/showcase/" and "/showcase/" -> showcase/index.html.
 html_handling = "auto-trailing-slash"
 
-# Artifacts: /runtime/ /profiles/ /snapshots/ (incl. our overlays /snapshots/<dir>/: widgets8/ and widgets7/ for pins
-# A-H, widgets8.<bid16>/ and widgets7.<bid16>/ from pin I on, scripts/lib/pins.mjs overlayDir; no alias here).
-# Default: SHARED with QED64 (bucket qed64-artifacts, which already holds QED64's objects at the root and
-# lean4game's under lean4game/); the showcase's objects live under R2_PREFIX, so the three mutable manifest
-# sets never collide and the existing bucket-scoped upload token (rclone remote qed64-r2) serves all three.
+# Artifacts: /runtime/ and /profiles/ come from the toolchain release's prefix lean4-wasm64/<id>/ (infra/worker.js);
+# /snapshots/ (incl. our overlays /snapshots/<dir>/: widgets8.<bid16>/ and widgets7.<bid16>/, scripts/lib/pins.mjs
+# overlayDir; no alias here) and /profiles/index.json from R2_PREFIX.
+# Default: SHARED with QED64 (bucket qed64-artifacts, which already holds the release, QED64's objects at the root and
+# lean4game's under lean4game/); the showcase's objects live under R2_PREFIX, so the mutable index sets never
+# collide and the existing bucket-scoped upload token (rclone remote qed64-r2) serves all of them.
 # Own bucket instead: bucket_name = "qed64-showcase-artifacts" and R2_PREFIX = "" (set R2_BUCKET / R2_PREFIX
-# the same way for scripts/upload-artifacts.sh).
+# the same way for scripts/upload-artifacts.sh), plus a copy of the release under lean4-wasm64/<id>/.
 [[r2_buckets]]
 binding = "ARTIFACTS"
 bucket_name = "qed64-artifacts"

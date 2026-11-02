@@ -5,26 +5,23 @@
 # overlays or the packs changed, so the shell never points at objects that are not there yet.
 # Guide: docs/DEPLOY-CLOUDFLARE.md.
 #
-#   scripts/deploy-app.sh [wrangler deploy args…]   npx --prefix infra wrangler deploy (needs `wrangler login` or
-#                                                   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)
-#   DRY_RUN=1 scripts/deploy-app.sh                 everything up to `wrangler deploy --dry-run` (bundles the worker,
-#                                                   uploads nothing, needs no account)
+#   scripts/deploy-app.sh [wrangler args…]          `wrangler versions upload` (args go here), the checks on its preview
+#                                                   URL, `wrangler versions deploy` (needs `wrangler login` or
+#                                                   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID, and workers.dev Preview
+#                                                   URLs on for this Worker)
+#   DRY_RUN=1 scripts/deploy-app.sh                 everything up to `wrangler versions upload --dry-run` (bundles the
+#                                                   worker, uploads nothing, needs no account)
 #   DEPLOY_FROM_LOCK=1 scripts/deploy-app.sh        a checkout WITHOUT the artifacts (GitHub Actions, a fresh clone): the
 #                                                   manifest is `deploy-manifest.mjs --from-lock` (shell hashed, R2 keys
 #                                                   from the committed lock; the shell must be built from source first:
 #                                                   scripts/build-shell.mjs + fetch-artifacts.mjs --git-only). The release
-#                                                   record check (a file of the machine that uploaded) is replaced by the
-#                                                   PUBLISHED_ORIGIN check below; G2 comes from the committed
-#                                                   infra/ux-verdict.json when out/ux is absent.
-#   PUBLISHED_ORIGIN=https://… scripts/deploy-app.sh  before deploying, `deploy-manifest.mjs --published <origin>`: every R2
-#                                                   object this shell needs answers on the live origin (HEAD size; GET
-#                                                   sha256 of every manifest and index). Unset with DEPLOY_FROM_LOCK=1 =
-#                                                   the very first deploy (no origin yet): skipped with a log line; the
-#                                                   post-deploy `--smoke --all` then checks every R2 key (HEAD; the
-#                                                   manifests and indexes also by GET sha256).
+#                                                   record check (a file of the machine that uploaded) does not apply: the
+#                                                   checks on the preview URL ask the bucket itself; G2 comes from the
+#                                                   committed infra/ux-verdict.json when out/ux is absent.
 #   ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh    deploy although this remote's newest release records for exactly these R2
 #                                                   keys uploaded only some phases (PHASES=1-objects,2-manifests: the split
-#                                                   upload of decision E1, whose 3-indexes go up right after this deploy)
+#                                                   upload of decision E1, whose 3-indexes go up right after this deploy);
+#                                                   the checks on the preview URL then leave out those shared indexes
 #   WRANGLER_BIN=<path>                             another wrangler executable (the local CI rehearsal's stand-in,
 #                                                   scripts/deploy-rehearsal/wrangler-shim.sh); default the pinned
 #                                                   infra/node_modules/.bin/wrangler (npx --prefix infra wrangler)
@@ -36,7 +33,10 @@
 # ALLOW_UNRECORDED_UPLOAD=1 skips this deliberately); `--stage-assets` into $DEPLOY_OUT/assets (S1/S2: exactly
 # the manifest's files, sha256-checked); refuse any file over the 25 MiB Workers asset cap, any artifact directory
 # in the tree, or a missing required file; write wrangler.toml from wrangler.toml.example when absent (same
-# bucket/prefix as the upload; WRANGLER_CONFIG to use another path) or refuse one that disagrees; then deploy.
+# bucket/prefix as the upload; WRANGLER_CONFIG to use another path) or refuse one that disagrees; then the pre-promotion
+# check: `wrangler versions upload` puts the new version up with no traffic, deploy-manifest --published and --smoke
+# test THAT version on its preview URL (the live Worker cannot: H's maps /runtime/ and /profiles/ to our prefix, and this
+# one to the release's), and only if both pass does `wrangler versions deploy` send visitors to it.
 # shellcheck disable=SC2016  # single-quoted node snippets use JS template literals on purpose
 set -euo pipefail
 SC="$(cd "$(dirname "$0")/.." && pwd)"
@@ -107,15 +107,6 @@ then
   echo "WARNING: proceeding without a matching release record because ALLOW_UNRECORDED_UPLOAD=1" >&2
 fi
 
-# Are the R2 objects this shell needs already on the live origin? (The release record says what THIS machine uploaded;
-# this asks the origin itself.)
-if [ -n "${PUBLISHED_ORIGIN:-}" ]; then
-  node "$SC/scripts/deploy-manifest.mjs" --published "$PUBLISHED_ORIGIN" --out "$DEPLOY_OUT" \
-    || die "the artifacts this shell needs are not (all) published on $PUBLISHED_ORIGIN: upload them first (scripts/upload-artifacts.sh on the machine that has them), nothing deployed"
-elif [ "$FROM_LOCK" = 1 ]; then
-  echo "PUBLISHED CHECK SKIPPED: PUBLISHED_ORIGIN is not set, i.e. the very first deploy (no live origin to ask yet). The artifacts must have been uploaded with scripts/upload-artifacts.sh; the post-deploy smoke (--smoke --all) checks every R2 key on the new deployment (HEAD; the manifests and indexes also by GET sha256)."
-fi
-
 node "$SC/scripts/deploy-manifest.mjs" --stage-assets --out "$DEPLOY_OUT" || die "--stage-assets FAILED"
 ASSETS="$DEPLOY_OUT/assets"
 
@@ -153,15 +144,33 @@ MSG=$(node -p 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"ut
 # a CI deploy names its commit too (GitHub Actions sets GITHUB_SHA)
 [ -n "${GITHUB_SHA:-}" ] && MSG="$MSG ci ${GITHUB_SHA:0:12}"
 if [ "${DRY_RUN:-0}" = 1 ]; then
-  "${WR[@]}" deploy --config "$WRANGLER_CONFIG" --message "$MSG" --dry-run --outdir "$DEPLOY_OUT/wrangler-dry-run" "$@"
+  "${WR[@]}" versions upload --config "$WRANGLER_CONFIG" --message "$MSG" --dry-run --outdir "$DEPLOY_OUT/wrangler-dry-run" "$@"
   echo "DEPLOY DRY RUN OK: worker bundled into ${DEPLOY_OUT#"$SC"/}/wrangler-dry-run; nothing uploaded"
   exit 0
 fi
 rm -f "$DEPLOY_OUT/deployed-url.txt"
-"${WR[@]}" deploy --config "$WRANGLER_CONFIG" --message "$MSG" "$@" 2>&1 | tee "$DEPLOY_OUT/wrangler-deploy.log"
-# wrangler prints the workers.dev URL of the deployment; the smoke needs it (a custom domain: pass it yourself)
-URL=$(grep -oE 'https?://[A-Za-z0-9.:-]+' "$DEPLOY_OUT/wrangler-deploy.log" | grep -E '\.workers\.dev$|^http://127\.0\.0\.1:' | tail -1 || true)
-if [ -n "$URL" ]; then echo "$URL" > "$DEPLOY_OUT/deployed-url.txt"; echo "DEPLOYED-URL $URL"; fi
+"${WR[@]}" versions upload --config "$WRANGLER_CONFIG" --message "$MSG" "$@" 2>&1 | tee "$DEPLOY_OUT/wrangler-upload.log"
+VERSION=$(sed -n 's/^Worker Version ID: *//p' "$DEPLOY_OUT/wrangler-upload.log" | tail -1)
+PREVIEW=$(sed -n 's/^Version Preview URL: *//p' "$DEPLOY_OUT/wrangler-upload.log" | tail -1)
+[ -n "$VERSION" ] || die "no 'Worker Version ID:' line from wrangler versions upload ($DEPLOY_OUT/wrangler-upload.log): nothing deployed"
+[ -n "$PREVIEW" ] || die "version $VERSION is uploaded but has no preview URL, so it cannot be checked before it takes traffic: turn on Preview URLs for the Worker '$WORKER_NAME' (dashboard, Settings, Domains & Routes; docs/DEPLOY-CLOUDFLARE.md) and run this again. Nothing deployed; the live version still has all the traffic"
+# A split upload has not replaced the shared indexes yet (the smoke after phase 3 compares them)
+PRE=(); [ "${ALLOW_PARTIAL_UPLOAD:-0}" = 1 ] && PRE=(--before-phase-3)
+# Up to 3 attempts 20 s apart, like the smoke after a deploy: a new version can take a few seconds to reach every edge location
+for i in 1 2 3; do
+  if node "$SC/scripts/deploy-manifest.mjs" --published "$PREVIEW" --out "$DEPLOY_OUT" ${PRE[@]+"${PRE[@]}"} \
+     && node "$SC/scripts/deploy-manifest.mjs" --smoke "$PREVIEW" --out "$DEPLOY_OUT" --all --range ${PRE[@]+"${PRE[@]}"}; then
+    echo "PRE-PROMOTION OK: version $VERSION on $PREVIEW"; break
+  fi
+  [ "$i" = 3 ] && die "version $VERSION fails on its preview URL $PREVIEW (above): upload the artifacts first (scripts/upload-artifacts.sh on the machine that has them), and check that the release's prefix is in the bucket. Nothing deployed; the live version still has all the traffic"
+  echo "pre-promotion attempt $i failed; retrying in 20 s"; sleep 20
+done
+"${WR[@]}" versions deploy "$VERSION@100%" --config "$WRANGLER_CONFIG" --message "$MSG" --yes 2>&1 | tee "$DEPLOY_OUT/wrangler-deploy.log"
+# The Worker's own URL is its preview URL without the version: https://<8 hex>-<worker>.<subdomain>.workers.dev (a local
+# stand-in has one URL for both; a custom domain: pass it yourself)
+URL=$PREVIEW
+case "$URL" in https://*.workers.dev) URL="https://${URL#https://*-}" ;; esac
+echo "$URL" > "$DEPLOY_OUT/deployed-url.txt"; echo "DEPLOYED-URL $URL"
 SMOKE_CMD="node scripts/deploy-manifest.mjs --out ${DEPLOY_OUT#"$SC"/} --smoke ${URL:-https://$WORKER_NAME.<your-subdomain>.workers.dev} --all --range"
 # a split upload (decision E1): the smoke compares every index's sha256, so it fails until the missing phases are up
 if [ -s "$DEPLOY_OUT/record-gap.txt" ]; then

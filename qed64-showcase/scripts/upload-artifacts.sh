@@ -1,8 +1,9 @@
 #!/bin/bash
-# upload-artifacts.sh — upload the showcase's R2 artifacts (the pinned runtime chunks, the profile packs, the stock
-# snapshot pair and our widget overlays) "the lean4game way": into the R2 bucket QED64 already uses, under the
-# showcase's own prefix, through the existing rclone remote (wasm64-lean4game/scripts/upload-artifacts.sh is the
-# model). Guide: docs/DEPLOY-CLOUDFLARE.md.
+# upload-artifacts.sh — upload the showcase's own R2 artifacts (the stock snapshot pair, our widget overlays and the
+# shared indexes) "the lean4game way": into the R2 bucket QED64 already uses, under the showcase's own prefix, through
+# the existing rclone remote (wasm64-lean4game/scripts/upload-artifacts.sh is the model). The runtime and the packs are
+# not uploaded: infra/worker.js reads them from the toolchain release's prefix lean4-wasm64/<id>/ in the same bucket
+# (deploy-manifest.mjs manifest.release), which the kernel publishes. Guide: docs/DEPLOY-CLOUDFLARE.md.
 #
 #   scripts/upload-artifacts.sh                 the real upload (needs the R2 token in the rclone remote)
 #   DRY_RUN=1 scripts/upload-artifacts.sh       the same, with rclone --dry-run (lists the bucket, writes nothing)
@@ -16,14 +17,6 @@
 #                                               (/snapshots/widgets{7,8}.<bid16>/index.json, pin.json v3) is a NEW key no
 #                                               older shell reads: phase 2, so the new gallery has its overlays as soon
 #                                               as the new Worker is live.
-#                                               The split does NOT cover a pack manifest /profiles/<p>.manifest.json:
-#                                               the same URL in every release, phase 2, so a release that changes the
-#                                               packs (QED64 521cf3f) replaces it under the live shell, which, without
-#                                               QED64's release check (HARDENING #81; no pin before 521cf3f has it),
-#                                               installs that release's pack under its own runtime until the new Worker
-#                                               is deployed; with it (521cf3f on) the live shell refuses every pack
-#                                               install as stale until then instead, so it does not boot. Named on an
-#                                               E1 HAZARD line (e1_packs below).
 #                                               A phase is uploaded only when every EARLIER phase is selected too or was
 #                                               uploaded by this remote's newest release records for the same R2 keys
 #                                               (ALLOW_UNRECORDED_UPLOAD=1 skips that check deliberately). The release
@@ -42,14 +35,16 @@
 # 2. `rclone copy` (NEVER sync: a promote must not delete what a deployed shell or a mid-session client still
 #    points at) from the manifest's exact file lists, in three phases so a browser that revalidates an index
 #    mid-upload never learns a name whose object is not there yet (R2 has no multi-object atomic publish):
-#      phase 1 every digest-named object (runtime chunks, pack parts, .snapz)
-#      phase 2 the manifests that name them (runtime-manifest*.json, *.manifest.json)
-#      phase 3 the index.json files that name the manifests (profiles, stock snapshots, each bare overlay directory)
+#      phase 1 every digest-named object (.snapz)
+#      phase 2 the indexes no older shell reads (below)
+#      phase 3 the index.json files an older shell reads (profiles, stock snapshots, each bare overlay directory)
 #    (a per-build index copy, snapshots/index.<buildId>.json or snapshots/profiles-index.<buildId>.json, which
 #    deploy-manifest.mjs adds for a pin with hardening.pinnedIndexes (R6, QED64 HARDENING #64), is not an index.json, and a per-runtime overlay
 #    directory's index.json (snapshots/widgets8.<bid16>/, read only by the shell of that runtime) replaces nothing an
 #    older shell reads: both phase 2, so the new shell's pinned indexes and its gallery's overlays are up before a split
-#    upload's Worker deploy; each still goes up after the phase-1 objects it names. Keep phaseOf on ONE line:
+#    upload's Worker deploy; each still goes up after the phase-1 objects it names. (A release record of a pin before
+#    release routing also has runtime chunks, pack parts and manifests: scripts/rollback-artifacts.sh still reads those.)
+#    Keep phaseOf on ONE line:
 #    ci/rehearse-deploy.sh (old-shell) evaluates it from this file)
 #    Every list is homogeneous in content type and is uploaded with an explicit
 #    --header-upload "Content-Type: …" (application/json for *.json, application/octet-stream for .snapz /
@@ -158,32 +153,6 @@ EOF
   fi
 fi
 
-# E1 HAZARD (as ci/rehearse-deploy.sh old-shell names it): a pack manifest /profiles/<p>.manifest.json keeps its URL in
-# every release and goes up in phase 2, so when the packs change it switches under the live shell, split upload or not.
-# Printed (DRY_RUN too) when this upload has phase 2 and a pack manifest's sha256 differs from the newest OTHER release
-# record of this remote/bucket/prefix that uploaded phase 2, i.e. what that URL serves as far as the records know; no
-# such record (or an unreadable one): UNCHECKED, never silent. $1: this upload's own record, skipped.
-e1_packs() {
-  case ",$PHASES," in *,2-manifests,*) ;; *) return 0 ;; esac
-  node - "$DEPLOY_OUT/manifest.json" "$DEPLOY_OUT/published" "$R2_REMOTE" "$R2_BUCKET" "$R2_PREFIX" "${1:-}" <<'EOF' \
-    || echo "E1 HAZARD UNCHECKED: the pack manifests /profiles/*.manifest.json could not be compared with the release records (above); docs/DEPLOY-CLOUDFLARE.md 3.2"
-const fs = require('fs'), path = require('path');
-const [mPath, pubDir, remote, bucket, prefix, self] = process.argv.slice(2);
-const packs = (f) => new Map(JSON.parse(fs.readFileSync(f, 'utf8')).r2.filter((o) => /^\/profiles\/[^/]+\.manifest\.json$/.test(o.url)).map((o) => [o.url, o.sha256]));
-const env = (d) => Object.fromEntries(fs.readFileSync(path.join(d, 'target.env'), 'utf8').trim().split('\n').map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
-const cur = packs(mPath);
-if (!cur.size) process.exit(0);
-const rec = (fs.existsSync(pubDir) ? fs.readdirSync(pubDir).sort().reverse() : []).map((n) => path.join(pubDir, n))
-  .filter((d) => !(self && path.resolve(d) === path.resolve(self)) && fs.existsSync(path.join(d, 'target.env')) && fs.existsSync(path.join(d, 'manifest.json')))
-  .find((d) => { const t = env(d); return t.remote === remote && t.bucket === bucket && t.prefix === prefix && (t.phases || '2-manifests').split(',').includes('2-manifests'); });
-const why = `a live shell without QED64's release check (HARDENING #81; every pin before 521cf3f) installs this release's packs under its own runtime from phase 2 until the new Worker is deployed (and in an old tab left open after it); a live shell with it (521cf3f on) refuses every pack install as stale in the same window instead, so its stock page and gallery do not boot until the deploy; a split upload covers neither. How to handle that window is decision E1, still open: docs/DEPLOY-CLOUDFLARE.md 3.2`;
-if (!rec) { console.log(`E1 HAZARD UNCHECKED: no earlier release record of this target uploaded phase 2 to compare ${[...cur.keys()].join(', ')} with; if the live release's packs differ, ${why}`); process.exit(0); }
-const old = packs(path.join(rec, 'manifest.json'));
-const changed = [...cur].filter(([u, h]) => old.get(u) !== h).map(([u]) => u);
-if (changed.length) console.log(`E1 HAZARD: phase 2 replaces ${changed.join(', ')} under the same URL (sha256 != release record ${path.basename(rec)}, the newest of this target with phase 2): ${why}`);
-EOF
-}
-
 # Live progress in a terminal; periodic one-line stats when logged to a file (a 350 MB .snapz otherwise shows
 # nothing for minutes and looks stuck). Already-uploaded digest-named files are skipped (--checksum).
 # (--stats-log-level NOTICE: rclone logs the one-line stats at INFO by default, i.e. not at all without -v; the
@@ -197,7 +166,7 @@ while IFS=$'\t' read -r id list root sub ctype count bytes; do
     --header-upload "Content-Type: $ctype" "${COMMON[@]}" ${DRY[@]+"${DRY[@]}"}
 done < "$PLAN/plan.tsv"
 
-if [ "${DRY_RUN:-0}" = 1 ]; then echo "UPLOAD DRY RUN OK: nothing written to $DEST_ROOT (phases $PHASES)"; e1_packs; exit 0; fi
+if [ "${DRY_RUN:-0}" = 1 ]; then echo "UPLOAD DRY RUN OK: nothing written to $DEST_ROOT (phases $PHASES)"; exit 0; fi
 if [ "${VERIFY:-1}" = 1 ]; then
   while IFS=$'\t' read -r id list root sub ctype count bytes; do
     rclone check --one-way --files-from-raw "$PLAN/$list" "$SC/$root" "$DEST_ROOT$sub" 2>&1 | tail -2
@@ -220,6 +189,5 @@ echo "release record: ${REC#"$SC"/} (rollback: scripts/rollback-artifacts.sh ${R
 echo "  out/ is gitignored and this tree has no git history: copy ${DEPLOY_OUT#"$SC"/}/published/ somewhere durable now (docs/DEPLOY-CLOUDFLARE.md section 5)"
 case ",$PHASES," in
   *,3-indexes,*) echo "UPLOAD OK: $(wc -l < "$PLAN/plan.tsv" | tr -d ' ') lists -> $DEST_ROOT, phases $PHASES (copy only; nothing deleted). Next: scripts/deploy-app.sh" ;;
-  *) echo "UPLOAD OK: $(wc -l < "$PLAN/plan.tsv" | tr -d ' ') lists -> $DEST_ROOT, phases $PHASES only (copy only; nothing deleted). Next (split upload, decision E1): deploy the shell, then PHASES=3-indexes scripts/upload-artifacts.sh. ALLOW_PARTIAL_UPLOAD=1 relaxes only deploy-app.sh's release-record check: its published check (PUBLISHED_ORIGIN, which the CI deploy sets) still compares the phase-3 indexes and refuses until they are uploaded" ;;
+  *) echo "UPLOAD OK: $(wc -l < "$PLAN/plan.tsv" | tr -d ' ') lists -> $DEST_ROOT, phases $PHASES only (copy only; nothing deleted). Next (split upload, decision E1): ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh, then PHASES=3-indexes scripts/upload-artifacts.sh. The CI deploy does not set it: its checks compare the phase-3 indexes and refuse until they are uploaded" ;;
 esac
-e1_packs "$REC"

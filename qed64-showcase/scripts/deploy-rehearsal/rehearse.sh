@@ -12,7 +12,9 @@
 #                  prefix must all refuse and leave the bucket untouched
 #     upload-dry   DRY_RUN=1 scripts/upload-artifacts.sh -> fake remote (must write nothing)
 #     upload       scripts/upload-artifacts.sh -> fake remote 'rehearsalr2' = rclone local backend (via an alias) at
-#                  $REHEARSAL_DIR/bucket, i.e. objects land at bucket/<R2_BUCKET>/<R2_PREFIX>…
+#                  $REHEARSAL_DIR/bucket, i.e. objects land at bucket/<R2_BUCKET>/<R2_PREFIX>…; then the toolchain
+#                  release's files (manifest.release.objects, from release/<id>/public) are staged at
+#                  bucket/<R2_BUCKET>/lean4-wasm64/<id>/…, where the kernel's publish puts them in the real bucket
 #     upload-s3    scripts/upload-artifacts.sh -> fake remote 'rehearsals3' = rclone s3 backend (provider Cloudflare)
 #                  pointed at scripts/deploy-rehearsal/fake-s3.mjs on 127.0.0.1; checks every object's Content-Type
 #                  and which ones went multipart against the manifest
@@ -20,7 +22,7 @@
 #                  restored, the dry run writes nothing, a record whose digest-named object is missing is refused, and
 #                  a record made through another remote (rehearsals3) is refused
 #     deploy-dry   DRY_RUN=1 scripts/deploy-app.sh with WRANGLER_CONFIG=$REHEARSAL_DIR/wrangler.toml (written from
-#                  wrangler.toml.example + infra/deploy.env; `wrangler deploy --dry-run`), after two negative controls
+#                  wrangler.toml.example + infra/deploy.env; `wrangler versions upload --dry-run`), after two negative controls
 #                  of its release-record cross-check: no record for the remote, and a manifest (small variant) whose
 #                  R2 keys differ from the newest upload's
 #     load         scripts/deploy-rehearsal/load-r2.mjs: fake bucket -> wrangler dev's local R2 ($REHEARSAL_DIR/state)
@@ -161,6 +163,17 @@ for (const k of have) { bad++; console.log(`FAIL unexpected object ${k}`); }
 console.log(`${bad ? 'FAKE-BUCKET FAILED' : 'FAKE-BUCKET OK'}: ${m.r2.length} objects under ${m.options.prefix}, size + sha256 equal to the manifest, nothing else in the bucket`);
 process.exit(bad ? 1 : 0);
 EOF
+    node - "$DO_ABS" "$SC" "$RD/bucket/$(bucket R2_BUCKET)" <<'EOF'
+// The release is not ours to upload: stage it where the kernel's publish puts it, by hard link from the pinned tree
+const fs = require('fs'), path = require('path');
+const [out, sc, root] = process.argv.slice(2); const m = JSON.parse(fs.readFileSync(path.resolve(out, 'manifest.json'), 'utf8'));
+for (const o of m.release.objects) {
+  const to = path.join(root, o.key); fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.rmSync(to, { force: true });
+  try { fs.linkSync(path.join(sc, o.src), to); } catch { fs.copyFileSync(path.join(sc, o.src), to, fs.constants.COPYFILE_FICLONE); }
+}
+console.log(`RELEASE STAGED: ${m.release.objects.length} objects under ${m.release.prefix} of the fake bucket (the pinned tree's bytes; deploy-manifest L1 and L2 hold them to the lock and the release record)`);
+EOF
     ;;
   upload-s3)
     guard_remote rehearsals3
@@ -194,7 +207,7 @@ const pos = (k) => order.indexOf(k);
 const lastObject = Math.max(...m.r2.filter((o) => o.phase === 'immutable').map((o) => pos(o.key)));
 const firstManifest = Math.min(...m.r2.filter((o) => o.phase === 'mutable').map((o) => pos(o.key)));
 const lastManifest = Math.max(...m.r2.filter((o) => o.phase === 'mutable' && !/\/index\.json$/.test(o.url)).map((o) => pos(o.key)));
-const firstIndex = Math.min(...m.r2.filter((o) => /\/index\.json$/.test(o.url)).map((o) => pos(o.key)));
+const firstIndex = Math.min(...m.r2.filter((o) => /\/index\.json$/.test(o.url) && !/^\/snapshots\/widgets[78]\.[0-9a-f]{16}\/index\.json$/.test(o.url)).map((o) => pos(o.key)));   // a per-runtime overlay's index is phase 2
 if (!(lastObject < firstManifest && lastManifest < firstIndex)) { bad++; console.log(`FAIL phase order: last object #${lastObject}, first manifest #${firstManifest}, last manifest #${lastManifest}, first index #${firstIndex}`); }
 const mp = ev.filter((e) => e.op === 'CompleteMultipartUpload');
 console.log(`${bad ? 'FAKE-S3 FAILED' : 'FAKE-S3 OK'}: ${done.size} objects received; Content-Type ${JSON.stringify(byType)} == manifest; ${mp.length} multipart (${mp.map((e) => `${e.key.split('/').pop()} ${e.parts} parts`).join(', ')}); phases objects -> manifests -> indexes in order`);
@@ -215,7 +228,7 @@ EOF
     [ "$(cat "$B$IDX")" = junk ] || { echo "REHEARSAL FAIL: the rollback dry run wrote"; exit 1; }
     R2_REMOTE=rehearsalr2 offline scripts/rollback-artifacts.sh "$REC" 2>&1 | tee "$LOGS/rollback.log"
     cmp "$B$IDX" "$REC/files/$IDX" && say "rollback: $IDX restored byte-identical from ${REC##*/}"
-    PART=$(cd "$B" && find . -name '*.part-*' | sed 's|^\./||' | sort | head -1)
+    PART=$(cd "$B" && find . -name '*.snapz' | sed 's|^\./||' | sort | head -1)
     mv "$B$PART" "$RD/held-out.part"
     if R2_REMOTE=rehearsalr2 offline scripts/rollback-artifacts.sh "$REC" > "$LOGS/rollback-missing.log" 2>&1; then
       mv "$RD/held-out.part" "$B$PART"; echo "REHEARSAL FAIL: rollback accepted a record whose object $PART is missing"; exit 1; fi
@@ -262,6 +275,8 @@ EOF
       curl -sI "$O/" | grep -iE '^HTTP|^location|cross-origin-embedder'
       echo "\$ curl -sI $O/runtime/runtime-manifest.json"
       curl -sI "$O/runtime/runtime-manifest.json" | grep -iE '^HTTP|content-type|cache-control|accept-ranges'
+      echo "\$ curl -sI $O/runtime/runtime-manifest.wasm64-0000000000000000.json (another runtime: the release has no such file, and its 404 is never cached)"
+      curl -sI "$O/runtime/runtime-manifest.wasm64-0000000000000000.json" | grep -iE '^HTTP|cache-control'
     } 2>&1 | tee "$LOGS/curl.log" ;;
   browser)
     scripts/with-browser-lock.sh deploy-rehearsal node scripts/deploy-rehearsal/boot-check.mjs "http://localhost:$PORT" "$SC/out/deploy-rehearsal" 2>&1 | tee "$LOGS/browser.log" ;;

@@ -1,20 +1,21 @@
 #!/bin/bash
 # rehearse-deploy.sh — the qed64-deploy workflow (.github/workflows/qed64-deploy.yml) run on this machine, job by job,
 # in FRESH CLONES (ci/run-local.mjs), against local fakes only. Nothing contacts Cloudflare:
-#   * `wrangler` is scripts/deploy-rehearsal/wrangler-shim.sh (WRANGLER_BIN, a runner-level variable): `wrangler deploy`
-#     becomes `wrangler deploy --dry-run` under the offline sandbox with no token, and the "deployed" Worker is
+#   * `wrangler` is scripts/deploy-rehearsal/wrangler-shim.sh (WRANGLER_BIN, a runner-level variable): `wrangler versions
+#     upload` becomes its --dry-run under the offline sandbox with no token, and the new version on its "preview URL" is
 #     `wrangler dev --local` on the same generated wrangler.toml over a fake R2 (a copy of the state that
-#     scripts/deploy-rehearsal/rehearse.sh `load` filled with the full release's 93 objects);
+#     scripts/deploy-rehearsal/rehearse.sh `load` filled with our objects and the toolchain release's, 93 at O);
+#     `wrangler versions deploy` records the promotion;
 #   * the secrets are placeholders that never reach wrangler (the shim unsets them);
-#   * the "live showcase" (vars.SHOWCASE_ORIGIN) is a wrangler dev serving a placeholder shell over that fake R2, and
-#     an "origin without artifacts" is a wrangler dev over an empty R2.
+#   * the "live showcase" (vars.SHOWCASE_ORIGIN) is that same server, and a bucket without artifacts is a wrangler dev
+#     over an empty R2.
 # Scenarios (each a separate fresh clone; expectations are checked, not just printed):
 #   skip        push, no secrets                        -> the skip line; every later step skipped
-#   dry-run     dispatch dry_run=true, no secrets        -> everything up to `wrangler deploy --dry-run`
-#   unpublished push, SHOWCASE_ORIGIN = the empty R2     -> the published check refuses; wrangler never runs
-#   deploy      push, SHOWCASE_ORIGIN = the live stand-in -> published check OK, "deploy", smoke OK on the new Worker
-#   first       push, no SHOWCASE_ORIGIN                 -> published check skipped (first deploy); smoke on the URL the
-#                                                           deploy printed
+#   dry-run     dispatch dry_run=true, no secrets        -> everything up to `wrangler versions upload --dry-run`
+#   unpublished push over the empty R2                   -> the pre-promotion check refuses; nothing is promoted
+#   no-preview  push, wrangler prints no preview URL     -> refused with the reason; nothing is promoted
+#   deploy      push, SHOWCASE_ORIGIN = the live stand-in -> pre-promotion check OK, promoted, smoke OK on the origin
+#   first       push, no SHOWCASE_ORIGIN                 -> the same; smoke on the URL deploy-app.sh derived
 #   no-verdict  push of a commit that changes the gallery without a new infra/ux-verdict.json -> G2 refuses
 #   tamper      `deploy-manifest --published` of the deploy scenario's manifest with one index sha256 and one object
 #               size altered, against the live stand-in -> FAIL (the check can see a wrong upload). The index is the
@@ -22,16 +23,17 @@
 #               widgets8.<bid16> for a per-runtime pin)
 #   old-shell   a runtime-changing deploy against the LIVE shell (pin I plan, D7). The fake R2 is OLD_STATE (the live
 #               pin's published objects) plus the new manifest's upload phases 1-2 (scripts/upload-artifacts.sh's phase
-#               rule) loaded on top; nothing is deleted. Checked: no digest-named object changes and no bare overlay
-#               object is rewritten (the phase-2 manifests that replace live ones are listed). Real order of events:
-#               the OLD Worker and shell (the workflow run at OLD_REF, a fresh clone) deploy over a pristine OLD_STATE
-#               with their published check and smoke OK, THEN phases 1-2 are loaded under them; OLD_MANIFEST's
-#               --published without the replaced phase-2 keys is OK, and each replaced key serves exactly the new
+#               rule) and the toolchain release (already in the bucket in real life) loaded on top; nothing is deleted.
+#               Checked: no digest-named object changes and no bare overlay object is rewritten (a phase-2 manifest that
+#               replaced a live one would be listed; with release routing none does). Real order of events:
+#               the OLD Worker and shell (the workflow run at OLD_REF, a fresh clone, without SHOWCASE_ORIGIN) deploy over
+#               a pristine OLD_STATE with their smoke OK, THEN phases 1-2 are loaded under them; OLD_MANIFEST's
+#               --published without any replaced phase-2 keys is OK, and each replaced key serves exactly the new
 #               manifest's bytes: a runtime manifest is "REPLACED (expected)" (the old shell reads its per-build copy
-#               first), a pack manifest /profiles/<p>.manifest.json (the same URL in every release; another release's
-#               content when the packs change, as at QED64 521cf3f) is an E1 HAZARD: an "E1 MEASURE" line names it and its
-#               window (from phase 2 until the new Worker is deployed, in either order; an old tab left open after it
-#               too); every bare snapshots/widgets{7,8}/ object is untouched; one boot of
+#               first), a pack manifest /profiles/<p>.manifest.json would be an E1 HAZARD with an "E1 MEASURE" line (a
+#               rehearsal of a new pin before release routing; a pin with it uploads no pack manifest, so the line
+#               staying away, and the old boots fetching no pack part of the NEW release, is the evidence that this half
+#               of E1 is gone); every bare snapshots/widgets{7,8}/ object is untouched; one boot of
 #               the old gallery (/showcase/#hasse-view, the old clone's boot-check.mjs) and one bare "/" stock boot,
 #               both under the browser lock. Every boot also records which /profiles/ pack manifests and parts it fetched,
 #               read from the old-shell origin's request log (wrangler dev logs each request; server-side, so an old
@@ -40,16 +42,21 @@
 #               pack-fetches.txt has every boot). Then phase 3 and the NEW Worker (the workflow at REF), in both orders, to
 #               MEASURE decision E1 rather than assume it:
 #                 order A  phase 3 BEFORE the deploy (today's upload): measure the old shell's stock and gallery boots in
-#                          the window; then the new workflow (published check, deploy, SMOKE) and the new gallery + stock
-#                          boots must be OK
+#                          the window; then the new workflow (pre-promotion check, promotion, SMOKE) and the new gallery +
+#                          stock boots must be OK
 #                 order B  phase 3 AFTER the deploy (PHASES=1-objects,2-manifests, deploy, PHASES=3-indexes): measure
-#                          whether the CI published check refuses before phase 3, the new Worker deployed without it (its
-#                          smoke), and the new gallery + stock boots in the window; after phase 3 the new manifest's
-#                          --published and --smoke --all --range and the new gallery + stock boots must be OK
+#                          whether the CI pre-promotion check refuses before phase 3, the new Worker with
+#                          ALLOW_PARTIAL_UPLOAD=1 (its smoke), and the new gallery + stock boots in the window; after phase
+#                          3 the new manifest's --published and --smoke --all --range and the new gallery + stock boots
+#                          must be OK
+#                 After either order: an old tab's next fetch of its own runtime manifest, through the new Worker (an E1
+#                 MEASURE line; expected a no-store 404: the old shell fails closed, docs/DEPLOY-CLOUDFLARE.md section 6).
 #               The window results are printed as "E1 MEASURE …" lines (and <run>/old-shell/e1-measure.txt); they are
 #               evidence, not failures. Needs OLD_REF; skipped (named on the last line, never counted as OK) without it.
 #
 #   ci/rehearse-deploy.sh [scenario…]       default: all of them, in the order above
+# A real upload leaves the old version serving until the promotion; the stand-in has one server per port, so from `versions
+# upload` on the new Worker answers there.
 # Env: REF (commit to clone, default HEAD), RUN_DIR (default $QED64_SHOWCASE_WORK/ci-rehearsal/<UTC time>),
 # REHEARSAL_SRC_STATE (default $QED64_SHOWCASE_WORK/deploy-rehearsal/state), PORT (default 8792; PORT+10 = empty R2).
 # old-shell only: OLD_REF (required: the commit the LIVE shell was deployed from), OLD_STATE (a wrangler dev state
@@ -145,7 +152,7 @@ opacks() {
   local tag=$1 from=$2 line
   if [ ! -f "$OS_SRVLOG" ]; then line="not measured: no server log ${OS_SRVLOG:-(none)}"
   else line=$(tail -n +"$from" "$OS_SRVLOG" | node -e 'const fs=require("fs");
-    const urls=(p)=>new Set(JSON.parse(fs.readFileSync(p,"utf8")).r2.map((o)=>o.url));const om=urls(process.argv[1]),nm=urls(process.argv[2]);
+    const urls=(p)=>{const m=JSON.parse(fs.readFileSync(p,"utf8"));return new Set([...m.r2,...(m.release?m.release.objects:[])].map((o)=>o.url));};const om=urls(process.argv[1]),nm=urls(process.argv[2]);
     let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{
       if(!/\[wrangler:info\] [A-Z]+ \//.test(s)){console.log("not measured: no request lines in the server log for this boot");return;}
       const got=[...s.matchAll(/\[wrangler:info\] GET (\/profiles\/[^\s?]+)\S* (\d{3})/g)].map((m)=>({u:m[1],st:m[2]}));
@@ -187,6 +194,13 @@ ostock() {     # <tag>: one cold boot of the stock page "/" without ?snapshots= 
   [ "$rc" = 0 ] && grep -q '^STOCK-BOOT OK' "$RUN/old-shell/boot-$tag.log"
 }
 measure() { echo "E1 MEASURE $*" | tee -a "$RUN/old-shell/e1-measure.txt"; }
+# otab <order>: what an old tab left open gets from the new Worker: its own runtime manifest (OLD_MANIFEST's per-build copy)
+otab() {
+  local u line
+  u=$(node -p 'const m=require(process.argv[1]);`/runtime/runtime-manifest.${m.pin.buildId}.json`' "$OS_OLD_MANIFEST")
+  line=$(curl -s -o /dev/null -D - "http://127.0.0.1:$OLD_PORT$u" | grep -iE '^HTTP|^cache-control' | tr -d '\r' | tr '\n' ' ')
+  measure "$1: an old tab's fetch of $u through the new Worker: $line"
+}
 
 # Prepare: the inputs, the phase split of the new manifest (upload-artifacts.sh's own rule), the overlap checks against the
 # live manifest, and the subset buckets/manifests load-r2.mjs takes (hard links into the new rehearsal's fake bucket).
@@ -234,7 +248,16 @@ for (const [name, list] of [['p12', p12], ['p3', p3]]) {
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     try { fs.linkSync(src, dst); } catch { fs.copyFileSync(src, dst, fs.constants.COPYFILE_FICLONE); }
   }
-  fs.writeFileSync(path.join(O, `${name}-manifest.json`), JSON.stringify({ ...nm, r2: list }));
+  // the toolchain release is in the bucket before any upload of ours: it goes in with phases 1-2
+  const rel = name === 'p12' && nm.release ? nm.release.objects : [];
+  for (const o of rel) {
+    const src = path.join(bucketRoot, o.key), dst = path.join(root, o.key);
+    let st = null; try { st = fs.statSync(src); } catch { /* missing */ }
+    if (!st || st.size !== o.size) { fail(`${src}: ${st ? `${st.size} B` : 'missing'} (want ${o.size}; rebuild the new pin's rehearsal bucket: scripts/deploy-rehearsal/rehearse.sh upload)`); continue; }
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    try { fs.linkSync(src, dst); } catch { fs.copyFileSync(src, dst, fs.constants.COPYFILE_FICLONE); }
+  }
+  fs.writeFileSync(path.join(O, `${name}-manifest.json`), JSON.stringify({ ...nm, r2: list, release: { ...(nm.release || {}), objects: rel } }));
 }
 console.log(bad ? `OLD-SHELL PREP FAILED (${bad})` : `OLD-SHELL PREP OK: subsets p12 (${p12.length}) and p3 (${p3.length}) under ${O}`);
 process.exit(bad ? 1 : 0);
@@ -318,14 +341,14 @@ old_shell() {
     cfg_old=""; oldsc=""
     if [ "$first" = 1 ] || [ "$order" = A ]; then
       # 1. the OLD Worker and shell are live BEFORE the upload starts (the real order of events): the old commit's own
-      #    workflow (fresh clone at OLD_REF) deploys over a pristine clone of OLD_STATE, its published check and smoke
-      #    against exactly the live objects. The live stand-in (placeholder shell, this checkout's Worker) gives it an origin.
+      #    workflow (fresh clone at OLD_REF) deploys over a pristine clone of OLD_STATE, its smoke against exactly the live
+      #    objects. No SHOWCASE_ORIGIN: its published check would ask this checkout's Worker, which reads the release's
+      #    prefix, and OLD_STATE holds only the old pin's objects.
       cp -cR "$OS_STATE" "$D/state" || { errs+=("$order: cannot clone OLD_STATE"); continue; }
-      oserve "$D" "$RUN/live/wrangler.toml" || { errs+=("$order: stand-in did not start"); continue; }
       shim_env "$D/state" "$OLD_PORT" "$D/server"
-      if runlocal "old-shell-$order-old" 0 --ref "$oref" --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$OLD_PORT" "${SHIM_ENV[@]}"; then
-        has "old-shell-$order-old" 'PUBLISHED OK' && has "old-shell-$order-old" 'Deployed \(rehearsal' && has "old-shell-$order-old" 'SMOKE OK' \
-          || errs+=("$order: the old workflow did not show PUBLISHED OK, the deploy and SMOKE OK on the live objects ($RUN/old-shell-$order-old.log)")
+      if runlocal "old-shell-$order-old" 0 --ref "$oref" --event push "${SECRETS[@]}" "${SHIM_ENV[@]}"; then
+        has "old-shell-$order-old" 'Deployed \(rehearsal' && has "old-shell-$order-old" 'SMOKE OK' \
+          || errs+=("$order: the old workflow did not show the deploy and SMOKE OK on the live objects ($RUN/old-shell-$order-old.log)")
       else errs+=("$order: the old workflow failed on the live objects ($RUN/old-shell-$order-old.log)"); fi
       cfg_old=$(oconfig "old-shell-$order-old"); oldsc=${cfg_old%/wrangler.toml}
       [ -n "$cfg_old" ] || { errs+=("$order: no wrangler.toml from the old deploy"); ostop "$D" || true; continue; }
@@ -389,7 +412,7 @@ old_shell() {
         if ogallery "$oldsc" "A-window-old-gallery"; then measure "A: the OLD gallery in the window: OK"
         else measure "A: the OLD gallery in the window: FAILED ($O/boot-A-window-old-gallery.log)"; fi
       else errs+=("A: loading phase 3 failed"); fi
-      # 5A. the NEW workflow: published check (everything is up), deploy, smoke
+      # 5A. the NEW workflow: pre-promotion check (everything is up), promotion, smoke
       shim_env "$D/state" "$OLD_PORT" "$D/server"
       if runlocal "old-shell-A-new" 0 --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$OLD_PORT" "${SHIM_ENV[@]}"; then
         has old-shell-A-new 'PUBLISHED OK' && has old-shell-A-new 'Deployed \(rehearsal' && has old-shell-A-new 'SMOKE OK' \
@@ -398,18 +421,19 @@ old_shell() {
       cfg_new=$(oconfig old-shell-A-new); newsc=${cfg_new%/wrangler.toml}
       [ -n "$newsc" ] && { ogallery "$newsc" "A-new-gallery" || errs+=("A: the new gallery did not boot ($O/boot-A-new-gallery.log)"); }
       ostock "A-new-stock" || errs+=("A: the new stock page did not boot ($O/boot-A-new-stock.log)")
+      otab "A"
     else
-      # 4B. split upload: the new Worker first. Does the CI published check accept the missing phase 3? (measured)
+      # 4B. split upload: the new Worker first. Does the CI pre-promotion check accept the missing phase 3? (measured)
       shim_env "$D/state" "$OLD_PORT" "$D/server"   # (should the check pass, its deploy replaces the server like any other)
       local rcci=0
       node "$ROOT/ci/run-local.mjs" --workflow "$WF" --ref "$REF" --out "$RUN/old-shell-B-ci" --event push "${SECRETS[@]}" \
         --var "SHOWCASE_ORIGIN=http://127.0.0.1:$OLD_PORT" "${SHIM_ENV[@]}" > "$RUN/old-shell-B-ci.log" 2>&1 || rcci=$?
-      if [ "$rcci" != 0 ] && has old-shell-B-ci 'PUBLISHED FAILED'; then measure "B (phase 3 after the deploy): the CI published check REFUSES the deploy before phase 3 (rc $rcci): a split upload needs that check relaxed for phase-3 objects, or a manual deploy"
-      else measure "B: the CI published check before phase 3: rc $rcci ($(grep -m1 -oE 'PUBLISHED (OK|FAILED)' "$RUN/old-shell-B-ci.log" || echo 'no PUBLISHED line'); $RUN/old-shell-B-ci.log)"; fi
-      # the new Worker deployed without the published check (the "first deploy" path), its smoke measured
+      if [ "$rcci" != 0 ] && has old-shell-B-ci 'PUBLISHED FAILED'; then measure "B (phase 3 after the deploy): the CI pre-promotion check REFUSES the deploy before phase 3 (rc $rcci), nothing promoted: a split upload deploys by hand, ALLOW_PARTIAL_UPLOAD=1 scripts/deploy-app.sh"
+      else measure "B: the CI pre-promotion check before phase 3: rc $rcci ($(grep -m1 -oE 'PUBLISHED (OK|FAILED)' "$RUN/old-shell-B-ci.log" || echo 'no PUBLISHED line'); $RUN/old-shell-B-ci.log)"; fi
+      # the new Worker promoted with ALLOW_PARTIAL_UPLOAD=1 (its check leaves out the phase-3 indexes), its smoke measured
       shim_env "$D/state" "$OLD_PORT" "$D/server"
       local rcnew=0
-      node "$ROOT/ci/run-local.mjs" --workflow "$WF" --ref "$REF" --out "$RUN/old-shell-B-new" --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" \
+      node "$ROOT/ci/run-local.mjs" --workflow "$WF" --ref "$REF" --out "$RUN/old-shell-B-new" --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" --runner-env ALLOW_PARTIAL_UPLOAD=1 \
         > "$RUN/old-shell-B-new.log" 2>&1 || rcnew=$?
       has old-shell-B-new 'Deployed \(rehearsal' || errs+=("B: the new Worker was not deployed ($RUN/old-shell-B-new.log)")
       measure "B: the new Worker's post-deploy smoke before phase 3: $(has old-shell-B-new 'SMOKE OK' && echo OK || echo "FAILED (rc $rcnew)")"
@@ -429,11 +453,12 @@ old_shell() {
       else errs+=("B: after phase 3 the new manifest's --published / --smoke failed ($D/published-new.log, $D/smoke-new.log)"); fi
       ogallery "$newsc" "B-new-gallery" || errs+=("B: the new gallery did not boot after phase 3 ($O/boot-B-new-gallery.log)")
       ostock "B-new-stock" || errs+=("B: the new stock page did not boot after phase 3 ($O/boot-B-new-stock.log)")
+      otab "B"
     fi
     ostop "$D" || true
   done
   if [ ${#errs[@]} = 0 ]; then
-    pass old-shell "phases 1-2 changed no digest-named or bare overlay object (replaced manifests: $(tr '\n' ' ' < "$O/p12-replaced-keys.txt")$(grep -q . "$O/p12-e1-hazard-keys.txt" 2>/dev/null && echo "; of them E1 hazards, pack manifests: $(tr '\n' ' ' < "$O/p12-e1-hazard-keys.txt")")); old workflow + OLD_MANIFEST published OK; old gallery + stock boot OK; after phase 3 + the new Worker: published, SMOKE and new boots OK (orders ${OLD_SHELL_ORDERS:-A B}); E1 measured ($O/e1-measure.txt)"
+    pass old-shell "phases 1-2 changed no digest-named or bare overlay object (replaced manifests: $(tr '\n' ' ' < "$O/p12-replaced-keys.txt")$(grep -q . "$O/p12-e1-hazard-keys.txt" 2>/dev/null && echo "; of them E1 hazards, pack manifests: $(tr '\n' ' ' < "$O/p12-e1-hazard-keys.txt")")); old workflow + OLD_MANIFEST published OK; old gallery + stock boot OK; after phase 3 + the new Worker: pre-promotion, SMOKE and new boots OK (orders ${OLD_SHELL_ORDERS:-A B}); E1 measured ($O/e1-measure.txt)"
   else
     local e; for e in "${errs[@]}"; do echo "  old-shell: $e"; done
     fail old-shell "${#errs[@]} check(s) failed (see above; E1 measurements in $O/e1-measure.txt)"
@@ -451,29 +476,34 @@ scenario() {
   dry-run)
     shim_env "$RUN/state" "$PORT" "$RUN/dry-run-shim"
     runlocal dry-run 0 --event workflow_dispatch --input dry_run=true "${SHIM_ENV[@]}" || return 0
-    if has dry-run 'DEPLOY DRY RUN OK' && has dry-run 'deploy mode: dry-run' && has dry-run 'PUBLISHED CHECK SKIPPED' && ! has dry-run 'step [0-9]+ SUCCESS.*Smoke'; then
-      pass dry-run "everything up to wrangler deploy --dry-run, without secrets; no smoke"
+    if has dry-run 'DEPLOY DRY RUN OK' && has dry-run 'deploy mode: dry-run' && ! has dry-run 'step [0-9]+ SUCCESS.*Smoke'; then
+      pass dry-run "everything up to wrangler versions upload --dry-run, without secrets; no smoke"
     else fail dry-run "expected DEPLOY DRY RUN OK and no smoke (log $RUN/dry-run.log)"; fi ;;
   unpublished)
-    shim_env "$RUN/empty-state" "$EMPTY_PORT" "$RUN/unpublished-shim"
-    runlocal unpublished 1 --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$EMPTY_PORT" \
-      "${SHIM_ENV[@]}" || return 0
-    if has unpublished 'PUBLISHED FAILED' && has unpublished 'are not \(all\) published' && [ ! -e "$RUN/unpublished-shim/wrangler-dry-run" ]; then
-      pass unpublished "the published check refused an origin without the artifacts; wrangler was never called"
-    else fail unpublished "expected PUBLISHED FAILED before any wrangler call (log $RUN/unpublished.log)"; fi ;;
+    shim_env "$RUN/empty-state" "$EMPTY_PORT" "$RUN/empty-server"
+    runlocal unpublished 1 --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" || return 0
+    if has unpublished 'PUBLISHED FAILED' && has unpublished 'fails on its preview URL' && [ ! -e "$RUN/empty-server/promoted" ]; then
+      pass unpublished "the pre-promotion check refused a version whose artifacts are not in the bucket; nothing promoted"
+    else fail unpublished "expected PUBLISHED FAILED and no promotion (log $RUN/unpublished.log)"; fi ;;
+  no-preview)
+    shim_env "$RUN/state" "$PORT" "$RUN/no-preview-shim"
+    runlocal no-preview 1 --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" --runner-env REHEARSAL_NO_PREVIEW=1 || return 0
+    if has no-preview 'has no preview URL' && [ ! -e "$RUN/no-preview-shim/promoted" ]; then
+      pass no-preview "no preview URL from wrangler: refused with the reason; nothing promoted"
+    else fail no-preview "expected the refusal and no promotion (log $RUN/no-preview.log)"; fi ;;
   deploy)
     shim_env "$RUN/state" "$PORT" "$RUN/server"
     runlocal deploy 0 --event push "${SECRETS[@]}" --var "SHOWCASE_ORIGIN=http://127.0.0.1:$PORT" "${SHIM_ENV[@]}" || return 0
-    if has deploy 'PUBLISHED OK http://127.0.0.1:'"$PORT" && has deploy 'Deployed \(rehearsal' && has deploy 'SMOKE OK' \
-       && has deploy 'G2 UX: verdict run .*committed record infra/ux-verdict.json' && [ -d "$RUN/server/wrangler-dry-run" ]; then
-      pass deploy "G2 from the committed verdict, published check OK, wrangler deploy --dry-run + wrangler dev, SMOKE OK"
-    else fail deploy "expected PUBLISHED OK, the rehearsal deploy and SMOKE OK (log $RUN/deploy.log)"; fi ;;
+    if has deploy 'PUBLISHED OK http://127.0.0.1:'"$PORT" && has deploy 'PRE-PROMOTION OK' && has deploy 'Deployed \(rehearsal' && has deploy 'SMOKE OK' \
+       && has deploy 'G2 UX: verdict run .*committed record infra/ux-verdict.json' && [ -d "$RUN/server/wrangler-dry-run" ] && grep -q '@100%$' "$RUN/server/promoted"; then
+      pass deploy "G2 from the committed verdict, wrangler versions upload --dry-run + wrangler dev, pre-promotion check OK, promoted, SMOKE OK"
+    else fail deploy "expected PUBLISHED OK, PRE-PROMOTION OK, the promotion and SMOKE OK (log $RUN/deploy.log)"; fi ;;
   first)
     shim_env "$RUN/state" "$PORT" "$RUN/server"
     runlocal first 0 --event push "${SECRETS[@]}" "${SHIM_ENV[@]}" || return 0
-    if has first 'PUBLISHED CHECK SKIPPED' && has first "DEPLOYED-URL http://127.0.0.1:$PORT" && has first 'SMOKE OK'; then
-      pass first "published check skipped (no SHOWCASE_ORIGIN), smoke on the URL the deploy printed"
-    else fail first "expected the skip line, DEPLOYED-URL and SMOKE OK (log $RUN/first.log)"; fi ;;
+    if has first 'PRE-PROMOTION OK' && has first "DEPLOYED-URL http://127.0.0.1:$PORT" && has first 'SMOKE OK'; then
+      pass first "no SHOWCASE_ORIGIN: the pre-promotion check, then the smoke on the URL deploy-app.sh derived"
+    else fail first "expected PRE-PROMOTION OK, DEPLOYED-URL and SMOKE OK (log $RUN/first.log)"; fi ;;
   no-verdict)
     # a scratch clone with ONE extra commit that changes the gallery (a CSS comment) and nothing else
     local S="$RUN/no-verdict-repo"
@@ -510,7 +540,7 @@ scenario() {
   *) die "unknown scenario $1" ;;
   esac
 }
-SCEN=("$@"); [ ${#SCEN[@]} -gt 0 ] || SCEN=(skip dry-run unpublished deploy first no-verdict tamper old-shell)
+SCEN=("$@"); [ ${#SCEN[@]} -gt 0 ] || SCEN=(skip dry-run unpublished no-preview deploy first no-verdict tamper old-shell)
 for s in "${SCEN[@]}"; do scenario "$s"; done
 cleanup; trap - EXIT
 # the old-shell ports only when that scenario ran (it creates <run>/old-shell; skipped without OLD_REF): a default run on a

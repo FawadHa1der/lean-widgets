@@ -11,6 +11,10 @@
 //       Enumerate every file, hash it (sha256), validate the invariants below, and write
 //       <out>/manifest.json (deterministic: no timestamps) plus one rclone file list per upload group
 //       (<out>/rclone/<group>.<immutable|mutable>.files, paths relative to that group's local root).
+//       What the release serves is listed apart, never uploaded: manifest.release.objects are the pin's /runtime/ and
+//       /profiles/ files, which infra/worker.js reads from the toolchain release's own prefix lean4-wasm64/<id>/ (the
+//       pin's toolchain/lean4-wasm64-release.json, hosting.mount); manifest.r2 is what the showcase owns and uploads
+//       (hosting.siteOwned: /profiles/index.json, /snapshots/*).
 //       --from-lock: the SHELL-ONLY manifest of a checkout without the artifacts (CI, a fresh clone): the assets are
 //       hashed as usual (release/<id>/dist from scripts/build-shell.mjs + gallery/), but every R2 entry's size and
 //       sha256 come from the committed lock (release.files public/*, overlays.*.files; overlays.*.url must be
@@ -22,11 +26,14 @@
 //   node scripts/deploy-manifest.mjs --check [--out out/deploy]
 //       Dry run: regenerate in memory with the options recorded in manifest.json, require it to be
 //       byte-identical to the written one (every file re-hashed), and re-run every invariant. Uploads nothing.
-//   node scripts/deploy-manifest.mjs --published <origin> [--out out/deploy]
-//       Are this manifest's R2 objects already published on <origin> (the live showcase Worker, or wrangler dev)?
+//   node scripts/deploy-manifest.mjs --published <origin> [--out out/deploy] [--before-phase-3]
+//       Are this manifest's R2 objects (ours and the release's) published on <origin>? <origin> must run THIS shell's
+//       Worker: the new version's preview URL, or wrangler dev; an older Worker maps /runtime/ and /profiles/ elsewhere.
 //       HEAD every immutable key (status 200, content-length == size); GET every manifest and index (status 200,
-//       body sha256 == the manifest's), and run R3 on each fetched overlay index. Writes nothing. CI runs it before
-//       `wrangler deploy` so a shell is never deployed in front of artifacts that were not uploaded.
+//       body sha256 == the manifest's), and run R3 on each fetched overlay index. Writes nothing. deploy-app.sh runs it
+//       between `wrangler versions upload` and `wrangler versions deploy`, so no visitor is sent to a shell whose
+//       artifacts are not there. --before-phase-3 (with --smoke too) leaves out the shared indexes of upload phase 3,
+//       /profiles/index.json and /snapshots/index.json: a split upload (decision E1) has not replaced them yet.
 //   node scripts/deploy-manifest.mjs --record-verdict [--out out/deploy]
 //       Write infra/ux-verdict.json (committed): the G2 verdict run for this manifest's gallery + lock + overlays, from
 //       out/ux/showcase-ux-runs.jsonl. Refuses unless the manifest is current and G2 names a verdict with no later red
@@ -37,7 +44,7 @@
 //   node scripts/deploy-manifest.mjs --commands [--out out/deploy] [--bucket <bucket>] [--remote <rclone remote>]
 //       Print the upload and deploy commands for the owner, in order. Prints only; runs nothing. Bucket and remote
 //       default to infra/deploy.env (R2_BUCKET / R2_REMOTE, overridable by those environment variables).
-//   node scripts/deploy-manifest.mjs --smoke <origin> [--out out/deploy] [--all] [--range]
+//   node scripts/deploy-manifest.mjs --smoke <origin> [--out out/deploy] [--all] [--range] [--before-phase-3]
 //       HEAD the manifest's URLs on a live origin (the deployed Worker, or scripts/serve.mjs locally) and
 //       check status 200, content-length == size, COOP/COEP/CORP, the QED64 cache rule, and no
 //       Content-Encoding on artifacts; also GET every index/manifest (the mutable keys) and compare its sha256 with
@@ -51,13 +58,16 @@
 //       exit 2 before anything is read or written.
 //
 // Layout (one origin; infra/worker.js): assets = the pinned QED64 dist at "/" + gallery/ at "/showcase/";
-// R2 key = <prefix> + URL path without the leading "/", for /runtime/, /profiles/, /snapshots/.
+// R2 key = <prefix> + URL path without the leading "/" for /snapshots/ and /profiles/index.json, and
+// lean4-wasm64/<release id>/ + URL path without the leading "/" for every other file of /runtime/ and /profiles/.
 // Invariants (each prints OK/FAIL; any FAIL -> exit 1):
 //   A1 every asset ≤ 25 MiB (Workers static-assets per-file cap)   A2 no asset under runtime/ profiles/ snapshots/
 //   A3 dist/index.html, showcase/index.html and every file index.html references are present
 //   A4 bundle buildIds in dist/assets/*.js == {lock buildId}; gallery/pin.json buildId == lock buildId
 //   A5 asset count ≤ 20000 (Workers static-assets file-count limit at the time of writing)
 //   L1 every file taken from release/<BID>/ has the size and sha256 QED64.lock.json records
+//   L2 the pin's toolchain record (the one infra/worker.js routes by) names runtime BID, and every release-served file
+//      is in it with that size and sha256: the pinned shell reads the kernel's published bytes, not a copy of ours
 //   R1 runtime-manifest.json == runtime-manifest.<BID>.json (bytes), buildId == BID, every chunk present
 //      with the manifest's size and sha256
 //   R2 every profile the index lists has its manifest and every transport part present with its digest
@@ -90,6 +100,7 @@ import { galleryContentHash, isShippedGalleryFile } from './lib/gallery-hash.mjs
 import { verdictFor, laterFailures, readRuns } from './lib/ux-record.mjs';
 import { loadDeployEnv, checkSharedBucket } from './lib/deploy-env.mjs';
 import { OVERLAYS, overlayDir, pinIdOf, pinDescriptor } from './lib/pins.mjs';
+import { releaseKey } from './lib/release-routing.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MiB = 1024 * 1024;
@@ -102,7 +113,7 @@ const argv = process.argv.slice(2);
 // generate is the default mode and may also be named; anything unknown prints the usage and exits 2 before any write.
 const MODES = { '--check': 'check', '--stage-assets': 'stage', '--commands': 'commands', '--smoke': 'smoke', '--published': 'published', '--record-verdict': 'record-verdict', generate: 'generate' };
 const ORIGIN_MODES = ['--smoke', '--published'];
-const BOOL_FLAGS = ['--all', '--range', '--no-essential-pack', '--no-stock-snapshots', '--from-lock'];
+const BOOL_FLAGS = ['--all', '--range', '--no-essential-pack', '--no-stock-snapshots', '--from-lock', '--before-phase-3'];
 const VALUE_FLAGS = ['--out', '--overlays', '--prefix', '--bucket', '--remote']; // --smoke / --published take the origin as their value
 function usage(code, why) {
   if (why) console.error(`deploy-manifest: ${why}`);
@@ -128,6 +139,7 @@ const val = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const MODE = flag('--check') ? 'check' : flag('--stage-assets') ? 'stage' : flag('--commands') ? 'commands' : flag('--smoke') ? 'smoke'
   : flag('--published') ? 'published' : flag('--record-verdict') ? 'record-verdict' : 'generate';
 if (flag('--from-lock') && MODE !== 'generate') usage(2, '--from-lock applies to generate only (--check reads it from manifest.json)');
+if (flag('--before-phase-3') && MODE !== 'published' && MODE !== 'smoke') usage(2, '--before-phase-3 applies to --published and --smoke only');
 // The committed G2 record (--record-verdict): what a checkout without out/ux (CI, a fresh clone) accepts as the verdict.
 const VERDICT_FILE = path.join(SC, 'infra', 'ux-verdict.json');
 const OUT = path.resolve(SC, val('--out', 'out/deploy'));
@@ -170,19 +182,35 @@ function contentTypeProblem(url, ct) {
 // scripts/lib/qed64-src.mjs): infra/edge-worker.js, QED64's dependency-free library (84d594e on), where the pin has it
 // (from 385a1ac on QED64's infra/worker.js also imports the toolchain release record and builds its Worker at load),
 // else infra/worker.js (pins A–E). If the sources are not checked out, every use fails with the reason.
-let qedIsImmutable = null, qedSrcError = null, qedIsImmutableSrc = 'deps/qed64/infra/edge-worker.js';
+let qedIsImmutable = null, qedSrcError = null, qedIsImmutableSrc = 'deps/qed64/infra/edge-worker.js', qedReleaseRoutes = null;
 try {
   const PINS = await import('./lib/pins.mjs');
   const infra = path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'infra');
   const f = fs.existsSync(path.join(infra, 'edge-worker.js')) ? 'edge-worker.js' : 'worker.js';
   qedIsImmutableSrc = `${rel(infra)}/${f}`;
-  ({ isImmutable: qedIsImmutable } = await import(pathToFileURL(path.join(infra, f)).href));
+  ({ isImmutable: qedIsImmutable, releaseRoutes: qedReleaseRoutes } = await import(pathToFileURL(path.join(infra, f)).href));
   if (typeof qedIsImmutable !== 'function') throw new Error(`${qedIsImmutableSrc} exports no isImmutable`);
 } catch (e) { qedIsImmutable = null; qedSrcError = e; }
 function isImmutable(pathname) {
   if (!qedIsImmutable) throw new Error(`QED64's isImmutable (${qedIsImmutableSrc}) is not available: ${qedSrcError && qedSrcError.message}`);
   return qedIsImmutable(pathname);
 }
+
+// What infra/worker.js does with the same record: QED64's releaseRoutes checks it and gives {id, prefix, mount,
+// siteOwned}; scripts/lib/release-routing.mjs says where a path lands. The submodule's record, the one the Worker bundles
+// (`qed64-src check` holds its gitlink to the lock).
+const RELEASE_RECORD = path.join(SC, 'deps/qed64/toolchain/lean4-wasm64-release.json');
+function loadRelease(pinId) {
+  if (typeof qedReleaseRoutes !== 'function') throw new Error(`pin ${pinId}: QED64's ${qedIsImmutableSrc} has no release routing, so infra/worker.js cannot serve it (pins before 385a1ac: a rollback to one is 'wrangler rollback' to its Worker version, docs/DEPLOY-CLOUDFLARE.md section 5)${qedSrcError ? `; ${qedSrcError.message}` : ''}`);
+  if (!fs.existsSync(RELEASE_RECORD)) throw new Error(`${rel(RELEASE_RECORD)} missing: the Worker bundles it to route /runtime/ and /profiles/`);
+  const record = readJson(RELEASE_RECORD);
+  return { record, routes: qedReleaseRoutes(record) };
+}
+// Everything the shell needs from R2: what we upload, then what the release serves (a record of a pin before release
+// routing has only r2).
+const servedObjects = (m) => [...m.r2, ...(m.release ? m.release.objects : [])];
+// The shared indexes of upload phase 3 (upload-artifacts.sh phaseOf; a per-runtime overlay's index is phase 2)
+const isPhase3 = (o) => /\/index\.json$/.test(o.url) && !/^\/snapshots\/widgets[78]\.[0-9a-f]{16}\/index\.json$/.test(o.url);
 
 // ------------------------------------------------------------------------------------------ build
 function build(opts) {
@@ -193,13 +221,17 @@ function build(opts) {
   const pinId = pinIdOf(lock.qed64.commit);
   // the SERVED directory of each overlay (pins.mjs overlayDir; a non-logical name is a literal directory)
   const overlayDirs = Object.fromEntries(opts.overlays.map((o) => [o, OVERLAYS.includes(o) ? overlayDir(o, pinId) : o]));
-  const assets = []; const r2 = [];
+  const { record: releaseRecord, routes } = loadRelease(pinId);
+  const assets = []; const r2 = []; const releaseObjects = [];
   const addAsset = (src, apath) => { const st = fs.statSync(src); assets.push({ path: apath, src: rel(src), size: st.size, sha256: sha256File(src) }); };
   // Local mode hashes the file; --from-lock takes size + sha256 from the lock (`known`) and never reads the binary.
   const addR2 = (src, urlPath, group, root, known = null) => {
     const size = known ? known.bytes : fs.statSync(src).size;
+    const sha256 = known ? known.sha256 : sha256File(src);
+    const key = releaseKey(routes, urlPath);
+    if (key !== null) { releaseObjects.push({ key, url: urlPath, src: rel(src), size, sha256, contentType: contentType(src), immutable: isImmutable(urlPath) }); return; }
     r2.push({ key: opts.prefix + urlPath.slice(1), url: urlPath, src: rel(src), group, root: rel(root), relPath: path.relative(root, src),
-      size, sha256: known ? known.sha256 : sha256File(src), contentType: contentType(src), immutable: isImmutable(urlPath),
+      size, sha256, contentType: contentType(src), immutable: isImmutable(urlPath),
       phase: isImmutable(urlPath) ? 'immutable' : 'mutable', multipart: size > MULTIPART_OVER });
   };
   // assets: pinned dist at "/", gallery at "/showcase/" (docs and the X3 experiment page are not shipped)
@@ -260,7 +292,7 @@ function build(opts) {
     if (!fs.existsSync(path.join(d, 'index.json'))) throw new Error(`overlay ${o}: ${rel(d)}/index.json missing (scripts/showcase.sh overlay)`);
     for (const f of walk(d)) addR2(f, `/snapshots/${dir}/${path.relative(d, f)}`, `overlay-${o}`, d);
   }
-  assets.sort((a, b) => (a.path < b.path ? -1 : 1)); r2.sort((a, b) => (a.key < b.key ? -1 : 1));
+  assets.sort((a, b) => (a.path < b.path ? -1 : 1)); r2.sort((a, b) => (a.key < b.key ? -1 : 1)); releaseObjects.sort((a, b) => (a.key < b.key ? -1 : 1));
   const sum = (xs) => xs.reduce((s, x) => s + x.size, 0);
   const groups = {};
   for (const o of r2) { const g = (groups[o.group] ||= { root: o.root, files: 0, bytes: 0 }); g.files++; g.bytes += o.size; }
@@ -271,10 +303,10 @@ function build(opts) {
       pin: { id: String(lock.qed64.commit).slice(0, 7), buildId: BID, qed64Commit: lock.qed64.commit, lockSha256: sha256File(path.join(SC, 'QED64.lock.json')), releaseDir: lock.release.dir },
       gallery: galleryContentHash(path.join(SC, 'gallery')),
       options: { overlays: opts.overlays, overlayDirs, stockSnapshots: opts.stockSnapshots, essentialPack: !opts.noEssentialPack, prefix: opts.prefix, ...(opts.fromLock ? { source: 'lock' } : {}) },
-      totals: { assets: assets.length, assetBytes: sum(assets), r2Objects: r2.length, r2Bytes: sum(r2), r2Multipart: r2.filter((o) => o.multipart).length, groups },
-      assets, r2,
+      totals: { assets: assets.length, assetBytes: sum(assets), r2Objects: r2.length, r2Bytes: sum(r2), r2Multipart: r2.filter((o) => o.multipart).length, groups, releaseObjects: releaseObjects.length, releaseBytes: sum(releaseObjects) },
+      assets, r2, release: { id: routes.id, prefix: routes.prefix, objects: releaseObjects },
     },
-    ctx: { lock, BID, R, lockFiles, fromLock: !!opts.fromLock, pinnedIndexes },
+    ctx: { lock, BID, R, lockFiles, fromLock: !!opts.fromLock, pinnedIndexes, releaseRecord },
   };
 }
 
@@ -294,7 +326,7 @@ function validate({ manifest: m, ctx }) {
     if (!ok(sha256File(p) === o.sha256, `${label}: ${o.src} sha256 == the lock's`)) return undefined;
     return readJson(p);
   };
-  const byUrl = new Map(m.r2.map((o) => [o.url, o]));
+  const byUrl = new Map(servedObjects(m).map((o) => [o.url, o]));
   const assetPaths = new Set(m.assets.map((a) => a.path));
   // A1–A5
   const big = m.assets.filter((a) => a.size > ASSET_CAP);
@@ -312,9 +344,15 @@ function validate({ manifest: m, ctx }) {
   ok(m.assets.length <= ASSET_COUNT_CAP, `A5 asset count ${m.assets.length} ≤ ${ASSET_COUNT_CAP}`);
   // L1: release files equal the lock
   // (--from-lock: the R2 entries ARE the lock's values, so L1 can only say something about the hashed dist files)
-  const fromRelease = [...m.assets.filter((a) => a.src.startsWith(`${m.pin.releaseDir}/`)), ...(fromLock ? [] : m.r2.filter((o) => o.src.startsWith(`${m.pin.releaseDir}/`)))];
+  const fromRelease = [...m.assets.filter((a) => a.src.startsWith(`${m.pin.releaseDir}/`)), ...(fromLock ? [] : servedObjects(m).filter((o) => o.src.startsWith(`${m.pin.releaseDir}/`)))];
   const lockBad = fromRelease.filter((x) => { const l = lockFiles[x.src.slice(m.pin.releaseDir.length + 1)]; return !l || l.sha256 !== x.sha256 || l.bytes !== x.size; });
   ok(!lockBad.length, `L1 all ${fromRelease.length} files taken from ${m.pin.releaseDir}/ match QED64.lock.json (size + sha256)${fromLock ? '; the R2 entries are the lock\'s own values (--from-lock)' : ''}`, lockBad.slice(0, 5).map((x) => x.src).join(', '));
+  // L2: what the release serves is what the kernel published (the toolchain record lists every file with its digest)
+  const relFiles = new Map(ctx.releaseRecord.files.map((f) => [m.release.prefix + f.path, f]));
+  const relBad = m.release.objects.filter((o) => { const f = relFiles.get(o.key); return !f || f.bytes !== o.size || f.sha256 !== o.sha256; });
+  ok(ctx.releaseRecord.runtime.buildId === BID && m.release.objects.length > 0 && !relBad.length,
+    `L2 toolchain record ${m.release.id} names runtime ${ctx.releaseRecord.runtime.buildId}; all ${m.release.objects.length} release-served files are in it with this size and sha256`,
+    relBad.slice(0, 5).map((o) => o.key).join(', '));
   // R1 runtime
   const rtMut = byUrl.get('/runtime/runtime-manifest.json'); const rtPin = byUrl.get(`/runtime/runtime-manifest.${BID}.json`);
   const rt = ok(!!rtMut && !!rtPin && rtMut.sha256 === rtPin.sha256, `R1 runtime-manifest.json == runtime-manifest.${BID}.json (the pinned shell fetches the latter first)`)
@@ -377,7 +415,7 @@ function validate({ manifest: m, ctx }) {
     if (stray.length) ok(false, 'R6 no per-build index copy uploaded (no hardening.pinnedIndexes)', stray.join(', '));
   }
   // R4
-  ok(new Set(m.r2.map((o) => o.key)).size === m.r2.length, `R4 ${m.r2.length} R2 keys unique`);
+  ok(new Set(servedObjects(m).map((o) => o.key)).size === servedObjects(m).length, `R4 ${servedObjects(m).length} R2 keys unique (${m.r2.length} ours, ${m.release.objects.length} the release's)`);
   const mp = m.r2.filter((o) => o.multipart);
   info(`R4 ${mp.length} object(s) > 300 MiB need a multipart upload (rclone): ${mp.map((o) => `${o.key} ${(o.size / MiB).toFixed(0)} MiB`).join(', ') || 'none'}`);
   // R5 served overlay directories (scripts/lib/pins.mjs is the one naming rule; the lock records the URL it gave)
@@ -394,7 +432,7 @@ function validate({ manifest: m, ctx }) {
       `R5 overlay ${o}: served at /snapshots/${dir}/ == pins.mjs overlayDir(${o}, ${m.pin.id}) == lock overlays.${o}.url (${ixs.length} objects${dir !== o ? `; nothing under the bare /snapshots/${o}/` : ''})`,
       [why, dir !== want ? `overlayDir ${want}` : '', lockUrl !== `/snapshots/${dir}/` ? `lock url ${lockUrl}` : '', under ? '' : 'an object outside the directory', bare.length ? `bare keys ${bare.slice(0, 3).join(', ')}` : ''].filter(Boolean).join('; '));
   }
-  info(`totals: ${m.totals.assets} assets ${(m.totals.assetBytes / MiB).toFixed(1)} MiB; ${m.totals.r2Objects} R2 objects ${(m.totals.r2Bytes / 1e9).toFixed(3)} GB`);
+  info(`totals: ${m.totals.assets} assets ${(m.totals.assetBytes / MiB).toFixed(1)} MiB; ${m.totals.r2Objects} R2 objects to upload ${(m.totals.r2Bytes / 1e9).toFixed(3)} GB; ${m.totals.releaseObjects} served from ${m.release.prefix} ${(m.totals.releaseBytes / 1e9).toFixed(3)} GB`);
 }
 
 // The URL of logical overlay o's index in manifest m: /snapshots/<dir>/index.json with the directory the manifest
@@ -516,11 +554,11 @@ if (MODE === 'check') {
   try { b = build(optsFromManifest(written)); } catch (e) { console.log(`FAIL ${e.message}`); console.log('DEPLOY-MANIFEST CHECK FAILED'); process.exit(1); }
   const same = JSON.stringify(b.manifest, null, 1) + '\n' === fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8');
   if (!ok(same, 'C1 regenerated manifest (every file re-hashed) is byte-identical to the written manifest.json')) {
-    const was = new Map([...written.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...written.r2.map((o) => [`r2 ${o.key}`, o.sha256])]);
-    const now = new Map([...b.manifest.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...b.manifest.r2.map((o) => [`r2 ${o.key}`, o.sha256])]);
+    const was = new Map([...written.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...servedObjects(written).map((o) => [`r2 ${o.key}`, o.sha256])]);
+    const now = new Map([...b.manifest.assets.map((a) => [`asset ${a.path}`, a.sha256]), ...servedObjects(b.manifest).map((o) => [`r2 ${o.key}`, o.sha256])]);
     const diff = [...new Set([...was.keys(), ...now.keys()])].filter((k) => was.get(k) !== now.get(k));
     // and the non-entry sections that differ (e.g. options.overlayDirs, new with the per-runtime overlay contract)
-    const sect = [...new Set([...Object.keys(written), ...Object.keys(b.manifest)])].filter((k) => k !== 'assets' && k !== 'r2')
+    const sect = [...new Set([...Object.keys(written), ...Object.keys(b.manifest)])].filter((k) => k !== 'assets' && k !== 'r2' && k !== 'release')
       .flatMap((k) => (k === 'options' ? [...new Set([...Object.keys(written.options || {}), ...Object.keys(b.manifest.options || {})])].map((o) => `options.${o}`) : [k]))
       .filter((k) => { const g = (m) => k.split('.').reduce((v, x) => (v == null ? v : v[x]), m); return JSON.stringify(g(written)) !== JSON.stringify(g(b.manifest)); });
     console.log(`     ${diff.length} entries differ: ${diff.slice(0, 8).join(' | ')}${sect.length ? `; ${sect.join(', ')} differ` : diff.length ? '' : ' (totals or formatting)'}`);
@@ -556,7 +594,7 @@ if (MODE === 'commands') {
   try { checkSharedBucket(bucket, m.options.prefix); } catch (e) { console.error(`--commands refused (nothing printed): ${e.message}. Regenerate with --prefix ${E.R2_PREFIX || "''"}`); process.exit(3); }
   const q = (s) => (/[^A-Za-z0-9_./:=@,-]/.test(s) ? `'${s.replace(/'/g, `'\\''`)}'` : s);
   console.log('# NOT RUN. Publishing needs the owner\'s Cloudflare account and explicit go-ahead (docs/DEPLOY.md).');
-  console.log(`# pin ${m.pin.buildId} (QED64 ${m.pin.qed64Commit.slice(0, 12)}), ${m.totals.r2Objects} R2 objects, ${m.totals.assets} assets.`);
+  console.log(`# pin ${m.pin.buildId} (QED64 ${m.pin.qed64Commit.slice(0, 12)}), ${m.totals.r2Objects} R2 objects, ${m.totals.assets} assets; ${m.totals.releaseObjects} runtime and pack files come from the published release ${m.release.prefix}, not from this upload.`);
   const g = m.gallery ? m.gallery.contentSha256 : '(manifest predates the gallery hash: regenerate)';
   console.log(`# gallery content sha256 in this manifest: ${g}`);
   console.log(`# Scripted path (docs/DEPLOY-CLOUDFLARE.md): DRY_RUN=1 scripts/upload-artifacts.sh; scripts/upload-artifacts.sh; scripts/deploy-app.sh`);
@@ -577,7 +615,7 @@ if (MODE === 'commands') {
     }
   }
   console.log(`node scripts/lib/wrangler-config.mjs write wrangler.toml   # bucket_name ${bucket}, R2_PREFIX ${JSON.stringify(m.options.prefix)} (or 'check' an existing one)`);
-  console.log('npx --prefix infra wrangler deploy');
+  console.log('scripts/deploy-app.sh   # wrangler versions upload, the checks on the preview URL, wrangler versions deploy');
   console.log('node scripts/deploy-manifest.mjs --smoke https://<your-worker-host> --all --range');
   process.exit(0);
 }
@@ -606,7 +644,10 @@ if (MODE === 'published') {
   const fail = (u, why) => { bad++; if (bad <= 20) console.log(`FAIL ${u} — ${why}`); };
   const head = (u) => fetch(origin + u, { method: 'HEAD', headers: { 'accept-encoding': 'identity' }, redirect: 'manual' }).catch((e) => ({ status: `ERR ${e.message}`, headers: new Headers() }));
   const fetched = new Map();
-  for (const o of m.r2) {
+  const skipPhase3 = flag('--before-phase-3');
+  if (skipPhase3) info(`--before-phase-3: not comparing ${servedObjects(m).filter(isPhase3).map((o) => o.url).join(', ')}`);
+  for (const o of servedObjects(m)) {
+    if (skipPhase3 && isPhase3(o)) continue;
     n++;
     if (o.immutable) {
       const r = await head(o.url);
@@ -618,7 +659,7 @@ if (MODE === 'published') {
     if (g.why) { fail(o.url, g.why); continue; }
     fetched.set(o.url, g.body);
   }
-  ok(!bad, `PUBLISHED-OBJECTS ${origin}: ${n - bad}/${n} R2 objects of this manifest are published (immutable: HEAD status 200 + content-length; manifests and indexes: GET sha256 == manifest) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  ok(!bad, `PUBLISHED-OBJECTS ${origin}: ${n - bad}/${n} R2 objects of this manifest (the release's included) are published (immutable: HEAD status 200 + content-length; manifests and indexes: GET sha256 == manifest) in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   // R3 on the overlay indexes, which a --from-lock manifest could not read locally (they are not tracked in git)
   for (const o of m.options.overlays) {
     const ix = m.r2.find((x) => x.url === ovIndexUrl(m, o));
@@ -631,7 +672,8 @@ if (MODE === 'smoke') {
   const origin = val('--smoke', '').replace(/\/$/, '');
   if (!/^https?:\/\//.test(origin)) { console.error('usage: --smoke <http(s)://origin>'); process.exit(2); }
   const m = loadManifest(); const all = flag('--all'); const seen = new Set();
-  const pick = all ? m.r2 : m.r2.filter((o) => {
+  const pool = servedObjects(m).filter((o) => !(flag('--before-phase-3') && isPhase3(o)));
+  const pick = all ? pool : pool.filter((o) => {
     if (!o.immutable || o.url.endsWith('.snapz')) return true;
     const fam = o.url.replace(/\.[0-9a-f]{20}\.part-\d+$/, '').replace(/\.part-\d+$/, '');
     if (seen.has(fam)) return false; seen.add(fam); return true;
@@ -703,7 +745,7 @@ if (MODE === 'smoke') {
     const c = await rget({ range: 'bytes=0-99', 'if-range': '"not-this-version"' });
     ok(c.r.status === 200 && Number(c.r.headers.get('content-length')) === z.size, `RANGE GET with a mismatched If-Range -> ${c.r.status} (full object, content-length ${c.r.headers.get('content-length')})`);
   }
-  ok(!bad, `SMOKE ${origin}: ${targets.length} URLs (${m.assets.length} assets + ${pick.length}/${m.r2.length} R2 keys) answer 200 with size, isolation, cache and content-type headers, and ${mutableOk}/${nMutable} manifests and indexes GET with the manifest's sha256${bad ? `; ${bad} bad` : ''}`);
+  ok(!bad, `SMOKE ${origin}: ${targets.length} URLs (${m.assets.length} assets + ${pick.length}/${servedObjects(m).length} R2 keys, the release's included) answer 200 with size, isolation, cache and content-type headers, and ${mutableOk}/${nMutable} manifests and indexes GET with the manifest's sha256${bad ? `; ${bad} bad` : ''}`);
   console.log(fails ? 'SMOKE FAILED' : 'SMOKE OK');
   process.exit(fails ? 1 : 0);
 }

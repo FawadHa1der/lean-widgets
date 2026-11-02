@@ -15,7 +15,8 @@
 // upload-artifacts.sh sets with --header-upload; the local rclone backend keeps no metadata). The real worker,
 // served later by `wrangler dev --local --persist-to <persist-to>`, then reads the same local bucket.
 // (Miniflare's JS API changes shape between versions; wrangler's CLI is the supported, pinned interface.)
-// Every object must be a manifest key; every manifest key must be loaded. Prints LOAD-R2 OK / FAILED.
+// Every object must be a manifest key; every manifest key must be loaded (ours and the release's: `upload` stages the
+// release in the fake bucket, as the kernel's publish does in the real one). Prints LOAD-R2 OK / FAILED.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -27,7 +28,8 @@ const argv = process.argv.slice(2);
 const val = (n) => { const i = argv.indexOf(n); if (i < 0 || !argv[i + 1]) { console.error(`missing ${n}`); process.exit(2); } return argv[i + 1]; };
 const bucketDir = path.resolve(val('--bucket-dir')); const bucket = val('--bucket');
 const persist = path.resolve(val('--persist-to')); const manifest = JSON.parse(fs.readFileSync(val('--manifest'), 'utf8'));
-const byKey = new Map(manifest.r2.map((o) => [o.key, o]));
+const entries = [...manifest.r2, ...(manifest.release ? manifest.release.objects : [])];
+const byKey = new Map(entries.map((o) => [o.key, o]));
 
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.isFile() ? [path.join(d, e.name)] : []));
 const root = path.join(bucketDir, bucket);
@@ -75,15 +77,15 @@ for (const { f, key } of files) {
   } catch (e) { console.log(`FAIL ${e.message}`); bad++; }
 }
 const loaded = new Set(files.map((x) => x.key));
-const missing = manifest.r2.filter((o) => !loaded.has(o.key));
+const missing = entries.filter((o) => !loaded.has(o.key));
 for (const o of missing.slice(0, 10)) console.log(`FAIL ${o.key}: in the manifest but not in the fake bucket`);
 bad += missing.length;
 // read back every object's size and Content-Type through the binding
 let typed = 0;
-for (const o of manifest.r2) {
+for (const o of entries) {
   const r = await (await fetch(new URL(encodeURIComponent(o.key).replace(/%2F/g, '/'), url))).json();
   if (!r || r.size !== o.size || r.contentType !== o.contentType) { console.log(`FAIL read-back ${o.key}: ${JSON.stringify(r)}`); bad++; } else typed++;
 }
 await stop();
-console.log(`${bad ? 'LOAD-R2 FAILED' : 'LOAD-R2 OK'}: ${files.length} objects, ${(bytes / 1e9).toFixed(3)} GB from ${root} into ${persist}/v3 (bucket ${bucket}); ${typed}/${manifest.r2.length} read back with the manifest's size and Content-Type; ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`${bad ? 'LOAD-R2 FAILED' : 'LOAD-R2 OK'}: ${files.length} objects, ${(bytes / 1e9).toFixed(3)} GB from ${root} into ${persist}/v3 (bucket ${bucket}); ${typed}/${entries.length} read back with the manifest's size and Content-Type; ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 process.exit(bad ? 1 : 0);

@@ -1,22 +1,23 @@
 # Deploy the qed64-showcase APP SHELL (QED64's page built from source at the pin + the gallery; about 18 MB of static
 # files) to the Cloudflare Worker `qed64-showcase`, the lean4game way: pushes redeploy the shell; the R2 artifacts
-# (2.4 GB: runtime, packs, snapshots, our overlays) are uploaded from the owner's machine with
-# qed64-showcase/scripts/upload-artifacts.sh and are never uploaded from here.
+# (1.1 GB: snapshots, our overlays and the shared indexes; the runtime and packs are the kernel's published release, in
+# the same bucket) are uploaded from the owner's machine with qed64-showcase/scripts/upload-artifacts.sh and are never
+# uploaded from here.
 #
 # Steps: build the pinned QED64 page from the submodule (byte-identical to the lock or nothing is deployed), the
 # gallery's static gate, the Worker's tests, then qed64-showcase/scripts/deploy-app.sh with DEPLOY_FROM_LOCK=1:
 #   * a shell-only manifest whose R2 keys, sizes and sha256 come from the committed lock (deploy-manifest --from-lock)
 #   * G2: the committed UX verdict qed64-showcase/infra/ux-verdict.json must name exactly this gallery + lock +
 #     overlays (written by `node scripts/deploy-manifest.mjs --record-verdict` after `scripts/showcase.sh ux`)
-#   * the published check: when the repository variable SHOWCASE_ORIGIN is set (the live showcase URL), every R2 object
-#     this shell needs must already answer there (HEAD size; GET sha256 of every manifest and index); unset = the very
-#     first deploy, skipped with a log line
-#   * `wrangler deploy` (wrangler 4.125.0 pinned in qed64-showcase/infra), then the smoke test of the deployed URL:
-#     every asset and every R2 key (status, size, isolation, cache and content-type headers; GET sha256 of every
-#     manifest and index) plus Range requests.
+#   * `wrangler versions upload` (wrangler 4.125.0 pinned in qed64-showcase/infra): the new version, no traffic yet
+#   * the pre-promotion check on that version's preview URL (needs workers.dev Preview URLs on for this Worker): every
+#     R2 object this shell needs answers (HEAD size; GET sha256 of every manifest and index), and the smoke test below
+#   * `wrangler versions deploy`, then the smoke test of the deployed URL (the repository variable SHOWCASE_ORIGIN, the
+#     live showcase URL when set, else the Worker's workers.dev URL): every asset and every R2 key (status, size,
+#     isolation, cache and content-type headers; GET sha256 of every manifest and index) plus Range requests.
 # Secrets: CLOUDFLARE_API_TOKEN (an API token with Account > Workers Scripts > Edit only; no R2 permission) and
 # CLOUDFLARE_ACCOUNT_ID. Without them the job logs a skip line and does nothing else, like lean4game's deploy.yml.
-# workflow_dispatch: dry_run=true runs everything up to `wrangler deploy --dry-run` (no secrets needed);
+# workflow_dispatch: dry_run=true runs everything up to `wrangler versions upload --dry-run` (no secrets needed);
 # allow_no_ux_verdict=true deploys without a committed UX verdict for these inputs (deliberate; see the guide).
 # Guide and first-deploy checklist: qed64-showcase/docs/DEPLOY-CLOUDFLARE.md. Local rehearsal (fresh clone, wrangler
 # --dry-run + wrangler dev --local over a fake R2): ci/rehearse-deploy.sh.
@@ -28,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Stop at wrangler deploy --dry-run (no Cloudflare secrets needed; nothing is deployed)'
+        description: 'Stop at wrangler versions upload --dry-run (no Cloudflare secrets needed; nothing is deployed)'
         type: boolean
         default: false
       allow_no_ux_verdict:
@@ -96,7 +97,7 @@ jobs:
         env:
           DEPLOY_FROM_LOCK: '1'
           DRY_RUN: ${{ steps.gate.outputs.mode == 'dry-run' && '1' || '0' }}
-          PUBLISHED_ORIGIN: ${{ vars.SHOWCASE_ORIGIN }}
+          SHOWCASE_ORIGIN: ${{ vars.SHOWCASE_ORIGIN }}
           ALLOW_NO_UX_VERDICT: ${{ inputs.allow_no_ux_verdict == true && '1' || '0' }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -104,8 +105,8 @@ jobs:
           scripts/deploy-app.sh
           if [ "$DRY_RUN" = 1 ]; then echo "dry run: nothing deployed, no smoke test"; exit 0; fi
           # the public origin when configured (a custom domain), else the workers.dev URL wrangler printed
-          origin=${PUBLISHED_ORIGIN:-$(cat out/deploy/deployed-url.txt 2>/dev/null || true)}
-          if [ -z "$origin" ]; then echo "::error::no deployment URL in wrangler's output and vars.SHOWCASE_ORIGIN is not set"; exit 1; fi
+          origin=${SHOWCASE_ORIGIN:-$(cat out/deploy/deployed-url.txt 2>/dev/null || true)}
+          if [ -z "$origin" ]; then echo "::error::no deployment URL from deploy-app.sh and vars.SHOWCASE_ORIGIN is not set"; exit 1; fi
           echo "origin=$origin" >> "$GITHUB_OUTPUT"
       - if: steps.gate.outputs.mode == 'deploy' && steps.deploy.outputs.origin != ''
         name: Smoke test the deployment (every asset and R2 key, isolation and cache headers, sha256 of manifests and indexes, Range)
@@ -126,6 +127,7 @@ jobs:
           path: |
             qed64-showcase/out/deploy/manifest.json
             qed64-showcase/out/deploy/preflight.log*
+            qed64-showcase/out/deploy/wrangler-upload.log
             qed64-showcase/out/deploy/wrangler-deploy.log
             qed64-showcase/out/pins/shell-build-*.json
           if-no-files-found: warn

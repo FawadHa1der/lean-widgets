@@ -8,6 +8,13 @@
 #                                                      the workflow's post-deploy smoke has a "deployed" Worker to test.
 #                                                      Prints the origin the way wrangler prints a deployment's URL.
 #                                                      With the caller's own --dry-run: only that dry run, offline.
+#                                                      (A deploy-app.sh before the pre-promotion check: an old-shell OLD_REF.)
+#   wrangler-shim.sh versions upload --config <toml> [args…]  the same dry run and server, printed the way wrangler prints
+#                                                      a new version: its id and its preview URL, the server's origin.
+#                                                      With the caller's own --dry-run: only that dry run, offline.
+#   wrangler-shim.sh versions deploy <id>@100% …       records the promotion: <REHEARSAL_RUN_DIR>/promoted holds the
+#                                                      version spec. A real upload leaves the old version serving until
+#                                                      this; the stand-in has one server, so the new one already answers.
 #   wrangler-shim.sh _serve --config <toml>            (driver only) start `wrangler dev --local` on that config
 #   wrangler-shim.sh _stop                             (driver only) stop it; nothing may listen on the port afterwards
 #   anything else                                      refused (exit 2)
@@ -16,7 +23,8 @@
 # localhost) with CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID unset and metrics off, so neither a dry run nor the dev
 # server can reach Cloudflare even if a real token were in the environment.
 # Env (set by ci/rehearse-deploy.sh): REHEARSAL_STATE (wrangler dev --persist-to dir holding the fake R2 bucket),
-# REHEARSAL_PORT, REHEARSAL_RUN_DIR (pid file, logs, dry-run bundle).
+# REHEARSAL_PORT, REHEARSAL_RUN_DIR (pid file, logs, dry-run bundle), REHEARSAL_NO_PREVIEW=1 (versions upload prints no
+# preview URL and serves nothing).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SB="$HERE/offline.sb"
@@ -79,9 +87,36 @@ case "$cmd" in
     echo "Deployed (rehearsal, nothing uploaded) to"
     echo "  http://127.0.0.1:$REHEARSAL_PORT"
     ;;
+  versions)
+    sub=${1:-}; shift || true
+    case "$sub" in
+      upload)
+        [ -n "$CFG" ] && [ -f "$CFG" ] || { echo "wrangler-shim: versions upload needs --config <existing wrangler.toml>" >&2; exit 2; }
+        for a in "$@"; do
+          if [ "$a" = --dry-run ]; then
+            echo "wrangler-shim: REHEARSAL — the caller's 'wrangler versions upload --dry-run', run offline (sandbox, no token)"
+            exec sandbox-exec -f "$SB" "$(wrangler_for "$CFG")" versions upload "$@"
+          fi
+        done
+        echo "wrangler-shim: REHEARSAL — 'wrangler versions upload' becomes its --dry-run (offline sandbox, no token)"
+        sandbox-exec -f "$SB" "$(wrangler_for "$CFG")" versions upload "$@" --dry-run --outdir "$REHEARSAL_RUN_DIR/wrangler-dry-run"
+        if [ "${REHEARSAL_NO_PREVIEW:-0}" = 1 ]; then   # Preview URLs off for the Worker: wrangler prints no such line
+          echo "Uploaded (rehearsal, nothing uploaded)"; echo "Worker Version ID: 00000000-0000-4000-8000-000000000000"; exit 0
+        fi
+        echo "wrangler-shim: REHEARSAL — serving that config with 'wrangler dev --local' over the fake R2 state $REHEARSAL_STATE"
+        start_dev "$CFG"
+        echo "Uploaded (rehearsal, nothing uploaded)"
+        echo "Worker Version ID: 00000000-0000-4000-8000-000000000000"
+        echo "Version Preview URL: http://127.0.0.1:$REHEARSAL_PORT"
+        ;;
+      deploy)
+        echo "${1:-}" > "$REHEARSAL_RUN_DIR/promoted"
+        echo "Deployed (rehearsal, nothing uploaded) version ${1:-}" ;;
+      *) echo "wrangler-shim: 'versions $sub' is not rehearsed (only upload, deploy)" >&2; exit 2 ;;
+    esac ;;
   _serve)
     [ -n "$CFG" ] && [ -f "$CFG" ] || { echo "wrangler-shim: _serve needs --config <wrangler.toml>" >&2; exit 2; }
     start_dev "$CFG"; echo "wrangler-shim: serving $CFG at http://127.0.0.1:$REHEARSAL_PORT (pid $(cat "$PID"))" ;;
   _stop) stop_dev; echo "wrangler-shim: stopped; nothing listens on $REHEARSAL_PORT" ;;
-  *) echo "wrangler-shim: '$cmd' is not rehearsed (only deploy, _serve, _stop)" >&2; exit 2 ;;
+  *) echo "wrangler-shim: '$cmd' is not rehearsed (only deploy, versions, _serve, _stop)" >&2; exit 2 ;;
 esac
