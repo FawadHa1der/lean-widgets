@@ -50,10 +50,12 @@
 #                          ALLOW_PARTIAL_UPLOAD=1 (its smoke), and the new gallery + stock boots in the window; after phase
 #                          3 the new manifest's --published and --smoke --all --range and the new gallery + stock boots
 #                          must be OK
-#                 After either order: an old tab's next fetch of its own runtime manifest, through the new Worker (an E1
-#                 MEASURE line; expected a no-store 404: the old shell fails closed, docs/DEPLOY-CLOUDFLARE.md section 6).
+#                 After either order: what an old tab's next fetches get through the new Worker (two E1 MEASURE lines): its
+#                 own runtime manifest (expected a no-store 404) and the release the pack manifest names (the new one: one
+#                 URL in both releases). What an old shell does with those: docs/DEPLOY-CLOUDFLARE.md section 6.
 #               The window results are printed as "E1 MEASURE …" lines (and <run>/old-shell/e1-measure.txt); they are
-#               evidence, not failures. Needs OLD_REF; skipped (named on the last line, never counted as OK) without it.
+#               evidence, not failures, but a boot the browser lock never let start measured nothing and fails the
+#               scenario. Needs OLD_REF; skipped (named on the last line, never counted as OK) without it.
 #
 #   ci/rehearse-deploy.sh [scenario…]       default: all of them, in the order above
 # A real upload leaves the old version serving until the promotion; the stand-in has one server per port, so from `versions
@@ -65,8 +67,8 @@
 # REHEARSAL_SRC_STATE: rebuild the new pin's rehearsal state into another REHEARSAL_DIR first), OLD_MANIFEST (default the
 # newest release record's manifest.json under qed64-showcase/out/deploy/published), NEW_MANIFEST (the full manifest the
 # new pin's rehearsal uploaded, default qed64-showcase/out/deploy-rehearsal/deploy/manifest.json), NEW_BUCKET_DIR (that
-# rehearsal's fake bucket, default <dirname REHEARSAL_SRC_STATE>/bucket), OLD_SHELL_ORDERS (default "A B"), OS_BOOT_WAIT_S /
-# OS_COOLDOWN_WAIT_S / OS_BOOT_RETRY_S (a boot the browser lock refuses, see olocked: 43200 / 300 / 120); ports
+# rehearsal's fake bucket, default <dirname REHEARSAL_SRC_STATE>/bucket), OLD_SHELL_ORDERS (default "A B"), OS_WAIT_S /
+# OS_COOLDOWN_WAIT_S / OS_BOOT_RETRY_S / OS_BOOT_LIMIT_S (the boots and the browser lock, see olocked: 86400 / 600 / 120 / 1800); ports
 # PORT+20 (the old-shell origin) and PORT+30 (the R2 loader). Several GB of local R2 state under <run>/old-shell.
 # macOS only (sandbox-exec), like scripts/deploy-rehearsal/rehearse.sh.
 # shellcheck disable=SC2016  # single-quoted node snippets use JS template literals on purpose
@@ -75,6 +77,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SC="$ROOT/qed64-showcase"
 # shellcheck source=SCRIPTDIR/../qed64-showcase/scripts/lib/env.sh
 . "$SC/scripts/lib/env.sh"
+# shellcheck source=SCRIPTDIR/../qed64-showcase/scripts/lib/platform.sh
+. "$SC/scripts/lib/platform.sh"
 die() { echo "rehearse-deploy: $*" >&2; exit 2; }
 command -v sandbox-exec >/dev/null || die "needs macOS sandbox-exec (the wrangler shim runs offline under it)"
 [ -d "$ROOT/ci/node_modules/yaml" ] || npm ci --prefix "$ROOT/ci" --no-audit --no-fund
@@ -98,7 +102,7 @@ node "$SC/scripts/lib/wrangler-config.mjs" write "$RUN/live/wrangler.toml" --ass
 LIVE_ENV=(REHEARSAL_STATE="$RUN/state" REHEARSAL_PORT="$PORT" REHEARSAL_RUN_DIR="$RUN/server")
 EMPTY_ENV=(REHEARSAL_STATE="$RUN/empty-state" REHEARSAL_PORT="$EMPTY_PORT" REHEARSAL_RUN_DIR="$RUN/empty-server")
 OLD_PORT=$((PORT + 20)); LOADER_PORT=$((PORT + 30))
-OS_BOOT_WAIT_S=${OS_BOOT_WAIT_S:-43200}; OS_COOLDOWN_WAIT_S=${OS_COOLDOWN_WAIT_S:-300}; OS_BOOT_RETRY_S=${OS_BOOT_RETRY_S:-120}
+OS_DEADLINE=$(( $(date +%s) + ${OS_WAIT_S:-86400} )); OS_COOLDOWN_WAIT_S=${OS_COOLDOWN_WAIT_S:-600}; OS_BOOT_RETRY_S=${OS_BOOT_RETRY_S:-120}; OS_BOOT_LIMIT_S=${OS_BOOT_LIMIT_S:-1800}
 cleanup() {
   env "${LIVE_ENV[@]}" "$SHIM" _stop || true; env "${EMPTY_ENV[@]}" "$SHIM" _stop || true
   local d; for d in "$RUN"/old-shell/*/server; do [ -d "$d" ] || continue
@@ -175,17 +179,25 @@ opacks() {
   esac
 }
 # boots, each under the host-wide browser lock (one Chrome at a time on this host). A lock that refuses (75 its queue timed
-# out, 76 its cooldown refused) started no browser, so the boot is tried again, up to OS_BOOT_WAIT_S in all. The waiting
-# is done outside the lock: a cooldown holds the lock against every lane queued behind it, so one try keeps it for at most
-# OS_COOLDOWN_WAIT_S. Past OS_BOOT_WAIT_S the boot returns the lock's code, which orefused reports as NOT RUN: it measured
-# nothing, and must not read as a boot that failed.
-olocked() {    # <tag> <log> <cmd...>
-  local tag=$1 log=$2 rc t0; t0=$(date +%s); shift 2
+# out, 76 its cooldown refused) started no browser, so the boot is tried again until OS_DEADLINE, which every boot shares
+# (OS_WAIT_S from the start of this run): a host stuck under the floor ends the run in bounded time, and past the deadline
+# each remaining boot gets one try. The waiting is done outside the lock: a cooldown holds the lock against every lane
+# queued behind it, so one try keeps it for at most OS_COOLDOWN_WAIT_S, while a place in the queue costs nobody anything
+# and is kept to the deadline. A boot still refused then returns the lock's code, which orefused reports as NOT RUN: it
+# measured nothing, and must not read as a boot that failed. A boot that starts runs as NODE_TOOL (scripts/lib/platform.sh)
+# under an alarm of OS_BOOT_LIMIT_S, like scripts/headless/run-controls.sh: each gives up by itself in 420 or 600 s, and one
+# that hung instead would hold the lock for the whole host. The alarm ends it with exit 142, which reads as a failed boot.
+olocked() {    # <tag> <log> <node script and its arguments>
+  local tag=$1 log=$2 rc left; shift 2
   : > "$log"
   while :; do
-    rc=0
-    (cd "$SC" && COOLDOWN_WAIT_S=$OS_COOLDOWN_WAIT_S scripts/with-browser-lock.sh "rehearse-$tag" "$@") >> "$log" 2>&1 || rc=$?
-    case "$rc" in 75|76) [ $(( $(date +%s) - t0 )) -lt "$OS_BOOT_WAIT_S" ] || return "$rc"; sleep "$OS_BOOT_RETRY_S" ;; *) return "$rc" ;; esac
+    rc=0; left=$(( OS_DEADLINE - $(date +%s) )); [ "$left" -ge 1 ] || left=1
+    (cd "$SC" && LOCK_WAIT_S=$left COOLDOWN_WAIT_S=$OS_COOLDOWN_WAIT_S scripts/with-browser-lock.sh "rehearse-$tag" perl -e '$s = shift; $SIG{ALRM} = "DEFAULT"; alarm $s;
+      exec { $ARGV[0] } @ARGV or do { print STDERR "olocked: cannot run $ARGV[0]: $!\n"; exit 127 }' -- "$OS_BOOT_LIMIT_S" "${NODE_TOOL[@]}" "$@") >> "$log" 2>&1 || rc=$?
+    case "$rc" in
+      75|76) [ "$(date +%s)" -lt "$OS_DEADLINE" ] || return "$rc"; sleep "$OS_BOOT_RETRY_S" ;;
+      *) return "$rc" ;;
+    esac
   done
 }
 orefused() { case "$1" in 75|76) echo "NOT RUN (the browser lock refused it, rc $1)" ;; *) echo "$2" ;; esac; }
@@ -197,8 +209,8 @@ ogallery() {   # <checkout qed64-showcase dir> <tag>: boot-check.mjs of THAT che
   cp "$c/scripts/deploy-rehearsal/boot-check.mjs" "$b/scripts/deploy-rehearsal/" && cp "$c/gallery/examples.json" "$b/gallery/" || return 1
   [ -e "$b/node_modules" ] || ln -s "$SC/node_modules" "$b/node_modules"
   n0=$(osrvlines)
-  olocked "$tag" "$RUN/old-shell/boot-$tag.log" node "$b/scripts/deploy-rehearsal/boot-check.mjs" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" || rc=$?
-  tail -1 "$RUN/old-shell/boot-$tag.log"
+  olocked "$tag" "$RUN/old-shell/boot-$tag.log" "$b/scripts/deploy-rehearsal/boot-check.mjs" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" || rc=$?
+  grep '^BOOT-CHECK ' "$RUN/old-shell/boot-$tag.log" || tail -1 "$RUN/old-shell/boot-$tag.log"
   opacks "$tag" "$n0"
   case "$rc" in 75|76) return "$rc" ;; esac
   [ "$rc" = 0 ] && grep -q '^BOOT-CHECK OK' "$RUN/old-shell/boot-$tag.log"
@@ -206,14 +218,15 @@ ogallery() {   # <checkout qed64-showcase dir> <tag>: boot-check.mjs of THAT che
 ostock() {     # <tag>: one cold boot of the stock page "/" without ?snapshots= (the shell's default indexes)
   local tag=$1 rc=0 n0
   n0=$(osrvlines)
-  olocked "$tag" "$RUN/old-shell/boot-$tag.log" node "$RUN/old-shell/stock-boot.cjs" "$SC" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" "$tag" || rc=$?
-  tail -1 "$RUN/old-shell/boot-$tag.log"
+  olocked "$tag" "$RUN/old-shell/boot-$tag.log" "$RUN/old-shell/stock-boot.cjs" "$SC" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" "$tag" || rc=$?
+  grep '^STOCK-BOOT ' "$RUN/old-shell/boot-$tag.log" || tail -1 "$RUN/old-shell/boot-$tag.log"
   opacks "$tag" "$n0"
   case "$rc" in 75|76) return "$rc" ;; esac
   [ "$rc" = 0 ] && grep -q '^STOCK-BOOT OK' "$RUN/old-shell/boot-$tag.log"
 }
 measure() { echo "E1 MEASURE $*" | tee -a "$RUN/old-shell/e1-measure.txt"; }
-# otab <order>: what an old tab left open gets from the new Worker: its own runtime manifest (OLD_MANIFEST's per-build copy)
+# otab <order>: what an old tab left open gets from the new Worker: its own runtime manifest (OLD_MANIFEST's per-build copy),
+# and the release the pack manifest names
 otab() {
   local u line
   u=$(node -p 'const m=require(process.argv[1]);`/runtime/runtime-manifest.${m.pin.buildId}.json`' "$OS_OLD_MANIFEST")
@@ -479,6 +492,9 @@ old_shell() {
     fi
     ostop "$D" || true
   done
+  # a window boot that ran and failed is evidence; one the lock refused measured nothing, and E1 is then not measured
+  local notrun; notrun=$(grep -c ': NOT RUN (' "$O/e1-measure.txt" 2>/dev/null || true)
+  [ "${notrun:-0}" = 0 ] || errs+=("E1 is not measured: $notrun window boot(s) NOT RUN ($O/e1-measure.txt)")
   if [ ${#errs[@]} = 0 ]; then
     pass old-shell "phases 1-2 changed no digest-named or bare overlay object (replaced manifests: $(tr '\n' ' ' < "$O/p12-replaced-keys.txt")$(grep -q . "$O/p12-e1-hazard-keys.txt" 2>/dev/null && echo "; of them E1 hazards, pack manifests: $(tr '\n' ' ' < "$O/p12-e1-hazard-keys.txt")")); old workflow + OLD_MANIFEST published OK; old gallery + stock boot OK; after phase 3 + the new Worker: pre-promotion, SMOKE and new boots OK (orders ${OLD_SHELL_ORDERS:-A B}); E1 measured ($O/e1-measure.txt)"
   else
