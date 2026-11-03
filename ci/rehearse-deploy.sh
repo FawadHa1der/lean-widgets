@@ -65,7 +65,8 @@
 # REHEARSAL_SRC_STATE: rebuild the new pin's rehearsal state into another REHEARSAL_DIR first), OLD_MANIFEST (default the
 # newest release record's manifest.json under qed64-showcase/out/deploy/published), NEW_MANIFEST (the full manifest the
 # new pin's rehearsal uploaded, default qed64-showcase/out/deploy-rehearsal/deploy/manifest.json), NEW_BUCKET_DIR (that
-# rehearsal's fake bucket, default <dirname REHEARSAL_SRC_STATE>/bucket), OLD_SHELL_ORDERS (default "A B"); ports
+# rehearsal's fake bucket, default <dirname REHEARSAL_SRC_STATE>/bucket), OLD_SHELL_ORDERS (default "A B"), OS_BOOT_WAIT_S /
+# OS_COOLDOWN_WAIT_S / OS_BOOT_RETRY_S (a boot the browser lock refuses, see olocked: 43200 / 300 / 120); ports
 # PORT+20 (the old-shell origin) and PORT+30 (the R2 loader). Several GB of local R2 state under <run>/old-shell.
 # macOS only (sandbox-exec), like scripts/deploy-rehearsal/rehearse.sh.
 # shellcheck disable=SC2016  # single-quoted node snippets use JS template literals on purpose
@@ -97,6 +98,7 @@ node "$SC/scripts/lib/wrangler-config.mjs" write "$RUN/live/wrangler.toml" --ass
 LIVE_ENV=(REHEARSAL_STATE="$RUN/state" REHEARSAL_PORT="$PORT" REHEARSAL_RUN_DIR="$RUN/server")
 EMPTY_ENV=(REHEARSAL_STATE="$RUN/empty-state" REHEARSAL_PORT="$EMPTY_PORT" REHEARSAL_RUN_DIR="$RUN/empty-server")
 OLD_PORT=$((PORT + 20)); LOADER_PORT=$((PORT + 30))
+OS_BOOT_WAIT_S=${OS_BOOT_WAIT_S:-43200}; OS_COOLDOWN_WAIT_S=${OS_COOLDOWN_WAIT_S:-300}; OS_BOOT_RETRY_S=${OS_BOOT_RETRY_S:-120}
 cleanup() {
   env "${LIVE_ENV[@]}" "$SHIM" _stop || true; env "${EMPTY_ENV[@]}" "$SHIM" _stop || true
   local d; for d in "$RUN"/old-shell/*/server; do [ -d "$d" ] || continue
@@ -172,7 +174,21 @@ opacks() {
     *) echo "pack fetches $tag: $line" ;;
   esac
 }
-# boots, each under the host-wide browser lock (one Chrome at a time on this host)
+# boots, each under the host-wide browser lock (one Chrome at a time on this host). A lock that refuses (75 its queue timed
+# out, 76 its cooldown refused) started no browser, so the boot is tried again, up to OS_BOOT_WAIT_S in all. The waiting
+# is done outside the lock: a cooldown holds the lock against every lane queued behind it, so one try keeps it for at most
+# OS_COOLDOWN_WAIT_S. Past OS_BOOT_WAIT_S the boot returns the lock's code, which orefused reports as NOT RUN: it measured
+# nothing, and must not read as a boot that failed.
+olocked() {    # <tag> <log> <cmd...>
+  local tag=$1 log=$2 rc t0; t0=$(date +%s); shift 2
+  : > "$log"
+  while :; do
+    rc=0
+    (cd "$SC" && COOLDOWN_WAIT_S=$OS_COOLDOWN_WAIT_S scripts/with-browser-lock.sh "rehearse-$tag" "$@") >> "$log" 2>&1 || rc=$?
+    case "$rc" in 75|76) [ $(( $(date +%s) - t0 )) -lt "$OS_BOOT_WAIT_S" ] || return "$rc"; sleep "$OS_BOOT_RETRY_S" ;; *) return "$rc" ;; esac
+  done
+}
+orefused() { case "$1" in 75|76) echo "NOT RUN (the browser lock refused it, rc $1)" ;; *) echo "$2" ;; esac; }
 ogallery() {   # <checkout qed64-showcase dir> <tag>: boot-check.mjs of THAT checkout (its examples.json) on the old-shell origin
   local c=$1 tag=$2 rc=0 b="$RUN/old-shell/bootsc-$2" n0
   # boot-check.mjs reads <its ../..>/gallery/examples.json and imports playwright: a scaffold with the checkout's two files
@@ -181,19 +197,19 @@ ogallery() {   # <checkout qed64-showcase dir> <tag>: boot-check.mjs of THAT che
   cp "$c/scripts/deploy-rehearsal/boot-check.mjs" "$b/scripts/deploy-rehearsal/" && cp "$c/gallery/examples.json" "$b/gallery/" || return 1
   [ -e "$b/node_modules" ] || ln -s "$SC/node_modules" "$b/node_modules"
   n0=$(osrvlines)
-  (cd "$SC" && scripts/with-browser-lock.sh "rehearse-$tag" node "$b/scripts/deploy-rehearsal/boot-check.mjs" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag") \
-    > "$RUN/old-shell/boot-$tag.log" 2>&1 || rc=$?
+  olocked "$tag" "$RUN/old-shell/boot-$tag.log" node "$b/scripts/deploy-rehearsal/boot-check.mjs" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" || rc=$?
   tail -1 "$RUN/old-shell/boot-$tag.log"
   opacks "$tag" "$n0"
+  case "$rc" in 75|76) return "$rc" ;; esac
   [ "$rc" = 0 ] && grep -q '^BOOT-CHECK OK' "$RUN/old-shell/boot-$tag.log"
 }
 ostock() {     # <tag>: one cold boot of the stock page "/" without ?snapshots= (the shell's default indexes)
   local tag=$1 rc=0 n0
   n0=$(osrvlines)
-  (cd "$SC" && scripts/with-browser-lock.sh "rehearse-$tag" node "$RUN/old-shell/stock-boot.cjs" "$SC" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" "$tag") \
-    > "$RUN/old-shell/boot-$tag.log" 2>&1 || rc=$?
+  olocked "$tag" "$RUN/old-shell/boot-$tag.log" node "$RUN/old-shell/stock-boot.cjs" "$SC" "http://localhost:$OLD_PORT" "$RUN/old-shell/boot-$tag" "$tag" || rc=$?
   tail -1 "$RUN/old-shell/boot-$tag.log"
   opacks "$tag" "$n0"
+  case "$rc" in 75|76) return "$rc" ;; esac
   [ "$rc" = 0 ] && grep -q '^STOCK-BOOT OK' "$RUN/old-shell/boot-$tag.log"
 }
 measure() { echo "E1 MEASURE $*" | tee -a "$RUN/old-shell/e1-measure.txt"; }
@@ -404,8 +420,8 @@ old_shell() {
       node -e 'const m=require(process.argv[1]);const re=new RegExp("^/snapshots/widgets[78]/");const b=m.r2.filter(o=>re.test(o.url));
         console.log(`bare overlay objects of the live manifest: ${b.length} (${b.map(o=>o.url.split("/").slice(2).join("/")).join(", ")}), each checked by the --published above`)' "$OS_OLD_MANIFEST" | tee -a "$O/published-old.log"
       # 3. the old gallery and the old stock page boot with the new phases 1-2 present
-      ogallery "$oldsc" "old-gallery-p12" || errs+=("the old gallery did not boot with phases 1-2 present ($O/boot-old-gallery-p12.log)")
-      ostock "old-stock-p12" || errs+=("the old stock page did not boot with phases 1-2 present ($O/boot-old-stock-p12.log)")
+      ogallery "$oldsc" "old-gallery-p12" || errs+=("the old gallery $(orefused $? 'did not boot') with phases 1-2 present ($O/boot-old-gallery-p12.log)")
+      ostock "old-stock-p12" || errs+=("the old stock page $(orefused $? 'did not boot') with phases 1-2 present ($O/boot-old-stock-p12.log)")
       first=0
     fi
     if [ "$order" = A ]; then
@@ -414,9 +430,9 @@ old_shell() {
       if oload "$D/state" p3; then
         oserve "$D" "$cfg_old" || errs+=("A: the old Worker did not restart")
         if ostock "A-window-old-stock"; then measure "A (phase 3 before the deploy): the OLD shell's bare / stock boot in the window: OK"
-        else measure "A (phase 3 before the deploy): the OLD shell's bare / stock boot in the window: FAILED (indexes replaced: $(tr '\n' ' ' < "$O/window-keys.txt"); $O/boot-A-window-old-stock.log)"; fi
+        else measure "A (phase 3 before the deploy): the OLD shell's bare / stock boot in the window: $(orefused $? FAILED) (indexes replaced: $(tr '\n' ' ' < "$O/window-keys.txt"); $O/boot-A-window-old-stock.log)"; fi
         if ogallery "$oldsc" "A-window-old-gallery"; then measure "A: the OLD gallery in the window: OK"
-        else measure "A: the OLD gallery in the window: FAILED ($O/boot-A-window-old-gallery.log)"; fi
+        else measure "A: the OLD gallery in the window: $(orefused $? FAILED) ($O/boot-A-window-old-gallery.log)"; fi
       else errs+=("A: loading phase 3 failed"); fi
       # 5A. the NEW workflow: pre-promotion check (everything is up), promotion, smoke
       shim_env "$D/state" "$OLD_PORT" "$D/server"
@@ -425,8 +441,8 @@ old_shell() {
           || errs+=("A: the new workflow did not show PUBLISHED OK, the deploy and SMOKE OK ($RUN/old-shell-A-new.log)")
       else errs+=("A: the new workflow failed ($RUN/old-shell-A-new.log)"); fi
       cfg_new=$(oconfig old-shell-A-new); newsc=${cfg_new%/wrangler.toml}
-      [ -n "$newsc" ] && { ogallery "$newsc" "A-new-gallery" || errs+=("A: the new gallery did not boot ($O/boot-A-new-gallery.log)"); }
-      ostock "A-new-stock" || errs+=("A: the new stock page did not boot ($O/boot-A-new-stock.log)")
+      [ -n "$newsc" ] && { ogallery "$newsc" "A-new-gallery" || errs+=("A: the new gallery $(orefused $? 'did not boot') ($O/boot-A-new-gallery.log)"); }
+      ostock "A-new-stock" || errs+=("A: the new stock page $(orefused $? 'did not boot') ($O/boot-A-new-stock.log)")
       otab "A"
     else
       # 4B. split upload: the new Worker first. Does the CI pre-promotion check accept the missing phase 3? (measured)
@@ -446,9 +462,9 @@ old_shell() {
       cfg_new=$(oconfig old-shell-B-new); newsc=${cfg_new%/wrangler.toml}
       [ -n "$cfg_new" ] || { errs+=("B: no wrangler.toml from the new deploy"); ostop "$D" || true; continue; }
       if ogallery "$newsc" "B-window-new-gallery"; then measure "B: the NEW gallery in the window (no phase 3 yet): OK"
-      else measure "B: the NEW gallery in the window (no phase 3 yet): FAILED ($O/boot-B-window-new-gallery.log)"; fi
+      else measure "B: the NEW gallery in the window (no phase 3 yet): $(orefused $? FAILED) ($O/boot-B-window-new-gallery.log)"; fi
       if ostock "B-window-new-stock"; then measure "B: the NEW shell's bare / stock boot in the window: OK"
-      else measure "B: the NEW shell's bare / stock boot in the window: FAILED ($O/boot-B-window-new-stock.log)"; fi
+      else measure "B: the NEW shell's bare / stock boot in the window: $(orefused $? FAILED) ($O/boot-B-window-new-stock.log)"; fi
       # 5B. phase 3, then everything must be OK
       ostop "$D" || true
       oload "$D/state" p3 || errs+=("B: loading phase 3 failed")
@@ -457,8 +473,8 @@ old_shell() {
          && (cd "$SC" && node scripts/deploy-manifest.mjs --smoke "http://127.0.0.1:$OLD_PORT" --out "$newsc/out/deploy" --all --range) > "$D/smoke-new.log" 2>&1; then
         tail -1 "$D/published-new.log"; tail -1 "$D/smoke-new.log"
       else errs+=("B: after phase 3 the new manifest's --published / --smoke failed ($D/published-new.log, $D/smoke-new.log)"); fi
-      ogallery "$newsc" "B-new-gallery" || errs+=("B: the new gallery did not boot after phase 3 ($O/boot-B-new-gallery.log)")
-      ostock "B-new-stock" || errs+=("B: the new stock page did not boot after phase 3 ($O/boot-B-new-stock.log)")
+      ogallery "$newsc" "B-new-gallery" || errs+=("B: the new gallery $(orefused $? 'did not boot') after phase 3 ($O/boot-B-new-gallery.log)")
+      ostock "B-new-stock" || errs+=("B: the new stock page $(orefused $? 'did not boot') after phase 3 ($O/boot-B-new-stock.log)")
       otab "B"
     fi
     ostop "$D" || true
