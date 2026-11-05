@@ -31,12 +31,12 @@ maps `?overlay=widgets8` to the directory; the Worker routes `/snapshots/*` gene
    build-shell.mjs ── npm ci --prefix frontend && npm run build:site ──► release/<id>/dist   (byte-identical to the lock
                                    │                                                          or nothing is installed)
    fetch-artifacts.mjs ◄── git show <commit>:public/{runtime,profiles,snapshots}/*.json (tracked manifests)
-          ▲            ◄── ARTIFACT ORIGIN (our Worker / serve.mjs of a built checkout / QED64's own site: its live release's files only)
+          ▲            ◄── ARTIFACT ORIGIN (our Worker: the deployed pin's runtime and packs, every uploaded pin's snapshots / serve.mjs of a built checkout / QED64's own site: its live release's files only)
           │                  /runtime/chunks/*  /profiles/*.part-*  /snapshots/*.snapz  <lock overlays.<o>.url>* (/snapshots/<dir>/*)
           └─────────────────► release/<id>/public/…   +   out/runtimes/<buildId>/overlay/widgets{7,8}/  (sha256 == lock)
 
-   imports from the source:  infra/worker.js ── QED64 infra/worker.js isImmutable (exported at every pin)
-                             serve.mjs, deploy-manifest.mjs ── QED64 infra/edge-worker.js isImmutable (84d594e on; else infra/worker.js)
+   imports from the source:  infra/worker.js ── QED64 infra/edge-worker.js createWorker + toolchain/lean4-wasm64-release.json (the served pin's record)
+                             serve.mjs, deploy-manifest.mjs ── QED64 infra/edge-worker.js isImmutable (84d594e on; else infra/worker.js); deploy-manifest.mjs also its releaseRoutes
                              bake.sh ── pipeline/snapshot/bake-snapshot.mjs        stage-trees.mjs ── pipeline/artifacts/olean-imports.mjs
                              pair-check.mjs, headless/lib.mjs ── pipeline/toolchain/artifact-paths.mjs
                              headless/exact-header.mjs ── pipeline/snapshot/snapshot-probe.mjs   run-e2.sh ── supervised-run.mjs → node-runner.mjs
@@ -50,6 +50,8 @@ maps `?overlay=widgets8` to the directory; the Worker routes `/snapshots/*` gene
                                                                   /snapshots/<dir>/ = our overlay (<dir> = widgets8 on A–H, widgets8.<bid16> from I on)
                                                                   /showcase/ = gallery/ (iframes "/?snapshots=snapshots/<dir>";
                                                                   on the v1 pins F–I "/?embed=1&snapshots=snapshots/<dir>#code=…")
+ in R2 behind infra/worker.js:  /runtime/ and /profiles/ except /profiles/index.json = lean4-wasm64/<the pin's release id>/ (the kernel's, never uploaded by us)
+                                /profiles/index.json and /snapshots/ = qed64-showcase/ (ours, scripts/upload-artifacts.sh)
 ```
 
 ## Source dependency
@@ -65,11 +67,11 @@ maps `?overlay=widgets8` to the directory; the Worker routes `/snapshots/*` gene
 * **What is read from the sources.** QED64's page build (`frontend/`, `npm run build:site`); the five tracked manifests
   and indexes under `public/`; the kernel the pin serves (verify #9): `toolchain/lean4-wasm64-release.json`
   `kernel.commit` from QED64 `4f46477` on (pin I), which retired `pipeline/toolchain/KERNEL-PIN` (pins A–H); QED64's
-  cache rule `isImmutable`: our Worker imports it from `infra/worker.js`, which exports it at every pin
-  (`wrangler deploy --dry-run` bundled just that function into the Worker, `$W/logs/r2/wrangler-dry-run.log`; from
-  385a1ac on that file also imports the toolchain release record and builds QED64's own Worker at load, which wrangler's
-  esbuild bundles too, the default export unused), while `serve.mjs` and `deploy-manifest.mjs` import it from
-  `infra/edge-worker.js` where the pin has it (84d594e on), else `infra/worker.js`; `pipeline/snapshot/*` (bake,
+  Worker library: our `infra/worker.js` is `createWorker` from `infra/edge-worker.js` with the served pin's
+  `toolchain/lean4-wasm64-release.json`, both bundled by wrangler (the `release` option is QED64 `391a075`, in every pin
+  from I on and not in H, whose live Worker is still our earlier one); QED64's cache rule `isImmutable`: `serve.mjs` and
+  `deploy-manifest.mjs` import it from `infra/edge-worker.js` where the pin has it (84d594e on), else `infra/worker.js`,
+  and the Worker has it inside `createWorker`; `pipeline/snapshot/*` (bake,
   probes, runner); `pipeline/artifacts/olean-imports.mjs`; `pipeline/toolchain/artifact-paths.mjs`;
   `public/workers/lsp-frames.js`; the Memory64 probe bytes the gallery gate compares (`public/workers/memory64-probe.js`
   from 385a1ac on, evaluated in a `vm` context; `public/workers/lean.worker.js` before); QED64's preflight
@@ -131,9 +133,11 @@ own bakes. `scripts/fetch-artifacts.mjs` installs a pin's binaries as follows:
   release's prefix `lean4-wasm64/<id>/`, with no fallback to the bucket root (whose `runtime/` and `profiles/` copies
   were removed on 2026-10-23), and its R2 sweep of 2026-10-23 kept only the live and the previous pairing's
   `/snapshots/` (QED64 `docs/DEPLOY.md`, "Atomic promotes"). So it can bootstrap only the pin whose release QED64
-  deploys now. Bootstrapping or rolling back to any other pin (N, H or older) needs the showcase's own origin: our
-  upload copies and never deletes, and QED64's fetched files are all digest-named, so every pin uploaded to our prefix
-  keeps them. Overlay indexes are the exception: an overlay's `index.json` is named only by its directory, the bare
+  deploys now. Under release routing our deployed Worker has the same limit for the runtime and packs: it serves only
+  the deployed pin's, from that pin's release. Bootstrapping or rolling back to any other pin (N, H or older) therefore
+  needs `scripts/serve.mjs` of a checkout that has those files as `--origin`. Our prefix keeps every uploaded pin's
+  `/snapshots/` objects, because our upload copies and never deletes and they are digest-named, and the deployed Worker
+  serves them. Overlay indexes are the exception: an overlay's `index.json` is named only by its directory, the bare
   `widgets{7,8}/` for pins A–H and a per-runtime one from pin I on that same-runtime pins share (I, J and K; L and N).
   That key holds the last upload's index, so an older pin whose index differs (I and J once K is uploaded) fails the
   lock check for that file; its digest-named `.snapz` stay. A file that QED64's origin, tried last, fails to deliver
@@ -146,7 +150,8 @@ own bakes. `scripts/fetch-artifacts.mjs` installs a pin's binaries as follows:
   local origin (`serve.mjs` of the main checkout on :5297; `clone-bootstrap-1.log`). The Linux rehearsal fetched all 93
   files from the same local origin.
 
-Until the showcase's Worker is deployed, the overlays exist only on machines that baked them. A cloner without such an
+The deployed Worker has only the overlays uploaded to it (on 2026-11-02, H's bare `widgets{7,8}/`). Any other pin's
+overlays exist only on machines that baked them until they are uploaded. A cloner without such an
 origin either points `--origin` at someone's served checkout or rebuilds the overlays ([BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md)).
 
 ## What a clone needs
@@ -180,6 +185,7 @@ tests. The platform-specific parts are in `scripts/lib/platform.{sh,mjs}`:
 | memory a heavy process can get | `vm_stat`: free + inactive (+ speculative) pages | `/proc/meminfo` MemAvailable |
 | copy-on-write clone | `cp -c` / `cp -cR` (APFS clonefile) | `cp --reflink=auto` / `cp -R --reflink=auto` (reflink where the file system supports it, else a copy) |
 | no idle sleep during long runs | `caffeinate -i` (process-scoped) | nothing (not needed) |
+| is a browser running | `ps -axo pid=,comm=` (argv[0]) | `/proc/<pid>/exe` |
 
 The Linux side was proved in Docker `node:26-bookworm` (aarch64) on 2026-10-04 (`$W/logs/r2/linux-rehearsal-1.log`):
 fresh `clone --recursive`, bootstrap from a local origin, `verify` and `gallery` all passed, and so did
@@ -251,7 +257,7 @@ its table. The gallery's side of v1 is described in gallery/README.md "Embedding
 | the wasm runtime ABI (`_lean_wasm_load_snapshot_mem`, the input ring, `$/qed64/headerStatus`) and `Qed64LspFrames` | headless/wasm-lsp.mjs, exact-header.mjs, hang-repro.mjs | unchanged | 57 |
 | pipeline CLIs and env (`bake-snapshot.mjs …` with `QED64_ALLOW_LEGACY_IMPORTS=1`, `snapshot-probe.mjs --via-mem`, `supervised-run.mjs`, `olean-imports.mjs --audit`, `artifact-paths.mjs`, the preflight: `pipeline/release/preflight.mjs` on I, `tests/adversarial/preflight.mjs` before) | bake.sh, stage-trees.mjs, pair-check.mjs, headless/*, preflight-overlays.sh | unchanged (§6 ships `./pipeline/*` as files, not their flags); at 385a1ac `bake-snapshot.mjs` also writes `index.<buildId>.json` into `--out`, which `make-overlay.mjs` and judge J5 ignore | 41, 57 |
 | repository and dist layout; the build identity | build-shell.mjs, fetch-artifacts.mjs, pin-qed64.mjs, deploy-manifest.mjs, build-gallery.mjs | `dist/qed64-build.json` (`buildId`, `leanVersion`, `sourceRevision`, `commit`, `shell`, `apiRevision`) gives `gallery/pin.json` its `apiRevision` and `shell`; the buildId is still also checked in `dist/assets/*.js`; the layout is not declared | 38, 39 |
-| `isImmutable` (`infra/worker.js`; `infra/edge-worker.js` from 84d594e on) and the hosting headers | serve.mjs, deploy-manifest.mjs (edge-worker.js where present), infra/worker.js (worker.js) | unchanged; §5 now states the hosting facts (no Content-Encoding on chunks and `.snapz`, Range recommended, 404 not HTML); at 385a1ac the rule also revalidates the per-build index copies (`index.<bid>.json`, `profiles-index.<bid>.json`) | 32 |
+| `isImmutable` (`infra/worker.js`; `infra/edge-worker.js` from 84d594e on) and the hosting headers | serve.mjs, deploy-manifest.mjs (edge-worker.js where present); infra/worker.js inside `createWorker` | unchanged; §5 now states the hosting facts (no Content-Encoding on chunks and `.snapz`, Range recommended, 404 not HTML); at 385a1ac the rule also revalidates the per-build index copies (`index.<bid>.json`, `profiles-index.<bid>.json`) | 32 |
 
 ## What still mirrors QED64 behaviour (each kept for a stated reason)
 
@@ -263,7 +269,7 @@ behaviour. Each has the reason it cannot import the original:
 | `gallery/lib.js` `MEMORY64_PROBE` | the Memory64 probe bytes of `public/workers/lean.worker.js` (pins A–H) or of `public/workers/memory64-probe.js` (`globalThis.Qed64Memory64.MEMORY64_PROBE`, pin I on) | the gallery must refuse an incapable browser *before* loading QED64; `check-gallery` asserts byte equality with the source dependency (on I by evaluating `memory64-probe.js` in a `vm` context) |
 | `gallery/lib.js` pairing preflight (`?snapshots=` re-root rule, snapshot index schema, `BUFFER_KEY`) | `qed64-boot.ts`, `resident-session.ts`, `main.ts` | QED64 fails silently on a bad overlay index on pins A–E; the gallery checks before navigating. F, G, H and I name the failure (§4, §7.2; the console entry `bootFailure[4]`; on I #62 refuses an unpaired overlay before the runtime boots), but the gallery still preflights, so a broken overlay never boots; `BUFFER_KEY` is legacy-only |
 | `gallery/qed64-bridge.js` | lean4monaco's InfoView message handling | repairs defects D1/D2/D3 of the shipped page on pins A–E (docs/UPSTREAM-REPORT-QED64.md); on F, G and H all three are fixed upstream (`editorRpc`, HARDENING #56; `widgetSourceCache`, EMBEDDING §2.5) and the bridge is not installed |
-| `infra/worker.js` `withHeaders`, routing | QED64's `infra/worker.js` | QED64's Worker has no R2 key prefix, no HEAD with Content-Length (the gallery preflight needs it) and no Range. Its cache rule is imported, not copied. Candidate for a QED64 export (`createArtifactWorker({prefix, range, head})`) |
+| `scripts/lib/release-routing.mjs` `releaseKey` | which R2 key QED64's `createWorker` reads a URL path from (`infra/edge-worker.js` keeps its own function private) | `deploy-manifest.mjs` must list each file under the key the Worker reads; `infra/worker.test.mjs` runs the real Worker over every file of the active pin's lock against it. The Worker itself no longer mirrors anything: it is `createWorker` with our prefix, our root redirect and the pin's release |
 | `scripts/serve.mjs` | QED64's `scripts/serve-dist.mjs` + the Worker's headers | one local origin for the page, our overlays and the gallery, with the pin header (`X-Showcase-Pin`), the served release's API revision (`X-Showcase-Api`: revision, `none` or `invalid`, on every response) and `Cache-Control: no-store` for `/showcase/pin.json` |
 | `scripts/fetch-artifacts.mjs` | QED64's `pipeline/release/sync-artifacts.mjs` | QED64's tool copies from a local workspace into `public/` of its own checkout; ours fetches over HTTP into `release/<id>/`, verifies against *our* lock and installs our overlays too |
 | `scripts/pin-qed64.mjs verify` #1–#5, `deploy-manifest.mjs` R1–R4 | QED64's `npm run verify:release` | they check the files *we* serve (in `release/<id>/`, against our lock); `verify:release` checks QED64's own `public/` |

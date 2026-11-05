@@ -2288,3 +2288,40 @@ writes `3-indexes`).
    (it names a deleted dir; suggested the list `$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`; `.env.local` expands `$HOME`, not `$W`);
    alias policy and stale tabs as for I; whether to keep N's and H's build stores.
 3. Follow-up: per-runtime trees and native records (docs/NEXT-STEPS.md, pin O, item 3).
+
+## 2026-11-02 to 11-05: pin O with release routing (P3, branch `release-routing`) — rehearsed, not pushed
+
+No re-pin: the pin, the gallery, the lock and the overlays are O's, so the verdict `o-full2` stands. What changes is how the
+Worker serves O (QED64's decision R14a, approved by the owner 2026-11-01): `infra/worker.js` is QED64's `createWorker` with
+the pin's toolchain record, so `/runtime/*` and `/profiles/*` (but `/profiles/index.json`) come from the kernel release's own
+prefix `lean4-wasm64/lean-v4.35.0-b081e7c/` of the bucket, and our upload falls from 93 objects, 2.367 GB to 12 objects,
+1.107 GB. `deploy-app.sh` checks each new version on its preview URL (`--published`, `--smoke --all --range`) before it
+takes traffic.
+
+**Commits** on `release-routing`, on top of `port-lean-4.35` `079ef23`: `f13d535` (P3), `39ae6ac` (M3: pin-qed64 reads runtime
+manifest v1 and gzip v2), `dbfd000` (review fixes), `ed8f781` (the browser lock finds browsers by executable, not command
+text), `12aca96` and `eca8f22` (the CI rehearsal's boots: a refused boot waits outside the lock and tries again, one deadline
+for the run, `NOT RUN` fails the scenario, boots as `NODE_TOOL` under an alarm), then the docs.
+
+**Results** (docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal, have the detail):
+- `rehearse.sh all browser stop` on `dbfd000`, 2026-11-02: rc 0 (state `$W/deploy-rehearsal-P3`).
+- The `qed64-static` CI mirror on `eca8f22`: rc 0.
+- `ci/rehearse-deploy.sh` on `eca8f22`, 2026-11-03 15:29Z to 11-04 11:49Z: all nine scenarios OK. With H's `d60b15e` as the old
+  shell, every old-shell boot fetched 8 pack parts of the live release and none of the new one. O1 and O2 before release
+  routing fetched 8 of the new. So E1's pack-manifest half is gone. Order A's window still fails H's bare stock boot, as
+  measured on O1 and O2; H's gallery boots in it.
+- A first run on `dbfd000` (2026-11-02, 9.6 h) went red only because the lock refused six boots at the 16 GiB floor and they
+  never started. Its "B window FAILED" lines measured nothing. The fix is `12aca96`, `eca8f22`, after a review that
+  reproduced each finding.
+
+**The re-pin after it** is QED64 `f2b623a` (origin/main, 2026-11-03), after O's deploy and the P1+P2 re-gate: same runtime
+and release, no rebake. It has deleted the old preflight shim, so this branch's lookup in `scripts/preflight-overlays.sh`
+must be on `main` first. The audit is `$W/reports/repin-fd95a2a-audit-2026-11-03.md`, which holds for `f2b623a`.
+
+### Not done (2026-11-05)
+
+1. The owner's steps for O (docs/NEXT-STEPS.md, top section): turn on Preview URLs, the upload (12 objects), then
+   `git push origin release-routing:main`.
+2. Still open with the owner: whether the browser lanes' memory floor may go below 16 GiB. The machine sat at 6.2-12.8 GiB
+   free for most of this run.
+3. Then P1+P2 in one re-gate (`$W/reports/p1-p2-plan-2026-11-02.md`, with the amendments from the audit), then the re-pin.

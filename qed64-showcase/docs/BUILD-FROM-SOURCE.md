@@ -47,18 +47,19 @@ match is installed:
    `gallery/pin.json`.
 7. `scripts/showcase.sh verify`.
 
-**Origins.** `--origin` is the showcase's own origin, which serves QED64's files *and* our overlays. Until the
-showcase's Worker is deployed, the overlays exist only where they were baked, so point `--origin` at the `serve.mjs` of
+**Origins.** `--origin` is the showcase's own origin, which serves QED64's files *and* our overlays. The deployed
+Worker has only the overlays uploaded to it (on 2026-11-02, H's bare `widgets{7,8}/`). Any other pin's overlays exist only
+where they were baked until they are uploaded, so point `--origin` at the `serve.mjs` of
 a checkout that has them (`PORT=5297 scripts/showcase.sh serve` there; plain HTTP GETs) or take the heavy path.
 `--qed64-origin` serves QED64's own files only, and QED64's live site serves them for **one** release, the one it
 deploys now: since QED64 `4b98279` its Worker reads `/runtime/*` and `/profiles/<not index.json>` only from that
 release's prefix, with no fallback to the bucket root (its `runtime/` and `profiles/` copies were removed on
 2026-10-23), and its R2 sweep of 2026-10-23 kept only the live and the previous pairing's snapshots. So
 `--qed64-origin https://qed64.fawadworkaddress.workers.dev` works only for the pin whose release QED64 deploys now;
-any other pin (bootstrapping or rolling back to N, H or older) comes from the showcase's own origin (`--origin`),
-whose upload never deletes: every pin uploaded to it keeps its digest-named files, and of the files fetched from it
-only an overlay's `index.json`, one per served directory, is the last upload's ([ARCHITECTURE.md](ARCHITECTURE.md)
-"Binary dependency").
+any other pin (bootstrapping or rolling back to N, H or older) takes its `/snapshots/` objects from the deployed
+showcase (`--origin`) if that pin was uploaded, since our upload never deletes: of those only an overlay's `index.json`, one
+per served directory, is the last upload's. Under release routing its runtime and packs come only from `scripts/serve.mjs`
+of a checkout that has them ([ARCHITECTURE.md](ARCHITECTURE.md) "Binary dependency").
 `node scripts/fetch-artifacts.mjs --remote-check --qed64-origin <url> --only public` checks an origin without
 downloading; a FAIL for which QED64's origin was the last one tried carries that advice.
 

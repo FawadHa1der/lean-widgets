@@ -1221,7 +1221,9 @@ serves H `bf9d947`.
 - **L1 holds on 4.35** (no change expected): the same tree-scope `Demo.lean:104` error in your runtime, while native
   Lean 4.35.0 builds that Demo; the kernel's `wasm64-build/PATCHES.md:321` keeps "every import happens at
   `OLeanLevel.exported`" at `b081e7c`.
-- **A question about the pack manifests and deploys (for our decision E1).** `/profiles/lean-core.manifest.json` and
+- **A question about the pack manifests and deploys (for our decision E1). Status 2026-11-05: superseded for the pack
+  manifests by release routing (P3, `f13d535`, rehearsed green on `eca8f22`, not pushed): our Worker reads them from the toolchain release, no upload of
+  ours replaces them, so the question below does not need an answer.** `/profiles/lean-core.manifest.json` and
   `/profiles/mathlib-essential.manifest.json` keep their URL across releases, and at `521cf3f` their content changes for
   the first time (every earlier pin of ours recorded the same two files). Your #81 makes an O tab refuse another release's
   pack as stale, but a shell from before #81, such as the live H, installs whatever the URL holds. When the showcase

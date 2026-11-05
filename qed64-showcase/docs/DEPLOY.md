@@ -6,12 +6,16 @@
 > a dry-run check and a post-deploy smoke test.
 >
 > **Step-by-step guide: [DEPLOY-CLOUDFLARE.md](DEPLOY-CLOUDFLARE.md)** ("the lean4game way": scripts
-> `upload-artifacts.sh`, `deploy-app.sh`, `rollback-artifacts.sh`, rehearsed end to end against local fakes).
+> `upload-artifacts.sh`, `deploy-app.sh`, `rollback-artifacts.sh`, rehearsed end to end against local fakes, release
+> routing included: `rehearse.sh all browser stop` on `dbfd000` (2026-11-02: upload, deploy, rollback), all nine
+> `ci/rehearse-deploy.sh` scenarios on `eca8f22` (2026-11-04: `deploy-app.sh` through the CI job); `dbfd000..eca8f22`
+> changes no deploy script).
 > This page remains the reference for the manifest, its gates and the dry run.
 
 The showcase deploys as **its own Worker on its own origin** (`qed64-showcase.<subdomain>.workers.dev`). It never
 touches QED64's Worker. Since 2026-10-01 its R2 artifacts default to **the bucket QED64 already uses, under the prefix
-`qed64-showcase/`**, the way lean4game uses `lean4game/` in the same bucket. The target is set in `infra/deploy.env`,
+`qed64-showcase/`**, the way lean4game uses `lean4game/` in the same bucket. From release routing on only its own objects
+go there; the runtime and the packs are read from `lean4-wasm64/<release id>/` of the same bucket. The target is set in `infra/deploy.env`,
 and a bucket of its own (`qed64-showcase-artifacts`, prefix `""`) is the documented alternative. The prefix keeps the
 mutable index names apart, so QED64's objects are never overwritten and stay untouched in production. The layout
 follows QED64's own production setup (`qed64/docs/DEPLOY.md`, `qed64/infra/worker.js`,
@@ -22,8 +26,9 @@ follows QED64's own production setup (`qed64/docs/DEPLOY.md`, `qed64/infra/worke
 |---|---|---|
 | `/` (and `/assets/*`, `/infoview/*`, `/workers/*`) | Workers static assets | the **pinned** QED64 `dist/` (`release/<pin id>/dist`, where `<buildId>` is `QED64.lock.json`'s `qed64.buildId`), byte-identical to the lock |
 | `/showcase/` | Workers static assets | `gallery/`, without `*.md` and the stage-A `x3.html` |
-| `/runtime/…` | R2 | runtime manifests + the 10 `lean.js`/`lean.wasm` chunks of the lock's buildId |
-| `/profiles/…` | R2 | the core pack (8 parts) and the mathlib-essential pack (61 parts) |
+| `/runtime/…` | R2 `lean4-wasm64/<release id>/`, never uploaded by us | runtime manifests + the 8 chunks at pin O |
+| `/profiles/…` except `/profiles/index.json` | same | the core pack (8 parts), the mathlib-essential pack (61 parts) and their manifests |
+| `/profiles/index.json` | R2 `qed64-showcase/` | the profile index |
 | `/snapshots/index.json`, `init…`, `mathlib…` | R2 | the stock pair, so the stock page still works at `/?…` |
 | `/snapshots/index.<buildId>.json`, `/snapshots/profiles-index.<buildId>.json` | R2 | only for a pin with `hardening.pinnedIndexes` (pin I on): QED64's per-build copies of the stock snapshot index and `/profiles/index.json` (HARDENING #64), which the shell reads only while the mutable index names another runtime (manifest gate R6) |
 | `/snapshots/<dir>/…` | R2 | our overlays: `index.json` + `init` + `widgets.<d16>.snapz`. `<dir>` is the pin's **served directory** (`scripts/lib/pins.mjs` `overlayDir`): `widgets8` and `widgets7` for pins A–H (`pin.json` schema v2), `widgets8.<bid16>` and `widgets7.<bid16>` from pin I on (schema v3, `"overlayDirs": "per-runtime"`; I: `widgets8.f69cca24d0878a58`), so a new runtime's overlays never replace the directories an older live shell reads |
@@ -38,13 +43,13 @@ deliberate re-pin could change it (README "Re-pin").
 
 | File | Role |
 |---|---|
-| `infra/worker.js` | The edge worker. It is QED64's `infra/worker.js`, with the same headers and the same `isImmutable` rule (imported from the submodule's `infra/worker.js`, which exports it at every pin; `serve.mjs` and `deploy-manifest.mjs` import it from QED64's `infra/edge-worker.js` where the pin has it, 84d594e on), plus three additions. **R2_PREFIX** puts the artifacts under a key prefix, for a shared bucket. **HEAD with an explicit `Content-Length`** from `ARTIFACTS.head()` is needed because the gallery's pairing preflight requires `content-length == transfer` (`gallery/lib.js`). **ROOT_REDIRECT** sends a bare `/` to the gallery. Added 2026-10-01 for lean4game parity: **single-range GETs** on artifacts (206 + `Content-Range`, `If-Range` against the etag, 416 past the end, multi-range ignored; ported from `wasm64-lean4game/infra/worker.js`), and a **Content-Length on HEAD for static assets**, which the assets binding omits (found in the `wrangler dev` rehearsal). |
-| `infra/worker.test.mjs` | `node --test infra/worker.test.mjs` runs the worker against fake ASSETS/R2 bindings (no network, no account). It also checks that `isImmutable` is QED64's own rule. Since 2026-10-01 it has 22 tests: lean4game's range cases on a strict fake R2, and HEAD on assets; with the per-runtime overlay directories (2026-10-09) 26: such a directory's `index.json` revalidates, its `.snapz` are immutable, HEAD and `R2_PREFIX` work there, and no alias maps it to the bare directory. |
+| `infra/worker.js` | The edge worker: QED64's `createWorker` (`deps/qed64/infra/edge-worker.js`) with `r2Prefix`, `rootRedirect` and the pin's `toolchain/lean4-wasm64-release.json`. Headers, cache rule, HEAD, Range and traversal refusal are `createWorker`'s. `serve.mjs` and `deploy-manifest.mjs` import `isImmutable` from QED64's `infra/edge-worker.js` where the pin has it (84d594e on). |
+| `infra/worker.test.mjs` | `node --test infra/worker.test.mjs` runs the worker against fake ASSETS/R2 bindings (no network, no account): 16 tests of what the showcase relies on from it, including every file of the active pin's lock read from the key `deploy-manifest` records. QED64's `tests/unit/edge-worker.test.ts` covers the library. |
 | `wrangler.toml.example` | The Worker config template. `scripts/deploy-app.sh` writes `./wrangler.toml` (gitignored) from it with the values of `infra/deploy.env`, or refuses an existing one that disagrees. |
 | `scripts/deploy-manifest.mjs` | The upload manifest generator, the dry-run check, asset staging, the command printer and the smoke test. `--from-lock` writes the shell-only manifest of a checkout without the artifacts (R2 entries from the lock; identical to the full manifest apart from `options.source`), `--published <origin>` checks that its R2 objects are live on an origin, and `--record-verdict` writes `infra/ux-verdict.json`. |
 | `out/deploy/manifest.json` | Generated output: every asset and every R2 object with its local source, size, sha256, content type, cache class and upload phase. |
 | `out/deploy/rclone/<group>.<immutable\|mutable>.files` | Generated output: one exact file list per upload group, which `rclone --files-from-raw` consumes. |
-| `infra/deploy.env` | The deploy target in one place: `R2_REMOTE=qed64-r2`, `R2_BUCKET=qed64-artifacts`, `R2_PREFIX=qed64-showcase/`, `WORKER_NAME=qed64-showcase`. Environment variables of the same name override it, subject to the shared-bucket guard in `scripts/lib/deploy-env.mjs` (in `qed64-artifacts` only `qed64-showcase/`; an empty prefix or one inside `lean4game/`, `lean4-wasm64/` (the toolchain release prefix QED64 and lean4game serve `/runtime/*` and `/profiles/<not index.json>` from), `runtime/`, `profiles/`, `snapshots/` is always refused; another prefix needs `ALLOW_SHARED_PREFIX=1`). |
+| `infra/deploy.env` | The deploy target in one place: `R2_REMOTE=qed64-r2`, `R2_BUCKET=qed64-artifacts`, `R2_PREFIX=qed64-showcase/`, `WORKER_NAME=qed64-showcase`. Environment variables of the same name override it, subject to the shared-bucket guard in `scripts/lib/deploy-env.mjs` (in `qed64-artifacts` only `qed64-showcase/`; an empty prefix or one inside `lean4game/`, `lean4-wasm64/` (the toolchain release prefix QED64, lean4game and this showcase serve `/runtime/*` and `/profiles/<not index.json>` from), `runtime/`, `profiles/`, `snapshots/` is always refused; another prefix needs `ALLOW_SHARED_PREFIX=1`). |
 | `infra/package.json` | Pins wrangler 4.125.0 (as lean4game does), apart from the root `package.json`: `npm ci --prefix infra`, `npx --prefix infra wrangler …`. |
 | `scripts/upload-artifacts.sh`, `scripts/deploy-app.sh`, `scripts/rollback-artifacts.sh` | The lean4game-style release scripts (guide: DEPLOY-CLOUDFLARE.md). `scripts/lib/deploy-common.sh` holds the shared target loading, the manifest gates and the release-record lookup; `scripts/lib/wrangler-config.mjs` writes and checks `wrangler.toml`. Every real upload or rollback leaves a release record in `out/deploy/published/` (back it up: `out/` is gitignored). |
 | `../.github/workflows/qed64-deploy.yml`, `infra/ux-verdict.json` | The GitHub Actions deploy of the shell (QED64's page built from the submodule, `deploy-app.sh` with `DEPLOY_FROM_LOCK=1`, smoke). `infra/ux-verdict.json` is the committed G2 verdict it deploys on (`deploy-manifest.mjs --record-verdict`). Guide: DEPLOY-CLOUDFLARE.md §9. (Until 2026-10-04: an inactive template that staged the shell from a dist tarball; the page is now built from source.) |
@@ -190,14 +195,14 @@ own invariants, but it packaged a gallery that failed its own gate (see above):
 ### Smaller variants
 
 ```
-node scripts/deploy-manifest.mjs --overlays widgets8 --no-stock-snapshots --no-essential-pack
+node scripts/deploy-manifest.mjs --overlays widgets8 --no-stock-snapshots
 ```
 
-This variant needs 26 objects and 0.688 GB in R2 (measured, with `--check` green). It gives up
-two things:
+This variant uploads 5 objects, 0.394 GB at pin O (before release routing: 26 objects, 0.688 GB). It gives up two things:
 
 * The bare stock page cannot boot without the stock snapshots. Keep `ROOT_REDIRECT`.
-* QED64's on-demand "Load exact imports" needs the essential pack (1 GB), so that action fails.
+* `widgets7` is not uploaded, so the gallery's fallback to it is gone. QED64's on-demand "Load exact imports" still works,
+  since the essential pack is the release's (read from the code, not run).
 
 The gallery only ever uses an overlay, so it is unaffected. `--prefix <p>/` puts every key under
 a prefix of a shared bucket. Set the same value as `R2_PREFIX` in `wrangler.toml`.
@@ -209,7 +214,7 @@ a prefix of a shared bucket. Set the same value as `R2_PREFIX` in `wrangler.toml
 ```
 DRY_RUN=1 scripts/upload-artifacts.sh       # [account] read-only listing of the bucket
 scripts/upload-artifacts.sh                 # [account] artifacts first (copy only, phased, typed)
-scripts/deploy-app.sh                       # [account] then the shell (npx --prefix infra wrangler deploy)
+scripts/deploy-app.sh                       # [account] then the shell (wrangler versions upload, the checks on its preview URL, wrangler versions deploy)
 node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.workers.dev --all --range
 ```
 
@@ -233,13 +238,11 @@ edit to `gallery/` in between:
   with `OK   G1` and `info G2 UX: verdict run … was on THIS gallery …, lock … and overlays …`.
 
 The rules the scripts implement, for review: `rclone copy`, never `sync` (older digest-named files must stay available
-to clients mid-session, QED64's rule); digest-named objects first, then manifests, then `index.json` (phases 1–3; a
-per-runtime overlay's `index.json` and the per-build index copies go up with the manifests in phase 2, because no older
-shell reads them; only `/snapshots/index.json`, `/profiles/index.json` and a bare overlay's index stay in phase 3, and
-`PHASES=` can split the upload around the Worker deploy, DEPLOY-CLOUDFLARE.md §3.2 and §6); multipart for the
+to clients mid-session, QED64's rule); digest-named objects first, then the indexes no older shell reads (a
+per-runtime overlay's `index.json` and the per-build copies), then `/snapshots/index.json` and `/profiles/index.json`
+(phases 1–3; `PHASES=` can split the upload around the Worker deploy, DEPLOY-CLOUDFLARE.md §3.2 and §6); multipart for the
 three `.snapz` over 300 MiB (wrangler's `r2 object put` caps a single object at about 300 MiB); an explicit
-`Content-Type` per list, `application/json` for `*.json` (the pinned shell accepts `runtime-manifest.<buildId>.json`
-only with a JSON type, `qed64-boot.ts:67-70`) and `application/octet-stream` for `.snapz` / `.part-N` (the gallery's
+`Content-Type` per list, `application/json` for `*.json` and `application/octet-stream` for `.snapz` (the gallery's
 preflight refuses HTML); the smoke then checks every URL for status 200, `content-length == size`, COOP/COEP/CORP, the
 QED64 cache rule, a JSON type on JSON and no `Content-Encoding` on artifacts (QED64's worker refuses transformed runtime
 chunks, `public/workers/lean.worker.js:594-596`, and the gallery refuses content-encoded snapz), and GETs every manifest
@@ -248,8 +251,8 @@ the gallery runs its own pairing preflight before it navigates.
 
 ## Consistency rules (carried over from QED64)
 
-* **Snapshots are binary-paired to the runtime.** Never upload a runtime without its snapshots,
-  or the reverse. The R3 gate requires `runtime == buildId` on every index entry, and the shell
+* **Snapshots are binary-paired to the runtime.** The pin's toolchain record and the snapshots we upload must name one
+  runtime (L2, R3). The R3 gate requires `runtime == buildId` on every index entry, and the shell
   is pinned to the lock's buildId (`node -p 'require("./QED64.lock.json").qed64.buildId'`).
 * **Digest-named files are immutable** (`max-age=31536000, immutable`). Every `index.json` and
   `runtime-manifest*.json` revalidates (`max-age=0, must-revalidate`), and so do QED64's per-build index copies
@@ -262,15 +265,15 @@ the gallery runs its own pairing preflight before it navigates.
   with `FAIL C1 … 6 entries differ: asset showcase/examples.json | … gallery.js | …` after the
   gallery lane edited those files, and a regenerate brought it back to green.
 * **After a re-pin**, regenerate the manifest, then rerun `--check` and the smoke test. A new
-  buildId means new chunk names. The old ones can stay in the bucket, because clients pinned to
-  the previous shell still need them. From pin I on, a new runtime also means new overlay directories
+  buildId means a new toolchain release, whose prefix is the kernel's (DEPLOY-CLOUDFLARE.md section 6, retention). From pin I on, a new runtime also means new overlay directories
   (`/snapshots/widgets{7,8}.<bid16>/`, gate R5), so the previous shell's bare overlays stay untouched; each runtime's
   overlays add about 762 MB that uploads never delete (pin I: 761.5 MB).
 
 ## Costs and limits (from QED64's DEPLOY.md, not re-measured)
 
-R2's free tier has 10 GB of storage and zero egress fees. The full set here is 2.42 GB (pin I: 95 objects, 2.420 GB,
-`$W/logs/pinI-dm-check1.log`); the smallest variant is 0.69 GB.
+R2's free tier has 10 GB of storage and zero egress fees. Our upload at pin O is 12 objects, 1.107 GB (the release it reads,
+81 objects, 1.260 GB, is the kernel's); the small variant is 5 objects, 0.394 GB. Before release routing the full set was
+2.42 GB (pin I: 95 objects, `$W/logs/pinI-dm-check1.log`).
 
 A first visit to the gallery downloads about 0.4 GB of snapshots (`widgets8` 364.7 MB transfer
 plus `init` 32.6 MB), plus the runtime and the core pack. After that, OPFS caching applies:

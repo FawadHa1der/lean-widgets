@@ -1,9 +1,81 @@
-# Next steps (updated 2026-10-28, pin O)
+# Next steps (updated 2026-11-05, release routing)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
 
-## Pin O `521cf3f`: active, gated, committed and rehearsed (Lean 4.35); the user's decisions
+## Release routing (P3), the deploy of O, then P1 and P2: decided 2026-11-01
+
+**Where it stands (2026-11-05).** The live site serves pin H `bf9d947` (Worker version `29176b6f`, deployed from
+`d60b15e`, runtime `3ab1c6a9`). The candidate is O `521cf3f`, gated with the verdict `o-full2`, which P3 keeps because the
+gallery, the lock and the overlays are unchanged. P3 is committed on the branch `release-routing` (`f13d535`, its review fixes `dbfd000`, then `ed8f781`: the
+browser lock counts browsers by executable, and `12aca96`, `eca8f22`: the CI rehearsal's boots; on top of `port-lean-4.35`): `infra/worker.js` is QED64's `createWorker` with the pin's toolchain record, the upload falls from 93
+objects, 2.367 GB to 12 objects, 1.107 GB at O, and `deploy-app.sh` checks each new version on its preview URL before it
+takes traffic (docs/DEPLOY-CLOUDFLARE.md 3.2, 3.3). Both rehearsals passed: `scripts/deploy-rehearsal/rehearse.sh all browser
+stop` on `dbfd000` (2026-11-02), and the CI mirror plus all 9 `ci/rehearse-deploy.sh` scenarios on `eca8f22` (2026-11-04;
+docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal). Nothing is pushed.
+
+**The owner's decisions (2026-11-01, in the QED64 session: QED64's report R14a and its hand-off
+`work/arch-impl-2026-11-01/handoffs/sent/showcase-2026-11-02.md`).** Approved: P3, the deploy of O, then P1 and P2 in one
+re-gate; C7 may become a substring match with one fresh G2 verdict; D1, D2, D5, D6 (a failing bake exits 1 after the flip,
+not 3), D10, D11, D16, M3, and D3a (its retention follows K4). Not approved, so not acted on: D7, D8, D15. The P numbers
+are from `$W/reports/architecture-review-widgets-2026-10-28.md`; the D, M and K numbers are QED64's report's.
+
+**Deploying O: the owner's steps, in this order, now that the rehearsal has passed.** Pushing, uploading and turning on Preview URLs
+are the owner's acts.
+
+1. Turn on Preview URLs for the Worker `qed64-showcase` (dashboard: the Worker, Settings, Domains & Routes). This is
+   needed once; without it `deploy-app.sh` refuses and promotes nothing.
+2. `DRY_RUN=1 scripts/upload-artifacts.sh` (regenerates `out/deploy/manifest.json`, checks it, lists the bucket, writes
+   nothing; a manifest from before release routing fails `--check` until regenerated: this checkout's was regenerated on
+   2026-11-05, `DEPLOY-MANIFEST CHECK OK` with G2 on `o-full2`), then the
+   preconditions (docs/DEPLOY-CLOUDFLARE.md, first deploy checklist, step 2), and
+   `rclone size qed64-r2:qed64-artifacts/lean4-wasm64/lean-v4.35.0-b081e7c/`: it must hold at least the release's 81 objects,
+   1.260 GB. The upload does not check this.
+3. `scripts/upload-artifacts.sh`: 12 objects, 1.107 GB. Then back up `out/deploy/published/` (a copy of the records so far
+   is in `$W/published-backup/`). H's full version id, for a rollback, is `29176b6f-cc41-4a16-bed4-c8753c7bd5f2` (the deploy run's log).
+4. `git push origin release-routing:main`, promptly, with the docs committed on that branch first (a fast-forward from
+   `d60b15e`): a push to main deploys. The local `main` is still at `d60b15e`, so `git push origin main` pushes nothing and
+   deploys nothing. From the end of step 3 until the promotion, bare stock visits of H fail while H's gallery should still
+   boot. This is order A, the only order CI has (docs/DEPLOY-CLOUDFLARE.md 3.2).
+5. Read the `qed64-deploy` run: it must show `PRE-PROMOTION OK`, `DEPLOYED-URL` and `SMOKE OK`. Then the checklist's step 8.
+   If the run stops before the promotion, H keeps the traffic but bare stock visits keep failing. Fix the cause and run the
+   workflow again (Actions, Run workflow; pushing the same commit again does nothing), or put H's indexes back with
+   `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z` (no `wrangler rollback`: H is still live) and
+   repeat step 3 before the next run, because the pre-promotion check compares the phase-3 indexes.
+
+A rollback to H after the promotion is docs/DEPLOY-CLOUDFLARE.md section 5.
+
+**Then P1 and P2 in one re-gate of about 12 h**, because both change the inputs of G2. C7's substring match
+(`tests/ux/specs/30-robustness.spec.mjs:97`, "are not loaded in this session") goes in that same gate.
+
+* **P1** keeps at most O and N registered and retires the others, H's registration included. A rollback to H does not
+  need that registration: it stays docs/DEPLOY-CLOUDFLARE.md section 5,
+  `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z`, then `wrangler rollback 29176b6f-cc41-4a16-bed4-c8753c7bd5f2`.
+* **P2** keeps one overlay, `widgets8`, and drops `widgets7`.
+
+While H is a rollback target, what must stay is listed in docs/DEPLOY-CLOUDFLARE.md section 6.
+
+**D11.** QED64 is retiring its release bundle (`39dee02`, on its origin/main since `fd95a2a`), so our steps 5 and 6 and
+P7 "Later" are dropped. The submodule and `scripts/build-shell.mjs` stay. P7 "Now" no longer waits for anything of QED64's
+(D2 is pushed), but the tools it wants reach us with the re-pin, so it rides the re-pin, not the P1+P2 re-gate.
+
+**D5 and K4** (when to re-pin, which releases we read, and which pin records the kernel's retention rule reads) are in
+docs/DEPLOY-CLOUDFLARE.md section 6. The pack-manifest question to QED64 in docs/UPSTREAM-REPORT-QED64.md (last section)
+is superseded by release routing.
+
+**Also now: M3 and D16.** M3: `scripts/pin-qed64.mjs` check #3 reads `org.lean-browser64.runtime/v2` and compares the pin's
+schema with `runtime.manifestSchemas`, before the kernel's first v2 publish (`39ae6ac`; the kernel's own
+`cli.mjs fetch --only runtime` still reads only v1, which fills our `stage1`: the kernel session knows). D16: QED64's lean4monaco
+drafts (its `work/upstream/lean4monaco-2026-11-01/`) are reviewed in `$W/reports/d16-lean4monaco-review-2026-11-02.md`. QED64 applied the
+review's wording fixes, and the browser check of 0002 (2026-11-02, pin O, headless Chromium) confirmed the editor reuse on
+the plain page: `[apply]` edits the text and the fallback callback runs 0 times; the `?embed=1` run timed out before
+`[apply]` appeared, so embed scroll is unmeasured. Whether to post is the owner's.
+
+**At the next re-pin of a pushed QED64 SHA.** The target is `f2b623a`, QED64's origin/main since 2026-11-03, deployed: same
+runtime and release as O, so no rebake. It comes after O's deploy and the P1+P2 re-gate. The checklist is
+`$W/reports/repin-arch-batch-checklist-2026-11-02.md`, with its amendments from the audit at `fd95a2a`, which holds for `f2b623a` (`$W/reports/repin-fd95a2a-audit-2026-11-03.md`). `f2b623a` no longer has `tests/adversarial/preflight.mjs`, so the re-pin needs this branch's lookup in `scripts/preflight-overlays.sh` on `main` first.
+
+## Pin O `521cf3f`: active and gated (Lean 4.35); the state on 2026-10-28 and what stays open from it
 
 **Where it stands (2026-10-28 ~03:00Z).** The live site still serves pin H `bf9d947` (Lean 4.34.0, deployed 2026-10-08
 from `d60b15e`, which is `origin/main`). The active pin of this checkout is **O `521cf3f`** since 2026-10-27: QED64 main on
@@ -20,23 +92,16 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
    `REHEARSE-DEPLOY OK` with all eight scenarios; `old-shell` against the live H measured the pack-manifest window, and
    on `dbacd2c` order B's smoke before phase 3 fails on both stale indexes. On `b939b10`, `dry-run deploy first` are OK
    (docs/REPIN-LOG.md, pin O, "CI mirror and deploy rehearsal", "Rerun on `dbacd2c`" and "`b939b10`").
-2. **The user's decisions:**
-   * **The push.** A push of `port-lean-4.35` to main deploys O over the live H (`.github/workflows/qed64-deploy.yml`;
-     G2 reads the committed `infra/ux-verdict.json`). The deploy manifest has 93 R2 objects, 2.367 GB, most of them new
-     (O's packs, runtime, stock snapshots and per-runtime overlays). Or deploy N `58ebbad` first (Lean 4.34, its packs
-     unchanged from H's), then O.
-   * **E1, now wider.** O's pack manifests change under the same URL (`/profiles/lean-core.manifest.json`,
-     `/profiles/mathlib-essential.manifest.json`) in upload phase 2. The live H shell has no release check on a pack
-     install (QED64 #81 is new at O), so an H tab open between that upload and the Worker deploy can install O's 4.35
-     pack under its 4.34 runtime. The rehearsal measured it: in that window every boot of H's gallery and stock page
-     fetched O's `lean-core` manifest and 8 parts of O's pack; before phase 3 both still booted (from their own
-     snapshots), and in order A after phase 3 H's stock page fails on the replaced indexes, as at J and K. What H's
-     runtime does with those oleans on a later import was not measured. Options in docs/DEPLOY-CLOUDFLARE.md 3.2: keep
-     that window short, or change the deploy order; neither rehearsed order closes it, since both upload the pack
-     manifests in phase 2. Separately, a split deploy (order B, which removes only the index window) must run the
-     smoke after phase 3 (since `b939b10`, `deploy-app.sh`'s last line says so).
-     A question to QED64, whether per-release manifest URLs are possible, is drafted in docs/UPSTREAM-REPORT-QED64.md
-     (last section) for the user to relay.
+2. **The decisions as they stood on 2026-10-28** (the first is decided now and the second in part, top section):
+   * **The push: decided.** O goes out from `release-routing` after P3, with 12 R2 objects, 1.107 GB instead of 93
+     objects, 2.367 GB (`.github/workflows/qed64-deploy.yml`; G2 reads the committed `infra/ux-verdict.json`). N
+     `58ebbad` is not deployed first.
+   * **E1: the pack-manifest half is gone with release routing, for the upload window.** The window the rehearsal measured
+     on 2026-10-28 (docs/REPIN-LOG.md, pin O) is gone: O's pack manifests are the release's, and no upload of ours replaces
+     them under the live H. (An H tab left open past the promotion still gets O's pack manifests: docs/DEPLOY-CLOUDFLARE.md
+     section 6.) What is left is phase 3's index window (3.2 there). The owner's list does not choose between the orders for
+     it; the steps above use order A, the only one CI has. Order B is by hand and must run the smoke after phase 3
+     (`deploy-app.sh`'s last line says so).
    * **`.env.local`:** its `QED64_KERNEL_BUILD` names `~/code/wasm64-lean-kernel-build-v4.34.0`, which no longer
      exists, so for O the kernel build resolves to unset (verify #7 N/A; native and stage refuse). Suggested:
      `QED64_KERNEL_BUILD=$HOME/code/qed64-showcase-work/kernel-build-native64-v4.35:$HOME/code/qed64-showcase-work/kernel-build-native64`
@@ -49,8 +114,8 @@ J are retired. Nothing is pushed: the branch `port-lean-4.35` holds pins I–O a
    stores (`$W/runtimes/<bid>/`, as the bakes already are), so alternating pins needs no restage; today the provenance
    records make the sharing fail closed (an older pin's lanes refuse O's trees), and restaging an older pin needs that
    pin's branch (its native delta lists).
-4. **Upstream, drafted, not sent:** the pack-manifest URL question above, and an FYI on the node 26.3 exit deadlock
-   (docs/UPSTREAM-REPORT-QED64.md, last section; the user relays them).
+4. **Upstream, drafted, not sent:** an FYI on the node 26.3 exit deadlock (docs/UPSTREAM-REPORT-QED64.md, last section;
+   the user relays it). The pack-manifest URL question in that section is superseded by release routing.
 
 ## Pin J `5e63edd` (history, 2026-10-10; J retired 2026-10-27): active and gated then; the evidence runs, the commit, then the user's decisions
 
@@ -103,7 +168,8 @@ tracing").
 4. **Upstream, waiting:** kernel patch **0038** (the real 0036 fix: probe four times as often with a quarter of the
    headroom) waits for the user's OK in the kernel session; it means a new release, a QED64 promote and a re-pin with the
    full gate (TwoDice stays a browser regression case). QED64's **#68** (a page that replaces its own runtime waits for
-   all of its Workers) is the branch `fix/own-predecessor-wait`, **not on QED64 main**; re-pin when it lands.
+   all of its Workers) was then the branch `fix/own-predecessor-wait`. It landed on QED64 main in `e8e6698`, pin O
+   includes it, and QED64's F1 (`b9a222c`, in `fd95a2a`) deletes it again, so no re-pin waits for it.
 5. **Follow-up: a Chrome-budget headless lane** (the kernel session's guidance, 2026-10-09): run E3's persistent path
    through the toolchain package's `snapshot-probe.mjs` (from the next kernel release QED64's
    `pipeline/snapshot/snapshot-probe.mjs`: the package drops its copy, kernel `408859aed0`, D4 (a); 2026-11-01)
@@ -125,9 +191,9 @@ tracing").
    `0de79b891eb9`, the e1a79c1 release's image) stays unacted on while nothing native runs.
 
 
-**Current (2026-10-16): pin N `58ebbad` (runtime 5650321f, the kernel release lean-v4.34.0-53cb11e) is active and
-gated** (docs/REPIN-LOG.md, pins L and N). K `62a06e2` stays committed and gated on runtime f69cca24. Open: the push
-(the user's; it deploys N), the E1 upload order, a `baseSlim` that does not point into QED64's scratch work dir.
+**History (2026-10-16): pin N `58ebbad` (runtime 5650321f, the kernel release lean-v4.34.0-53cb11e) was active and
+gated** (docs/REPIN-LOG.md, pins L and N). K `62a06e2` stays committed and gated on runtime f69cca24. Open then: the push
+(the user's; it would have deployed N), the E1 upload order, a `baseSlim` that does not point into QED64's scratch work dir.
 
 **Next pin, revised (2026-10-12, the user's decision relayed by QED64):** stack-limit failures will be handled by a
 QED64 library backstop (on a real engine-stack crash: the relay pauses after the FIRST death, `lastDeath.cause.code =
@@ -198,23 +264,25 @@ pushed**.
 * **#62 and #63: done as pin I** (`385a1ac`, with #64 too; registered 2026-10-09) **and gated on its successor J**
   (`5e63edd`, the same fixes; the section above). The UX suite asserts them on I and J through the descriptor's
   `hardening` flags (C9, C11, the network oracle).
-* **Kernel patch 0038 and QED64's #68:** each a re-pin with the full gate once it is on QED64 main (the section above).
+* **QED64's #68: no re-pin is owed.** It landed on QED64 main in `e8e6698`, pin O includes it, and QED64's F1 (`b9a222c`, in
+  `fd95a2a`) deletes it again. **Kernel patch 0038**, if the kernel session still wants it after 0040/0041 (docs/REPIN-LOG.md), would be a re-pin
+  with the full gate once it is on QED64 main.
 * **The next kernel release (expected with the v4.36 import; the kernel session's heads-up, 2026-11-01):**
   * the FileWorker's refused-header text becomes generic: it drops `use "Load exact imports"` and keeps
-    `are not loaded in this session`. C7 (`tests/ux/specs/30-robustness.spec.mjs:97`) compares the whole text, so in
-    that same re-pin it must match the substring instead (the user's OK; the re-pin's fresh G2 verdict covers it);
+    `are not loaded in this session`. C7 (`tests/ux/specs/30-robustness.spec.mjs:97`) compares the whole text, so it
+    must match the substring by then. That change goes in the P1 and P2 gate (top section), whose fresh G2 verdict covers
+    it (the owner's OK);
   * the `lean4-wasm64` package no longer ships `snapshot-probe.mjs`, `bake-snapshot.mjs` or `snapshot-index.mjs`
     (kernel `408859aed0`, D4 (a)). Our scripts already use QED64's `pipeline/snapshot/` copies; only the step-5
     lane above named the package's probe.
 * **QED64's D1 (retiring "Load exact imports"):** QED64 sets `capabilities.offers` to false (its `main.ts:33`), and
   C16 is rewritten on that flag in the re-pin that carries it ($W/reports/r1-review-showcase-2026-10-30.md).
-* **Our steps 5 and 6** ("heavy path from a fetched release" and "drop the submodule and the source build"), after QED64
-  publishes its release bundle (B2: `release.json`, the shell tarball, the manifests, the umbrella pair, `SHA256SUMS`)
-  and names pushed SHAs for A2 (`qed64/edge` etc.) and B2. Agreed with QED64 (handover §16, §23):
-  * the lock moves from QED64's 146 file hashes to `{toolchain release id, qed64 release id, shell id, overlays}`;
-  * our R2 copy of the runtime and packs collapses onto the shared prefix `lean4-wasm64/lean-v4.34.0-a8817d0/` in bucket
-    `qed64-artifacts`; `/profiles/index.json` and `/snapshots/*` stay site-owned under `qed64-showcase/`
-    (`upload-artifacts`, `deploy-manifest`, the Worker's R2 routing);
+* **Our steps 5 and 6** ("heavy path from a fetched release" and "drop the submodule and the source build") **and P7
+  "Later" (pin a published bundle): dropped (D11).** QED64 is retiring its release bundle (`39dee02`, in `fd95a2a`). The submodule and
+  `scripts/build-shell.mjs` stay. P7 "Now" (the lock's file list from QED64's `release-manifest.mjs --commit <pin>`, QED64's
+  `fetch-artifacts` for the `public/` half) rides the re-pin: D2 is pushed, and O's own tools are still from before it. What remains from the earlier plan:
+  * our R2 copy of the runtime and packs collapses onto the release's prefix: that is P3, top section (`lean4-wasm64/lean-v4.35.0-b081e7c/` at O);
+    `/profiles/index.json` and `/snapshots/*` stay site-owned under `qed64-showcase/`;
   * done for pin I: `pin-qed64.mjs` reads the kernel from QED64's tracked `toolchain/lean4-wasm64-release.json`
     (`kernel.commit`, schema `lean4-wasm64.release/v1`) where it exists and falls back to `KERNEL-PIN` for older pins;
   * done for pin I: `scripts/check-gallery.mjs` reads the Memory64 probe from `public/workers/memory64-probe.js`, and
@@ -231,12 +299,9 @@ the first real runs on G added the `g-full1b` fixes (pin H entry). One residual 
 `tests/ux/lib/qed64.mjs` has no unit test, so its emptyErrors change was checked by `node --check` only. The cancel
 console entry, a fail-closed pre-allowance at the time, has since matched in every full run on G and H.
 
-**On QED64's side (gates our steps 5 and 6):** a release manifest per promote (every served file with sha256 and size,
-buildId, kernel commit, shell id, `apiRevision`, commit, slim-tree identity), the shell tarball, the `qed64/edge` export
-(`isImmutable`, artifact keys, range parsing, isolation headers; a Worker factory with a second static root, root
-redirect, R2 prefix, HEAD Content-Length and Range), and the umbrella pair in the bundle at a stable public URL. The #55
-residual's margin is QED64's kernel side (a pool-size knob, a smaller glue). HARDENING #59 is fixed per QED64 and not
-measured by us.
+**On QED64's side:** our release-bundle asks are dropped with D11. The `qed64/edge` export they named is what P3 uses, as
+`createWorker` from `deps/qed64/infra/edge-worker.js`. The #55 residual's margin is QED64's kernel side (a pool-size knob, a
+smaller glue). HARDENING #59 is fixed per QED64 and not measured by us.
 
 ## Pins A–E (history and what is left on E)
 

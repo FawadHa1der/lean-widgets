@@ -108,10 +108,11 @@ scripts/showcase.sh ux              # the Playwright UX suite (35 tests, 25–40
 `bootstrap` checks out QED64's sources (the submodule), builds QED64's page from them with QED64's own build and
 installs it only if all its files (58 for E, 59 for F, G and H) are byte-identical to the committed lock. It then fetches QED64's binaries and the
 widget overlays by path from the artifact origin and checks every file's sha256 against the lock, links the served pin
-and runs `verify`. So an origin never has to be trusted. `--origin` is the deployed showcase, or `scripts/serve.mjs`
+and runs `verify`. So an origin never has to be trusted. `--origin` is the deployed showcase (for its deployed pin's runtime and packs), or `scripts/serve.mjs`
 of a checkout that has the artifacts (`PORT=5297 scripts/showcase.sh serve` there). `--qed64-origin
-https://qed64.fawadworkaddress.workers.dev` serves QED64's own files. Until the showcase is deployed, the widget
-overlays exist only on the machine that baked them.
+https://qed64.fawadworkaddress.workers.dev` serves QED64's own files. The deployed Worker has only the overlays uploaded
+to it (on 2026-11-02, H's bare `widgets{7,8}/`); any other pin's overlays exist only where they were baked until they are
+uploaded.
 
 Other checks: `node scripts/check-portable.mjs` (no machine path in code or configuration),
 `node scripts/deploy-manifest.mjs --check` (deploy gates), `node --test infra/worker.test.mjs` (the Worker),
@@ -185,29 +186,32 @@ Chromium-based desktop browser and 16 GB of RAM, and a first visit downloads abo
 ## How it deploys
 
 The QED64 showcase is hosted on Cloudflare the way lean4game and QED64 are: a Worker `qed64-showcase` serves the
-shell (QED64's page and the gallery, about 18 MB of static assets) and streams the 2.4 GB of artifacts from the R2
-bucket `qed64-artifacts` under the prefix `qed64-showcase/`, with the cross-origin isolation headers the wasm runtime
-needs. A release has two steps:
+shell (QED64's page and the gallery, about 18 MB of static assets) and streams the artifacts from the R2 bucket
+`qed64-artifacts`: the runtime and the packs (1.26 GB at pin O) from the kernel's toolchain release under
+`lean4-wasm64/<release id>/`, never uploaded by us, and the stock snapshots, our overlays and the indexes (1.11 GB at pin O)
+under the prefix `qed64-showcase/`, with the cross-origin isolation headers the wasm runtime needs. (The live pin H still
+reads its own copy of the runtime and packs under that prefix.) A release has two steps:
 
 1. **Artifacts to R2**, from the machine that has them: `scripts/upload-artifacts.sh` (rclone, copy only, never sync;
    the bucket is shared with QED64 and lean4game, so it refuses QED64's root and their prefixes, and any prefix other
    than `qed64-showcase/` needs an explicit override). CI never uploads artifacts, so no R2 key is ever stored in
-   GitHub. The upload runs in three phases (digest-named objects, then manifests, then the shared indexes); a pin on
+   GitHub. The upload runs in three phases (digest-named objects, then the indexes no older shell reads, then the shared indexes); a pin on
    a new runtime replaces the live stock and profile indexes only in the last phase, and `PHASES=` can hold that phase
-   back until the new shell is live (by hand; the CI deploy's published check does not allow it yet:
+   back until the new shell is live (by hand, with `ALLOW_PARTIAL_UPLOAD=1`; a CI deploy refuses until phase 3 is up:
    [DEPLOY-CLOUDFLARE.md](qed64-showcase/docs/DEPLOY-CLOUDFLARE.md) §3.2).
 2. **The shell to the Worker**, either locally with `scripts/deploy-app.sh`, or from GitHub Actions:
    [`qed64-deploy.yml`](.github/workflows/qed64-deploy.yml) runs on pushes to `main` that touch `qed64-showcase/` and
    on manual dispatch. It builds QED64's page from the submodule (byte-identical to the lock), runs the gallery gate,
    requires the committed UX verdict record `qed64-showcase/infra/ux-verdict.json` to match the gallery, lock and
-   overlays it deploys, checks that every artifact is already published (`SHOWCASE_ORIGIN`), runs
-   `wrangler deploy` and smoke-tests the deployed URL. Without the secrets `CLOUDFLARE_API_TOKEN` and
+   overlays it deploys, runs `wrangler versions upload`, checks every asset and artifact on that version's preview URL
+   (Preview URLs must be on for the Worker), runs `wrangler versions deploy` and smoke-tests the deployed URL. Without the secrets `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID` it logs a skip line and deploys nothing.
 
 Both paths are rehearsed locally against fakes (`scripts/deploy-rehearsal/rehearse.sh all`, `ci/rehearse-deploy.sh`):
-an rclone local backend and a local S3 endpoint for R2, `wrangler deploy --dry-run` and `wrangler dev --local`, inside
-a macOS sandbox that blocks outbound traffic. The owner's steps for the first real deploy (token scope, the two
-secrets, the `SHOWCASE_ORIGIN` variable) are the
+an rclone local backend and a local S3 endpoint for R2, `wrangler versions upload --dry-run` and `wrangler dev --local`, inside
+a macOS sandbox that blocks outbound traffic. Release routing passed both rehearsals (2026-11-02 to 11-04: `rehearse.sh all browser stop`
+on `dbfd000`, all nine `ci/rehearse-deploy.sh` scenarios on `eca8f22`; qed64-showcase/docs/DEPLOY-CLOUDFLARE.md). The owner's steps for the first real deploy (token scope, the two secrets, Preview URLs, the `SHOWCASE_ORIGIN`
+variable) are the
 [first deploy checklist](qed64-showcase/docs/DEPLOY-CLOUDFLARE.md#first-deploy-checklist).
 
 The static showcase deploys to GitHub Pages from `lean-ci.yml`, only on a push to `main` with the repository variable

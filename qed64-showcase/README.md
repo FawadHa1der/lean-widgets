@@ -9,13 +9,15 @@ HEADED SIGN-OFF count and last sign-off), `scripts/showcase.sh gallery` (the sta
 sha256, then `UX CURRENT …` naming the newest verdict on exactly this gallery + lock + overlays, or `UX STALE`) and
 `node scripts/deploy-manifest.mjs --check` (the `G2 UX:` line a deploy relies on). Run records:
 `out/ux/showcase-ux-runs.jsonl`, judged by `scripts/lib/ux-record.mjs`; tallies: `node scripts/ux-tally.mjs`. Dated
-figures below are history. **Status 2026-10-28** (the bullets after the first two are dated history from 2026-10-04
-to 2026-10-12):
+figures below are history. **Status 2026-11-05: release routing (P3) is committed on the branch `release-routing`
+(`f13d535`, with fixes up to `eca8f22`, not pushed) and passed its deploy rehearsals against local fakes from 2026-11-02 to 11-04 (`rehearse.sh` on `dbfd000`,
+`ci/rehearse-deploy.sh` on `eca8f22`);
+docs/NEXT-STEPS.md has the owner's steps for deploying O** (the bullets after the first two are dated history from 2026-10-04 to 2026-10-12):
 
 * **Open it:** `scripts/showcase.sh verify && scripts/showcase.sh serve`, then <http://localhost:5190/showcase/>.
 * **Live site: pin H `bf9d947` (Lean 4.34.0; deployed 2026-10-08 from `d60b15e` on main). Active locally: pin O
-  `521cf3f` (since 2026-10-27), Lean 4.35.0, gated in the browser, on branch `port-lean-4.35` (not pushed: a push to main
-  deploys it).** O is QED64 main `521cf3f` on the kernel release `lean-v4.35.0-b081e7c` (runtime
+  `521cf3f` (since 2026-10-27), Lean 4.35.0, gated in the browser, on branch `release-routing`, on top of `port-lean-4.35`
+  (not pushed: a push to main deploys it).** O is QED64 main `521cf3f` on the kernel release `lean-v4.35.0-b081e7c` (runtime
   `wasm64-36d7f415704473d9`, Mathlib `56a00585`, ProofWidgets `df72b022`), the first pin whose Lean version changes; the
   widgets were ported to Lean 4.35 first (`1a61003`). Its gates (gallery `047aa584…`): headless `CONTROLS PASS`, stage4
   green, E2 7/8 on L1; VERDICTs `o-full1` and `o-full2`; C20 405/405; the headed sign-off `o-headed4` (35/35); the
@@ -26,8 +28,9 @@ to 2026-10-12):
   (pin K rebaked the overlay store they share). Since O the staged trees carry provenance records, so on this branch an older pin's
   lanes refuse O's trees. Restaging an older pin needs that pin's branch, whose harness checks no record: run
   `stage all --force` there before any bake, headless lane or `all` (its `all` would skip stage, since the trees exist,
-  and rebake against O's trees). Open before a push: the E1 upload window (O's pack
-  manifests change under the same URL; docs/DEPLOY-CLOUDFLARE.md 3.2) and the other decisions in docs/REPIN-LOG.md, pin O.
+  and rebake against O's trees). Decided on 2026-11-01: release routing (P3), the deploy of O, then P1 and P2 in one
+  re-gate. Release routing removes the pack-manifest half of E1 for the upload window; an H tab left open past the promotion
+  is the case left (docs/DEPLOY-CLOUDFLARE.md 3.2 and section 6). What stays open is in docs/NEXT-STEPS.md.
 * **Pin J `5e63edd` (active locally 2026-10-09 ~18:55Z to 2026-10-12; retired 2026-10-27).** J is QED64 main since 2026-10-09 ~20:30Z: I plus the worker's engine-stack probe at 8192 slots
   (`LEAN_WASM_STACK_PROBE_SLOTS=8192` at preRun, QED64 HARDENING #67, the interim for kernel patch 0036, whose probe made
   DistLens `pmf_num` clicks fail "stack is exhausted" in Chrome on I). It serves I's runtime `wasm64-f69cca24d0878a58`
@@ -106,7 +109,8 @@ to 2026-10-12):
   come from QED64.
 * **Switch pins:** `scripts/showcase.sh stop && scripts/showcase.sh pin use <id>`, then `verify`, `gallery`, two `ux`
   (back to C: `pin use 5ac5d00`).
-  **Deploy:** owner's Cloudflare account, [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) (rehearsed on fakes).
+  **Deploy:** owner's Cloudflare account, [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) (rehearsed on fakes,
+  release routing included: `rehearse.sh` on `dbfd000` 2026-11-02, `ci/rehearse-deploy.sh` on `eca8f22` 2026-11-04).
   **Next:** [docs/NEXT-STEPS.md](docs/NEXT-STEPS.md). **Details:** "Results", "Limitations" below; docs/HISTORY.md.
 
 ## Clone and build from source
@@ -131,10 +135,13 @@ npx playwright install chromium chromium-headless-shell && scripts/showcase.sh u
 
 `bootstrap` needs neither QED64_REPO, the kernel build nor Docker. It works on macOS and Linux and is described step
 by step in [docs/BUILD-FROM-SOURCE.md](docs/BUILD-FROM-SOURCE.md), together with the heavy path (rebuilding the
-overlays from the kernel fork's toolchain). Until the showcase's Worker is deployed, the overlays live only where they
-were baked: `--origin` can be the `serve.mjs` of such a checkout. `--qed64-origin` (QED64's live site) helps only for
+overlays from the kernel fork's toolchain). The deployed Worker has only the overlays uploaded to it (on 2026-11-02, H's
+bare `widgets{7,8}/`). Any other pin's overlays exist only where they were baked until they are uploaded: `--origin` can be
+the `serve.mjs` of such a checkout. `--qed64-origin` (QED64's live site) helps only for
 the pin whose release QED64 deploys now: since QED64 `4b98279` its Worker serves no other release's runtime or packs,
-so any other pin's files come from `--origin` ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) "Binary dependency").
+so any other pin's files come from `--origin`. Under release routing our deployed Worker has the same limit for the
+runtime and packs (only the deployed pin's), so for another pin that `--origin` is the `serve.mjs` of a checkout that has
+them ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) "Binary dependency").
 Nothing in code or configuration names a machine path (`node scripts/check-portable.mjs` proves it). Every location
 is resolved at run time by `scripts/lib/env.sh` / `scripts/lib/env.mjs` from environment variables, optionally kept in
 the gitignored `.env.local` (template: `.env.example`; `node scripts/lib/env.mjs` prints what is resolved):
@@ -184,7 +191,9 @@ bridge for two InfoView defects of the shipped page. Nothing under the QED64, ke
 | Pin-e lane (2026-10-04): pin E gated and served | storms on `/showcase/#hasse-view`, E vs C interleaved: headed 0/20 vs 0/20, chrome-headless-shell 0/8 vs 1/8 (V2), so E is not worse (C's own rate was low in these windows, so this is not a confirmation of #55); `pin use 33b0967` → gallery `bbdbc932…`; `pinE-full1/2` VERDICT (33 passed, 1 skipped each); `pinE-headed1` 34/34 HEADED SIGN-OFF; 10 Mbit/s first visit `RESULT PASS` (565.1 s, QED64's boot card until ready, gallery notice from 467 s); `deploy-manifest --check` OK, `rehearse.sh all` and `BOOT-CHECK OK` | `out/ux/pin-e/RESULTS.md`, docs/REPIN-LOG.md "pin E gated" |
 | Headless verification in wasm (Node, no browser) | runtime `wasm64-4b025db7729c5f89` (A and C): E1 8/8 (w8) and 7/7 (w7), E3 and E3b green, E2 7/8 (the 8th is L1), 135 native click-all links; `CONTROLS PASS` 11/11 on C. Runtime `wasm64-3ab1c6a9da03bc29` (D): the same (E3 1167/1167 and 1038/1038, E3b 49/49 and 44/44), `CONTROLS PASS` | [docs/HEADLESS-RESULTS.md](docs/HEADLESS-RESULTS.md), `out/headless/summary.json`, `out/runtimes/<buildId>/headless/summary.json`, docs/REPIN-LOG.md "pin D" |
 | Static gallery gate | `scripts/showcase.sh gallery` prints the current result. *History:* final docs lane on `921b0b6a…` `CHECK-GALLERY OK 128 ok`, `SIM-GALLERY OK 101 ok` (`$W/logs/finaldocs-gallery.log`); boot-fix lane on its gallery `31f6d8d9…` `CHECK-GALLERY OK 128 ok`, `SIM-GALLERY OK 109 ok`, gate GREEN (`$W/logs/bootfix-gallery.log`, before its `ux` runs; `bootfix-gallery-end.log` after them) | [gallery/README.md](gallery/README.md) |
-| Hosting on its own origin (Worker + R2) | rehearsed green against local fakes on pin C and gallery `2081098d…` (final-gate lane), then on gallery `31f6d8d9…` (closure lane, 2026-10-03: `rehearse.sh all` rc 0 and `BOOT-CHECK OK`; its first attempt stopped on a sim-gallery timing race, since fixed, `out/ux/closure/RESULTS.md` (5)), then on gallery `b7aa521a…` (post-audit fix lane, 2026-10-03: `all`, `browser`, `stop` rc 0, `BOOT-CHECK OK`); `node scripts/deploy-manifest.mjs --check` prints whether the current gallery has the verdict G2 needs (history: OK on `921b0b6a…` at the final docs lane, and on `31f6d8d9…` at the closure lane, `$W/logs/closure-deploy-manifest-check-end.log`); not deployed: publishing needs the owner's account | [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md), [docs/DEPLOY.md](docs/DEPLOY.md) |
+| Hosting on its own origin (Worker + R2) | rehearsed green against local fakes on pin C and gallery `2081098d…` (final-gate lane), then on gallery `31f6d8d9…` (closure lane, 2026-10-03: `rehearse.sh all` rc 0 and `BOOT-CHECK OK`; its first attempt stopped on a sim-gallery timing race, since fixed, `out/ux/closure/RESULTS.md` (5)), then on gallery `b7aa521a…` (post-audit fix lane, 2026-10-03: `all`, `browser`, `stop` rc 0, `BOOT-CHECK OK`); `node scripts/deploy-manifest.mjs --check` prints whether the current gallery has the verdict G2 needs (history: OK on `921b0b6a…` at the final docs lane, and on `31f6d8d9…` at the closure lane, `$W/logs/closure-deploy-manifest-check-end.log`); deployed 2026-10-05, pin H live since 2026-10-08 (docs/DEPLOY-CLOUDFLARE.md record); release routing (P3) rehearsed green against local fakes: `scripts/deploy-rehearsal/rehearse.sh all browser stop` on
+`dbfd000` (2026-11-02), and the CI mirror plus all 9 `ci/rehearse-deploy.sh` scenarios (`old-shell` against the live H) on
+`eca8f22` (2026-11-04); not pushed | [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md), [docs/DEPLOY.md](docs/DEPLOY.md) |
 | Defects in the pinned QED64 page and runtime | D1, D2, L1, N1, N2, N3, P1, L7, L9 (V1, V2), X1, each with evidence and a suggested fix | [docs/UPSTREAM-REPORT-QED64.md](docs/UPSTREAM-REPORT-QED64.md) |
 | Build history and evidence | pin, native build, bakes, examples, goldens, gallery code; the lane-by-lane record | [docs/HISTORY.md](docs/HISTORY.md), [docs/STAGE-A-RESULTS.md](docs/STAGE-A-RESULTS.md), [docs/STAGE-B-RESULTS.md](docs/STAGE-B-RESULTS.md) |
 
@@ -314,7 +323,8 @@ ticket queue (`<lock>.queue/`, `tests/ux/bringup/lockfifo.sh`). A lock whose own
 replaced only under the takeover mutex `<lock>.takeover`, after re-reading the lock and
 finding the same dead owner line, so a waiter can never delete a lock another waiter has just
 taken. After taking the lock it waits (cooldown, `COOLDOWN_WAIT_S`) for at least 6 GiB
-free+inactive+speculative and no `chrome-headless-shell`, and runs the command under
+free+inactive+speculative and no `chrome-headless-shell` (matched on the executable, not the
+command text: `tests/ux/bringup/lockstray.sh`), and runs the command under
 `caffeinate -i` (this host idles to sleep after 1 minute; an unattended UX run once slept 988 s
 mid-test). `showcase.sh` passes it `bash showcase.sh _inlock <kind> -- <cmd>`, which re-runs
 this script's preflight inside the lock (no bake; or, for a bake, no browser and no Docker) and
@@ -505,15 +515,19 @@ after it passes the gates (procedure as executed for `5ac5d00` on 2026-10-02; th
 8. **Docs.** Record the old → new pin and the evidence in docs/REPIN-LOG.md; update this README, the upstream report
    and gallery/README.md.
 9. **Deploy**, if publishing ([docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) §3 and §6): artifacts first,
-    then the shell: `DRY_RUN=1 scripts/upload-artifacts.sh`, `scripts/upload-artifacts.sh`, then
-    `scripts/deploy-app.sh` (it refuses a shell whose R2 keys the newest upload did not publish), then
+    then the shell: `DRY_RUN=1 scripts/upload-artifacts.sh`, `scripts/upload-artifacts.sh` (our own objects, 12 and
+    1.107 GB at O; the runtime and the packs are read from the toolchain release in the same bucket and never uploaded),
+    then `scripts/deploy-app.sh` (it refuses a shell whose R2 keys the newest upload did not publish, runs `wrangler
+    versions upload`, checks that version on its preview URL, for which Preview URLs must be on for the Worker, and only
+    then runs `wrangler versions deploy`), then
     `node scripts/deploy-manifest.mjs --smoke https://qed64-showcase.<subdomain>.workers.dev --all --range`. Back up
     `out/deploy/published/` (the release records rollback needs). For the GitHub Actions deploy, also record the UX
     verdict for CI (`node scripts/deploy-manifest.mjs --record-verdict`, then commit `infra/ux-verdict.json`):
     `.github/workflows/qed64-deploy.yml` deploys only a gallery + lock + overlays that file names, and it runs on every
     push to `main` that touches `qed64-showcase/`, so pushing is deploying. A runtime change replaces the live stock and
-    profile indexes in upload phase 3; `PHASES=` can split the upload around the deploy by hand, not yet through CI
-    (DEPLOY-CLOUDFLARE.md §3.2; decision E1 in docs/REPIN-LOG.md, pin I entry).
+    profile indexes in upload phase 3, and a CI deploy always has phase 3 up first; `PHASES=` with
+    `ALLOW_PARTIAL_UPLOAD=1` splits the upload around the deploy by hand (DEPLOY-CLOUDFLARE.md §3.2; decision E1 in
+    docs/REPIN-LOG.md, pin I entry). When to re-pin at all: DEPLOY-CLOUDFLARE.md §6.
 
 **Docker tag drift** (no QED64 promote needed; resolved on 2026-10-04: the current image `8228ea564e7b` rebuilds all
 7,616 native output files byte for byte and is recorded as an equivalent, docs/BUILD-FROM-SOURCE.md "Docker image
@@ -722,7 +736,8 @@ scripts/lib/pins.mjs          the pin model; scripts/pin-switch.mjs: pin list | 
 lean/                         examples/<pkg>.{lean,json}, expect/ (native goldens), goldens/ (generator + gates) — lean/README.md
 gallery/                      the M2 gallery wrapper + qed64-bridge.js — gallery/README.md
 tests/                        experiments/ (X1–X5), ux/ (Playwright, UX lane)
-infra/, wrangler.toml.example deploy kit for an own-origin Worker + R2 (shared bucket qed64-artifacts, prefix qed64-showcase/;
+infra/, wrangler.toml.example deploy kit for an own-origin Worker + R2 (shared bucket qed64-artifacts: our prefix qed64-showcase/,
+                              the pin's toolchain release lean4-wasm64/<id>/;
                               infra/deploy.env, infra/package.json = wrangler 4.125.0, infra/ux-verdict.json = the UX verdict CI
                               deploys on) — docs/DEPLOY-CLOUDFLARE.md (guide), docs/DEPLOY.md; CI: ../.github/workflows/qed64-deploy.yml
 out/                          (gitignored) runtimes/<buildId>/{overlay,headless} (per runtime; active links overlay/snapshots/widgets{7,8},
