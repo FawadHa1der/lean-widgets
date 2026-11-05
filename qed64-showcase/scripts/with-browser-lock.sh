@@ -66,9 +66,10 @@
 # Before running <cmd> it also requires >= MIN_FREE_GB (default 6) reclaimable memory (scripts/lib/platform.sh: macOS
 # free+inactive+speculative pages from vm_stat, Linux MemAvailable) and no stray Playwright browser (chrome-headless-shell,
 # or Playwright's Firefox: its binary lives under ms-playwright/firefox-<build>/), matched on the executable, not the
-# command text (procs_by_exe in scripts/lib/platform.sh; QED64's harness has the same regex under pgrep -fl, so it still
-# counts a shell that mentions the name). A process list that cannot be read counts as a stray. It waits up to
-# COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out, 76 cooldown refused, 2 usage, 141 a status
+# command text (procs_by_exe in scripts/lib/platform.sh; QED64's harness matches executables too from its 8e5db48 on, while
+# its copy at pin O and earlier pins still counts a shell that mentions the name). A process list that cannot be read
+# counts as a stray. It waits up to COOLDOWN_WAIT_S (default 3600) for both. Exit codes: 75 lock wait timed out, 76
+# cooldown refused, 2 usage, 141 a status
 # line could not be written (see say); a trapped signal once the lock is taken: 128 + its number (INT and TERM: 130),
 # after the command (or the cooldown step) has ended, and the command's own code is then not reported; otherwise the
 # command's own exit code.
