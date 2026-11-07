@@ -34,10 +34,9 @@ process.env.UX_RUN = process.env.UX_RUN || 'heap-share';
 let H;
 try { H = await import('../lib/qed64.mjs'); } catch (e) { console.error(`heap-share: refused — the harness did not load: ${e.message}`); process.exit(3); }
 const { launch, BY_ID, RUN_DIR, sleep, chromeRss, SC } = H;
-if (!H.API) { console.error('heap-share: refused — the served gallery is a legacy page (no apiRevision); the arms need the v1 page'); process.exit(3); }
 
 const EX = BY_ID['chart-kit'];
-const OVERLAY = H.OVERLAY_W8; // the pin's served widgets8 directory (gallery/pin.json overlays; bare on pins A-H)
+const OVERLAY = H.OVERLAY_W8; // the pin's served widgets8 directory (gallery/pin.json overlays)
 const HOST_PATH = '/showcase/__heap-host.html';
 const HOST_BODY = `<!doctype html><meta charset="utf-8"><title>heap host</title>
 <style>html,body{margin:0;height:100%}iframe{display:block;border:0;width:100%;height:100%}</style>

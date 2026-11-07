@@ -10,14 +10,15 @@
 //           then shift-click the subterm(s) / hypothesis in the goal view; AFTER: the block holds >= one selected
 //           subterm per pick, every claimed text (whitespace-insensitive leaf runs) is in it; then the selection is
 //           shift-clicked off again and must be back to 0;
-//   hover   (expectHover, from the golden hover) BEFORE: no hover popup (.tooltip-code-content) in the InfoView; hover
-//           the tag inside the panel's code element `codeText` of THIS position's panel; AFTER: a popup whose own text
-//           is exactly "<expr> : <type>"; moving the mouse away removes it.
+//   hover   (expectHover, from the golden hover) BEFORE: no type popup (.tooltip-code-content) in the InfoView; click
+//           (no modifier) the tag inside the panel's code element `codeText` of THIS position's panel; AFTER: a popup
+//           whose own text is exactly "<expr> : <type>"; a click on a blank point of the InfoView closes it. A click
+//           pins the type tooltip on every pin; from QED64 ux-parity on, a hover no longer opens it.
 // Every console message / page error is classified against selectors.json consoleAllowlist (lib.mjs
 // classifyConsole); anything outside it, or over a per-load limit, fails the run.
 // Fault injection (proves the select / hover checks are not vacuous; every hint of that kind must then FAIL):
-//   --fault no-select  do everything except the shift-clicks;  --fault no-hover  move the mouse elsewhere instead.
-// Usage: scripts/with-browser-lock.sh bringup node tests/ux/bringup/hints.mjs [--only id,id] [--tag hints] [--kinds cursor,click,select,hover] [--fault no-select|no-hover]
+//   --fault no-select  do everything except the shift-clicks;  --fault no-click  do everything except the click on the tag.
+// Usage: scripts/with-browser-lock.sh bringup node tests/ux/bringup/hints.mjs [--only id,id] [--tag hints] [--kinds cursor,click,select,hover] [--fault no-select|no-click]
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { ORIGIN, OUT, LAUNCH_ARGS, EXAMPLES, SEL, lockHeld, checkPanel, classifyConsole, consoleLine, watchConsole, api, infoview, ivText, ivSettled, waitGalleryReady, writeJson, sleep, until, installTap, tapSummary } from './lib.mjs';
@@ -28,9 +29,27 @@ const opt = (k, d = null) => { const i = argv.indexOf(`--${k}`); return i >= 0 ?
 const only = opt('only') ? opt('only').split(',') : EXAMPLES.map((e) => e.id);
 const tag = opt('tag', 'hints');
 const kinds = opt('kinds') ? opt('kinds').split(',') : null; // e.g. --kinds cursor (mutation runs)
-const fault = opt('fault'); // no-select | no-hover (fault injection, see the header)
-if (fault && !['no-select', 'no-hover'].includes(fault)) throw new Error(`unknown --fault ${fault}`);
-const POPUP = '.tooltip .tooltip-code-content'; // @leanprover/infoview 0.11.1 hover popup of an InteractiveCode tag
+const fault = opt('fault'); // no-select | no-click (fault injection, see the header)
+if (fault && !['no-select', 'no-click'].includes(fault)) throw new Error(`unknown --fault ${fault}`);
+const POPUP = '.tooltip .tooltip-code-content'; // @leanprover/infoview 0.11.1 type popup of an InteractiveCode tag
+/** A blank point of the InfoView document (no text, no control, no code, no tooltip under it), relative to its <html> box; null when there is none. */
+function blankPoint() {
+  const skip = 'a, button, input, textarea, select, summary, [role=button], [data-has-tooltip-on-hover], .tooltip, .font-code, code';
+  const de = document.documentElement; const w = de.clientWidth; const h = de.clientHeight; const root = de.getBoundingClientRect();
+  const onText = (el, x, y) => [...el.childNodes].some((n) => {
+    if (n.nodeType !== 3 || !n.textContent.trim()) return false;
+    const rg = document.createRange(); rg.selectNodeContents(n);
+    return [...rg.getClientRects()].some((b) => x >= b.left && x <= b.right && y >= b.top && y <= b.bottom);
+  });
+  for (let y = h - 6; y > 6; y -= 12) {
+    for (const x of [Math.round(w / 2), 8, w - 24]) {
+      const el = document.elementFromPoint(x, y);
+      if (!el || el.closest(skip) || onText(el, x, y)) continue;
+      return { x: x - root.left, y: y - root.top, tag: el.tagName.toLowerCase() };
+    }
+  }
+  return null;
+}
 const t0 = Date.now();
 const browser = await chromium.launch({ args: LAUNCH_ARGS });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -217,7 +236,7 @@ try {
           if (!pc || !pc.ok) throw new Error(`panel of line ${h.lineNumber} not found: ${pc && pc.reason}`);
           const popups = () => infoview(page).locator(POPUP).evaluateAll((els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
           r.before = await popups();
-          if (r.before.length) throw new Error(`before the hover a popup is already open: ${JSON.stringify(r.before)}`);
+          if (r.before.length) throw new Error(`before the click a popup is already open: ${JSON.stringify(r.before)}`);
           const mk = await infoview(page).locator('[data-bringup-panel]').evaluate((p, hv) => {
             for (const e of document.querySelectorAll('[data-bringup-hover]')) e.removeAttribute('data-bringup-hover');
             const norm = (t) => t.replace(/\s+/g, ' ').trim();
@@ -231,15 +250,16 @@ try {
           }, hv);
           r.target = mk;
           if (!mk.ok) throw new Error(mk.why);
-          if (fault === 'no-hover') await page.mouse.move(5, 5);
-          else await infoview(page).locator('[data-bringup-hover]').hover();
+          if (fault !== 'no-click') await infoview(page).locator('[data-bringup-hover]').click();
           const got = await until(async () => { const p = await popups(); return p.includes(hv.popupText) ? p : null; }, { timeoutMs: 15000 });
           r.popups = got || await popups();
           r.ok = !!got;
-          if (!r.ok) r.error = `no popup “${hv.popupText}” after the hover (popups: ${JSON.stringify(r.popups)})`;
-          await page.mouse.move(5, 5);
-          r.closed = !!(await until(async () => ((await popups()).length === 0 ? true : null), { timeoutMs: 10000 }));
-          if (!r.closed) { r.ok = false; r.error = `${r.error ? `${r.error}; ` : ''}popup did not close`; }
+          if (!r.ok) r.error = `no popup “${hv.popupText}” after the click (popups: ${JSON.stringify(r.popups)})`;
+          // close it: a click on a blank point of the InfoView (outside the tag and the popup)
+          r.blank = await infoview(page).locator('html').evaluate(blankPoint).catch(() => null);
+          if (r.blank) await infoview(page).locator('html').click({ position: { x: r.blank.x, y: r.blank.y } }).catch((e) => { r.blankError = String(e.message).slice(0, 200); });
+          r.closed = !!r.blank && !!(await until(async () => ((await popups()).length === 0 ? true : null), { timeoutMs: 10000 }));
+          if (!r.closed) { r.ok = false; r.error = `${r.error ? `${r.error}; ` : ''}${r.blank ? 'popup did not close' : 'no blank point in the InfoView to close the popup'}`; }
         }
       } catch (e) { r.error = String(e && e.message || e).slice(0, 300); }
       r.ms = Date.now() - t1;
@@ -256,7 +276,6 @@ res.crashed = watch.crashed;
 res.fault = fault || null;
 res.console = classifyConsole(watch, SEL.consoleAllowlist, { reports: tapReports }); res.tap = tapSummary(tapReports);
 console.log(consoleLine(res.console));
-res.bridgeStats = await api.bridge(page).catch(() => null);
 res.pageErrors = watch.pageErrors;
 res.consoleErrors = watch.messages.filter((m) => m.type === 'error' || m.type === 'warning');
 res.wallMs = Date.now() - t0;

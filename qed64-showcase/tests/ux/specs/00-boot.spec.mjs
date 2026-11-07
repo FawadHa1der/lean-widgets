@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '../lib/fixtures.mjs';
-import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, ORIGIN, API, API_REVISION, GALLERY_PIN, PIN, PINS, OVERLAY_W8, RUN_DIR, reEscape, slug, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, serverLines, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
+import { Gallery, EXAMPLES, IDS, GOLDENS, PROFILES, WARM_PROFILE, SC, ORIGIN, API_REVISION, PIN, PINS, OVERLAY_W8, RUN_DIR, reEscape, slug, chromeRss, rssSampler, screenPath, rel, sleep, until, serverBytes, serverLines, MEM_FAIL_BYTES } from '../lib/qed64.mjs';
 import { goldenCursor } from '../lib/actions.mjs';
 
 const GiB = 1073741824;
@@ -43,11 +43,9 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
   const s = await ux.launch({ profile: 'fresh', label: 'cold' });
   const page = s.page() || await s.newPage();
   const g = new Gallery(s, page);
-  if (API) {
-    // the sentinel goes into the origin's storage before the gallery is opened (a document of the origin is needed to reach it)
-    await page.goto(`${ORIGIN}/showcase/pin.json`);
-    await page.evaluate((t) => localStorage.setItem('qed64.buffer', t), BUFFER_SENTINEL);
-  }
+  // the sentinel goes into the origin's storage before the gallery is opened (a document of the origin is needed to reach it)
+  await page.goto(`${ORIGIN}/showcase/pin.json`);
+  await page.evaluate((t) => localStorage.setItem('qed64.buffer', t), BUFFER_SENTINEL);
   g.tNav = Date.now();
   const tl = timeline(g);
   await page.goto(`${ORIGIN}/showcase/#chart-kit`, { waitUntil: 'domcontentloaded' });
@@ -70,11 +68,10 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
   expect(b.ms, 'budget <= 180 s locally').toBeLessThanOrEqual(180000);
   expect(m.server.snapz && m.server.snapz.bytes, 'a cold boot downloads both overlay snapshots (init + widgets region)').toBe(W8_TRANSFER);
   expect(m.panel.equal, `first panel: ${m.panel.diffs}`).toBe(true);
-  // the gallery's mode: pin.json's apiRevision, or the served release's /qed64-build.json when the server serves another pin
-  // than pin.json describes (UX_PIN with the active pin's gallery) — the same rule the suite's API comes from (lib/qed64.mjs)
-  expect({ mode: b.s.mode, modeSource: b.s.modeSource }, 'the gallery runs the mode the suite branches on').toEqual({ mode: API ? 'v1' : 'legacy', modeSource: GALLERY_PIN.modeSource || 'pin.json' });
+  // the gallery runs only the embedding contract v1 (gallery/pin.json apiRevision; lib/qed64.mjs refuses a pin.json without it)
+  expect(b.s.mode, 'the gallery runs the page API').toBe('v1');
   expect(b.s.api.missing, 'no capability the gallery needs is missing').toEqual([]);
-  if (API) {
+  {
     // v1 (EMBEDDING.md §2.1, §3): the gallery runs the page in embed mode through the API it got from qed64:frame-api (or the
     // frozen api by polling), seeds nothing (seed.action 'embed'), and the page honoured #code= once and dropped it
     const frame = await g.frameFacts(); const a = await g.apiStatus();
@@ -157,13 +154,13 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
     const diags = process.env.UX_C3_DIAGS === '1' ? await g.diagnosticsOf(q.version, { settleMs: 300, timeoutMs: 10000 }).catch(() => null) : undefined;
     const action = await g.qframe.locator('button, a').filter({ hasText: 'Load exact imports' }).count();
     // v1: the offer is a structured fact (api.status().offer, EMBEDDING.md §2.2) that the gallery mirrors in status().qed64.offer
-    const apiOffer = API ? (st.qed64 ? st.qed64.offer : undefined) : null;
+    const apiOffer = st.qed64 ? st.qed64.offer : undefined;
     const w = { selectOk: sel.ok, ms: Date.now() - t, panelEqual: p.equal, diffs: p.diffs.slice(0, 3), header: q.header && q.header.mode, collision: q.collision, galleryCollision: st.qed64 && st.qed64.collision, exactImportsOffer: action, apiOffer, rss: chromeRss(), heap: await g.telemetry(), js: await jsHeap(), pool: q.pool,
       ...(diags !== undefined ? { errors: diags ? diags.filter((d) => d.sev === 1).length : null, stackErrors: diags ? diags.filter((d) => d.sev === 1 && /stack is exhausted|maximum recursion depth/.test(d.msg)).map((d) => `${d.line}: ${d.msg.slice(0, 100)}`) : null } : {}) };
     m.widgets[id] = w;
     if (!sel.ok || !p.equal) fail.push(`${id}: select ${sel.ok} panel ${p.equal} ${w.diffs}`);
     if (w.collision !== null || w.galleryCollision !== null || action) fail.push(`${id}: collision offer (C16) ${JSON.stringify(w.collision)} action ${action}`);
-    if (API && apiOffer !== null) fail.push(`${id}: v1 status().qed64.offer is ${JSON.stringify(apiOffer)}, not null (no exact-imports offer for a gallery example)`);
+    if (apiOffer !== null) fail.push(`${id}: v1 status().qed64.offer is ${JSON.stringify(apiOffer)}, not null (no exact-imports offer for a gallery example)`);
     console.log(`C3 ${id} panel ${p.equal} ${w.ms} ms header ${w.header} collision ${JSON.stringify(w.collision)} rss renderer ${w.rss.rendererGiB} GiB (${w.rss.rendererGB} GB) heap ${w.heap && w.heap.currentBytes} js ${w.js ? `${w.js.usedMiB}/${w.js.totalMiB} MiB` : '-'} pool ${JSON.stringify(w.pool)}${w.errors !== undefined ? ` errors ${w.errors} stack ${JSON.stringify(w.stackErrors)}` : ''}`);
   }
   await sleep(1500);
@@ -175,8 +172,8 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
   const q = await g.qstatus();
   m.relay = q.stats;
   m.failLineBytes = MEM_FAIL_BYTES;
-  if (API) {
-    // v1: the wasm heap the API projects (status().memory, EMBEDDING.md §2.2) beside the worker's telemetry; and the ?mem knob,
+  {
+    // v1: the wasm heap the page api projects (status().memory, EMBEDDING.md §2.2) beside the worker's telemetry; and the ?mem knob,
     // when a run passes it (?mem=<GiB> -> &memory=<GiB>, no light first session), must have been applied by the page:
     // status().mem.applied = (api.status().memory.initialBytes === the requested bytes)
     const st = await g.status();
@@ -191,7 +188,7 @@ test('C3 memory + L-switch lane + C16: one boot, all 8 widgets by card clicks, R
   expect(fail).toEqual([]);
   expect(m.peak.rendererBytes, `renderer RSS (summed) < ${MEM_FAIL_BYTES / 1e9} GB (BUILD-PLAN §8.3 C3)`).toBeLessThan(MEM_FAIL_BYTES);
   expect(q.stats.workerDeaths).toBe(0);
-  if (API) {
+  {
     // v1 ?mem=<GiB> (contract item 8): the knob travels as &memory=<GiB> on the frame URL, no light first session, no wrap,
     // and the page commits exactly that (status().mem.applied: api.status().memory.initialBytes === the requested bytes).
     // Measured AFTER the RSS gate above, in a NEW browser (as C21 (b) and C23): the 8-example session is classified now under

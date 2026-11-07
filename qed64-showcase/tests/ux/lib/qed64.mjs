@@ -5,12 +5,11 @@
 //                       fresh context or a persistent profile, SharedArrayBuffer, the diagnostics/RPC tap installed in
 //                       every QED64 page document (init script + exposeBinding, so it survives reloads), console
 //                       watcher on every page, Playwright tracing kept only on failure (retain-on-failure semantics).
-//   Gallery / Stock     drivers for /showcase/ and the bare QED64 page: status oracle (qed64.api.status() on a v1 page,
-//                       else qed64.status(); relay.stats as diagnostics; __showcase.status()), the InfoView frameLocator,
-//                       cursor placement, ready-at-version waits, the diagnostics of an exact document version.
-//   API                 the tested pin carries the QED64 embedding contract v1 (gallery/pin.json apiRevision != null):
-//                       the specs branch on it (v1 behaviour) and on PIN.liveness.builtIn; legacy pins keep every
-//                       assertion they had. RESTART_HOW is the restart `how` the gallery records in each mode.
+//   Gallery / Stock     drivers for /showcase/ and the bare QED64 page: status oracle (qed64.api.status(); relay.stats as
+//                       diagnostics; __showcase.status()), the InfoView frameLocator, cursor placement, ready-at-version
+//                       waits, the diagnostics of an exact document version.
+//   GALLERY_PIN         the gallery/pin.json the served gallery reads; it must carry the QED64 embedding contract v1
+//                       (apiRevision), the only mode the gallery runs. RESTART_HOW is the restart `how` it records.
 //   domSignature()      the env-independent panel signature read from the REAL InfoView DOM (tag multiset, svg tag
 //                       multiset, component counts, text leaves, InteractiveCode texts, MakeEditLink texts/titles),
 //                       compared field by field with the frozen golden (lean/expect/w8/<pkg>.json, dist-lens:
@@ -58,74 +57,41 @@ export const HANG_DIR = path.join(SC, 'out', 'hang', 'captures');
 // are content hashes, so they differ per pin); the active pin is what :5190 serves (showcase.sh ux checks X-Showcase-Pin)
 const PINS = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 // UX_PIN=<id>: the suite runs against a STAGED pin that UX_ORIGIN serves (SHOWCASE_PIN=<id> serve.mjs on another port), e.g.
-// C22 on the fallback A without switching the active pin; global-setup checks the server's X-Showcase-Pin; never a verdict
+// a lane on the other kept pin without switching the active pin; global-setup checks the server's X-Showcase-Pin; never a verdict
 export const UX_PIN = process.env.UX_PIN || null;
 if (UX_PIN && !process.env.UX_ORIGIN) throw new Error('UX_PIN needs UX_ORIGIN (the server that serves that pin)');
 export const SEL = PINS.loadSelectors(UX_PIN || undefined);
 /** The tested pin's descriptor (pins/<id>/pin.json; the active pin unless UX_PIN): id, buildId, liveness.builtIn, … — tests branch on it. */
 export const PIN = PINS.pinDescriptor(UX_PIN || undefined);
 /**
- * gallery/pin.json as the served gallery reads it (scripts/build-gallery.mjs, from the lock): pin, buildId, and since the
- * QED64 embedding contract v1 (deps/qed64/docs/EMBEDDING.md) `apiRevision` / `shell` from release/<pin>/dist/qed64-build.json,
- * null on a pin whose release has no such file. The gallery's mode is pin.json's apiRevision, EXCEPT when the server serves
- * another pin's release than pin.json describes (X-Showcase-Pin; gallery.js servedBuild): then that release's own revision,
- * from serve.mjs's `X-Showcase-Api: <apiRevision>|none` header on the pin.json response, or (only without that header: a
- * server started from an older serve.mjs) its /qed64-build.json (404 = legacy); `X-Showcase-Api: invalid` is refused. The suite mirrors exactly that, reading the
- * same response. Under UX_PIN (a staged pin served by UX_ORIGIN) the SERVED pin.json is read, FAIL-CLOSED (no fallback to
- * the file when the server does not answer). release/<UX_PIN>/dist/qed64-build.json of another schema than qed64.build/v1
- * is REFUSED (as build-gallery.mjs refuses it): serve.mjs then sends X-Showcase-Api invalid (refused here too) and the gallery's probe ignores the
- * file (pin.json decides), so a run would test the active pin's mode on a page of unknown mode. If the served pin.json
- * describes UX_PIN itself (a gallery built for it, GALLERY_DIR) its apiRevision must be the file's (else that gallery runs
- * the wrong mode); if it describes another pin (the active pin's gallery) the gallery follows the served release, and the
- * header (when present) must agree with the file (else the server was started before the release changed).
- * `servedVia` records how the gallery learns it: 'header' (no request) or 'probe' (one /qed64-build.json fetch; a 404 on a
- * legacy release, which only then is allowed: allowlist() STAGED_LEGACY_404). global-setup checks that the server's
- * X-Showcase-Pin is UX_PIN.
+ * gallery/pin.json as the served gallery reads it (scripts/build-gallery.mjs, from the lock): pin, buildId, overlays, and the
+ * QED64 embedding contract v1's `apiRevision` / `shell` from release/<pin>/dist/qed64-build.json. The gallery requires
+ * apiRevision (else its data card), and so does the suite. Under UX_PIN (a staged pin served by UX_ORIGIN) the SERVED
+ * pin.json is read, FAIL-CLOSED (no fallback to the file when the server does not answer); a gallery built for UX_PIN must
+ * carry the apiRevision of release/<UX_PIN>/dist/qed64-build.json (schema qed64.build/v1, as build-gallery.mjs refuses any
+ * other). global-setup checks that the server's X-Showcase-Pin is UX_PIN.
  */
 export const GALLERY_PIN = (() => {
-  const file = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/pin.json'), 'utf8'));
-  if (!UX_PIN) return file;
-  // -D -: the response headers, then the body (the gallery reads X-Showcase-Pin / X-Showcase-Api from this same response)
-  let r; try { r = spawnSync('curl', ['-sf', '--max-time', '5', '-D', '-', `${ORIGIN}/showcase/pin.json`], { encoding: 'utf8' }); } catch (e) { r = { status: -1, error: e }; }
-  if (!(r && r.status === 0 && r.stdout)) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN}/showcase/pin.json is not served (curl status ${r && r.status}${r && r.error ? `: ${r.error.message || r.error}` : ''}); the suite's API branch must come from what the served gallery reads, so start that server first`);
-  const cut = r.stdout.search(/\r?\n\r?\n/);
-  const head = cut >= 0 ? r.stdout.slice(0, cut) : ''; const body = cut >= 0 ? r.stdout.slice(cut).trim() : r.stdout;
-  const hdr = (name) => { const m = new RegExp(`^${name}:[ \\t]*(.*?)[ \\t]*$`, 'im').exec(head); return m ? m[1].trim() : null; };
-  const served = JSON.parse(body);
-  const rawApi = hdr('x-showcase-api') || null;
-  // serve.mjs sends 'invalid' when the served release's qed64-build.json is unreadable or of another schema: refused, as the
-  // file check below refuses it (the served page's mode is unknown). Like gallery.js servedBuild, only a revision or 'none'
-  // counts as the header; any other value is absent (the gallery probes)
-  if (rawApi === 'invalid') throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} sends X-Showcase-Api invalid (its release's dist/qed64-build.json is unreadable or not qed64.build/v1): refused, the served page's mode is unknown`);
-  const apiHeader = rawApi === 'none' || /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(rawApi || '') ? rawApi : null;
-  const buildFile = path.join(PINS.releaseOf(UX_PIN), 'dist', 'qed64-build.json');
-  let want = null; let shell = null; const hasFile = fs.existsSync(buildFile);
-  if (hasFile) {
-    let b; try { b = JSON.parse(fs.readFileSync(buildFile, 'utf8')); } catch (e) { throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} is not JSON (${e.message}): refused`); }
-    if (!b || b.schema !== 'qed64.build/v1') throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} schema ${JSON.stringify(b && b.schema)}, want qed64.build/v1 (as build-gallery.mjs): refused, the served page's mode is unknown`);
-    want = typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null; shell = typeof b.shell === 'string' ? b.shell : null;
+  let pin = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/pin.json'), 'utf8'));
+  if (UX_PIN) {
+    let r; try { r = spawnSync('curl', ['-sf', '--max-time', '5', `${ORIGIN}/showcase/pin.json`], { encoding: 'utf8' }); } catch (e) { r = { status: -1, error: e }; }
+    if (!(r && r.status === 0 && r.stdout)) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN}/showcase/pin.json is not served (curl status ${r && r.status}${r && r.error ? `: ${r.error.message || r.error}` : ''}); the suite must read what the served gallery reads, so start that server first`);
+    pin = JSON.parse(r.stdout);
+    if (pin.pin === UX_PIN) {
+      const buildFile = path.join(PINS.releaseOf(UX_PIN), 'dist', 'qed64-build.json');
+      let b; try { b = JSON.parse(fs.readFileSync(buildFile, 'utf8')); } catch (e) { throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} is not readable JSON (${e.message}): refused`); }
+      if (!b || b.schema !== 'qed64.build/v1') throw new Error(`UX_PIN ${UX_PIN}: ${buildFile} schema ${JSON.stringify(b && b.schema)}, want qed64.build/v1 (as build-gallery.mjs): refused`);
+      const want = typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null;
+      if ((pin.apiRevision ?? null) !== want) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} serves a gallery built for ${UX_PIN} whose pin.json says apiRevision ${JSON.stringify(pin.apiRevision ?? null)}, but release/${UX_PIN}/dist/qed64-build.json says ${JSON.stringify(want)}: rebuild that gallery`);
+    }
   }
-  if (served.pin === UX_PIN) {
-    if ((served.apiRevision ?? null) !== want) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} serves a gallery built for ${UX_PIN} whose pin.json says apiRevision ${JSON.stringify(served.apiRevision ?? null)}, but release/${UX_PIN}/dist/qed64-build.json says ${JSON.stringify(want)}: rebuild that gallery`);
-    return served;
-  }
-  // the active pin's gallery over a staged release: the gallery follows the served release (modeSource 'served'), from
-  // X-Showcase-Api when the server sends it, else from its /qed64-build.json probe
-  if (apiHeader) {
-    const viaHeader = apiHeader === 'none' ? null : apiHeader;
-    if (viaHeader !== want) throw new Error(`UX_PIN ${UX_PIN}: ${ORIGIN} sends X-Showcase-Api ${JSON.stringify(apiHeader)} but release/${UX_PIN}/dist/qed64-build.json says apiRevision ${JSON.stringify(want)}: restart that server (serve.mjs reads the file at start)`);
-  }
-  return { ...served, pinJsonApiRevision: served.apiRevision ?? null, apiRevision: want, shell, modeSource: 'served', servedVia: apiHeader ? 'header' : 'probe' };
+  if (typeof pin.apiRevision !== 'string' || !pin.apiRevision) throw new Error(`${UX_PIN ? `${ORIGIN}/showcase/pin.json` : 'gallery/pin.json'} (pin ${pin.pin}) has no apiRevision: the gallery runs only the QED64 embedding contract v1 and shows its data card without one (rebuild it: node scripts/build-gallery.mjs)`);
+  return pin;
 })();
-/**
- * API = the embedding contract v1 is present on the tested pin (gallery/pin.json apiRevision != null). The gallery then runs
- * in V1 mode (?embed=1 + #code=, globalThis.qed64.api, no bridge, no qed64.buffer seed, liveness probe stood down) and
- * every test asserts the v1 behaviour; on a legacy pin (API false) every test asserts exactly what it asserted before v1.
- */
-export const API = GALLERY_PIN.apiRevision != null;
-export const API_REVISION = API ? GALLERY_PIN.apiRevision : null;
-/** How the gallery records a restart it made (stall events' `how`, liveness events' `action`): api.restart() in V1 mode, relay.restart in legacy mode. */
-export const RESTART_HOW = API ? 'api.restart' : 'relay.restart';
+/** The tested page's embedding contract revision (gallery/pin.json apiRevision). */
+export const API_REVISION = GALLERY_PIN.apiRevision;
+/** How the gallery records a restart it made (stall events' `how`): api.restart(). */
+export const RESTART_HOW = 'api.restart';
 export { PINS };
 /**
  * The tested pin's QED64 hardening flags (pins/<id>/pin.json `hardening`, checked against QED64's history by
@@ -394,27 +360,7 @@ export function watchConsole(page, t0, sink) {
 // headed stock-page load logs one 'Failed to load resource … 404' for /favicon.ico (final-gate lane: C6, C7, C15;
 // chrome-headless-shell never requests it; the gallery has favicon.svg). Allowed once per QED64 page load, headed only.
 const HEADED_ALLOWLIST = { ...SEL.consoleAllowlist, consoleError: [...SEL.consoleAllowlist.consoleError, { text: '^Failed to load resource: the server responded with a status of 404 \\(Not Found\\)$', url: '/favicon.ico', maxPerPageLoad: 1, note: 'headed only: the browser UI fetches /favicon.ico; QED64 dist has none' }] };
-// Staged release under the active pin's gallery only (UX_PIN, GALLERY_PIN.modeSource 'served'). serve.mjs sends the served
-// release's revision as X-Showcase-Api, so the gallery fetches nothing (servedVia 'header'). Only a server WITHOUT that header
-// (one started from an older serve.mjs; servedVia 'probe') makes the gallery ask /qed64-build.json (gallery.js servedBuild's
-// fallback): on a staged LEGACY release (API false; pins A–E have no such file) the gallery document then logs one 'Failed to
-// load resource … 404' for it per gallery load (the probe runs once per start(), before the QED64 page loads); never on a v1
-// release (200), never when the header is present (STAGED_LEGACY_404 is scoped to servedVia 'probe'). And whenever the served release's apiRevision differs from the
-// one gallery/pin.json carries (either direction: a v1 gallery over a staged legacy release, or a legacy gallery over a
-// staged v1 release), gallery.js start() logs one console.warn naming both and the mode it follows (SERVED_MODE_WARN).
-// Never on the active pin, never in production (no X-Showcase-Pin mismatch, no probe).
-const STAGED_LEGACY_404 = { text: '^Failed to load resource: the server responded with a status of 404 \\(Not Found\\)$', url: '/qed64-build.json', maxPerPageLoad: 1, note: 'UX_PIN on a staged legacy release served WITHOUT X-Showcase-Api only: the gallery probes the served release for its apiRevision (404 = legacy)' };
-const SERVED_MODE_WARN = { text: '^\\[showcase\\] the server serves QED64 pin [0-9a-f]{7,40} \\(apiRevision (null|"[^"]*")\\) but gallery/pin\\.json describes [0-9a-f]{7,40} \\((null|"[^"]*")\\): following the served page \\((v1|legacy) mode\\)$', url: '/showcase/gallery.js', maxPerPageLoad: 1, note: 'UX_PIN only: the active pin\'s gallery over a staged release of the other mode (gallery.js start())' };
-function allowlist() {
-  const base = HEADED_ALL ? HEADED_ALLOWLIST : SEL.consoleAllowlist;
-  if (GALLERY_PIN.modeSource !== 'served') return base;
-  const modeDiffers = (GALLERY_PIN.pinJsonApiRevision ?? null) !== (GALLERY_PIN.apiRevision ?? null);
-  return {
-    ...base,
-    consoleWarning: modeDiffers ? [...base.consoleWarning, SERVED_MODE_WARN] : base.consoleWarning,
-    consoleError: !API && GALLERY_PIN.servedVia === 'probe' ? [...base.consoleError, STAGED_LEGACY_404] : base.consoleError,
-  };
-}
+function allowlist() { return HEADED_ALL ? HEADED_ALLOWLIST : SEL.consoleAllowlist; }
 export function classify(watch, reports, { scenarios = [] } = {}) {
   // reports: the allowlist's pairWith entry is also enforced inside classifyConsole (fail-closed without reports)
   const c = classifyConsoleWith(watch, allowlist(), { scenarios, reports });
@@ -568,14 +514,13 @@ export class Session {
 }
 /**
  * The network oracle of one session (QED64 ask 1): no per-build index copy on a paired boot (#64), and no 404 except the
- * headed /favicon.ico, an overlay a bootFailure test breaks on purpose (C8's /snapshots/nope/), and the staged-legacy
- * /qed64-build.json probe (allowlist() STAGED_LEGACY_404). `enforced` only on a pin with hardening.pinnedIndexes; older
+ * headed /favicon.ico and an overlay a bootFailure test breaks on purpose (C8's /snapshots/nope/). `enforced` only on a pin with hardening.pinnedIndexes; older
  * pins record the result.
  */
 export function networkVerdict(n, scenarios = []) {
   const reasons = [];
   if (n.indexCopies.length && !scenarios.includes('mispairedIndex')) reasons.push(`#64: per-build index copy requested on a paired boot: ${n.indexCopies.map((x) => x.path).join(', ')}`);
-  const ok404 = (p) => (HEADED_ALL && p === '/favicon.ico') || (scenarios.includes('bootFailure') && p.startsWith('/snapshots/')) || (GALLERY_PIN.servedVia === 'probe' && !API && p === '/qed64-build.json');
+  const ok404 = (p) => (HEADED_ALL && p === '/favicon.ico') || (scenarios.includes('bootFailure') && p.startsWith('/snapshots/'));
   const bad = n.notFound.filter((x) => !ok404(x.path.split('?')[0]));
   if (bad.length) reasons.push(`404: ${bad.map((x) => x.path).join(', ')}`);
   return { ok: !reasons.length, enforced: !!HARD.pinnedIndexes, reasons };
@@ -606,38 +551,33 @@ class QedDriver {
   get iv() { return this.kind === 'stock' ? this.page.frameLocator(SEL.infoview.frame) : this.page.frameLocator('#qed64-frame').frameLocator(SEL.infoview.frame); }
   get qframe() { return this.kind === 'stock' ? this.page : this.page.frameLocator('#qed64-frame'); }
   /**
-   * The QED64 page oracle. With the embedding contract v1 (window.qed64.api, EMBEDDING.md §2.2) the facts the API carries
-   * (phase, version, header, collision, session, relay, lastDeath, snapshots, boot, memory, liveness, offer) come from
-   * api.status(); on a legacy page from qed64.status() / qed64.relay. The relay's counters (stats, pool, lastTextLen) are
-   * DIAGNOSTICS the API does not project: read from the internals on every pin (the harness, not product code; §9 binds
-   * the gallery). Null until the relay exists (the counters need it), exactly as before.
+   * The QED64 page oracle. The facts the embedding contract v1 carries (window.qed64.api, EMBEDDING.md §2.2: phase, version,
+   * header, collision, session, relay, lastDeath, snapshots, boot, memory, liveness, offer) come from api.status(). The
+   * relay's counters (stats, pool, lastTextLen) are DIAGNOSTICS the API does not project: read from the internals (the
+   * harness, not product code; §9 binds the gallery). Null until the relay and the api exist (the counters need the relay).
    */
   qstatus() {
     return this.q(() => {
       const q = window.qed64; if (!q) return null; const r = q.relay; if (!r) return null;
-      const a = q.api && typeof q.api.status === 'function' ? q.api.status() : null;
+      const a = q.api && typeof q.api.status === 'function' ? q.api.status() : null; if (!a) return null;
       const s = q.status();
-      const base = a
-        ? { phase: a.phase, version: a.version, header: a.header ? { mode: a.header.mode, missing: a.header.missing, moduleCount: a.header.moduleCount, key: s.header ? s.header.key : undefined } : null, collision: a.collision || null, session: a.session, relay: a.relay, lastDeath: a.lastDeath, snapshots: a.snapshots, boot: a.boot, memory: a.memory, liveness: a.liveness, offer: a.offer, api: true }
-        : { phase: s.phase, version: s.version, header: s.header ? { mode: s.header.mode, missing: s.header.missing, key: s.header.key } : null, collision: s.collision || null, session: s.session, relay: s.relay, lastDeath: s.lastDeath, snapshots: r.session && r.session.snapshots, api: false };
+      const base = { phase: a.phase, version: a.version, header: a.header ? { mode: a.header.mode, missing: a.header.missing, moduleCount: a.header.moduleCount, key: s.header ? s.header.key : undefined } : null, collision: a.collision || null, session: a.session, relay: a.relay, lastDeath: a.lastDeath, snapshots: a.snapshots, boot: a.boot, memory: a.memory, liveness: a.liveness, offer: a.offer, api: true };
       return { ...base, pool: s.pool, stats: { ...r.stats }, lastTextLen: r.lastText.length };
     }).catch(() => null);
   }
-  /** The v1 API's own view (EMBEDDING.md §2.1-§2.2): null on a legacy page. Valid before boot (status() is synchronous). */
+  /** The v1 API's own view (EMBEDDING.md §2.1-§2.2): null until the page's module installed it. Valid before boot (status() is synchronous). */
   apiStatus() { return this.q(() => { const q = window.qed64; const a = q && q.api; if (!a || typeof a.status !== 'function') return null; return { revision: a.revision, version: a.version, frozen: Object.isFrozen(a) && Object.isFrozen(a.capabilities), capabilities: { ...a.capabilities }, build: a.build(), status: a.status() }; }).catch(() => null); }
   text() { return this.q(() => { try { const a = window.qed64 && window.qed64.api; const d = a && typeof a.getDocument === 'function' ? a.getDocument() : null; if (d) return d.text; return window.qed64.editor.getModel().getValue(); } catch (e) { return null; } }).catch(() => null); }
-  /** Place the cursor (0-based line/char) without focusing: api.setCursor on a v1 page (then the same revealLineInCenter as before, so the scroll position, and with it the visual baselines, do not depend on the pin), else the editor directly. */
+  /** Place the cursor (0-based line/char) without focusing: api.setCursor (false only before the editor mounts, EMBEDDING.md §2.3), then the same revealLineInCenter as before, so the scroll position, and with it the visual baselines, do not depend on the pin. */
   setCursor(line0, char0) {
     return this.q((a) => {
-      const e = window.qed64.editor; const api = window.qed64.api;
       const pos = { lineNumber: a[0] + 1, column: a[1] + 1 };
-      const viaApi = api && typeof api.setCursor === 'function' ? api.setCursor(pos, { focus: false, reveal: false }) : false;
-      if (!viaApi) e.setPosition(pos);
-      e.revealLineInCenter(a[0] + 1);
-      return true;
+      const placed = window.qed64.api.setCursor(pos, { focus: false, reveal: false });
+      window.qed64.editor.revealLineInCenter(a[0] + 1);
+      return placed;
     }, [line0, char0]);
   }
-  focusEditor() { return this.q(() => { const api = window.qed64.api; if (!(api && typeof api.focus === 'function' && api.focus())) window.qed64.editor.focus(); return window.qed64.editor.hasTextFocus(); }); }
+  focusEditor() { return this.q(() => { window.qed64.api.focus(); return window.qed64.editor.hasTextFocus(); }); }
   async waitReady({ minVersion = -1, timeoutMs = 300000, text = null } = {}) {
     return until(async () => {
       const s = await this.qstatus();
@@ -703,10 +643,9 @@ export class Gallery extends QedDriver {
     return g;
   }
   status() { return this.page.evaluate(() => window.__showcase && window.__showcase.status()).catch(() => null); }
-  bridge() { return this.page.evaluate(() => window.__showcase && window.__showcase.bridgeStats()).catch(() => null); }
-  /** V1 mode: the page's current offer as the gallery reports it (status().qed64.offer), and __showcase.offer() when present. */
+  /** The page's current offer as the gallery reports it (status().qed64.offer), and __showcase.offer() when present. */
   offer() { return this.page.evaluate(() => (window.__showcase && typeof window.__showcase.offer === 'function' ? window.__showcase.offer() : (window.__showcase.status().qed64 || {}).offer) ?? null).catch(() => null); }
-  /** V1 mode: take the page's offer through the gallery (__showcase.acceptOffer() -> api.acceptOffer()); false/null in legacy mode. */
+  /** Take the page's offer through the gallery (__showcase.acceptOffer() -> api.acceptOffer()); false when nothing is offered. */
   acceptOffer() { return this.page.evaluate(() => (window.__showcase && typeof window.__showcase.acceptOffer === 'function' ? window.__showcase.acceptOffer() : null)).catch(() => null); }
   /** The frame's document location (search, hash) and localStorage['qed64.buffer'] on the QED64 origin: the embed-mode facts (EMBEDDING.md §3). */
   // embedExamplesHidden: the PAGE's own embed-mode act (main.ts: examplesEl.style.display = 'none', an inline style); the
@@ -847,10 +786,9 @@ export class Stock extends QedDriver {
     return s;
   }
   /**
-   * The stock page's own UI (pill, boot card, the "Load exact imports" button): DIAGNOSTICS from the DOM, as before. On a
-   * v1 page the structured equivalents come from api.status() (EMBEDDING.md §2.2): `boot` {stage, label, done, failed,
-   * message, overlay} and `offer`; `bootFailed` is api.status().boot.failed there and the boot card's "failed" class on a
-   * legacy page (the same fact the tests asserted before).
+   * The stock page's own UI (pill, boot card, the "Load exact imports" button): DIAGNOSTICS from the DOM, as before. The
+   * structured equivalents come from api.status() (EMBEDDING.md §2.2): `boot` {stage, label, done, failed, message,
+   * overlay} and `offer`; `bootFailed` is api.status().boot.failed (false until the api exists).
    */
   pageInfo() {
     return this.page.evaluate(() => {
@@ -860,11 +798,11 @@ export class Stock extends QedDriver {
         pill: (document.getElementById('ptext') || {}).textContent || null, bootcard, bootlabel: (document.getElementById('bootlabel') || {}).textContent || null,
         action: (() => { const b = [...document.querySelectorAll('button, a')].find((x) => /Load exact imports/.test(x.textContent)); return b ? { text: b.textContent.trim(), visible: !!(b.offsetWidth || b.offsetHeight) } : null; })(),
         boot: st ? st.boot : null, offer: st ? st.offer : null, api: !!st,
-        bootFailed: st ? !!st.boot.failed : /failed/.test(bootcard || ''),
+        bootFailed: !!(st && st.boot.failed),
       };
     }).catch(() => null);
   }
-  /** Settles on ready / headerRefused / halted / dead / a failed boot (api.status().boot.failed on a v1 page, the failed boot card on a legacy one). */
+  /** Settles on ready / headerRefused / halted / dead / a failed boot (api.status().boot.failed). */
   async settle({ timeoutMs = 300000 } = {}) {
     return until(async () => { const s = await this.qstatus(); const i = await this.pageInfo(); if (s && ['ready', 'headerRefused', 'halted', 'dead'].includes(s.phase)) return { s, i }; if (i && i.bootFailed) return { s, i }; return null; }, { timeoutMs, intervalMs: 200 });
   }

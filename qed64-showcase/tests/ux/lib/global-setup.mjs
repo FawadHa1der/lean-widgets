@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { W, SC, RUN_DIR, RUN_ID, ORIGIN, ORIGIN_PORT, UX_PIN, HEADED_ALL, CHANNEL, GALLERY_PIN, API, API_REVISION, PIN, HARD, OVERLAY_W8, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
+import { W, SC, RUN_DIR, RUN_ID, ORIGIN, ORIGIN_PORT, UX_PIN, HEADED_ALL, CHANNEL, GALLERY_PIN, API_REVISION, PIN, HARD, OVERLAY_W8, lockHeld, serverUp, reclaimableGiB } from './qed64.mjs';
 export default async function globalSetup() {
   const lock = lockHeld();
   const meta = { run: RUN_ID, startedAt: new Date().toISOString(), lock, origin: ORIGIN, uxPin: UX_PIN, headed: HEADED_ALL, ...(CHANNEL ? { channel: CHANNEL } : {}), startedServer: false, reclaimableGiB: +reclaimableGiB().toFixed(1) };
@@ -23,10 +23,9 @@ export default async function globalSetup() {
     if (r.status !== 0 || !serverUp()) throw new Error(`could not start serve.mjs: ${r.stdout} ${r.stderr}`);
     meta.startedServer = true; meta.serverStart = r.stdout.trim();
   }
-  // the pin.json the served gallery reads, and the mode the suite branches on (lib/qed64.mjs GALLERY_PIN / API: under UX_PIN
-  // with the active pin's gallery, the staged release's own apiRevision, which the gallery follows too)
+  // the pin.json the served gallery reads (lib/qed64.mjs GALLERY_PIN: under UX_PIN the served one); the gallery runs V1 only
   const pin = GALLERY_PIN;
-  meta.pin = { id: pin.pin, buildId: pin.buildId, qed64: pin.qed64 && pin.qed64.commit, apiRevision: API_REVISION, shell: pin.shell ?? null, mode: API ? 'v1' : 'legacy', modeSource: pin.modeSource || 'pin.json', ...(pin.pinJsonApiRevision !== undefined ? { pinJsonApiRevision: pin.pinJsonApiRevision } : {}), ...(pin.servedVia ? { servedVia: pin.servedVia } : {}) };
+  meta.pin = { id: pin.pin, buildId: pin.buildId, qed64: pin.qed64 && pin.qed64.commit, apiRevision: API_REVISION, shell: pin.shell ?? null, mode: 'v1' };
   // the server must serve the ACTIVE pin's release (serve.mjs fixes its pin at start: X-Showcase-Pin "<id> <buildId>"):
   // two pins can share a buildId, so a server left over from before a `showcase.sh pin use` would test the wrong shell
   const P = await import(path.join(SC, 'scripts/lib/pins.mjs'));

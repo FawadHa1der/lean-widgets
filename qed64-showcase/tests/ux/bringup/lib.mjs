@@ -15,8 +15,8 @@ export const SEL = (await import(path.join(SC, 'scripts/lib/pins.mjs'))).loadSel
 export const EXAMPLES = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'examples.json'), 'utf8')).examples;
 export const SPECS = Object.fromEntries(EXAMPLES.map((e) => [e.id, JSON.parse(fs.readFileSync(path.join(SC, 'lean/examples', `${e.id}.json`), 'utf8'))]));
 export const LAUNCH_ARGS = ['--enable-features=SharedArrayBuffer']; // tests/experiments/lib.mjs, buffer-probe.cjs:14
-// the served overlay directories (scripts/lib/pins.mjs overlayDir, carried by gallery/pin.json `overlays`: the bare logical
-// names on pins A-H and on a pin.json built before per-runtime directories, '<name>.<bid16>' on a per-runtime pin);
+// the served overlay directories (scripts/lib/pins.mjs overlayDir, carried by gallery/pin.json `overlays`: '<name>.<bid16>'
+// on a per-runtime pin, the bare logical name on a pin.json without `overlays`);
 // OVERLAY_W8 is tests/ux/lib/qed64.mjs's OVERLAY_W8. overlayDirOf(<logical name>) maps a name, any other value is kept.
 export const OVERLAY_DIRS = (() => { let o = null; try { o = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'pin.json'), 'utf8')).overlays; } catch { o = null; } return { widgets7: 'widgets7', widgets8: 'widgets8', ...(o || {}) }; })();
 export const overlayDirOf = (name) => (Object.prototype.hasOwnProperty.call(OVERLAY_DIRS, name) ? OVERLAY_DIRS[name] : name);
@@ -120,7 +120,6 @@ export const tapSummary = (reports) => reports.reduce((a, r) => { const k = r.ki
 /** The gallery's API (window.__showcase) on the top page. */
 export const api = {
   status: (page) => page.evaluate(() => window.__showcase && window.__showcase.status()),
-  bridge: (page) => page.evaluate(() => window.__showcase && window.__showcase.bridgeStats()),
   text: (page) => page.evaluate(() => window.__showcase && window.__showcase.currentText()),
   select: (page, id) => page.evaluate((i) => window.__showcase.select(i).then((s) => ({ ok: true, s }), (e) => ({ ok: false, code: e && e.code, message: String(e && e.message || e) })), id),
 };

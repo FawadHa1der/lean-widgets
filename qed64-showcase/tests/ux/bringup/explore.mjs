@@ -1,4 +1,4 @@
-// Exploratory first boot of /showcase/ (default overlay): status, bridge installs, console, and the InfoView DOM
+// Exploratory first boot of /showcase/ (default overlay): status, console, and the InfoView DOM
 // outline for every example's first cursor. Output: out/ux/bringup/explore.json + explore-<id>.png
 // Usage: scripts/with-browser-lock.sh bringup node tests/ux/bringup/explore.mjs [--profile <dir>]
 import fs from 'node:fs';
@@ -21,7 +21,6 @@ try {
   await page.goto(`${ORIGIN}/showcase/`, { waitUntil: 'domcontentloaded' });
   const r = await waitGalleryReady(page);
   res.boot = { ms: r.ms, timedOut: !!r.timedOut, status: r.s };
-  res.bridgeAtBoot = await api.bridge(page);
   res.rssAtReady = chromeRss();
   for (const ex of EXAMPLES) {
     const e = {};
@@ -47,10 +46,9 @@ try {
     }).catch((err) => [`outline failed: ${err.message}`]);
     e.unrecognised = /Unrecognised error|abortSignal/.test(e.ivText);
     e.status = await api.status(page);
-    e.bridge = await api.bridge(page);
     await page.screenshot({ path: path.join(OUT, `explore-${ex.id}.png`) });
     res.examples[ex.id] = e;
-    console.log(ex.id, JSON.stringify({ sel: e.select, settled: e.settled, unrecognised: e.unrecognised, phase: e.status.phase, q: e.status.qed64 && e.status.qed64.phase, stripped: e.bridge && e.bridge.stripped }));
+    console.log(ex.id, JSON.stringify({ sel: e.select, settled: e.settled, unrecognised: e.unrecognised, phase: e.status.phase, q: e.status.qed64 && e.status.qed64.phase }));
   }
   res.rssAfterAll = chromeRss();
   res.console = { messages: watch.messages, pageErrors: watch.pageErrors, crashed: watch.crashed };

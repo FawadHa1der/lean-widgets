@@ -224,7 +224,33 @@ export async function checkSelection(g, id, gsel) {
 }
 
 const POPUP = '.tooltip .tooltip-code-content';
-/** The golden hover through a real mouse hover: popup text exactly "<expr> : <type>", gone after mouse-out. */
+/**
+ * A blank point of the InfoView document (no text, no control, no code, no tooltip under it), relative to its <html> box,
+ * scanned from the bottom up; null when there is none. Evaluated in the InfoView frame.
+ */
+export function ivBlankPoint() {
+  const skip = 'a, button, input, textarea, select, summary, [role=button], [data-has-tooltip-on-hover], .tooltip, .font-code, code';
+  const de = document.documentElement; const w = de.clientWidth; const h = de.clientHeight; const root = de.getBoundingClientRect();
+  const onText = (el, x, y) => [...el.childNodes].some((n) => {
+    if (n.nodeType !== 3 || !n.textContent.trim()) return false;
+    const rg = document.createRange(); rg.selectNodeContents(n);
+    return [...rg.getClientRects()].some((b) => x >= b.left && x <= b.right && y >= b.top && y <= b.bottom);
+  });
+  for (let y = h - 6; y > 6; y -= 12) {
+    for (const x of [Math.round(w / 2), 8, w - 24]) {
+      const el = document.elementFromPoint(x, y);
+      if (!el || el.closest(skip) || onText(el, x, y)) continue;
+      return { x: x - root.left, y: y - root.top, tag: el.tagName.toLowerCase() };
+    }
+  }
+  return null;
+}
+
+/**
+ * The golden type popup through a real click (no modifier) on the tag: none open before, then a popup whose text is exactly
+ * "<expr> : <type>", closed by a click on a blank point of the InfoView. A click pins the InfoView's type tooltip on every
+ * pin; from QED64 ux-parity on, a hover no longer opens it.
+ */
 export async function checkHover(g, id, gh, popupText) {
   const cur = cursorOfLine(id, gh.cursorLine);
   const at = { line: cur.line, character: cur.character };
@@ -250,14 +276,16 @@ export async function checkHover(g, id, gh, popupText) {
   r.target = mk;
   if (!mk.ok) { r.error = mk.why; return r; }
   const t = Date.now();
-  await g.iv.locator('[data-ux-hover]').hover();
+  await g.iv.locator('[data-ux-hover]').click();
   const got = await until(async () => { const pp = await popups(); return pp.includes(popupText) ? pp : null; }, { timeoutMs: 15000 });
-  r.hoverToPopupMs = Date.now() - t;
+  r.clickToPopupMs = Date.now() - t;
   r.popups = got || await popups();
-  await g.page.mouse.move(3, 3);
-  r.closed = !!(await until(async () => ((await popups()).length === 0 ? true : null), { timeoutMs: 10000 }));
+  // close it: a click on a blank point of the InfoView (outside the tag and the popup)
+  r.blank = await g.iv.locator('html').evaluate(ivBlankPoint).catch(() => null);
+  if (r.blank) await g.iv.locator('html').click({ position: { x: r.blank.x, y: r.blank.y } }).catch((e) => { r.blankError = String(e.message).slice(0, 200); });
+  r.closed = !!r.blank && !!(await until(async () => ((await popups()).length === 0 ? true : null), { timeoutMs: 10000 }));
   r.ok = r.before.length === 0 && !!got && r.closed;
-  if (!r.ok) r.error = r.before.length ? 'popup open before the hover' : !got ? `no popup “${popupText}”` : 'popup did not close';
+  if (!r.ok) r.error = r.before.length ? 'popup open before the click' : !got ? `no popup “${popupText}” after the click` : !r.blank ? 'no blank point in the InfoView to close the popup' : 'popup did not close';
   return r;
 }
 

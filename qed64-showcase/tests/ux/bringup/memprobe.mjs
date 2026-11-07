@@ -42,7 +42,7 @@ try {
   watch.mark('goto', { url });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   const r = await waitGalleryReady(page);
-  res.boot = { ms: r.ms, timedOut: !!r.timedOut, phase: r.s && r.s.phase, qed64: r.s && r.s.qed64, mem: r.s && r.s.mem, bridge: r.s && r.s.bridge };
+  res.boot = { ms: r.ms, timedOut: !!r.timedOut, phase: r.s && r.s.phase, qed64: r.s && r.s.qed64, mem: r.s && r.s.mem };
   watch.mark('booted', { ms: r.ms, rss: chromeRss() });
   for (const id of seq) {
     const st = { id, t: Date.now() - t0 };
@@ -76,7 +76,6 @@ try {
   }
   res.stats = await page.evaluate(() => { const w = document.getElementById('qed64-frame').contentWindow; return { ...w.qed64.relay.stats }; }).catch(() => null);
   res.final = await api.status(page).catch(() => null);
-  res.bridgeStats = await api.bridge(page).catch(() => null);
 } catch (e) {
   res.error = String(e && e.stack || e).slice(0, 1200);
 } finally {

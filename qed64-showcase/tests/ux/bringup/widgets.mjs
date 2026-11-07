@@ -115,7 +115,7 @@ try {
   const first = only[0];
   await page.goto(`${ORIGIN}/showcase/#${first}`, { waitUntil: 'domcontentloaded' });
   const r = await waitGalleryReady(page);
-  res.boot = { ms: r.ms, phase: r.s && r.s.phase, overlay: r.s && r.s.overlay, bridge: r.s && r.s.bridge, preflight: r.s && r.s.preflight && { ok: r.s.preflight.ok, availability: r.s.preflight.availability, regionImports: r.s.preflight.regionImports } };
+  res.boot = { ms: r.ms, phase: r.s && r.s.phase, overlay: r.s && r.s.overlay, preflight: r.s && r.s.preflight && { ok: r.s.preflight.ok, availability: r.s.preflight.availability, regionImports: r.s.preflight.regionImports } };
   watch.mark('booted', { ms: r.ms });
   // every card's thumbnail is wired and loads (bring-up audit r2 minor: nothing checked this in the browser; a gallery.js
   // that loaded thumbs/<pkg>.jpg passed every check): selectors.json cardThumb, scrolled into view (loading="lazy"),
@@ -126,7 +126,6 @@ try {
   for (const id of only) {
     const ex = EXAMPLES.find((e) => e.id === id);
     const w = { id };
-    const b0 = await api.bridge(page);
     const tS = Date.now();
     if ((await api.status(page)).current !== id || (await api.status(page)).shown !== id) { const s = await api.select(page, id); w.select = { ok: s.ok, code: s.code || null }; }
     w.selectMs = Date.now() - tS;
@@ -137,8 +136,6 @@ try {
     await sleep(600);
     e = await expectationsMet(ex);
     Object.assign(w, e);
-    const b1 = await api.bridge(page);
-    w.bridgeDelta = b0 && b1 ? { stripped: b1.stripped - b0.stripped, wsFetched: b1.ws.fetched - b0.ws.fetched, wsCoalesced: b1.ws.coalesced - b0.ws.coalesced } : null;
     const st = await api.status(page);
     w.status = { phase: st.phase, shown: st.shown, cursor: st.cursor, qed64: st.qed64 && { phase: st.qed64.phase, header: st.qed64.header && st.qed64.header.mode, session: st.qed64.session } };
     w.chip = await page.locator(`#card-${id} .chip`).textContent().catch(() => null);
@@ -153,7 +150,7 @@ try {
     w.rss = chromeRss();
     res.widgets[id] = w;
     watch.mark('widget', { id, ok: w.ok });
-    console.log(JSON.stringify({ id, ok: w.ok, unrec: w.unrecognised, missing: [...w.missingTexts, ...w.missingLinks], svg: w.svgDiff, title: w.panelTitle, reason: w.reason, stripped: w.bridgeDelta && w.bridgeDelta.stripped, panel: w.panel && w.panel.summary, thumb: w.thumb && w.thumb.bytes, ms: w.selectMs }));
+    console.log(JSON.stringify({ id, ok: w.ok, unrec: w.unrecognised, missing: [...w.missingTexts, ...w.missingLinks], svg: w.svgDiff, title: w.panelTitle, reason: w.reason, panel: w.panel && w.panel.summary, thumb: w.thumb && w.thumb.bytes, ms: w.selectMs }));
   }
   if (thumbs) {
     // gallery/thumbs/thumbs.json: how each thumbnail was made; build-gallery.mjs turns mode into thumb.fit
@@ -163,7 +160,6 @@ try {
     fs.writeFileSync(mf, `${JSON.stringify(man, null, 2)}\n`);
   }
   res.final = await api.status(page);
-  res.bridgeStats = await api.bridge(page);
   res.relayStats = await page.evaluate(() => ({ ...document.getElementById('qed64-frame').contentWindow.qed64.relay.stats }));
 } catch (e) {
   res.error = String(e && e.stack || e).slice(0, 1500);

@@ -12,7 +12,7 @@
 # must fail exactly as listed:
 #   M4 simp-lens hover retargeted (in the copy's examples.json) to the panel's plain <code>simp only [add_zero,
 #      zero_add]</code>, an element with no hover popup                                -> the hover hint fails
-#   M5 fault no-hover: hints.mjs does everything but the hover (mouse moved away)      -> the hover hint fails
+#   M5 fault no-click: hints.mjs does everything but the click on the tag              -> the hover hint fails
 #   M6 fault no-select: hints.mjs does everything but the shift-clicks                 -> all 3 select hints fail
 #   M7 expr-xray select #2 shift-clicks only the FIRST occurrence (one pick, not two)  -> that select hint fails
 #      (the panel x-rays one subterm instead of comparing two), select #1 still passes
@@ -97,7 +97,7 @@ if pick m3; then mutate m3-graph-c5 graph-scope 35 '(cycleGraph 6)' '#graph_scop
 HV="$(hidx simp-lens hover)"; S1="$(hidx expr-xray select | cut -d' ' -f1)"; S2="$(hidx expr-xray select | cut -d' ' -f2)"; SI="$(hidx interval-inspector select)"
 if pick m4; then mutate_hint m4-hover-nopopup simp-lens "$HV" 'h.expectHover.codeText = "simp only [add_zero, zero_add]"; h.expectHover.tagText = "simp only [add_zero, zero_add]";' \
   && run2 m4-hover-nopopup "$W/mutants/m4-hover-nopopup" simp-lens hover "[\"simp-lens#$HV\"]" || rc_all=1; fi
-if pick m5; then run2 m5-fault-no-hover "" simp-lens hover "[\"simp-lens#$HV\"]" --fault no-hover || rc_all=1; fi
+if pick m5; then run2 m5-fault-no-click "" simp-lens hover "[\"simp-lens#$HV\"]" --fault no-click || rc_all=1; fi
 if pick m6; then run2 m6-fault-no-select "" expr-xray,interval-inspector select "[\"expr-xray#$S1\",\"expr-xray#$S2\",\"interval-inspector#$SI\"]" --fault no-select || rc_all=1; fi
 if pick m7; then mutate_hint m7-select-one-pick expr-xray "$S2" 'h.expectSelect = h.expectSelect.slice(0, 1);' \
   && run2 m7-select-one-pick "$W/mutants/m7-select-one-pick" expr-xray select "[\"expr-xray#$S2\"]" || rc_all=1; fi

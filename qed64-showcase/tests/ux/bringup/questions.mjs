@@ -226,7 +226,7 @@ try {
     const st = await api.status(page);
     const txt = await ivText(page);
     const after = await qs(page);
-    res.q12 = { results, ms: Date.now() - t, shown: st.shown, panelIsLast: /dist: 6 outcomes over Fin 6/.test(txt), stalePanel: /bipartite|Sum of two dice/.test(txt), workerDeaths: after.stats.workerDeaths - before.stats.workerDeaths, rebootsDelta: after.stats.reboots - before.stats.reboots, bridge: await api.bridge(page) };
+    res.q12 = { results, ms: Date.now() - t, shown: st.shown, panelIsLast: /dist: 6 outcomes over Fin 6/.test(txt), stalePanel: /bipartite|Sum of two dice/.test(txt), workerDeaths: after.stats.workerDeaths - before.stats.workerDeaths, rebootsDelta: after.stats.reboots - before.stats.reboots };
     res.q12.pool = await pe(page, () => window.qed64.status().pool);
     verdict('q12', {
       sevenSuperseded: results.length === 8 && results.slice(0, 7).every((r) => r === 'SUPERSEDED'), lastResolved: results[7] === 'ok', shownLast: res.q12.shown === 'dist-lens',
