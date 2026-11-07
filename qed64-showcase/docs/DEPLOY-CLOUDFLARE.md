@@ -647,7 +647,10 @@ rehearsal's `rollback` step runs the script against a fake bucket; O to H was no
 
 A re-pin (README "Re-pin: adding a pin when QED64 sends a new commit") usually changes the runtime buildId. That has
 these consequences:
-* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves pin H `bf9d947` (deployed 2026-10-08 19:20Z by the qed64-deploy run on the push of `d60b15e` to main, Worker version `29176b6f`; its 93 R2 objects were E's, nothing was uploaded); the active pin locally is O `521cf3f` since 2026-10-27, Lean 4.35.0 on runtime `wasm64-36d7f415704473d9`; pins I–N were never deployed). `pin use <id>` regenerates
+* **Deploy only the active pin** (printed by `scripts/showcase.sh pin current`; the live site serves pin O `521cf3f`, Lean 4.35.0 on runtime `wasm64-36d7f415704473d9`, with release routing: deployed
+2026-11-05 20:18Z by the qed64-deploy run on the push of `b24587d` to main, Worker version `476d6c11-a119-4b17-8545-65e0b9f34987`,
+upload record `20261105T200927Z`. Before it, pin H `bf9d947` (deployed 2026-10-08 19:20Z from `d60b15e`, Worker version
+`29176b6f`; its 93 R2 objects were E's): the rollback target, section 5. Pins I–N were never deployed). `pin use <id>` regenerates
   `out/deploy` for the new active pin, and `deploy-manifest --check` G2 then needs a verdict run on that pin's gallery.
   `deploy-manifest` refuses a pin before `385a1ac`: those pins have no release routing and are not deployed from this
   Worker (section 5).

@@ -5,8 +5,13 @@ and docs/HISTORY.md.
 
 ## Release routing (P3), the deploy of O, then P1 and P2: decided 2026-11-01
 
-**Where it stands (2026-11-05).** The live site serves pin H `bf9d947` (Worker version `29176b6f`, deployed from
-`d60b15e`, runtime `3ab1c6a9`). The candidate is O `521cf3f`, gated with the verdict `o-full2`, which P3 keeps because the
+**Where it stands (2026-11-07).** The live site serves pin O `521cf3f` with release routing: the owner uploaded its 12
+objects (record `out/deploy/published/20261105T200927Z`, backed up in `$W/published-backup/`) and pushed `b24587d` to
+`main`. The `qed64-deploy` run promoted Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` at 2026-11-05 20:18Z after
+`PRE-PROMOTION OK`, with `SMOKE OK` on the live URL. On 2026-11-07 `--published` and `--smoke --all --range` against the live
+URL were OK, and a cold boot of `/showcase/#hasse-view` under the browser lock gave `BOOT-CHECK OK`. The previous version is
+H `bf9d947` (Worker version `29176b6f-cc41-4a16-bed4-c8753c7bd5f2`, deployed from `d60b15e`, runtime `3ab1c6a9`): the
+rollback target, docs/DEPLOY-CLOUDFLARE.md section 5. O is gated with the verdict `o-full2`, which P3 keeps because the
 gallery, the lock and the overlays are unchanged. P3 is committed on the branch `release-routing` (`f13d535`, its review fixes `dbfd000`, then `ed8f781`: the
 browser lock counts browsers by executable, and `12aca96`, `eca8f22`: the CI rehearsal's boots; on top of `port-lean-4.35`): `infra/worker.js` is QED64's `createWorker` with the pin's toolchain record, the upload falls from 93
 objects, 2.367 GB to 12 objects, 1.107 GB at O, and `deploy-app.sh` checks each new version on its preview URL before it
@@ -20,7 +25,7 @@ re-gate; C7 may become a substring match with one fresh G2 verdict; D1, D2, D5, 
 not 3), D10, D11, D16, M3, and D3a (its retention follows K4). Not approved, so not acted on: D7, D8, D15. The P numbers
 are from `$W/reports/architecture-review-widgets-2026-10-28.md`; the D, M and K numbers are QED64's report's.
 
-**Deploying O: the owner's steps, in this order, now that the rehearsal has passed.** Pushing, uploading and turning on Preview URLs
+**Deploying O (done 2026-11-05): the owner's steps, in this order, kept as the record.** Pushing, uploading and turning on Preview URLs
 are the owner's acts.
 
 1. Turn on Preview URLs for the Worker `qed64-showcase` (dashboard: the Worker, Settings, Domains & Routes). This is

@@ -2318,10 +2318,16 @@ for the run, `NOT RUN` fails the scenario, boots as `NODE_TOOL` under an alarm),
 and release, no rebake. It has deleted the old preflight shim, so this branch's lookup in `scripts/preflight-overlays.sh`
 must be on `main` first. The audit is `$W/reports/repin-fd95a2a-audit-2026-11-03.md`, which holds for `f2b623a`.
 
-### Not done (2026-11-05)
+### Deployed (2026-11-05)
 
-1. The owner's steps for O (docs/NEXT-STEPS.md, top section): turn on Preview URLs, the upload (12 objects), then
-   `git push origin release-routing:main`.
-2. Still open with the owner: whether the browser lanes' memory floor may go below 16 GiB. The machine sat at 6.2-12.8 GiB
+The owner uploaded the 12 objects (record `20261105T200927Z`) and pushed `b24587d` to `main`. The `qed64-deploy` run
+promoted Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` at 20:18Z after `PRE-PROMOTION OK`, then `SMOKE OK` on the
+live URL. Checked again 2026-11-07: `--published` and `--smoke --all --range` OK on the live URL, and `BOOT-CHECK OK` for a
+cold boot of `/showcase/#hasse-view` under the browser lock. The same push's `lean-ci` failed in qed64-static: the lockfifo
+test's PIPE case, because GitHub's Linux runner starts a step with SIGPIPE ignored (fixed in the test, `470dda3`).
+
+### Not done (2026-11-07)
+
+1. Still open with the owner: whether the browser lanes' memory floor may go below 16 GiB. The machine sat at 6.2-12.8 GiB
    free for most of this run.
-3. Then P1+P2 in one re-gate (`$W/reports/p1-p2-plan-2026-11-02.md`, with the amendments from the audit), then the re-pin.
+2. Then P1+P2 in one re-gate (`$W/reports/p1-p2-plan-2026-11-02.md`, with the amendments from the audit), then the re-pin.
