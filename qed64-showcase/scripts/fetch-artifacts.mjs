@@ -10,8 +10,8 @@
 //                              worktree); every other public/ file is FETCHED: URL path /<p> on the origin.
 //                  dist/<p>    QED64's page: built from source by scripts/build-shell.mjs, never fetched.
 //   overlays       our widget snapshot regions (index.json + init + widgets .snapz) at <overlays.<o>.url><file>, i.e.
-//                              /snapshots/<dir>/<file> with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin): widgets8 for
-//                              pins A–H, widgets8.<bid16> for a per-runtime pin (pin.json v3); the lock's url must say
+//                              /snapshots/<dir>/<file> with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin):
+//                              widgets8.<bid16>, the per-runtime directory (pin.json v3); the lock's url must say
 //                              exactly that (else the run refuses before fetching anything). Installed into
 //                              out/runtimes/<buildId>/overlay/<o>/ (the per-runtime overlay store, by logical name).
 //
@@ -23,8 +23,8 @@
 //                                                   toolchain release); /snapshots/ is our prefix, where the upload copies
 //                                                   and never deletes, so every pin uploaded there keeps its stock .snapz
 //                                                   and overlay .snapz, all digest-named (an overlay's index.json is one
-//                                                   per /snapshots/<dir>/, the last upload's: bare for pins A–H, shared
-//                                                   by same-runtime pins from I on). For another pin's runtime and packs,
+//                                                   per /snapshots/<dir>/, the last upload's: shared by same-runtime
+//                                                   pins; H's bare directories stay in R2 for its rollback). For another pin's runtime and packs,
 //                                                   when QED64's live site does not deploy it either: serve.mjs.
 //   --qed64-origin <url>   (QED64_ARTIFACT_ORIGIN)  an origin serving QED64's own files only; tried after --origin for
 //                                                   QED64's files. QED64's live site serves them for ONE release, the

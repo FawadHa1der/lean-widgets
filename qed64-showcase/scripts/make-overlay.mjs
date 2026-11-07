@@ -5,7 +5,7 @@
 //                                              pin's link out/overlay/snapshots/widgets7|widgets8 points at it)
 //
 // The store keeps the LOGICAL name widgets7|widgets8; the pin SERVES it as /snapshots/<dir>/ with
-// <dir> = scripts/lib/pins.mjs overlayDir (widgets8 for pins A–H, widgets8.<bid16> for a per-runtime pin), printed below.
+// <dir> = scripts/lib/pins.mjs overlayDir (widgets8.<bid16>, the per-runtime directory), printed below.
 // index.json has exactly two entries:
 //   init     copied verbatim from the bake-out index (itself the served entry, see bake.sh / judge J5)
 //   mathlib  the bake's `widgets` entry with name "mathlib"; url stays "/snapshots/widgets.<d16>.snapz",

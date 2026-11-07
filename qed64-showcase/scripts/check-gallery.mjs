@@ -41,27 +41,20 @@ const section = (t) => console.log(`\n== ${t}`);
 const okTry = (fn, msg) => { let v; try { v = fn(); } catch (e) { return ok(false, `${msg} — threw ${e && e.name}: ${e && e.message}`); } return ok(v, msg); };
 const read = (p) => fs.readFileSync(p, 'utf8');
 /**
- * QED64's Memory64 probe bytes in a QED64 source tree `qsrc`. From 385a1ac on, public/workers/memory64-probe.js is the one
- * source (EMBEDDING.md §7.0): a classic script that publishes globalThis.Qed64Memory64 {MEMORY64_PROBE, …}; it runs here in an
- * empty vm context. Earlier pins inline `const MEMORY64_PROBE = new Uint8Array([…])` in public/workers/lean.worker.js.
- * Returns {bytes: number[]|null, source, error}.
+ * QED64's Memory64 probe bytes in a QED64 source tree `qsrc`. public/workers/memory64-probe.js (385a1ac on, so every
+ * registered pin) is the one source (EMBEDDING.md §7.0): a classic script that publishes globalThis.Qed64Memory64
+ * {MEMORY64_PROBE, …}; it runs here in an empty vm context. Returns {bytes: number[]|null, source, error}.
  */
 function memory64ProbeOf(qsrc) {
   const probeFile = path.join(qsrc, 'public', 'workers', 'memory64-probe.js');
-  if (fs.existsSync(probeFile)) {
-    const source = 'public/workers/memory64-probe.js (Qed64Memory64.MEMORY64_PROBE)';
-    try {
-      const ctx = vm.createContext({});
-      vm.runInContext(read(probeFile), ctx, { filename: probeFile, timeout: 2000 });
-      const p = ctx.Qed64Memory64 && ctx.Qed64Memory64.MEMORY64_PROBE;
-      return p && typeof p.length === 'number' ? { bytes: Array.from(p, Number), source, error: null } : { bytes: null, source, error: 'no globalThis.Qed64Memory64.MEMORY64_PROBE' };
-    } catch (e) { return { bytes: null, source, error: `threw ${e && e.name}: ${e && e.message}` }; }
-  }
-  const source = 'public/workers/lean.worker.js (const MEMORY64_PROBE)';
-  let worker;
-  try { worker = read(path.join(qsrc, 'public', 'workers', 'lean.worker.js')); } catch (e) { return { bytes: null, source, error: e && e.message }; }
-  const wp = /const MEMORY64_PROBE = new Uint8Array\(\[([\s\S]*?)\]\)/.exec(worker);
-  return wp ? { bytes: wp[1].replace(/\/\/[^\n]*/g, '').split(',').map((x) => x.trim()).filter(Boolean).map(Number), source, error: null } : { bytes: null, source, error: 'no MEMORY64_PROBE literal' };
+  const source = 'public/workers/memory64-probe.js (Qed64Memory64.MEMORY64_PROBE)';
+  if (!fs.existsSync(probeFile)) return { bytes: null, source, error: 'missing' };
+  try {
+    const ctx = vm.createContext({});
+    vm.runInContext(read(probeFile), ctx, { filename: probeFile, timeout: 2000 });
+    const p = ctx.Qed64Memory64 && ctx.Qed64Memory64.MEMORY64_PROBE;
+    return p && typeof p.length === 'number' ? { bytes: Array.from(p, Number), source, error: null } : { bytes: null, source, error: 'no globalThis.Qed64Memory64.MEMORY64_PROBE' };
+  } catch (e) { return { bytes: null, source, error: `threw ${e && e.name}: ${e && e.message}` }; }
 }
 
 // ---------------------------------------------------------------- 1. syntax
@@ -343,9 +336,10 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   const c4 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch({ ...site('widgets8', { runtime: 'wasm64-0000000000000000' }) }), modules });
   ok(!c4.ok && c4.overlay === 'widgets8', 'chooseOverlay: reports the unpaired widgets8 over the absent widgets7');
 }
-{ // the SERVED overlay directories (gallery/pin.json overlays = scripts/lib/pins.mjs overlayDirs): pins A–H the identity map
-  // (bare /snapshots/widgets8/), a per-runtime pin (pin/v3) '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's
-  // directory, any other value a literal directory; an older pin.json without the map means the bare names
+{ // the SERVED overlay directories (gallery/pin.json overlays = scripts/lib/pins.mjs overlayDirs): a per-runtime pin (pin/v3)
+  // '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's directory, any other value a literal directory. The
+  // gallery's lib still reads a pin.json without the map (or with the identity map) as the bare names; c1-c4 and the bare
+  // fixtures below keep that path covered
   const D = { widgets7: 'widgets7.0123456789abcdef', widgets8: 'widgets8.0123456789abcdef' };
   const ID = { widgets7: 'widgets7', widgets8: 'widgets8' };
   okTry(() => L.overlayDirOf('widgets8', null) === 'widgets8' && L.overlayDirOf('widgets8', undefined) === 'widgets8' && L.overlayDirOf('widgets8', ID) === 'widgets8'
@@ -375,7 +369,7 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
     const bd = await L.preflightOverlay({ overlay: 'widgets8', dir: '../x', buildId: BID, fetch: mockFetch(both), modules });
     ok(!bd.ok && bd.checks.length === 1 && bd.checks[0].id === 'overlay-name' && bd.dir === '../x', 'preflightOverlay validates the DIRECTORY (an unsafe dir is refused before any fetch)');
     const legacy = await L.preflightOverlay({ overlay: 'widgets8', buildId: BID, fetch: mockFetch(bare), modules });
-    ok(legacy.ok && legacy.dir === 'widgets8' && legacy.checks[0].detail === 'overlay name "widgets8" is valid', 'preflightOverlay without dir: dir = overlay (the pins A–H call, unchanged text)');
+    ok(legacy.ok && legacy.dir === 'widgets8' && legacy.checks[0].detail === 'overlay name "widgets8" is valid', 'preflightOverlay without dir: dir = overlay (unchanged text)');
   }
   const ch = (o, files) => L.chooseOverlay({ buildId: BID, fetch: mockFetch(files), modules, ...o });
   const a1 = await ch({ requested: null, dirs: D }, both);
@@ -394,11 +388,6 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   ok(!a6.ok && a6.overlay === 'nope' && a6.dir === 'nope' && a6.result.notFound && a6.attempts.length === 1, '?overlay=nope stays a literal directory (404, no fallback)');
   const a7 = await ch({ requested: 'widgets8', dirs: D }, bare);
   ok(!a7.ok && a7.dir === D.widgets8 && a7.result.notFound, '?overlay=widgets8 on a per-runtime pin never reaches the bare widgets8/ (404 at the directory)');
-  const a8 = await ch({ requested: null, dirs: null }, bare);
-  const a9 = await ch({ requested: null }, bare);
-  const a10 = await ch({ requested: null, dirs: ID }, bare);
-  ok(a8.ok && a8.overlay === 'widgets8' && a8.dir === 'widgets8' && a9.ok && a9.dir === 'widgets8' && a10.ok && a10.dir === 'widgets8' && a10.overlay === 'widgets8',
-    'legacy: no map (older pin.json) and the identity map (pins A–H) frame the bare /snapshots/widgets8/');
 }
 
 // ---------------------------------------------------------------- 8. bridge in a sandbox
@@ -740,8 +729,8 @@ if (LIVE) {
     // an overlay on disk must preflight OK iff its index was baked by THIS pin's runtime; one baked for another runtime (a stale
     // rehearsal bake, an unswitched pin) must be refused by the runtime check, never served to the page (lib.js preflightOverlay)
     const indexRuntimes = (ov) => { try { return (JSON.parse(fs.readFileSync(path.join(SC, 'out', 'overlay', 'snapshots', ov, 'index.json'), 'utf8')).snapshots || []).map((e) => e && e.runtime); } catch { return null; } };
-    // a logical store (out/overlay/snapshots/widgets8) is SERVED at pin.json's directory for it (pins A–H: the same name;
-    // a per-runtime pin: widgets8.<bid16>); any other on-disk name (a fixture) is served under its own name
+    // a logical store (out/overlay/snapshots/widgets8) is SERVED at pin.json's directory for it (widgets8.<bid16>, the
+    // per-runtime directory); any other on-disk name (a fixture) is served under its own name
     const dirs = L.parseOverlayDirs(pin.overlays).dirs;
     for (const ov of [...new Set([...overlays, 'widgets8', 'widgets7', 'nope'])]) {
       const dir = L.overlayDirOf(ov, dirs);

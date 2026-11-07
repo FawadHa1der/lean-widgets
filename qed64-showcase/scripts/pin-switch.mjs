@@ -18,9 +18,9 @@
 //                                                    line is the same notify code; QED64's sources (submodule or the
 //                                                    pin's worktree) at the commit, unmodified; the overlays == the lock's
 //                                                    sizes (paired: index runtime, {init, mathlib}, init == the pin's stock
-//                                                    init) and the lock's overlay url == overlayUrl (/snapshots/widgets8/
-//                                                    for a v2 descriptor, /snapshots/widgets8.<bid16>/ for a v3
-//                                                    per-runtime one); the runtime's BUILD stores (stage1 buildId, raw and bake files,
+//                                                    init) and the lock's overlay url == overlayUrl
+//                                                    (/snapshots/widgets8.<bid16>/, the v3 per-runtime
+//                                                    directory); the runtime's BUILD stores (stage1 buildId, raw and bake files,
 //                                                    mathlib == this runtime's bake) where this checkout built them, else
 //                                                    one ABSENT line (a checkout bootstrapped from fetched artifacts).
 //                                                    --full adds the release and overlay sha256s (pin-qed64.mjs verify
@@ -152,7 +152,7 @@ function checkPin(id, { full = false } = {}) {
   let stockInit = null;
   try { stockInit = readJson(path.join(R, 'public/snapshots/index.json')).snapshots.find((s) => s.name === 'init'); } catch { /* below */ }
   for (const o of OVERLAYS) {
-    // where this overlay is SERVED: /snapshots/<dir>/ (bare for a v2 descriptor, <o>.<bid16> for a v3 per-runtime one)
+    // where this overlay is SERVED: /snapshots/<dir>/ (<o>.<bid16>, the v3 per-runtime directory)
     let url = null; try { url = overlayUrl(o, id); } catch (e) { ok(false, `overlay ${o}: ${e.message}`); continue; }
     const d = path.join(outRtDir(bid), 'overlay', o), ix = path.join(d, 'index.json');
     if (!exists(ix)) { ok(false, `out/runtimes/${bid}/overlay/${o}/index.json missing`); continue; }
@@ -221,7 +221,7 @@ function servedOverlays(id) {
   let desc, urls;
   try { desc = pinDescriptor(id); urls = Object.fromEntries(OVERLAYS.map((o) => [o, overlayUrl(o, id)])); } catch (e) { return [{ ok: false, msg: `served overlay directories of pin ${id}: ${e.message}` }]; }
   let lo = {}; try { lo = readJson(path.join(SC, 'QED64.lock.json')).overlays || {}; } catch { /* reported by the lock checks */ }
-  const rule = desc.overlayDirs === 'per-runtime' ? `${desc.schema}, per-runtime <o>.<bid16>` : `${desc.schema}, bare names`;
+  const rule = `${desc.schema}, per-runtime <o>.<bid16>`; // pinDescriptor refuses any other descriptor
   const bad = OVERLAYS.filter((o) => lo[o] && lo[o].url !== urls[o]).map((o) => `active lock ${o}.url ${lo[o].url} != ${urls[o]}`);
   const unrec = OVERLAYS.filter((o) => !lo[o]);
   return [{ ok: !bad.length, msg: `served overlay directories (pins/${id}/pin.json ${rule}): ${OVERLAYS.map((o) => `${o} -> ${urls[o]}`).join(', ')}${bad.length ? ` — ${bad.join('; ')}` : unrec.length ? ` (not recorded in the active lock yet: ${unrec.join(', ')})` : ' == active lock overlays.<o>.url'}` }];

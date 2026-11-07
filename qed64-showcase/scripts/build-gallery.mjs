@@ -9,7 +9,7 @@
 //                          buildId, QED64 commit/promote, Lean version — after checking that the pinned release
 //                          bundle (release/<pin id>/dist/assets/*.js) names exactly that buildId (plan S0.5 #6);
 //                          and `overlays` {widgets7, widgets8: <served dir>} = scripts/lib/pins.mjs overlayDirs(<pin>)
-//                          (the identity for pins A–H, '<name>.<bid16>' for a per-runtime pin/v3), checked against
+//                          ('<name>.<bid16>', the per-runtime directory of a pin/v3), checked against
 //                          the lock's overlays.<o>.url == /snapshots/<dir>/ (no recorded overlays yet: a warning).
 //
 // Gates (exit 1 on any failure): exactly the eight known packages; header == the document's first lines and
@@ -70,9 +70,9 @@ if (fs.existsSync(assetsDir)) {
   if (!(ids.length === 1 && ids[0] === BID)) fail(`release bundle names buildIds [${ids.join(', ')}], want exactly ${BID} (${assetsDir})`);
 } else fail(`release bundle missing: ${assetsDir} (run scripts/pin-qed64.mjs pin)`);
 // QED64 embedding contract v1 (deps/qed64/docs/EMBEDDING.md §4): a dist built from a v1 page writes dist/qed64-build.json
-// {schema 'qed64.build/v1', buildId, …, shell, apiRevision}. The gallery reads pin.json's apiRevision to decide its mode
-// (V1 = apiRevision != null: the page API, embed mode, #code=; null = the legacy page: qed64.buffer seed, relay waits), so
-// pins A–E (no such file) keep booting exactly as before. check-gallery.mjs #4 verifies both fields against that file.
+// {schema 'qed64.build/v1', buildId, …, shell, apiRevision}. The gallery reads pin.json's apiRevision (the page API, embed
+// mode, #code=). Every registered pin is a v1 page: a release without the file, or without an apiRevision, fails (the
+// legacy page of pins A–E is retired). check-gallery.mjs #4 verifies both fields against that file.
 let apiRevision = null; let shell = null;
 const buildFile = path.join(releaseDir, 'dist', 'qed64-build.json');
 if (fs.existsSync(buildFile)) {
@@ -82,8 +82,8 @@ if (fs.existsSync(buildFile)) {
   if (b.commit && lock.qed64 && b.commit !== lock.qed64.commit) fail(`${buildFile} names commit ${b.commit}, lock ${lock.qed64.commit}`);
   apiRevision = typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null;
   shell = typeof b.shell === 'string' && b.shell ? b.shell : null;
-  if (apiRevision === null) warnings.push(`${buildFile} has no apiRevision: the gallery runs in legacy mode on this pin`);
-}
+  if (apiRevision === null) fail(`${buildFile} has no apiRevision: the gallery needs a v1 page (embedding contract v1)`);
+} else fail(`release has no ${buildFile}: the gallery needs a v1 page (embedding contract v1)`);
 let leanVersion = null;
 const rtManifest = path.join(releaseDir, 'public', 'runtime', `runtime-manifest.${BID}.json`);
 if (fs.existsSync(rtManifest)) {
@@ -113,7 +113,7 @@ const pin = {
   buildId: BID,
   bundleBuildIds: [...bundleIds].sort(),
   leanVersion,
-  apiRevision, // release/<pin>/dist/qed64-build.json apiRevision (embedding contract v1), else null (legacy page)
+  apiRevision, // release/<pin>/dist/qed64-build.json apiRevision (embedding contract v1; required)
   shell,       // its shell id ("shell-" + 16 hex over the dist listing), else null
   overlays,    // logical overlay → served directory (/snapshots/<dir>/): pins.mjs overlayDirs, == the lock's overlays.<o>.url
   qed64: { commit: lock.qed64.commit, promote: lock.qed64.promote },

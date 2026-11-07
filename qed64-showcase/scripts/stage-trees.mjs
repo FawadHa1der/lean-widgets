@@ -46,7 +46,7 @@
 //    G2, and nothing stops a `showcase.sh native` step (another lane, another pin) from rewriting it meanwhile, so the
 //    record check runs again after G6 ("N0 again", below).
 // G0 (before anything is cloned; only for a pin whose descriptor records the digest, pins/<id>/pin.json
-//    servedTrees.baseSlimDigest / baseFatDigest / coreDigest; pins A–H record none): the tree digest of --base (when it
+//    servedTrees.baseSlimDigest / baseFatDigest / coreDigest; 58ebbad records only coreDigest): the tree digest of --base (when it
 //    is the pin's servedTrees.baseSlim for --slim, servedTrees.baseFat for --fat) and of --core-src (when it is
 //    servedTrees.coreSrc) equals the recorded digest, and the recorded digest equals the pin's QED64
 //    embedding/base-tree.json trees.lib-tree-slim / lib-tree / core-lib-slim digest where that file exists (QED64 385a1ac
@@ -245,7 +245,7 @@ const t0 = Date.now();
 const digests = [];
 const samePath = (a, b) => { const r = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } }; return !!a && !!b && r(a) === r(b); };
 for (const [key, dir] of [[opt.mode === 'fat' ? 'baseFat' : 'baseSlim', opt.base], ['coreSrc', opt.coreSrc]]) {
-  if (!SERVED[DIGEST_FIELDS[key].field]) continue; // pins A–H: no digest recorded
+  if (!SERVED[DIGEST_FIELDS[key].field]) continue; // the pin records no digest for it (58ebbad: no baseSlimDigest)
   if (!samePath(dir, ENV.expandPath(SERVED[key]))) { console.log(`note G0 ${key}: ${dir} is not the pin's servedTrees.${key}; its digest is not checked`); continue; }
   const r = servedDigest(key, dir);
   digests.push({ key: r.key, dir: r.dir, want: r.want, got: r.got, ok: r.ok });

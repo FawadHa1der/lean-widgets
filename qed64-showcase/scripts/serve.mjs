@@ -5,7 +5,7 @@
 //   1. /showcase/...             -> $SC/gallery/...                     (/showcase/ -> index.html)
 //   2. /snapshots/<dir>/...      -> the pin's runtime store out/runtimes/<buildId>/overlay/<o>/ for the pin's SERVED overlay
 //                                   directories <dir> = overlayDir(<o>, pin) of widgets7 and widgets8 (scripts/lib/pins.mjs:
-//                                   the bare name for pins A–H, '<o>.<bid16>' for a pin.json v3 "per-runtime" pin; resolved
+//                                   '<o>.<bid16>', the pin.json v3 "per-runtime" directory; resolved
 //                                   ONCE at start), else $SC/out/overlay/snapshots/<dir>/... (only when that dir exists: the
 //                                   UX suite's own fixture overlays, e.g. ux-unpaired-<pid>). A bare logical name
 //                                   (widgets7, widgets8) is NEVER served through that fixture route: for a per-runtime pin
@@ -17,8 +17,8 @@
 //   4. everything else           -> $R/dist/...                         (/ -> index.html)
 // Every response: COOP same-origin, COEP require-corp, CORP same-origin; Content-Length; no
 // Content-Encoding; Cache-Control by QED64's own isImmutable() (imported from the served pin's QED64 sources, the
-// submodule deps/qed64 or the pin's worktree, scripts/lib/qed64-src.mjs: infra/edge-worker.js where the pin has it
-// (84d594e on; the library infra/worker.js imports), else infra/worker.js (pins A–E)). HEAD answered; missing
+// submodule deps/qed64 or the pin's worktree, scripts/lib/qed64-src.mjs: infra/edge-worker.js, the library
+// infra/worker.js imports). HEAD answered; missing
 // files are 404 (never an SPA fallback). ETag + If-None-Match -> 304 (revalidation, like production).
 //
 // The pin (scripts/lib/pins.mjs; pins are keyed by QED64 commit) is fixed when the server starts: the active pin, or
@@ -59,7 +59,7 @@ const API_HEADER = (() => {
   return typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : 'none';
 })();
 // the pin's paired overlays, resolved now (the active links may be switched later; this server keeps serving its pin),
-// keyed by the SERVED directory (pins.mjs overlayDir: widgets8 for pins A–H, widgets8.<bid16> for a per-runtime pin)
+// keyed by the SERVED directory (pins.mjs overlayDir: widgets8.<bid16>, the per-runtime directory)
 const PINNED_OVERLAYS = Object.fromEntries(PIN_OVERLAYS.map((o) => [overlayDir(o, PIN), path.join(outRtDir(BID), 'overlay', o)]));
 const GALLERY = process.env.GALLERY_DIR ? path.resolve(process.env.GALLERY_DIR) : path.join(SC, 'gallery'); // GALLERY_DIR: mutation tests only
 const OVERLAYS = path.join(SC, 'out', 'overlay', 'snapshots');
@@ -79,10 +79,10 @@ function mimeOf(p) {
   return MIME[path.extname(p).toLowerCase()] || 'application/octet-stream';
 }
 // QED64's cache rule, not a copy: imported from the served pin's QED64 sources. infra/edge-worker.js (QED64's library,
-// 84d594e on) exports it with no other import; from 385a1ac on QED64's infra/worker.js also imports the toolchain
-// release record and builds its Worker at load, so the library is preferred. Pins A–E have only infra/worker.js.
+// 84d594e on, so every registered pin) exports it with no other import; QED64's infra/worker.js also imports the
+// toolchain release record and builds its Worker at load, so it is never imported here.
 const QED64_INFRA = path.join(storePath('qed64', { id: PIN }), 'infra');
-const ISIMMUTABLE_SRC = fs.existsSync(path.join(QED64_INFRA, 'edge-worker.js')) ? 'edge-worker.js' : 'worker.js';
+const ISIMMUTABLE_SRC = 'edge-worker.js';
 const { isImmutable } = await import(pathToFileURL(path.join(QED64_INFRA, ISIMMUTABLE_SRC)).href);
 if (typeof isImmutable !== 'function') throw new Error(`${path.join(QED64_INFRA, ISIMMUTABLE_SRC)} exports no isImmutable`);
 

@@ -16,10 +16,10 @@
 //                                      runtime, packs and stock snapshots), each file's sha256 == the lock
 //   per runtime  out/runtimes/<bid>/   overlay/widgets7, overlay/widgets8 (the paired snapshot regions), headless/ (the
 //                                      wasm verifiers' results)
-//                SERVED as             /snapshots/<dir>/ with <dir> = overlayDir(<o>, id): the bare logical name for a
-//                                      pin.json schema v2 (pins A–H: /snapshots/widgets8/), '<o>.<bid16>' for schema v3 with
-//                                      "overlayDirs": "per-runtime" (pin I: /snapshots/widgets8.f69cca24d0878a58/), so a new
-//                                      runtime's overlays never overwrite the bare directories an older live shell reads.
+//                SERVED as             /snapshots/<dir>/ with <dir> = overlayDir(<o>, id) = '<o>.<bid16>' (pin.json schema
+//                                      v3 with "overlayDirs": "per-runtime", e.g. /snapshots/widgets8.f69cca24d0878a58/),
+//                                      so a new runtime's overlays never overwrite the bare directories an older live shell
+//                                      reads (H's, which stay in R2 while H is a rollback target).
 //                                      Stores, links, lock keys, records and the UI keep the logical names widgets7/widgets8;
 //                                      only URLs (the lock's overlays.<o>.url, gallery/pin.json overlays, R2 keys) use <dir>.
 //                $W/runtimes/<bid>/    stage1/ (the runtime artifact), raw/, bake-out-w7|w8/, bake-work-w7|w8/,
@@ -58,22 +58,19 @@ export const OVERLAYS = ['widgets7', 'widgets8'];
 // ---- the SERVED overlay directories (the naming contract; every serve/deploy/gallery/test path asks these) ----
 // The logical names OVERLAYS stay the names of stores, links, lock keys, records and the UI. The directory a pin's
 // overlay is SERVED from (/snapshots/<dir>/) is a function of the pin descriptor alone:
-//   schema qed64-showcase.pin/v2 (pins A–H, frozen)                  <dir> = <o>                e.g. widgets8
 //   schema qed64-showcase.pin/v3 with "overlayDirs": "per-runtime"     <dir> = <o>.<bid16>        e.g. widgets8.f69cca24d0878a58
 // (<bid16> = buildId without 'wasm64-'). A per-runtime directory never collides with the bare directories an older live
-// shell reads, so a new runtime's overlays upload beside them; anything else throws.
-export const PIN_SCHEMA_V2 = 'qed64-showcase.pin/v2';
+// shell reads, so a new runtime's overlays upload beside them; any other descriptor throws. (Schema v2, the bare names of
+// pins A–H, is retired: those descriptors are at the pins-history tag.)
 export const PIN_SCHEMA_V3 = 'qed64-showcase.pin/v3';
-export const PIN_SCHEMAS = [PIN_SCHEMA_V2, PIN_SCHEMA_V3];
 export const OVERLAY_DIRS_PER_RUNTIME = 'per-runtime';
 /** A served overlay directory name; the same pattern as gallery/lib.js OVERLAY_RE (kept in sync by hand). */
 export const OVERLAY_DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
-/** The descriptor schema rule (no file access): v2 must not carry overlayDirs; v3 must say overlayDirs 'per-runtime'.
+/** The descriptor schema rule (no file access): schema v3, with overlayDirs 'per-runtime'.
  *  Returns the descriptor; throws with `where` (e.g. pins/<id>/pin.json) in the message. */
 export function checkDescriptorSchema(p, where = 'pin.json') {
-  if (!p || !PIN_SCHEMAS.includes(p.schema)) throw new Error(`${where}: schema ${p && p.schema} is not one of ${PIN_SCHEMAS.join(', ')}`);
-  if (p.schema === PIN_SCHEMA_V2 && p.overlayDirs !== undefined) throw new Error(`${where}: schema ${PIN_SCHEMA_V2} serves bare overlay names and takes no overlayDirs (got ${JSON.stringify(p.overlayDirs)}); per-runtime directories need ${PIN_SCHEMA_V3}`);
+  if (!p || p.schema !== PIN_SCHEMA_V3) throw new Error(`${where}: schema ${p && p.schema} is not ${PIN_SCHEMA_V3}`);
   if (p.schema === PIN_SCHEMA_V3 && p.overlayDirs !== OVERLAY_DIRS_PER_RUNTIME) throw new Error(`${where}: schema ${PIN_SCHEMA_V3} requires "overlayDirs": "${OVERLAY_DIRS_PER_RUNTIME}" (got ${JSON.stringify(p.overlayDirs)})`);
   // "retired": why the pin can no longer be switched to (scripts/pin-switch.mjs: check --if-materialized reports it, use refuses it)
   if (p.retired !== undefined && !(typeof p.retired === 'string' && p.retired.trim())) throw new Error(`${where}: "retired" must be a non-empty string (got ${JSON.stringify(p.retired)})`);
@@ -83,15 +80,14 @@ export function checkDescriptorSchema(p, where = 'pin.json') {
 export function overlayDirOfDescriptor(o, desc) {
   if (!OVERLAYS.includes(o)) throw new Error(`overlayDir: '${o}' is not a logical overlay (${OVERLAYS.join(', ')})`);
   let dir;
-  if (desc && desc.schema === PIN_SCHEMA_V2) dir = o;
-  else if (desc && desc.schema === PIN_SCHEMA_V3 && desc.overlayDirs === OVERLAY_DIRS_PER_RUNTIME && BID_RE.test(desc.buildId || '')) dir = `${o}.${desc.buildId.slice(7)}`;
+  if (desc && desc.schema === PIN_SCHEMA_V3 && desc.overlayDirs === OVERLAY_DIRS_PER_RUNTIME && BID_RE.test(desc.buildId || '')) dir = `${o}.${desc.buildId.slice(7)}`;
   else throw new Error(`overlayDir: pin ${desc && desc.id} (schema ${desc && desc.schema}, overlayDirs ${JSON.stringify(desc && desc.overlayDirs)}, buildId ${desc && desc.buildId}) has no overlay naming rule`);
   if (!OVERLAY_DIR_RE.test(dir)) throw new Error(`overlayDir: '${dir}' does not match ${OVERLAY_DIR_RE}`);
   return dir;
 }
-/** The served directory of logical overlay `o` (widgets7|widgets8) for pin `id`: 'widgets8' (v2) or 'widgets8.<bid16>' (v3). */
+/** The served directory of logical overlay `o` (widgets7|widgets8) for pin `id`: 'widgets8.<bid16>'. */
 export function overlayDir(o, id = targetPinId()) { return overlayDirOfDescriptor(o, pinDescriptor(id)); }
-/** {widgets7: <dir>, widgets8: <dir>} for pin `id` (the identity map for pins A–H). */
+/** {widgets7: <dir>, widgets8: <dir>} for pin `id`. */
 export function overlayDirs(id = targetPinId()) { const d = pinDescriptor(id); return Object.fromEntries(OVERLAYS.map((o) => [o, overlayDirOfDescriptor(o, d)])); }
 /** The served URL prefix of logical overlay `o` for pin `id`: /snapshots/<dir>/ (the lock's overlays.<o>.url). */
 export function overlayUrl(o, id = targetPinId()) { return `/snapshots/${overlayDir(o, id)}/`; }
@@ -110,7 +106,7 @@ export function pinDescriptor(id = activePinId()) {
   const f = path.join(repoPinDir(id), 'pin.json');
   if (!fs.existsSync(f)) throw new Error(`no pin descriptor ${path.relative(SC, f)} (registered pins: ${listPins().map((p) => p.id).join(', ') || 'none'})`);
   const p = readJson(f);
-  checkDescriptorSchema(p, path.relative(SC, f)); // v2 (bare overlay dirs, pins A–H) or v3 + overlayDirs 'per-runtime'
+  checkDescriptorSchema(p, path.relative(SC, f)); // v3 + overlayDirs 'per-runtime'
   if (p.id !== id || pinIdOf(p.qed64 && p.qed64.commit) !== id) throw new Error(`${path.relative(SC, f)} names id ${p.id} / commit ${p.qed64 && p.qed64.commit}, not ${id}`);
   if (!BID_RE.test(p.buildId || '')) throw new Error(`${path.relative(SC, f)}: buildId ${p.buildId} is not a wasm64 buildId`);
   return p;

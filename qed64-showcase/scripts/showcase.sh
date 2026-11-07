@@ -195,9 +195,9 @@ docker_busy() { command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null
 # built in). A new pin's native build runs while it is staged (pin-switch refuses to switch to a pin without its stores),
 # so the active lock would name the previous release's image. The tag qed64-toolchain:emsdk-6.0.5 is rebuilt by whoever
 # builds the wasm64 toolchain: the kernel fork (github.com/FawadHa1der/lean4, docker-wasm64/Dockerfile; each of its
-# releases lean-v<lean>-<kernel7> records the image identity in release.json docker.imageId: lean-v4.34.0-a8817d0 for pins
-# up to bf9d947, lean-v4.34.0-e1a79c1 for 385a1ac, lean-v4.35.0-b081e7c (sha256:9563286ca922…) for 521cf3f, whose QED64
-# sources pin it as toolchain/lean4-wasm64-release.json). QED64 no longer builds the toolchain itself. So it can move under
+# releases lean-v<lean>-<kernel7> records the image identity in release.json docker.imageId: lean-v4.34.0-53cb11e for
+# 58ebbad, lean-v4.35.0-b081e7c (sha256:9563286ca922…) for 521cf3f, whose QED64 sources pin it as
+# toolchain/lean4-wasm64-release.json). QED64 no longer builds the toolchain itself. So it can move under
 # us; then `native` refuses until the image is re-pinned (README "Re-pin": Docker tag drift). verify reports it as DRIFT.
 # toolchain.docker.equivalent lists further image ids shown to build the SAME oleans byte for byte (docs/BUILD-FROM-SOURCE.md
 # "Docker image drift"); they are accepted too.
@@ -445,17 +445,16 @@ process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log(`FAIL pin constants: ${e.message}`); process.exit(1); });
 EOF
 }
-# where the ACTIVE pin's runtime bin comes from: the kernel fork's release that carries it. QED64 sources from 385a1ac on
-# pin it (toolchain/lean4-wasm64-release.json: id + digest); older pins only name the kernel commit (lean-v4.34.0-<kernel7>).
-# One line, for check_stage1's FAIL message.
+# where the ACTIVE pin's runtime bin comes from: the kernel fork's release that carries it. QED64's sources pin it
+# (toolchain/lean4-wasm64-release.json: id + digest; 385a1ac on, so every registered pin). One line, for check_stage1's
+# FAIL message.
 stage1_hint() {
   local q rec; q="$(SHOWCASE_PIN= node "$SC/scripts/lib/pins.mjs" store qed64 2>/dev/null)"; rec="$q/toolchain/lean4-wasm64-release.json"
   if [ -n "$q" ] && [ -f "$rec" ]; then
     node -e 'const r = require(process.argv[1]), w = process.argv[2], id = r.id, bid = r.runtime.buildId;
 console.log(`release ${id} (runtime ${bid}, named by QED64'"'"'s toolchain/lean4-wasm64-release.json): unpack its tools/lean4-wasm64-*.tgz, then \`node <package>/cli.mjs fetch --from <release dir> --id ${id} --digest ${r.digest} --out ${w}/toolchains/${id} --only runtime\` (FETCH VERIFIED) and \`cp -Rc ${w}/toolchains/${id}/bin ${w}/runtimes/${bid}/stage1/bin\`; always node, never npx`)' "$rec" "$W" 2>/dev/null && return 0
   fi
-  local k; k="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).qed64.kernel.slice(0,7)' "$SC/QED64.lock.json" 2>/dev/null)"
-  echo "the kernel fork's release lean-v4.34.0-${k:-<kernel7>}: \`node <lean4-wasm64 package dir>/cli.mjs fetch --only runtime\`, its bin/ into $W/stage1/bin"
+  echo "the kernel fork's release named by QED64's toolchain/lean4-wasm64-release.json at the active pin (not readable here: check out the pin's QED64 sources, scripts/lib/qed64-src.mjs)"
 }
 check_stage1() {
   local bid got; bid="$(lock_buildid)"
@@ -468,7 +467,7 @@ check_stage1() {
 }
 # the ACTIVE pin's overlays: each logical store out/overlay/snapshots/<o> (the active link) holds a well-formed index of
 # the active runtime, and the active lock's overlays.<o>.url is the pin's SERVED directory (scripts/lib/pins.mjs overlayUrl:
-# /snapshots/widgets8/ for pins A–H, /snapshots/widgets8.<bid16>/ for a per-runtime pin)
+# /snapshots/widgets8.<bid16>/, the per-runtime directory)
 check_overlays_cheap() {   # [widgets7|widgets8 …] (default both)
   node - "$SC/out/overlay/snapshots" "$(lock_buildid)" "$SC/QED64.lock.json" "$SC/scripts/lib/pins.mjs" "$@" <<'EOF'
 (async () => {

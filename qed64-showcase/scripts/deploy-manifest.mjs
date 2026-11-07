@@ -5,9 +5,9 @@
 //   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8,widgets7] [--no-stock-snapshots]
 //                                    [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
 //       --overlays takes LOGICAL names (widgets7, widgets8; any other name is a literal directory). Each is uploaded under
-//       its SERVED directory, /snapshots/<dir>/ with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin): the bare name
-//       for pins A–H (pin.json v2), '<o>.<bid16>' for a per-runtime pin (v3, pin I on); options.overlayDirs records the
-//       map, and every lookup of an overlay index goes through it.
+//       its SERVED directory, /snapshots/<dir>/ with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin) = '<o>.<bid16>'
+//       (pin.json v3, per-runtime); options.overlayDirs records the map, and every lookup of an overlay index goes
+//       through it.
 //       Enumerate every file, hash it (sha256), validate the invariants below, and write
 //       <out>/manifest.json (deterministic: no timestamps) plus one rclone file list per upload group
 //       (<out>/rclone/<group>.<immutable|mutable>.files, paths relative to that group's local root).
@@ -180,14 +180,14 @@ function contentTypeProblem(url, ct) {
   return null;
 }
 // QED64's cache rule, not a copy: imported from the active pin's QED64 sources (the submodule deps/qed64;
-// scripts/lib/qed64-src.mjs): infra/edge-worker.js, QED64's dependency-free library (84d594e on), where the pin has it
-// (from 385a1ac on QED64's infra/worker.js also imports the toolchain release record and builds its Worker at load),
-// else infra/worker.js (pins A–E). If the sources are not checked out, every use fails with the reason.
+// scripts/lib/qed64-src.mjs): infra/edge-worker.js, QED64's dependency-free library (84d594e on, so every registered
+// pin; QED64's infra/worker.js also imports the toolchain release record and builds its Worker at load, so it is never
+// imported here). If the sources are not checked out, every use fails with the reason.
 let qedIsImmutable = null, qedSrcError = null, qedIsImmutableSrc = 'deps/qed64/infra/edge-worker.js', qedReleaseRoutes = null;
 try {
   const PINS = await import('./lib/pins.mjs');
   const infra = path.join(PINS.storePath('qed64', { id: PINS.activePinId() }), 'infra');
-  const f = fs.existsSync(path.join(infra, 'edge-worker.js')) ? 'edge-worker.js' : 'worker.js';
+  const f = 'edge-worker.js';
   qedIsImmutableSrc = `${rel(infra)}/${f}`;
   ({ isImmutable: qedIsImmutable, releaseRoutes: qedReleaseRoutes } = await import(pathToFileURL(path.join(infra, f)).href));
   if (typeof qedIsImmutable !== 'function') throw new Error(`${qedIsImmutableSrc} exports no isImmutable`);
@@ -260,7 +260,7 @@ function build(opts) {
   // only while the served mutable index names another runtime (a split upload's window, decision E1; a later runtime's
   // indexes once that is deployed), so the copies go up in upload phase 2 and stay. QED64's git tracks
   // neither, so they are materialized under <out>/pinned-indexes/snapshots (rclone --files-from needs source name == key
-  // name); --from-lock takes size + sha256 from the lock's entry of the index they copy. Pins A–H have no flag: unchanged.
+  // name); --from-lock takes size + sha256 from the lock's entry of the index they copy. A pin without the flag: unchanged.
   const pinnedIndexes = !!(pinDescriptor(pinId).hardening || {}).pinnedIndexes;
   if (pinnedIndexes) {
     const pdir = path.join(OUT, 'pinned-indexes', 'snapshots');

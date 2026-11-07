@@ -9,11 +9,10 @@
 #   node <PRE> --url http://localhost:5190/?snapshots=snapshots/<dir> --no-boot
 #   node <PRE> --url …same… (with the headless boot smoke)
 # (<PRE> = QED64's preflight in the target pin's sources (the submodule deps/qed64 or the pin's worktree):
-#  pipeline/release/preflight.mjs where it exists (QED64 385a1ac on), else tests/adversarial/preflight.mjs (pins up to
-#  bf9d947; at 385a1ac that path is a one-cycle shim that prints a deprecation WARNING); the PREFLIGHT OK line is the same)
+#  pipeline/release/preflight.mjs, QED64 385a1ac on, so every registered pin)
 # in place (read-only: no --run-dir) and stops the server it started.
 # Arguments are LOGICAL overlay names: <dir> is the target pin's SERVED directory (scripts/lib/pins.mjs overlay-dir:
-# widgets8 for pins A–H, widgets8.<bid16> for a per-runtime pin); any other argument is used as a directory literally.
+# widgets8.<bid16>, the per-runtime directory); any other argument is used as a directory literally.
 # Logs keep the logical name: W/logs/preflight-<name>-{noboot,boot}.log; the serve log slice of each boot is kept to show
 # which .snapz files the boot fetched.
 set -u
@@ -21,8 +20,8 @@ SC="$(cd "$(dirname "$0")/.." && pwd)"
 . "$(cd "$(dirname "$0")" && pwd)/lib/env.sh"   # SC, W: scripts/lib/env.sh
 . "$(cd "$(dirname "$0")" && pwd)/lib/platform.sh"   # free_inactive_gib (vm_stat / /proc/meminfo), procs_by_exe
 QSRC="$(node "$SC/scripts/lib/pins.mjs" store qed64)" || exit 2   # QED64's preflight.mjs at the target pin's commit
-PRE="$QSRC/pipeline/release/preflight.mjs"; [ -f "$PRE" ] || PRE="$QSRC/tests/adversarial/preflight.mjs"
-[ -f "$PRE" ] || { echo "REFUSED: no preflight.mjs in $QSRC (pipeline/release/ or tests/adversarial/)"; exit 2; }
+PRE="$QSRC/pipeline/release/preflight.mjs"
+[ -f "$PRE" ] || { echo "REFUSED: no pipeline/release/preflight.mjs in $QSRC"; exit 2; }
 PORT="${PORT:-5190}"
 WAIT_S=${WAIT_S:-900}
 # the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin). serve-start.sh passes SHOWCASE_PIN on to

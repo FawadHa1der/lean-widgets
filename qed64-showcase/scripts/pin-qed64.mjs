@@ -43,9 +43,8 @@
 //                                       widgets7|widgets8: index.json + both .snapz) into its lock (`overlays`), after
 //                                       the cheap pairing check; the lock is what bootstrap verifies fetched overlays by.
 //                                       Each record's `url` is where the overlay is SERVED, /snapshots/<dir>/ with
-//                                       <dir> = overlayDir(<o>, id) (scripts/lib/pins.mjs): the bare name for a v2
-//                                       descriptor (pins A–H: /snapshots/widgets8/), '<o>.<bid16>' for a v3 one with
-//                                       "overlayDirs": "per-runtime" (/snapshots/widgets8.f69cca24d0878a58/)
+//                                       <dir> = overlayDir(<o>, id) (scripts/lib/pins.mjs): '<o>.<bid16>' for the v3
+//                                       descriptor with "overlayDirs": "per-runtime" (/snapshots/widgets8.f69cca24d0878a58/)
 //
 // The widget sources: $W/widgets-src is a `git archive` of this repository's packages/ at WIDGETS_COMMIT
 // (scripts/export-widgets.mjs; scripts/lib/widgets-src.mjs). WIDGETS_SOURCE_HASH (amendment 1) = sha256 over the
@@ -88,9 +87,8 @@ try {
 const QED64_UPSTREAM = 'https://github.com/FawadHa1der/QED64';
 // --pin <id> (default: the active pin). Its descriptor names the QED64 commit (QPIN), the promote, the runtime buildId and
 // the kernel commit that built the served lean.wasm: QED64's tracked release record toolchain/lean4-wasm64-release.json
-// at QPIN (kernel.commit, gate passed on it, runtime.buildId == the descriptor's; QED64 >= 4f46477, e.g. pin I 385a1ac),
-// else its tracked pipeline/toolchain/KERNEL-PIN at QPIN, first token (pins A–H). Recorded in the lock as qed64.kernel
-// and re-checked by verify #9 (kernelAt below).
+// at QPIN (kernel.commit, gate passed on it, runtime.buildId == the descriptor's; QED64 >= 4f46477, which every
+// registered pin is). Recorded in the lock as qed64.kernel and re-checked by verify #9 (kernelAt below).
 const pinArg = process.argv.indexOf('--pin');
 const ID = pinArg > 0 ? process.argv[pinArg + 1] : activePinId();
 if (!ID_RE.test(ID || '')) { console.error(`--pin needs a pin id: the 7-hex prefix of the QED64 commit (got ${ID})`); process.exit(2); }
@@ -103,7 +101,6 @@ const BID = DESC.buildId;
 const QPIN = DESC.qed64.commit;
 const QPROMOTE = DESC.qed64.promote;
 const KERNEL = DESC.qed64.kernel;
-const KERNEL_PIN_PATH = 'pipeline/toolchain/KERNEL-PIN';                // QED64 <= bf9d947 (pins A–H); deleted in 4f46477
 const RELEASE_RECORD_PATH = 'toolchain/lean4-wasm64-release.json';       // QED64 >= 4f46477: the kernel release it serves
 const RELEASE_RECORD_SCHEMA = 'lean4-wasm64.release/v1';
 // QED64 HARDENING fixes behind the descriptor's `hardening` flags (the UX suite branches on these flags: C9, C11, the
@@ -125,9 +122,7 @@ if (['pin', 'verify'].includes(cmd0)) {
 const DOCKER_IMAGE = ENV.DOCKER_IMAGE;
 // The image the native widget oleans are built in (lock toolchain.docker.id; `showcase.sh native` refuses any other):
 // the image the pin's kernel release was built in, its release record's docker.imageId as the 12-hex short id `docker
-// image ls` prints (dockerIdOf; lean-v4.35.0-b081e7c: 9563286ca922). Pins whose QED64 sources have no release record
-// (A–H) keep this constant, the image their oleans were built in.
-const DOCKER_ID_NO_RECORD = '8b6698bbf474';
+// image ls` prints (dockerIdOf; lean-v4.35.0-b081e7c: 9563286ca922).
 // The native compiler's shared libraries (lock toolchain.native64, beside stage1/bin/lean and lake). bin/lean and bin/lake
 // are ~70 KB launchers, byte-identical in the lean-v4.34.0-* and lean-v4.35.0-b081e7c builds, so only these sha256s tell
 // two native compilers apart. Locks registered before they were recorded lack them; verify #7 then compares the launchers.
@@ -183,7 +178,7 @@ function walk(dir, base = dir, out = []) {
 const urlToPublic = (u) => 'public' + u;
 // git show <rev>:<path> of the source dependency, or null when the path does not exist at <rev> (stderr silenced)
 const gitShowOrNull = (rev, p) => { try { return execFileSync('git', ['-C', SRC, 'show', `${rev}:${p}`], { maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return null; } };
-/** QED64's release record at `rev`, parsed; null when `rev` has none (QED64 < 4f46477: pins A–H). Throws when it is not
+/** QED64's release record at `rev`, parsed; null when `rev` has none (QED64 < 4f46477, no registered pin). Throws when it is not
  *  JSON. kernelAt validates it against the descriptor; dockerIdOf and recordChecks read its docker, native64, mathlib
  *  and packs fields. */
 function recordAt(rev) {
@@ -193,16 +188,12 @@ function recordAt(rev) {
 }
 /** The kernel commit QED64 names at `rev`, and where it was read: {kernel, from}. The release record (QED64 >= 4f46477)
  *  when it exists at `rev`, checked against the descriptor (schema, kernel.commit a full id, runtime.buildId == BID,
- *  gate passed on kernel.commit, gate.wasmSha256 == the buildId's lean.wasm digest); else the first token of KERNEL-PIN
- *  (pins A–H, which have no record). Throws when the record is malformed or disagrees, or when neither file exists. */
+ *  gate passed on kernel.commit, gate.wasmSha256 == the buildId's lean.wasm digest). Throws when the record is
+ *  missing, malformed or disagrees. */
 function kernelAt(rev) {
   const r7 = String(rev).slice(0, 7);
   const rec = recordAt(rev);
-  if (rec === null) {
-    const kp = gitShowOrNull(rev, KERNEL_PIN_PATH);
-    if (kp === null) throw new Error(`QED64 at ${r7} has neither ${RELEASE_RECORD_PATH} nor ${KERNEL_PIN_PATH}`);
-    return { kernel: kp.toString().split(/\s+/)[0], from: KERNEL_PIN_PATH };
-  }
+  if (rec === null) throw new Error(`QED64 at ${r7} has no ${RELEASE_RECORD_PATH} (QED64 < 4f46477: retired, see the pins-history tag)`);
   const k = rec.kernel && rec.kernel.commit;
   const bad = [
     rec.schema !== RELEASE_RECORD_SCHEMA && `schema ${rec.schema} != ${RELEASE_RECORD_SCHEMA}`,
@@ -214,10 +205,10 @@ function kernelAt(rev) {
   if (bad.length) throw new Error(`${RELEASE_RECORD_PATH} at ${r7}: ${bad.join('; ')}`);
   return { kernel: k, from: `${RELEASE_RECORD_PATH} kernel.commit (${rec.id})` };
 }
-/** The Docker image id `pin` records (see DOCKER_ID_NO_RECORD), and where it was read: {id, from}. Throws when a record
- *  names no image id (every lean4-wasm64.release/v1 record does). */
+/** The Docker image id `pin` records, and where it was read: {id, from}. Throws when there is no record, or when the
+ *  record names no image id (every lean4-wasm64.release/v1 record does). */
 function dockerIdOf(rec) {
-  if (!rec) return { id: DOCKER_ID_NO_RECORD, from: `the constant for pins without ${RELEASE_RECORD_PATH}` };
+  if (!rec) throw new Error(`no ${RELEASE_RECORD_PATH} at QPIN, so no Docker image id`);
   const full = String((rec.docker && rec.docker.imageId) || '').replace(/^sha256:/, '');
   if (!/^[0-9a-f]{64}$/.test(full)) throw new Error(`${RELEASE_RECORD_PATH} (${rec.id}): docker.imageId ${rec.docker && rec.docker.imageId} is not an image id (sha256:<64 hex>)`);
   const tag = rec.docker.tag && rec.docker.tag !== DOCKER_IMAGE ? `; the record names it ${rec.docker.tag}` : '';
@@ -407,11 +398,11 @@ async function pin() {
   console.log(`S0.2 OK  QED64 HEAD=${head} clean, kernel ${kpin.slice(0, 10)} from ${kfrom}, serves ${qbid}`);
 
   // toolchain pins (S0.5 #7), before the release clone so a refusal leaves release/<id> as it was. The release record at
-  // QPIN (null for pins A–H) names the native toolchain the pin's kernel release was built with: the record read from
+  // QPIN names the native toolchain the pin's kernel release was built with: the record read from
   // QED64_KERNEL_BUILD, or carried from another pin's lock, must be that one (recordChecks), else pin refuses.
   const rec = recordAt(QPIN);
-  // the kernel build: the QED64_KERNEL_BUILD candidate built from the native64/Mathlib commits the record names (pins
-  // A–H have none: this pin's lock, else a single dir unchecked, as before). Candidates given and none of them -> refuse
+  // the kernel build: the QED64_KERNEL_BUILD candidate built from the native64/Mathlib commits the record names (a record
+  // without them: this pin's lock, else a single dir unchecked). Candidates given and none of them -> refuse
   const kb = ENV.pinKernelBuild(ID, rec?.native64?.commit && rec?.mathlib?.commit ? { native: rec.native64.commit, mathlib: rec.mathlib.commit, from: `${RELEASE_RECORD_PATH} (${rec.id})` } : undefined);
   if (ENV.K_CANDIDATES.length && !kb.dir) throw new Error(`QED64_KERNEL_BUILD names no kernel build of pin ${ID}: ${kb.why}`);
   K = kb.dir;
@@ -543,8 +534,8 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   let act = null; try { act = activePinId(); } catch { /* no active pin yet */ }
   console.log(`     pin ${ID} = QED64 ${QPIN.slice(0, 12)}, runtime ${BID} (${ID === act ? 'ACTIVE' : 'staged'}): ${path.relative(SC, STORE)}/, ${path.relative(SC, R)}/`);
   ok(lock.qed64.commit === QPIN && lock.qed64.buildId === BID && lock.qed64.promote === QPROMOTE, 'lock pins the descriptor\'s commit, promote and buildId', `${lock.qed64.commit.slice(0, 12)} ${lock.qed64.buildId}`);
-  // 9. the kernel that built the served lean.wasm (QED64's release record at QPIN, else its KERNEL-PIN) == KERNEL == lock
-  let kpin = null, kfrom = `${RELEASE_RECORD_PATH} or ${KERNEL_PIN_PATH}`, kerr = '';
+  // 9. the kernel that built the served lean.wasm (QED64's release record at QPIN) == KERNEL == lock
+  let kpin = null, kfrom = RELEASE_RECORD_PATH, kerr = '';
   try { ({ kernel: kpin, from: kfrom } = kernelAt(QPIN)); } catch (e) { kerr = e.message; }
   ok(kpin === KERNEL && lock.qed64.kernel === KERNEL, `#9 ${kfrom} at QPIN == KERNEL == lock qed64.kernel`, kerr || `${String(kpin).slice(0, 10)} / lock ${String(lock.qed64.kernel).slice(0, 10)}`);
   let objOk = true; try { git('cat-file', '-e', `${QPIN}^{commit}`); } catch { objOk = false; }
@@ -716,8 +707,8 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   ok(dcopies.length > 0 && !dbad.length, `#10 the ${dcopies.length} dist/ copies of tracked public/ files == git show ${QPIN.slice(0, 7)}:public/<f> (incl. dist/workers/lean.worker.js)`, dbad.slice(0, 3).join(', '));
   ok(dcopies.includes('dist/workers/lean.worker.js'), '#10 dist/workers/lean.worker.js is among them');
 
-  // 11. the pin's runtime overlays (served at /snapshots/<dir>/, <dir> = overlayDir(<o>, id): widgets7|8 for a v2
-  // descriptor, widgets7|8.<bid16> for a v3 per-runtime one) == the lock's `overlays` sha256/bytes; each record names this
+  // 11. the pin's runtime overlays (served at /snapshots/<dir>/, <dir> = overlayDir(<o>, id): widgets7|8.<bid16>, the v3
+  // per-runtime directory) == the lock's `overlays` sha256/bytes; each record names this
   // runtime's store (out/runtimes/<bid>/overlay/<o>) and the served URL overlayUrl(<o>, id)
   const ov = lock.overlays || {};
   if (!Object.keys(ov).length) ok(false, '#11 lock records the overlays', 'missing (run: pin-qed64.mjs record-overlays)');
@@ -743,8 +734,8 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   // 12. the descriptor's `hardening` flags agree with QED64's history at QPIN (HARDENING_FIXES): a flag true needs every
   // fix to be an ancestor of QPIN (FAIL otherwise: the UX suite would enforce a behaviour the pinned shell lacks); every
   // fix an ancestor with the flag absent or false is a FAIL too (otherwise `verify` and `pin use` go green while the UX
-  // suite records a VERDICT without any of QED64's asks enforced). Pins A–H carry no `hardening` and contain none of
-  // the fixes.
+  // suite records a VERDICT without any of QED64's asks enforced). A pin whose QPIN contains none of the fixes may
+  // omit `hardening`.
   const hard = DESC.hardening;
   if (hard !== undefined && (hard === null || typeof hard !== 'object' || Array.isArray(hard))) ok(false, `#12 pins/${ID}/pin.json hardening is an object`, JSON.stringify(hard));
   else {
@@ -822,7 +813,7 @@ async function recordOverlays() {
     }
     if (Object.keys(files).length !== ix.snapshots.length + 1) errs.push(`files ${Object.keys(files).join(',')}`);
     if (errs.length) { console.error(`FAIL overlay ${o}: ${errs.join('; ')}`); process.exit(1); }
-    // url: where the overlay is served, /snapshots/<dir>/ (bare for a v2 descriptor, <o>.<bid16> for a v3 per-runtime one)
+    // url: where the overlay is served, /snapshots/<dir>/ (<o>.<bid16>, the v3 per-runtime directory)
     overlays[o] = { dir: path.relative(SC, d), url: overlayUrl(o, ID), files };
   }
   lock.overlays = overlays;

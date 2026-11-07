@@ -119,11 +119,13 @@ for f in index.html workers/lean.worker.js workers/lsp-front-door.js workers/lsp
          showcase/index.html showcase/gallery.js showcase/lib.js showcase/qed64-bridge.js showcase/examples.json showcase/pin.json; do
   [ -f "$ASSETS/$f" ] || die "deploy tree incomplete: $f missing"
 done
-# QED64 385a1ac on: lean.worker.js loads the Memory64 probe with importScripts("memory64-probe.js") (a classic script that
-# sets globalThis.Qed64Memory64); older workers inline it. Required only where the staged worker names it, so pins A–H
-# deploy unchanged.
-if grep -q 'memory64-probe\.js' "$ASSETS/workers/lean.worker.js"; then
-  [ -f "$ASSETS/workers/memory64-probe.js" ] || die "deploy tree incomplete: workers/memory64-probe.js missing (workers/lean.worker.js loads it)"
+# QED64 385a1ac on (every registered pin): lean.worker.js loads the Memory64 probe with importScripts("memory64-probe.js"),
+# a classic script that sets globalThis.Qed64Memory64.
+[ -f "$ASSETS/workers/memory64-probe.js" ] || die "deploy tree incomplete: workers/memory64-probe.js missing (workers/lean.worker.js loads it)"
+# Later QED64 workers also import worker-constants.js. Required only where the staged worker names it (O and N have no
+# such file, so it never joins the list above).
+if grep -q 'worker-constants\.js' "$ASSETS/workers/lean.worker.js"; then
+  [ -f "$ASSETS/workers/worker-constants.js" ] || die "deploy tree incomplete: workers/worker-constants.js missing (workers/lean.worker.js loads it)"
 fi
 node - "$ASSETS" <<'EOF' || exit 3
 // the gallery's pin and the bundle must name the same runtime (deploy-manifest A4 checked the sources; this is the staged tree)

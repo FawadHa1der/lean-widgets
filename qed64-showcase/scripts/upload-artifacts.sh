@@ -25,8 +25,8 @@
 # Target: infra/deploy.env (R2_REMOTE=qed64-r2, R2_BUCKET=qed64-artifacts, R2_PREFIX=qed64-showcase/); environment
 # variables of the same name override it. MANIFEST_ARGS passes extra options to the manifest generator (smaller
 # variants: "--overlays widgets8 --no-stock-snapshots"; --overlays takes the LOGICAL names, which
-# deploy-manifest.mjs uploads under each pin's served directory, /snapshots/<dir>/ = scripts/lib/pins.mjs overlayDir: the
-# bare name for pins A–H, '<o>.<bid16>' for a per-runtime pin). DEPLOY_OUT (default out/deploy).
+# deploy-manifest.mjs uploads under each pin's served directory, /snapshots/<dir>/ = scripts/lib/pins.mjs overlayDir:
+# '<o>.<bid16>', the per-runtime directory). DEPLOY_OUT (default out/deploy).
 # VERIFY=0 skips the post-upload `rclone check`.
 #
 # 1. Preflight = `node scripts/deploy-manifest.mjs --prefix $R2_PREFIX` (regenerate: every file hashed, every gate)
