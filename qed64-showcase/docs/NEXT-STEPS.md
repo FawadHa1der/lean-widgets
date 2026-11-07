@@ -1,4 +1,4 @@
-# Next steps (updated 2026-11-05, release routing)
+# Next steps (updated 2026-11-07, P1 and P2 committed locally)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
@@ -17,7 +17,7 @@ browser lock counts browsers by executable, and `12aca96`, `eca8f22`: the CI reh
 objects, 2.367 GB to 12 objects, 1.107 GB at O, and `deploy-app.sh` checks each new version on its preview URL before it
 takes traffic (docs/DEPLOY-CLOUDFLARE.md 3.2, 3.3). Both rehearsals passed: `scripts/deploy-rehearsal/rehearse.sh all browser
 stop` on `dbfd000` (2026-11-02), and the CI mirror plus all 9 `ci/rehearse-deploy.sh` scenarios on `eca8f22` (2026-11-04;
-docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal). Nothing is pushed.
+docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal). Pushed with O as `b24587d`.
 
 **The owner's decisions (2026-11-01, in the QED64 session: QED64's report R14a and its hand-off
 `work/arch-impl-2026-11-01/handoffs/sent/showcase-2026-11-02.md`).** Approved: P3, the deploy of O, then P1 and P2 in one
@@ -50,15 +50,26 @@ are the owner's acts.
 
 A rollback to H after the promotion is docs/DEPLOY-CLOUDFLARE.md section 5.
 
-**Then P1 and P2 in one re-gate of about 12 h**, because both change the inputs of G2. C7's substring match
-(`tests/ux/specs/30-robustness.spec.mjs:97`, "are not loaded in this session") goes in that same gate.
+**P1 and P2: implemented, waiting for their re-gate (2026-11-07).** Both change the inputs of G2, so they share one
+re-gate of about 12 h. The plan is `$W/reports/p1-p2-plan-2026-11-02.md` (with the fd95a2a audit's amendments). The
+commits C1–C10 are on the local branch `p1-p2` (from `c7b7e49`: `b24587d` plus 470dda3 and c7b7e49, unpushed), not pushed; the record is docs/REPIN-LOG.md "P1 and P2".
 
-* **P1** keeps at most O and N registered and retires the others, H's registration included. A rollback to H does not
-  need that registration: it stays docs/DEPLOY-CLOUDFLARE.md section 5,
-  `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z`, then `wrangler rollback 29176b6f-cc41-4a16-bed4-c8753c7bd5f2`.
-* **P2** keeps one overlay, `widgets8`, and drops `widgets7`.
+* **P1, done in code.** Only O and N are registered; the other 12 descriptors and locks are at the tag
+  `pins-history-2026-11-07` (`b24587d`); the gallery's legacy mode, `gallery/qed64-bridge.js`, `gallery/x3.html` and the
+  tools that read the bridge are deleted; X4 is raw only. A rollback to H does not need H's registration: it stays
+  docs/DEPLOY-CLOUDFLARE.md section 5, `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z`, then
+  `wrangler rollback 29176b6f-cc41-4a16-bed4-c8753c7bd5f2`.
+* **P2, done in code.** One overlay, `widgets8`; both kept locks lost their widgets7 block, so O's and N's recorded
+  verdicts no longer match (`pin list` shows 0 until the re-gate).
+* **C7's substring match** (`tests/ux/specs/30-robustness.spec.mjs:97`, "are not loaded in this session") went in with
+  the safe-now edits (C9) and is proved by the same gate.
+* **Next, in order:** the re-gate (the plan's section 6: static, G1, controls, stage4 w8, the click-all CLI on w8, X4 raw
+  and `widgets.mjs` without `--thumbs`, the smoke, two full `ux` VERDICTs, C20 ×3, the headed sign-off, the 10 Mbit/s
+  first visit, the manifest and the verdict commit, the CI mirror and the deploy rehearsal); then the owner's one push of
+  the branch to `main` (no upload: the 9 objects are already in the bucket from O's upload). Rollback from that deploy is
+  to O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` (docs/DEPLOY-CLOUDFLARE.md section 5, "Rollback to O").
 
-While H is a rollback target, what must stay is listed in docs/DEPLOY-CLOUDFLARE.md section 6.
+While H and O are rollback targets, what must stay is listed in docs/DEPLOY-CLOUDFLARE.md section 6.
 
 **D11.** QED64 is retiring its release bundle (`39dee02`, on its origin/main since `fd95a2a`), so our steps 5 and 6 and
 P7 "Later" are dropped. The submodule and `scripts/build-shell.mjs` stay. P7 "Now" no longer waits for anything of QED64's
@@ -78,7 +89,7 @@ the plain page: `[apply]` edits the text and the fallback callback runs 0 times;
 
 **At the next re-pin of a pushed QED64 SHA.** The target is `f2b623a`, QED64's origin/main since 2026-11-03, deployed: same
 runtime and release as O, so no rebake. It comes after O's deploy and the P1+P2 re-gate. The checklist is
-`$W/reports/repin-arch-batch-checklist-2026-11-02.md`, with its amendments from the audit at `fd95a2a`, which holds for `f2b623a` (`$W/reports/repin-fd95a2a-audit-2026-11-03.md`). `f2b623a` no longer has `tests/adversarial/preflight.mjs`, so the re-pin needs this branch's lookup in `scripts/preflight-overlays.sh` on `main` first.
+`$W/reports/repin-arch-batch-checklist-2026-11-02.md`, with its amendments from the audit at `fd95a2a`, which holds for `f2b623a` (`$W/reports/repin-fd95a2a-audit-2026-11-03.md`). `f2b623a` no longer has `tests/adversarial/preflight.mjs`, so the re-pin needs the lookup in `scripts/preflight-overlays.sh` from `release-routing` (on `main` since `b24587d`; since P1 it reads only `pipeline/release/preflight.mjs`).
 
 ## Pin O `521cf3f`: active and gated (Lean 4.35); the state on 2026-10-28 and what stays open from it
 
@@ -234,7 +245,8 @@ and headless gates were green; its first full run `i-full2` (17:36Z) was red on 
 9 DistLens `twoDice … pmf_num` clicks (C20), W8 and C22 failed in Chrome with "the WebAssembly runtime's stack is
 exhausted", while H's runtime passes the same clicks 21/21 (docs/REPIN-LOG.md, pin I entry, "The regression"; repro
 `$W/pinI/repro-0036/`). #62, #63 and #64 held in that run. Its C10 crash was the tracing artifact above. Nothing is left
-to do on I: it stays registered, not deployed (`pin use 385a1ac` reproduces the regression).
+to do on I: it stayed registered, not deployed (`pin use 385a1ac` reproduced the regression; *historical*: I is retired since
+P1, at the tag `pins-history-2026-11-07`).
 
 ## Pin H `bf9d947`: gated; superseded locally by I on 2026-10-09
 
@@ -257,7 +269,7 @@ pushed**.
    deploy (the `qed64-deploy.yml` dispatch from GitHub, or `scripts/deploy-app.sh` locally). A deploy of H changes only
    the Worker and its assets: its 93 R2 objects are the live ones (same runtime and overlays). Fallbacks: G
    (`pin use 5c327c2`, one VERDICT, its keep-alive scenario), F (`pin use 84d594e`, no UX run), E (`pin use 33b0967`,
-   legacy mode, live).
+   legacy mode, live). *Historical:* those pins and the legacy mode are retired since P1 (tag `pins-history-2026-11-07`).
 4. **Optional, ours: measure HARDENING #59 on H** (QED64 reports it fixed by `e4cffcc`, which G and H carry): type at
    150 ms/char above a slow `#eval` with the InfoView open, and compare the pool size and the absence of a crash.
 5. **Docker tag drift, again (not acted on).** `qed64-toolchain:emsdk-6.0.5` now names `5708c2dbf5a1` (the kernel
@@ -366,7 +378,8 @@ those windows (it was 15/24 the day before). To confirm the fix:
 4. E is confirmed if C shows its usual rate (around 1 in 2) while E stays near 0.
 
 Other pins: D `3b42714` (E's runtime with the #52 worker only) and A stay staged; C is the fallback (`pin use 5ac5d00`,
-then two `ux` runs on the gallery that produces).
+then two `ux` runs on the gallery that produces). *Historical:* A–L are retired since P1 (tag `pins-history-2026-11-07`);
+the local fallback is N `58ebbad`.
 
 ## 3. Pin the widget sources to a git commit, and add a `widgets-sync` command (pending the user's decision)
 

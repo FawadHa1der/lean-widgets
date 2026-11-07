@@ -1,6 +1,6 @@
 # Deploying the showcase on its own origin (the kit; deployed 2026-10-05, see DEPLOY-CLOUDFLARE.md)
 
-> **Status: deployed on 2026-10-05** at https://qed64-showcase.fawadworkaddress.workers.dev (record in DEPLOY-CLOUDFLARE.md). This page describes the kit.
+> **Status: deployed on 2026-10-05** at https://qed64-showcase.fawadworkaddress.workers.dev (record in DEPLOY-CLOUDFLARE.md); since 2026-11-05 it serves pin O with release routing, and H is the rollback target. This page describes the kit.
 > Publishing needs the owner's Cloudflare account and an explicit go-ahead. This kit makes the
 > deployment reviewable before that: exactly which files go where, with sizes and sha256, plus
 > a dry-run check and a post-deploy smoke test.
@@ -25,13 +25,13 @@ follows QED64's own production setup (`qed64/docs/DEPLOY.md`, `qed64/infra/worke
 | URL | Served from | Content |
 |---|---|---|
 | `/` (and `/assets/*`, `/infoview/*`, `/workers/*`) | Workers static assets | the **pinned** QED64 `dist/` (`release/<pin id>/dist`, where `<buildId>` is `QED64.lock.json`'s `qed64.buildId`), byte-identical to the lock |
-| `/showcase/` | Workers static assets | `gallery/`, without `*.md` and the stage-A `x3.html` |
+| `/showcase/` | Workers static assets | `gallery/`, without `*.md` and dotfiles |
 | `/runtime/…` | R2 `lean4-wasm64/<release id>/`, never uploaded by us | runtime manifests + the 8 chunks at pin O |
 | `/profiles/…` except `/profiles/index.json` | same | the core pack (8 parts), the mathlib-essential pack (61 parts) and their manifests |
 | `/profiles/index.json` | R2 `qed64-showcase/` | the profile index |
 | `/snapshots/index.json`, `init…`, `mathlib…` | R2 | the stock pair, so the stock page still works at `/?…` |
 | `/snapshots/index.<buildId>.json`, `/snapshots/profiles-index.<buildId>.json` | R2 | only for a pin with `hardening.pinnedIndexes` (pin I on): QED64's per-build copies of the stock snapshot index and `/profiles/index.json` (HARDENING #64), which the shell reads only while the mutable index names another runtime (manifest gate R6) |
-| `/snapshots/<dir>/…` | R2 | our overlays: `index.json` + `init` + `widgets.<d16>.snapz`. `<dir>` is the pin's **served directory** (`scripts/lib/pins.mjs` `overlayDir`): `widgets8` and `widgets7` for pins A–H (`pin.json` schema v2), `widgets8.<bid16>` and `widgets7.<bid16>` from pin I on (schema v3, `"overlayDirs": "per-runtime"`; I: `widgets8.f69cca24d0878a58`), so a new runtime's overlays never replace the directories an older live shell reads |
+| `/snapshots/<dir>/…` | R2 | our overlay: `index.json` + `init` + `widgets.<d16>.snapz`. `<dir>` is the pin's **served directory** (`scripts/lib/pins.mjs` `overlayDir`): `widgets8.<bid16>` (schema v3, `"overlayDirs": "per-runtime"`; O: `widgets8.36d7f415704473d9`), so a new runtime's overlay never replaces the directories an older live shell reads. The retired v2 pins A–H used the bare `widgets8` and `widgets7` (H's stay while H is a rollback target), and until P2 every pin also had `widgets7.<bid16>` |
 
 The gallery iframes `/?snapshots=snapshots/<dir>` from the same origin (`gallery/pin.json` `overlays` maps the logical
 name to `<dir>`; `?overlay=widgets8` is an alias in the gallery, and the Worker does no rewrite). That `?snapshots=`
@@ -88,7 +88,7 @@ manifest packaging a gallery whose own gate was red):
   unchanged from start to end, and the server under test **served** exactly that gallery at the start and at
   the end (the same content hash over the bytes fetched from it). G2 then matches the run's gallery content
   sha256 (`scripts/lib/gallery-hash.mjs`: the shipped gallery files, i.e. exactly the `showcase/` assets:
-  everything under `gallery/` except `*.md`, `x3.html` and dotfiles), its `QED64.lock.json` sha256 and its
+  everything under `gallery/` except `*.md` and dotfiles), its `QED64.lock.json` sha256 and its
   overlay index sha256s against `manifest.gallery`, `manifest.pin.lockSha256` and the uploaded
   `/snapshots/<dir>/index.json` (found through the manifest's `options.overlayDirs` and keyed by the logical name; the
   directory itself is bound through the lock's `overlays.<o>.url`, i.e. the lock sha256). It prints `G2 UX: verdict run <run> … was on THIS gallery …, lock … and
@@ -195,14 +195,14 @@ own invariants, but it packaged a gallery that failed its own gate (see above):
 ### Smaller variants
 
 ```
-node scripts/deploy-manifest.mjs --overlays widgets8 --no-stock-snapshots
+node scripts/deploy-manifest.mjs --no-stock-snapshots
 ```
 
-This variant uploads 5 objects, 0.394 GB at pin O (before release routing: 26 objects, 0.688 GB). It gives up two things:
-
-* The bare stock page cannot boot without the stock snapshots. Keep `ROOT_REDIRECT`.
-* `widgets7` is not uploaded, so the gallery's fallback to it is gone. QED64's on-demand "Load exact imports" still works,
-  since the essential pack is the release's (read from the code, not run).
+This variant uploads 5 objects, 0.394 GB at pin O (before release routing: 26 objects, 0.688 GB). It gives up one thing:
+the bare stock page cannot boot without the stock snapshots, so keep `ROOT_REDIRECT`. QED64's on-demand "Load exact
+imports" still works, since the essential pack is the release's (read from the code, not run). (Until P2 it was
+`--overlays widgets8 --no-stock-snapshots` and also dropped `widgets7` and with it the gallery's fallback; since P2
+`widgets8` is the only overlay.)
 
 The gallery only ever uses an overlay, so it is unaffected. `--prefix <p>/` puts every key under
 a prefix of a shared bucket. Set the same value as `R2_PREFIX` in `wrangler.toml`.
@@ -266,12 +266,12 @@ the gallery runs its own pairing preflight before it navigates.
   gallery lane edited those files, and a regenerate brought it back to green.
 * **After a re-pin**, regenerate the manifest, then rerun `--check` and the smoke test. A new
   buildId means a new toolchain release, whose prefix is the kernel's (DEPLOY-CLOUDFLARE.md section 6, retention). From pin I on, a new runtime also means new overlay directories
-  (`/snapshots/widgets{7,8}.<bid16>/`, gate R5), so the previous shell's bare overlays stay untouched; each runtime's
-  overlays add about 762 MB that uploads never delete (pin I: 761.5 MB).
+  (`/snapshots/widgets8.<bid16>/`, gate R5), so the previous shell's overlays stay untouched; each runtime's overlay adds
+  about 394 MB that uploads never delete (until P2 both overlays, about 762 MB; pin I: 761.5 MB).
 
 ## Costs and limits (from QED64's DEPLOY.md, not re-measured)
 
-R2's free tier has 10 GB of storage and zero egress fees. Our upload at pin O is 12 objects, 1.107 GB (the release it reads,
+R2's free tier has 10 GB of storage and zero egress fees. Our upload at pin O is 9 objects, 0.745 GB from P2 on (O's own upload, with widgets7, was 12 objects, 1.107 GB; the release it reads,
 81 objects, 1.260 GB, is the kernel's); the small variant is 5 objects, 0.394 GB. Before release routing the full set was
 2.42 GB (pin I: 95 objects, `$W/logs/pinI-dm-check1.log`).
 

@@ -23,6 +23,29 @@ showcase server or bake runs:
 test ! -e "$("$R/scripts/with-browser-lock.sh" --print-lock)" && ! pgrep -f '^(/usr/bin/time -l )?([^ ]*/)?node .*(bake-snapshot|scripts/serve)\.mjs' && bash -c '. "$1/scripts/lib/platform.sh"; procs_by_exe "chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-"; [ $? = 1 ]' - "$R" && echo idle
 ```
 
+## 0. The stores after P1 and P2 (2026-11-07; trash, not delete, and only after the P1+P2 smoke)
+
+P1 retired the pins A–L (descriptors at the tag `pins-history-2026-11-07`) and P2 the `widgets7` overlay. From then on
+no tool of this branch reads the stores below; they are about 40 GB, and removing them is the owner's call
+(`$W/reports/p1-p2-plan-2026-11-02.md` section 9). Move them to the Trash, so a return to `b24587d` (whose locks still
+record widgets7) can put them back; no size here was re-measured.
+
+| Path | What it is | When |
+|---|---|---|
+| `$W/tree-slim-w7*`, `$W/golden-env/w7` | the w7 staged tree and the w7 golden environment | after the re-gate's click-all CLI on w8 (it reads `$W/golden-run/*-w8-clickall`) and the smoke |
+| `$W/runtimes/<O and N bid>/{bake-out-w7,bake-work-w7,BAKE-KEY-w7.txt,raw/widgets7.snap}`, `out/runtimes/<bid>/overlay/widgets7`, their `*.widgets7.*` headless files | O's and N's w7 stores | after the smoke |
+| the retired pins' `release/<id>/`, `out/runtimes/<bid>/` (runtimes no kept pin uses), `$W/qed64-pins/<id>` (then `git -C deps/qed64 worktree prune`) | the stores of A–L | after the smoke |
+
+**Keep:** `release/521cf3f`, `release/58ebbad`, `$W/qed64-pins/{521cf3f,58ebbad}`, their runtimes' w8 stores and the
+`tree-slim-w8`/`tree-fat` trees; `out/deploy/published/` and its backup `$W/published-backup/` (H's record
+`20261005T152953Z` is the only copy of what H's indexes were; O's is `20261105T200927Z`); `$W/deploy-rehearsal` (H's
+old-shell rehearsal state) while H is a rollback target, and O's rehearsal state while O is (docs/DEPLOY-CLOUDFLARE.md
+section 6). The R2 bucket is not housekeeping: nothing here deletes anything in R2 (O's `widgets7.<bid16>/` objects stay
+while O is a rollback target).
+
+The sections below are the inventory of 2026-10-02/03, when pins A–E were registered; their "keep" reasons date from
+then.
+
 ## 1. Scratch, backups and superseded copies (no tool reads them; no doc cites them as evidence)
 
 | Path | Size | What it is | Command |
@@ -83,10 +106,10 @@ unchanged; deleting a whole run directory changes the tally.
 | Path | Size | Why |
 |---|---|---|
 | `$W/qed64-pins/<id>/` | small (git worktrees) | the staged pins' QED64 sources: worktrees of the submodule `deps/qed64` (`node scripts/qed64-src.mjs ensure --all` re-creates them; remove one with `git -C deps/qed64 worktree remove`, never `rm`) |
-| `$W/runtimes/` | 20G | stage1, raw regions, bakes and bake keys of the three runtimes (pins A/C, B, D); `pin check` and `verify` need them; the active links point into them |
+| `$W/runtimes/` | 20G | stage1, raw regions, bakes and bake keys of the three runtimes (pins A/C, B, D); `pin check` and `verify` need them; the active links point into them (since P1 only O's and N's runtimes are read: §0) |
 | `$R/release/` | 6.2G | the four pins' verified QED64 clones (what `serve.mjs` serves) |
 | `$R/out/runtimes/`, `$R/out/overlay/`, `$R/out/deploy/`, `$R/out/deploy-rehearsal/` | 2.1G, 338M, 18M, 216M | overlays and headless results per runtime; deploy inputs; rehearsal logs cited by docs/DEPLOY-CLOUDFLARE.md |
 | `$W/frozen-qed64-5ac5d00/`, `$W/frozen-qed64-3b42714/` | 5.7G, 14G | read-only QED64 copies for re-cloning pins C and D after QED64 moves on (`FROZEN.txt`) |
 | `$W/golden-env/`, `$W/tree-stock/` | 12G, 1.5G | inputs of `scripts/headless/run-stage4.sh` and `run-controls.sh` |
-| `$W/mathlib4/`, `$W/tree-slim-w7/`, `tree-slim-w8/`, `tree-fat/`, `$W/widgets-src/` | 5.5G, 1.5G, 1.7G, 4.2G, 4.7M | native build and staging inputs |
+| `$W/mathlib4/`, `$W/tree-slim-w7/`, `tree-slim-w8/`, `tree-fat/`, `$W/widgets-src/` | 5.5G, 1.5G, 1.7G, 4.2G, 4.7M | native build and staging inputs (`tree-slim-w7` no longer since P2: §0) |
 | `$W/logs/` | 34M | every lane's logs, cited throughout |

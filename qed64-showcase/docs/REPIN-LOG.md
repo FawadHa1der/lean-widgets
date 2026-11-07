@@ -2338,4 +2338,70 @@ P2 drops the widgets7 overlay. `pin-qed64.mjs record-overlays` rewrote both kept
 `pins/58ebbad/` (N): each lost only its `overlays.widgets7` block (the widgets8 record is byte-identical). N's recorded
 verdicts (`n-full1`, `n-full2`, `n-headed1`) and O's (`o-full1`, `o-full2`, `o-headed4`) name the old lock sha, so
 `scripts/showcase.sh pin list` now shows 0 verdicts for both until the P1+P2 re-gate. Any deploy of N needs a new gate
-anyway. O's `widgets7.<bid16>/` objects stay in R2 while O is a rollback target. The full P1+P2 entry follows the re-gate.
+anyway. O's `widgets7.<bid16>/` objects stay in R2 while O is a rollback target. The P1+P2 entry is the next section;
+its re-gate results will be added there.
+
+## 2026-11-07: P1 and P2 — pins A–L retired, the legacy mode deleted, one overlay (branch `p1-p2`, not pushed; re-gate pending)
+
+The plan is `$W/reports/p1-p2-plan-2026-11-02.md` (approved by the owner 2026-11-01, with the amendments from the
+fd95a2a audit and the ux-parity review). The work is on the local branch `p1-p2`, from `c7b7e49` (release-routing: `b24587d`, the commit O was
+deployed from and `origin/main`, plus 470dda3 and c7b7e49, unpushed, so the owner's push carries them too), in the commits "P1 C1" to "P1 C10" and "P2". Nothing is pushed; the push is the owner's, after the
+re-gate (the plan's section 6) has recorded a verdict on the final gallery, lock and overlays.
+
+**The tag.** `pins-history-2026-11-07` is an annotated tag on `b24587d` ("All 14 pin descriptors before P1"), made locally
+before the first commit. Every descriptor and lock of the 14 pins is there. `b24587d` is on `origin/main`, so nothing
+depends on the tag being pushed; pushing it is the owner's choice.
+
+**What retired.**
+- **Pins (P1 C2):** A `1859b83`, B `9fdf9b8`, C `5ac5d00`, D `3b42714`, E `33b0967`, F `84d594e`, G `5c327c2`,
+  H `bf9d947` (schema v2, bare overlay directories), I `385a1ac`, J `5e63edd` (v3, already `"retired"`), K `62a06e2`,
+  L `37ff491` (v3). Registered now: O `521cf3f` (active, live) and N `58ebbad`. HEAD reads only descriptor schema v3
+  (C3): the v2 arm, the `KERNEL-PIN` kernel lookup, the `worker.js` fallbacks and the `tests/adversarial` preflight arm
+  are gone. The `"retired"` field stays: N is the next pin to need it.
+- **The legacy mode (P1 C6):** the gallery's flow for the pre-v1 pages A–E (the `qed64.buffer` seed, relay waits, the
+  gallery's own liveness probe, the `?mem` session wrap, `X-Showcase-Api`), `gallery/qed64-bridge.js` and
+  `gallery/x3.html`. `editorRpc` is now a required capability. The test API is version 10. Two additions from the
+  ux-parity review went into the same commit: a halt after QED64 served during the first boot is adopted once QED64 is
+  ready (`haltedAfterServe`, sim run 19 (h)), and the Simp Lens popup hint is a click (card text, W4 `checkHover`,
+  `hints.mjs`, fault `no-click`). The sim (C1, C5) and the UX suite (C7) are V1 only.
+- **Tools (P1 C4):** `tests/experiments/x1-preflight.mjs`, `x2-rehearsal.mjs`, `x3-gallery-skeleton.mjs`,
+  `x5-memory-knob.mjs`, `x4-debug.mjs`; `scripts/headless/hang-repro.mjs`; `tests/ux/bringup/consoleprobe.mjs`,
+  `rpctrace.mjs`, `stockprobe.mjs`. X4 (`tests/experiments/x4-click-paths.mjs`) is raw only and exits non-zero unless both
+  raw rows changed the text and `b:raw` has no `panelError`.
+- **The widgets7 overlay (P2):** `OVERLAYS = ['widgets8']`; the bake, judge, overlay, stage and stage4 paths, the
+  golden tools (one golden env, w8; the 21 w8 goldens moved to the base paths without regeneration), the gallery
+  (`DEFAULT_OVERLAYS` widgets8, no fallback, no `fellBack`) and the deploy default. R5 refuses an upload under the name
+  `widgets7`, whose literal arm would write H's bare directory. The default upload falls from 12 objects, 1.107 GB to 9
+  objects, 0.745 GB; for this deploy nothing needs uploading, since O's upload put all 9 in the bucket.
+
+**How to read a retired pin.** `git show pins-history-2026-11-07:qed64-showcase/pins/<id>/pin.json` (and
+`…/QED64.lock.json`). To work on one (switch to it, stage it, run its gates), make a worktree at the tag; for H's own
+harness use `d60b15e`, the commit it was deployed from. HEAD refuses a v2 descriptor, and `pin use`, `pin check`,
+`SHOWCASE_PIN=<id>` and `pin-qed64.mjs verify --pin <id>` at HEAD know only O and N.
+
+**N's lock.** P2's `record-overlays` removed the `widgets7` block from both kept locks (the widgets8 record is
+byte-identical; "P2 locks" above). N's recorded verdicts (`n-full1`, `n-full2`, `n-headed1`) therefore no longer match
+its lock, and neither do O's (`o-full1`, `o-full2`, `o-headed4`): `pin list` shows 0 for both until the re-gate. Any
+deploy of N needs a new gate anyway. The alternative, relaxing #11 and `fetch-artifacts.mjs` to tolerate an unknown
+overlay key, was not taken.
+
+**Commands in this log that name a retired pin** (`pin use 5ac5d00`, `pin check bf9d947`, `SHOWCASE_PIN=385a1ac …`,
+`pin-qed64.mjs verify --pin …`, the storm harnesses with per-pin servers) no longer run at HEAD. Run them from a worktree
+at the tag, or, for a script that takes `OLD_REF` (`ci/rehearse-deploy.sh old-shell`), with `OLD_REF` set to the commit
+the old shell was deployed from (`d60b15e` for H, `b24587d` for O) or to the tag.
+
+**Unchanged on purpose** (the plan's section 3): `pins/521cf3f/` and `pins/58ebbad/` (K4 reads them),
+`scripts/rollback-artifacts.sh`, `scripts/lib/deploy-env.mjs`, the lock tests (`tests/ux/bringup/lockfifo.sh` differs
+from `b24587d` through 470dda3, not through P1/P2), H's record
+`out/deploy/published/20261005T152953Z` and its backup, the R2 bucket. The rollback to H needs no descriptor
+(docs/DEPLOY-CLOUDFLARE.md section 5). O's `widgets7.36d7f415704473d9/` objects stay in R2 while O is a rollback target,
+and O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` becomes a rollback target with the next deploy
+(docs/DEPLOY-CLOUDFLARE.md sections 5 and 6).
+
+### Not done (P1 and P2, 2026-11-07)
+
+1. The re-gate (the plan's section 6) on the final gallery: static, G1, controls, stage4 w8, the click-all CLI on w8, X4
+   raw and `widgets.mjs` without `--thumbs`, the smoke, two full `ux` VERDICTs, C20 ×3, the headed sign-off, the 10 Mbit/s
+   first visit, the manifest and the verdict commit, the CI mirror, the deploy rehearsal.
+2. The owner's push of the branch to `main` (one push; no upload), then the smoke on the live URL.
+3. After the smoke: trash the w7 stores and the retired pins' stores (docs/HOUSEKEEPING.md section 0).

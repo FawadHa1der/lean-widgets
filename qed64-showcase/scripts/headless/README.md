@@ -32,8 +32,7 @@ Each of these is created once, and each creation is idempotent.
 # toolchain/lean4-wasm64-release.json names (T = its unpacked tools package, REL = the release directory):
 node $T/cli.mjs fetch --from $REL --id lean-v4.34.0-e1a79c1 --digest <record digest> --out $W/toolchains/lean-v4.34.0-e1a79c1 --only runtime
 mkdir -p $W/runtimes/wasm64-f69cca24d0878a58/stage1 && cp -Rc $W/toolchains/lean-v4.34.0-e1a79c1/bin $W/runtimes/wasm64-f69cca24d0878a58/stage1/bin
-# pins up to H: APFS clone of QED64's own build
-#   mkdir -p $W/runtimes/<bid>/stage1 && cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin $W/runtimes/<bid>/stage1/bin
+# (the retired pins up to H cloned QED64's own build: cp -Rc $Q/pipeline/toolchain/work/build/stage1/bin …)
 # raw stock snapshots (122,364,117 and 1,127,272,685 bytes; .snapz digests checked against the index,
 # raw sha256 recorded in $W/raw/<name>.snap.provenance.json and re-verified on every rerun)
 scripts/headless/derive-raw.sh
@@ -258,24 +257,24 @@ The comparison ignores the fields that depend on the environment:
 node scripts/headless/rpc-probe.mjs (--pkg <pkg> | --example <file.lean> [--spec <file.json>]) \
   --snap <raw.snap> [--snap <raw2.snap> …] --lib <olean tree> [--artifact $W/stage1] [--snapset <label>] \
   [--expect-mode covered|exact|refused] [--expect-missing A,B] \
-  [--golden-env w7|w8] [--golden <rpc-or-expect json> | --golden none] [--golden-html <html json>] \
+  [--golden-env w8] [--golden <rpc-or-expect json> | --golden none] [--golden-html <html json>] \
   [--index <index.json>]… [--allow-unpaired] \
-  [--transport wasm|native] [--native-env w7|w8] [--timeout-ms 300000] [--min-free-gb 12] [--out <json>]
+  [--transport wasm|native] [--native-env w8] [--timeout-ms 300000] [--min-free-gb 12] [--out <json>]
 ```
 
-* Golden selection (`--pkg` without `--golden`):
-  * `--golden-env w7` → `lean/expect/<pkg>.json` (dist-lens: usage error, it has no w7 golden);
-  * `--golden-env w8` → `lean/expect/w8/<pkg>.json` for the 7 phase-1 packages, `lean/expect/dist-lens.json` for dist-lens;
-  * no `--golden-env` → `lean/expect/<pkg>.json` (its `environment.golden` is w7 for phase-1, w8 for dist-lens).
-* Golden Html dump (`--golden-html` overrides): `lean/expect/<sub>/<pkg>.json` → `lean/expect/html/<sub>/<pkg>.json`
-  (so `lean/expect/w8/x.json` → `lean/expect/html/w8/x.json`); `<x>.rpc.json` → `<x>.html.json`.
+* Golden selection (`--pkg` without `--golden`): `lean/expect/<pkg>.json`, the w8 golden of every package (one golden set
+  since P2; any `--golden-env` other than `w8` is a usage error, exit 2). Until P2 the phase-1 packages' base goldens were
+  w7 and their w8 goldens sat in `lean/expect/w8/`.
+* Golden Html dump (`--golden-html` overrides): `lean/expect/<pkg>.json` → `lean/expect/html/<pkg>.json`;
+  `<x>.rpc.json` → `<x>.html.json`.
   If the golden has MakeEditLink panels and the dump (or the panel in it) is missing, the
   comparison FAILS — it is never skipped. The result records `comparison.goldenHtml` and `goldenHtmlLooked`.
 * Environment guards (comparison checks): with `--golden-env`, the golden's own
   `environment.golden` (or `run.goldenEnv`) must equal it; and when a `--snap` path names a
-  bake (`…-w7/…`, `…-w8/…`, `widgets7.snap`, `widgets8.snap`) the golden env must equal that
-  bake — a w8 bake judged against a w7 golden FAILS.
-* `--native-env` defaults to `--golden-env`, else w7 (dist-lens w8).
+  bake (`…-w8/…`, `widgets8.snap`) the golden env must equal that bake.
+* `--native-env` defaults to `--golden-env`, else w8 (until P2 the default was w7, so control `b-e3-conv-native` could
+  resolve `import Mathlib` in the wrong environment once the w7 env was gone; `golden-env.sh path` refuses any name but
+  `w8` since P2).
 
 * Exit codes: 0 = every probe and comparison check passed, 1 = a check failed, 2 = usage, setup or boot error.
 * Expected header: `headless.expectMode` / `headless.expectMissing` in the spec, else `covered` / `[]`.
@@ -305,20 +304,18 @@ The default output is `out/headless/<name>.<snapset>.react.json`.
 
 ## Stage 4: the widget bakes
 
-Two bakes exist (the bake lane's; check the paths before use). Each needs its own key,
-olean tree, raw region, index, and golden set — never mix them:
+One bake exists since P2 (until then also a 7-package bake w7, without DistLens, with its own key, tree, raw region,
+index and goldens). Check the paths before use:
 
 | bake | serves | BAKE-KEY | raw region | index (for `--index`) | olean tree | goldens (`--golden-env`) |
 |---|---|---|---|---|---|---|
-| w7 (phase 1) | 7 packages, **no DistLens** | `$W/BAKE-KEY-w7.txt` | `$W/bake-work-w7/widgets.snap` (1,163,657,293 B) | `$W/bake-out-w7/index.json` (`widgets.3619cfd519e6f82d.snapz`) | `$W/tree-slim-w7` | `w7`: `lean/expect/<pkg>.json` + `lean/expect/html/<pkg>.json` |
-| w8 (phase 2) | all 8 packages | `$W/BAKE-KEY-w8.txt` | `$W/bake-work-w8/widgets.snap` (1,267,834,573 B) | `$W/bake-out-w8/index.json` (`widgets.0880fd91b58098c0.snapz`) | `$W/tree-slim-w8` | `w8`: `lean/expect/w8/<pkg>.json` + `lean/expect/html/w8/<pkg>.json`; dist-lens `lean/expect/dist-lens.json` + `lean/expect/html/dist-lens.json` |
+| w8 | all 8 packages | `$W/BAKE-KEY-w8.txt` | `$W/bake-work-w8/widgets.snap` (1,267,834,573 B on the first runtime) | `$W/bake-out-w8/index.json` | `$W/tree-slim-w8` | `w8`: `lean/expect/<pkg>.json` + `lean/expect/html/<pkg>.json` |
 
-The w8 bake is the one the gallery serves (it is the only one with DistLens), so the
-stage-4 gate is the w8 block. Run one package at a time (each wasm step ≈12 GB RSS; the
+The w8 bake is the one the gallery serves, and the stage-4 gate is the w8 block. Run one package at a time (each wasm step ≈12 GB RSS; the
 lock enforces it).
 
 ```bash
-scripts/headless/run-stage4.sh all        # w8 block (8 packages) then w7 block (7); or: w8 | w7 [pkg …]
+scripts/headless/run-stage4.sh all        # the w8 block (8 packages; `all` is an alias of w8 since P2); or: w8 [pkg …]
 scripts/headless/run-e2.sh                # E2: each Demo.lean verbatim on $W/tree-fat (serial)
 node scripts/headless/summarize-stage4.mjs   # -> out/headless/summary.json + markdown tables
 ```
@@ -326,12 +323,11 @@ node scripts/headless/summarize-stage4.mjs   # -> out/headless/summary.json + ma
 Before any step, `run-stage4.sh` and `run-e2.sh` refuse (exit 2) an olean tree that was not staged for the target pin
 (`stage-trees.mjs --check-provenance $W/tree-slim-w8`: `<tree>.STAGED.json` names the runtime, served base and widget
 export it was staged for). The trees are shared by every pin, so after another pin's `stage` the remedy is the one the
-refusal prints, `SHOWCASE_PIN=<id> scripts/showcase.sh stage w7|w8|fat --force`. The direct commands below take `--lib`
+refusal prints, `SHOWCASE_PIN=<id> scripts/showcase.sh stage w8|fat --force`. The direct commands below take `--lib`
 as given and check nothing: run `--check-provenance` on the tree first.
 
-`run-stage4.sh` runs, per package and bake, exactly these three commands (w8 shown; dist-lens
-uses `--budget-ms 900000 --timeout-ms 900000`; w7 swaps every `w8`/`widgets8` for `w7`/`widgets7`
-and skips dist-lens):
+`run-stage4.sh` runs, per package, exactly these three commands (dist-lens uses `--budget-ms 900000 --timeout-ms
+900000`):
 
 ```bash
 node scripts/headless/exact-header.mjs --pkg $p --bake-key $W/BAKE-KEY-w8.txt \
@@ -350,15 +346,14 @@ exit 0 AND the tool's own PASS verdict line (an uncaught crash never counts), co
 a failure so one run shows every result, and exits 1 if any step failed. `run-e2.sh` does the
 same for E2 (`$W/logs/s4-E2-<p>.log`, `$W/logs/s4-e2.tsv`); see docs/HEADLESS-RESULTS.md.
 
-`$W/raw/init.snap` pairs against either bake index (both carry the stock
-`init.7cf361eb941eda2c.snapz` on the 9fdf9b8 pin). `$W/raw/widgets7.snap` / `widgets8.snap` (if present) may be
-used in place of `bake-work-wN/widgets.snap`; `--index` proves they are the same bytes.
+`$W/raw/init.snap` pairs against the bake index (it carries the stock `init` snapz of the runtime). `$W/raw/widgets8.snap`
+(if present) may be used in place of `bake-work-w8/widgets.snap`; `--index` proves they are the same bytes.
 
 Proven on 2026-10-01 for graph-scope on w8 (the audit's failing case):
 `E1 PASS graph-scope.widgets8 (9/9)`, `E3 PASS graph-scope.widgets8 (131/131)` including
-`golden Html dump present (5 MakeEditLink panel(s) need it) PASS lean/expect/html/w8/graph-scope.json`
-and 5 `Html hash with MakeEditLink …` checks, `react verification: 5/5 panels clean`. The same
-run without `--golden-env` (w7 golden on the w8 bake) fails with
+`golden Html dump present (5 MakeEditLink panel(s) need it) PASS lean/expect/html/w8/graph-scope.json` (the w8
+goldens' path until P2) and 5 `Html hash with MakeEditLink …` checks, `react verification: 5/5 panels clean`. The same
+run without `--golden-env` (then the w7 golden on the w8 bake) failed with
 `golden environment matches the bake under test FAIL golden w7 vs snapshot w8`.
 
 ## Lane hygiene
@@ -376,7 +371,7 @@ audit-fix pass), and checked at its end (`scripts/assert-untouched.sh check head
 | (b) E3 positive | `rpc-probe --example controls/conv-control.lean --snap init.snap --snap mathlib.snap --lib $W/tree-stock --golden out/headless/conv-control.native.rpc.json` | see `out/headless/conv-control.stock.rpc.json`: header `covered`, `#[Init, Mathlib.Tactic.Widget.Conv]` (5,004 modules); conv panel JS 3,854 B; `Mathlib.Tactic.Conv.SelectionPanel.rpc` answers; selecting `c + b` gives "Generate conv", whose edit `conv =>\n    enter [2, 1]\n    skip` re-elaborates clean; compared with the native golden |
 | (c) E3 negative | `rpc-probe --example controls/hasse-refused.lean --snap init.snap --lib $W/tree-stock` | PASS: `mode: refused`, `missing: ["HasseView"]`, fatal progress, error `modules #[HasseView] are not loaded in this session …` |
 | (d) E3b | `react-contract --self-test`; `react-contract --in out/headless/conv-control.stock.html.json` | PASS 4/4 self-test cases; 2/2 wasm control panels clean. Parity: 60/60 on the widget dumps, the same as the original `verify.mjs` (run on a scratch clone); 49/49 on `lean/expect/html/*` |
-| (e) negatives | byte-flipped APFS clone of `init.snap` (offset 60,000,000) with its sidecar; with `--index` the release index; E1 with `--index`; native graph-scope vs `lean/expect/w8` with `--golden-html` pointing at a missing file | each must exit 1: E3/E1 `FAIL … (raw snapshot provenance; worker not booted / probe not run)`; `E3 FAIL graph-scope.nohtml (114/120)` with 6 FAILs (dump missing + 5 MakeEditLink Html hashes) |
+| (e) negatives | byte-flipped APFS clone of `init.snap` (offset 60,000,000) with its sidecar; with `--index` the release index; E1 with `--index`; native graph-scope vs the w8 golden (then `lean/expect/w8`) with `--golden-html` pointing at a missing file | each must exit 1: E3/E1 `FAIL … (raw snapshot provenance; worker not booted / probe not run)`; `E3 FAIL graph-scope.nohtml (114/120)` with 6 FAILs (dump missing + 5 MakeEditLink Html hashes) |
 
 The positive wasm controls run with `--index` on the release index (E1, conv) or the
 derive-raw sidecar (hasse-refused), so both pairing paths are exercised on every run.

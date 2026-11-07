@@ -9,15 +9,16 @@ Nothing here depends on, or writes to, the QED64 repo or the widget trees.
 ```
 examples/<pkg>.lean      the document the user sees (≤ 60 lines)
 examples/<pkg>.json      the example spec: cursors, clicks, selections, hovers, code actions (authored intent)
-expect/<pkg>.json        the frozen golden in the package's PRIMARY env: what the InfoView must show / do (generated)
-expect/w8/<pkg>.json     the same golden in env w8, for the 7 phase-1 packages (the phase-2 bake serves all eight)
-expect/html/[w8/]<pkg>.json  the full RPC-encoded Html of every panel (refs normalized; for React-contract checks)
+expect/<pkg>.json        the frozen golden in env w8 (the one bake): what the InfoView must show / do (generated)
+expect/html/<pkg>.json   the full RPC-encoded Html of every panel (refs normalized; for React-contract checks)
 goldens/                 the generator and gates (see "How the goldens were produced")
-../lean/expect/click-all/[w8/]<pkg>.json  every rendered link clicked on a fresh copy (see "Click-all")
+expect/click-all/<pkg>.json  every rendered link clicked on a fresh copy (see "Click-all")
 ```
 
 Packages: `chart-kit`, `expr-xray`, `simp-lens`, `interval-inspector`, `graph-scope`,
-`tree-scope`, `hasse-view` (phase 1, bake `widgets7`) and `dist-lens` (phase 2, `widgets8`).
+`tree-scope`, `hasse-view` (phase 1) and `dist-lens` (phase 2), all in the one bake `widgets8`. Until P2 (2026-11-07)
+the phase-1 packages also had a 7-root bake `widgets7` and env `w7`, which held their primary goldens; P2 moved the 21 w8
+goldens (`expect/w8/`, `expect/html/w8/`, `expect/click-all/w8/`) to the base paths without regenerating them.
 
 ## The example documents (`examples/<pkg>.lean`)
 
@@ -121,8 +122,8 @@ document's diagnostics, and
 
 Everything else (tag multisets, texts, code texts, link texts/titles, edit
 `range`+`newText`, `newSelection`, JS module sha256, click verdicts, diagnostics)
-is environment-independent between w7 and w8 — checked by `summary.mjs`
-(table "env-independent signature w7 == w8").
+was environment-independent between w7 and w8 while both existed (`summary.mjs`'s table "env-independent signature
+w7 == w8", gone with P2).
 
 UX tests should compare the browser against these: SVG tag multiset and texts
 for render assertions; for clicks, the text diff must equal `edit`
@@ -138,7 +139,7 @@ in the browser) and the post-click diagnostics must match.
   `QED64_KERNEL_BUILD` names: 4,438 in pin `521cf3f`'s
   `$W/kernel-build-native64-v4.35`) plus the bake's package roots.  We compile
   a **shadow `Mathlib.olean`** (an umbrella importing exactly that module
-  list + the 7 phase-1 roots, `w7`; + DistLens, `w8`) with the stock `lean` of
+  list + the 8 package roots, `w8`; until P2 also the 7 phase-1 roots alone, `w7`) with the stock `lean` of
   `$TC` (the packages' toolchain, v4.35.0), place it first on `LEAN_PATH` next to an
   APFS clone (`cp -cR`) of the real `Mathlib/` subtree (Lean resolves a module
   root at the first search-path dir holding `Mathlib/` or `Mathlib.olean`), so
@@ -148,7 +149,7 @@ in the browser) and the post-click diagnostics must match.
   `mathlib/MATHLIB-COMMIT`, every dependency rev equal);
   ProofWidgets is merged from the per-package partial builds (all overlapping
   `.olean/.ir` byte-identical).
-* **`lsp-golden.mjs --pkg <pkg> [--mode superset|closure] [--env w7|w8]`** drives the stock
+* **`lsp-golden.mjs --pkg <pkg> [--mode superset|closure] [--env w8]`** drives the stock
   `lean --server` over LSP exactly like the InfoView drives QED64's worker:
   `didOpen` → `textDocument/waitForDiagnostics` (+ empty `$/lean/fileProgress`)
   → `$/lean/rpc/connect` → per cursor `Lean.Widget.getWidgets`,
@@ -174,15 +175,14 @@ in the browser) and the post-click diagnostics must match.
   `lake env lean` from the package's own built tree — proving every name is in
   the package closure, hence in the bake superset.  `GATE_ENV=superset`:
   unmodified text, plain `lean` with the golden-env `LEAN_PATH`
-  (`GOLDEN_ENV=w7|w8`, default the package's primary env).
+  (`GOLDEN_ENV=w8`, the only env since P2).
 * **`click-all-cli.sh <pkg>`** (`GOLDEN_ENV` as above) compiles every edited
   file of a click-all run with the superset CLI gate (`CLICK_ALL_JOBS` in
   parallel, default 4) and requires agreement with the LSP verdict (`clean` ⇒
   rc 0 and 0 warnings) — an independent second opinion on the LSP run.
 * **`run-all.sh`** runs, per package: closure CLI gate on the example (required);
-  then for each env of the package (w7 and w8 for phase-1 packages, w8 only for
-  dist-lens): superset CLI gate (required), the superset LSP golden (required;
-  writes `expect/` or `expect/w8/`), every declared click's edited file through
+  then in env w8: superset CLI gate (required), the superset LSP golden (required;
+  writes `expect/`), every declared click's edited file through
   the superset CLI gate (required: rc 0 and no warnings for `clean`; primary env
   also through the closure CLI gate for information), the **click-all** LSP run
   (required: 0 broken) and, primary env, the click-all CLI cross-check
@@ -202,7 +202,7 @@ in the browser) and the post-click diagnostics must match.
   sends it as a full-text `didChange`, waits for that version's diagnostics, and
   classifies: `clean` (no error/warning), `designed` (a declared click whose
   `postClickDiagnostics` lists exactly those messages), `broken` (anything else).
-  Writes `lean/expect/click-all/[w8/]<pkg>.json` (every link: kind, text/title, edit,
+  Writes `lean/expect/click-all/<pkg>.json` (every link: kind, text/title, edit,
   where it was rendered, classification, the errors/warnings, edited file);
   `summary.mjs` writes `lean/expect/click-all/summary.json`.
 * **`summary.mjs`** prints the per-package table; **`crosscheck.mjs`** compares
@@ -246,12 +246,11 @@ env built before `build` wrote the stamp. Rebuild it.
 
 ```
 lean/goldens/golden-env.sh build          # once, and after a failed build (≈1 min on 521cf3f, ≈30 s on 4.34; writes $W/golden-env: both BUILT-FROM removed first, each written last)
-lean/goldens/run-all.sh [pkg …]           # ≈ 2–4 min per package (both envs + click-all)
+lean/goldens/run-all.sh [pkg …]           # ≈ 2–4 min per package (env w8 + click-all; until P2 also w7)
 node lean/goldens/lsp-golden.mjs --pkg <pkg> --click-all [--env w8]   # one click-all run
 node lean/goldens/summary.mjs             # tables + lean/expect/click-all/summary.json
 node lean/goldens/crosscheck.mjs
 ```
 Editing an example: run `python3 lean/goldens/mkspec.py relocate examples/<pkg>.json examples/<pkg>.lean`
 then `node lean/goldens/lsp-golden.mjs --pkg <pkg> --update-spec` to refresh
-line numbers and frozen edits, then `run-all.sh <pkg>`.  `--update-spec` only writes in the package's primary
-env; the w8 golden of a phase-1 package must reproduce the same frozen edits.
+line numbers and frozen edits, then `run-all.sh <pkg>`.

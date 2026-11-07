@@ -12,10 +12,12 @@
 >   `final-full1` on pin B; the re-rehearsal on pin C found `multipin-C-full3-b`, the final-gate re-run `final-C-full2`).
 >   `showcase.sh verify` was run here.
 >
-> **Release routing (2026-11-02, `f13d535` on the branch `release-routing`, with fixes up to `eca8f22`, not pushed).** This guide describes the
+> **Release routing (2026-11-02, `f13d535` on the branch `release-routing`, with fixes up to `eca8f22`; on `main` since the push of `b24587d`, 2026-11-05).** This guide describes the
 > deploy code at that commit: the Worker reads the runtime and the packs from the toolchain release, the upload is 12
-> objects, 1.107 GB at pin O, and `deploy-app.sh` checks each new version on its preview URL before it takes traffic.
-> The live site is still pin H on the Worker from before that commit. Both rehearsals of this code passed, 2026-11-02 to
+> objects, 1.107 GB at pin O (9 objects, 0.745 GB from P2 on, with one overlay), and `deploy-app.sh` checks each new
+> version on its preview URL before it takes traffic. O was deployed with it on 2026-11-05 (section 6); H, on the Worker
+> from before that commit, is the rollback target (section 5). P1 and P2 (local branch `p1-p2`, not pushed) retire the
+> pins A–L and the widgets7 overlay; nothing in this guide's deploy path changes for O. Both rehearsals of this code passed, 2026-11-02 to
 > 11-04: [Rehearsal](#rehearsal) and [CI rehearsal](#ci-rehearsal) have the results. The other dated records in this file
 > are from before that commit.
 >
@@ -93,11 +95,12 @@ This guide follows the same recipe as `wasm64-lean4game` (`wasm/DEPLOY.md`), whi
 setup:
 
 * **App shell.** A Cloudflare Worker with static assets. The pinned QED64 `dist/` is served at `/` and the gallery at
-  `/showcase/`, together 77 files and about 18.6 MB at pin O.
+  `/showcase/`, together 77 files and about 18.6 MB at O's upload (76 from P1 on: the gallery ships 16 files, without
+  `qed64-bridge.js`).
 * **Artifacts.** These live in the **R2 bucket `qed64-artifacts` that QED64 already uses**. The runtime and the packs
   are the kernel's published toolchain release under `lean4-wasm64/<release id>/` (`lean-v4.35.0-b081e7c` at pin O: 81
   objects, 1.260 GB), read in place and never uploaded by us. Our own objects (the stock snapshot pair, our overlays
-  and the indexes: 12 objects, 1.107 GB at pin O) go under their own prefix `qed64-showcase/`, just as lean4game uses
+  and the indexes: 12 objects, 1.107 GB at O's upload; 9 objects, 0.745 GB from P2 on) go under their own prefix `qed64-showcase/`, just as lean4game uses
   `lean4game/`. They are uploaded through the **existing rclone remote `qed64-r2`**, and the same bucket-scoped token
   serves all three apps.
 * **One origin.** `infra/worker.js`, QED64's `createWorker` with the pin's toolchain record, puts COOP/COEP/CORP on
@@ -109,10 +112,10 @@ setup:
 
 | URL | Served from | Content |
 |---|---|---|
-| `/showcase/` | Workers static assets | the gallery (`gallery/` without `*.md`, `x3.html`, dotfiles) |
+| `/showcase/` | Workers static assets | the gallery (`gallery/` without `*.md` and dotfiles) |
 | `/` | Workers static assets | the pinned QED64 `dist/` (`release/<pin id>/dist`, byte-identical to `QED64.lock.json`). A bare `/` redirects to `/showcase/` (`ROOT_REDIRECT`). The gallery iframes `/?snapshots=snapshots/<dir>` (the pin's served overlay directory, below), which is never redirected. |
 | `/runtime/…`, and `/profiles/…` except `/profiles/index.json` | R2 key `lean4-wasm64/<release id>/<path>`: the release in the pin's toolchain record `deps/qed64/toolchain/lean4-wasm64-release.json` (`hosting.mount`) | runtime chunks + manifests, core and mathlib-essential packs (81 objects at pin O). Never uploaded by us. A miss is a `no-store` 404 and never falls back to our prefix |
-| `/profiles/index.json`, `/snapshots/…` | R2 key `qed64-showcase/<path>` (`hosting.siteOwned`) | the profile index, the stock snapshot pair, QED64's per-build index copies `snapshots/index.<buildId>.json` and `snapshots/profiles-index.<buildId>.json`, our overlays `snapshots/<dir>/`: `widgets8.<bid16>/` and `widgets7.<bid16>/` (`scripts/lib/pins.mjs` `overlayDir`; O: `widgets8.36d7f415704473d9/`), so a new runtime never overwrites the overlay an older live shell reads (pins A–H, which this Worker does not serve, used the bare `widgets8/` and `widgets7/`). The Worker does no alias or rewrite; `?overlay=widgets8` is mapped in the gallery |
+| `/profiles/index.json`, `/snapshots/…` | R2 key `qed64-showcase/<path>` (`hosting.siteOwned`) | the profile index, the stock snapshot pair, QED64's per-build index copies `snapshots/index.<buildId>.json` and `snapshots/profiles-index.<buildId>.json`, our overlay `snapshots/<dir>/`: `widgets8.<bid16>/` (`scripts/lib/pins.mjs` `overlayDir`; O: `widgets8.36d7f415704473d9/`; O's upload also put `widgets7.<bid16>/` there, which no pin reads after P2 and which stays while O is a rollback target, section 6), so a new runtime never overwrites the overlay an older live shell reads (pins A–H, which this Worker does not serve, used the bare `widgets8/` and `widgets7/`). The Worker does no alias or rewrite; `?overlay=widgets8` is mapped in the gallery |
 
 The deploy target is set in one place, **`infra/deploy.env`**:
 
@@ -204,7 +207,7 @@ docs/NEXT-STEPS.md gives the order. The other steps are for a new account or a n
    rclone listremotes                       # must list qed64-r2: (reads only the local config)
    rclone size qed64-r2:qed64-artifacts/lean4-wasm64/<release id>/   # at least 81 objects, 1.260 GB at pin O; the upload does not check
    DRY_RUN=1 scripts/upload-artifacts.sh    # lists the bucket, writes nothing
-   scripts/upload-artifacts.sh              # 12 objects, 1.107 GB at pin O; copy only, never sync
+   scripts/upload-artifacts.sh              # 9 objects, 0.745 GB at pin O from P2 on; copy only, never sync
    ```
 4. **Create the Cloudflare API token** **[account]**: dashboard → My Profile → API Tokens → Create Token → Custom
    token. Permissions: **Account → Workers Scripts → Edit**. Account Resources: **Include → the account that holds
@@ -324,7 +327,7 @@ first, then the push (the pre-promotion check enforces that order).
    |---|---|
    | QED64 (QED64 `docs/DEPLOY.md`) | 2.1 GB |
    | lean4game (`wasm/DEPLOY.md`: runtime 154 MB + profiles 121 MB + ten game snapshots 2,142 MB) | 2.42 GB |
-   | **showcase, one release-routed runtime** (default: stock pair + widgets8 + widgets7 + the indexes) | **1.107 GB** (12 objects at pin O) |
+   | **showcase, one release-routed runtime** (default: stock pair + widgets8 + the indexes) | **0.745 GB** (9 objects at pin O from P2 on; O's own upload with widgets7 was 12 objects, 1.107 GB, and stays while O is a rollback target) |
    | showcase, H's objects, kept while H is a rollback target (section 6) | 2.42 GB (93 objects, the record `20261005T152953Z`) |
    | showcase, small variant (below), instead of the default | 0.394 GB (5 objects at pin O) |
    | **Total with H's objects and O's default upload** | **≈ 8.0 GB of 10 GB** |
@@ -339,23 +342,21 @@ first, then the push (the pre-promotion check enforces that order).
    rclone size qed64-r2:qed64-artifacts                  # [account] lists every object (metadata only); prints total size
    rclone size qed64-r2:qed64-artifacts/lean4game/       # [account] one app's share
    ```
-   If the measured total plus 1.107 GB is close to 10 GB, use the small variant below (0.394 GB). The showcase's own old
+   If the measured total plus 0.745 GB is close to 10 GB, use the small variant below (0.394 GB). The showcase's own old
    objects stay while H is a rollback target (section 6). R2 bills storage above the free tier; it does not stop uploads.
 
    From release routing on, the showcase reads the runtime and the packs from the toolchain release and stores no copy
    of them. The stock snapshots are still byte-identical to QED64's when QED64 serves the same build, and are stored a
    second time anyway, because the showcase keeps its own mutable names. Uploads are copy-only, so every **re-pin or
-   rebake adds** its new digest-named objects and the old ones stay. A re-pin to a new runtime adds up to about 1.1 GB;
-   one overlay rebake adds about 0.35 GB. From pin I on every runtime's overlays live in their own directories
-   (`snapshots/widgets{7,8}.<bid16>/`), about 762 MB per runtime that no upload deletes. Collect the old objects
+   rebake adds** its new digest-named objects and the old ones stay. A re-pin to a new runtime adds up to about 0.75 GB;
+   one overlay rebake adds about 0.4 GB. From pin I on every runtime's overlay lives in its own directory
+   (`snapshots/widgets8.<bid16>/`; until P2 also `widgets7.<bid16>/`), about 394 MB per runtime that no upload deletes. Collect the old objects
    deliberately once no deployed shell and no rollback target needs them (see [Re-pin](#6-re-pin)).
 
-   **Small variant.** Set `MANIFEST_ARGS="--overlays widgets8 --no-stock-snapshots"` for the upload
-   (and the same for `deploy-app.sh`; `--overlays` takes the logical names, uploaded under the pin's served directory).
-   The gallery uses only `widgets8`, so it is unaffected. What you give up:
-   * the bare stock page at `/?…` without `snapshots=` cannot boot (no stock snapshots). Keep `ROOT_REDIRECT`;
-   * `widgets7` is not uploaded. The gallery's automatic fallback, used when `widgets8` fails its preflight, is
-     therefore gone, and `?overlay=widgets7` fails (`gallery/README.md`, `?overlay=`).
+   **Small variant.** Set `MANIFEST_ARGS="--no-stock-snapshots"` for the upload (and the same for `deploy-app.sh`).
+   The gallery uses only `widgets8`, so it is unaffected. What you give up: the bare stock page at `/?…` without
+   `snapshots=` cannot boot (no stock snapshots). Keep `ROOT_REDIRECT`. (Until P2 the small variant also dropped
+   `widgets7`, and with it the gallery's fallback; since P2 there is no second overlay and no fallback.)
 
 ## 3. Per release
 
@@ -391,15 +392,15 @@ What the script does (each step was exercised in the rehearsals before release r
    this size and sha256; R5: each overlay is uploaded under the pin's served directory and nothing under the bare one
    for a per-runtime pin; R6: a pin with `hardening.pinnedIndexes` uploads QED64's per-build index copies), then runs
    `--check`. It refuses on any FAIL. It prints the G2 line and refuses unless it names a verdict run. `manifest.r2` is
-   what this script uploads (12 objects, 1.107 GB at pin O). `manifest.release.objects` is what the release serves (81
+   what this script uploads (12 objects, 1.107 GB at O's upload; 9 objects, 0.745 GB from P2 on). `manifest.release.objects` is what the release serves (81
    objects, 1.260 GB): never uploaded, but `--published` and `--smoke` go through those URLs too.
 3. It writes the upload plan to `out/deploy/upload/plan.tsv`: one exact file list per phase, group and content type.
    It then runs one `rclone copy --files-from-raw` per list, **never sync**, with `--checksum` (already-uploaded
    digest-named files are skipped) and multipart in 64 MiB chunks. The three `.snapz` files over 300 MiB need
    multipart: wrangler's `r2 object put` cannot upload them. The phases run in this order:
-   1. every digest-named object (the `.snapz` files, 6 at pin O), as `application/octet-stream`;
-   2. every index no older shell reads, as `application/json` (4 at pin O): a per-runtime overlay's
-      `snapshots/widgets{7,8}.<bid16>/index.json` and QED64's per-build copies `snapshots/index.<buildId>.json`,
+   1. every digest-named object (the `.snapz` files, 4 at pin O from P2 on, 6 with widgets7), as `application/octet-stream`;
+   2. every index no older shell reads, as `application/json` (3 at pin O from P2 on, 4 with widgets7): a per-runtime
+      overlay's `snapshots/widgets8.<bid16>/index.json` and QED64's per-build copies `snapshots/index.<buildId>.json`,
       `snapshots/profiles-index.<buildId>.json`;
    3. the shared mutable `index.json` files `profiles/index.json` and `snapshots/index.json`, as `application/json`.
 
@@ -445,7 +446,7 @@ What the script does (each step was exercised in the rehearsals before release r
    every index it published (and, in a record from before release routing, every manifest), for [rollback](#5-rollback) and for `deploy-app.sh`'s record check. Back
    it up right away (section 5, "Keep the records").
 
-The first upload of a pin is 12 objects, 1.107 GB at pin O. Later runs transfer only files whose bytes changed
+The first upload of a pin is 9 objects, 0.745 GB at pin O from P2 on (O's own upload, with widgets7: 12 objects, 1.107 GB). Later runs transfer only files whose bytes changed
 (`--checksum`). In the rehearsal, a second run of the same release transferred 0 B (every list ended with `0 B / 0 B`).
 
 ### 3.3 Deploy the shell
@@ -467,8 +468,8 @@ The script:
 2. runs `--stage-assets` into `out/deploy/assets` (S1/S2: exactly the manifest's files, checked against their sha256);
 3. refuses any file over **25 MiB**, any `runtime/`, `profiles/` or `snapshots/` directory in the tree, and a
    missing required file (`index.html`, `workers/{lean.worker,lsp-front-door,lsp-frames,snapshot-prefetch.worker}.js`,
-   `showcase/{index.html,gallery.js,lib.js,qed64-bridge.js,examples.json,pin.json}`, and `workers/memory64-probe.js`
-   when the staged `lean.worker.js` loads it, QED64 385a1ac on), and checks that the staged bundle and
+   `showcase/{index.html,gallery.js,lib.js,examples.json,pin.json}` (`qed64-bridge.js` until P1), and `workers/memory64-probe.js`
+   (every registered pin's `lean.worker.js` loads it; until P1 only from QED64 385a1ac on)), and checks that the staged bundle and
    `showcase/pin.json` name the same runtime buildId;
 4. **checks the release record.** The newest record in `out/deploy/published/` for the remote `R2_REMOTE` (written by
    `upload-artifacts.sh`, or by `rollback-artifacts.sh`) must have the same bucket and prefix, and exactly this
@@ -514,14 +515,15 @@ curl -s -o /dev/null -D - -H 'Range: bytes=1000000-1000099' https://qed64-showca
 `widgets8.f69cca24d0878a58` on pin I, `widgets8.36d7f415704473d9` on pin O.)
 
 `--smoke --all` sends a HEAD request to every asset and every R2 key the shell needs, the release's included (170 URLs
-at pin O: 77 assets, 12 keys of ours and 81 of the release's). For each one it checks:
+at O's upload: 77 assets, 12 keys of ours and 81 of the release's; from P1/P2 on 166: 76 assets, 9 keys of ours and
+81 of the release's). For each one it checks:
 * status 200 and `content-length == size`;
 * COOP `same-origin`, COEP `require-corp`, CORP `same-origin`;
 * QED64's cache rule (digest-named files immutable, every index and manifest `must-revalidate`);
 * a JSON type on every `*.json` and a non-HTML type on binaries;
 * no `Content-Encoding` on artifacts;
-* for every manifest and index (the R2 keys QED64's cache rule does not make immutable: 10 at pin O, 6 of ours and 4 of
-  the release's, about 12 MB, nearly all of it the two pack manifests), also a GET with `accept-encoding: identity`
+* for every manifest and index (the R2 keys QED64's cache rule does not make immutable: 10 at O's upload, 6 of ours and 4 of
+  the release's; 9 from P2 on, 5 of ours, about 12 MB, nearly all of it the two pack manifests), also a GET with `accept-encoding: identity`
   whose body must have the manifest's sha256, through the same helper as `--published` (section 9). These keep their URL from release to release, so a
   HEAD cannot tell an older one of the same length from this release's (`snapshots/index.json` is 701 B at H and at O:
   the HEAD-only smoke of `9eed0e9` passed the stale one in O's rehearsal, order B; since `dbacd2c` it fails it). A
@@ -620,9 +622,25 @@ The order is the reverse of a release: put the old names back first, then the ol
 its own toolchain record, so between deployed release-routed pins (O and its successor) `wrangler rollback` restores
 the routing with the shell. N was never deployed, so going from O to N is a normal deploy of N.
 
+**Rollback to O.** O `521cf3f` is live (Worker version `476d6c11-a119-4b17-8545-65e0b9f34987`, deployed 2026-11-05 from
+`b24587d`, upload record `out/deploy/published/20261105T200927Z`, backed up in `$W/published-backup/`). Once a later
+version is deployed (the P1+P2 deploy first), that version id is a rollback target:
+```
+npx --prefix infra wrangler deployments list                                       # [account] confirm the id
+npx --prefix infra wrangler rollback 476d6c11-a119-4b17-8545-65e0b9f34987          # [account]
+```
+A deploy that uploaded nothing (P1+P2 reuses O's objects, so a CI deploy of it uploads nothing) left R2's mutable names
+as O's record published them, so the Worker rollback alone restores O. If an upload ran after O's, first put O's names
+back with `scripts/rollback-artifacts.sh out/deploy/published/20261105T200927Z` **[account]**; it refuses while any
+immutable object of that record is gone, which is why O's objects, its `widgets7.36d7f415704473d9/` ones included, stay
+(section 6). The rollback reads the record and the deploy env, not a pin descriptor.
+
 **Rollback from O to H.** H `bf9d947` (runtime `wasm64-3ab1c6a9da03bc29`) has no release routing: QED64 `391a075`, which
 gave `createWorker` its `release` option, is in every pin from I on and not in H, and `deploy-manifest` refuses to
-generate a manifest for a pin before `385a1ac`. So H comes back only as its own record and its own Worker version:
+generate a manifest for a pin before `385a1ac`. So H comes back only as its own record and its own Worker version. It
+needs no descriptor: H's `pins/bf9d947/` was retired in P1 (it is at the tag `pins-history-2026-11-07`), and
+`rollback-artifacts.sh` reads only the record and the deploy env (`scripts/lib/deploy-env.mjs`, `deploy-common.sh`).
+Working on H's own harness means a worktree at `d60b15e`, since HEAD refuses its v2 descriptor:
 ```
 scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z    # [account] puts H's indexes back under qed64-showcase/
 npx --prefix infra wrangler rollback 29176b6f-cc41-4a16-bed4-c8753c7bd5f2   # [account]
@@ -663,8 +681,8 @@ upload record `20261105T200927Z`. Before it, pin H `bf9d947` (deployed 2026-10-0
   refuses unless they are in `lean4-wasm64/<release id>/` of the bucket, where the kernel's publish puts them. Only
   after all that does `deploy-app.sh` put the new shell live.
 * **From pin I on, the overlays never switch under a live shell, and from release routing on no upload changes the
-  runtime and pack manifests under one.** A per-runtime pin (`pin.json` v3) uploads its overlays to new directories,
-  `snapshots/widgets{7,8}.<bid16>/`, index included, in phases 1–2; the old shell's bare `snapshots/widgets{7,8}/`
+  runtime and pack manifests under one.** A per-runtime pin (`pin.json` v3) uploads its overlay to a new directory,
+  `snapshots/widgets8.<bid16>/` (until P2 also `widgets7.<bid16>/`), index included, in phases 1–2; the old shell's bare `snapshots/widgets{7,8}/`
   objects are not touched (gate R5). What still changes under the old shell is phase 3, the stock and profile indexes:
   from then until the new Worker is live, bare `/?…` visits of the old stock page can fail (the gallery boots from its
   overlay). That is what is left of decision E1. Its two orders are in 3.2, and CI deploys are order A. After the
@@ -699,16 +717,28 @@ upload record `20261105T200927Z`. Before it, pin H `bf9d947` (deployed 2026-10-0
   objects: `runtime/`, `profiles/`, the stock pair `snapshots/init.b6d945e398b4d55e.snapz` and
   `snapshots/mathlib.265cd10cbadd1313.snapz`, the bare `snapshots/widgets7/` objects and the bare `snapshots/widgets8/`
   ones, which H's gallery boots from), the record `out/deploy/published/20261005T152953Z` itself,
-  `scripts/rollback-artifacts.sh` and `tests/ux/bringup/{lockfifo,lockrace}.sh`. The rollback script refuses if any
-  immutable object of the record is gone.
+  `scripts/rollback-artifacts.sh` and `tests/ux/bringup/{lockfifo,lockrace}.sh`, its backup `$W/published-backup/`, and
+  on this machine `$W/deploy-rehearsal` (H's old-shell rehearsal state, which `ci/rehearse-deploy.sh old-shell` reads).
+  The rollback script refuses if any immutable object of the record is gone. None of this needs H's descriptor, which P1
+  moved to the tag `pins-history-2026-11-07`.
+* **While O is a rollback target** (section 5, "Rollback to O"; from the first deploy after O) keep every key of O's
+  record `out/deploy/published/20261105T200927Z` `manifest.r2` under `qed64-showcase/` (12 objects), **including O's
+  `snapshots/widgets7.36d7f415704473d9/` objects** (its index and two `.snapz`, 0.36 GB): P2 retired the widgets7 overlay,
+  so no pin, lock or gallery reads them any more, but `rollback-artifacts.sh` on O's record refuses when any immutable
+  object of it is gone. Keep the record and its backup, O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987`
+  (`wrangler deployments list`), and O's rehearsal state. Deleting O's widgets7 objects is the owner's call, and only
+  after O stops being a rollback target.
 * **When to re-pin (decision D5, 2026-11-01; QED64 `d5b46ff`, on its origin/main since `fd95a2a`).** Re-pin QED64 only at a Lean/Mathlib import or a kernel
   release cut that QED64 adopts (one for a visitor-visible or wrong-verdict fix), for a QED64 fix that is visitor-visible
   or a wrong verdict for us, or at a monthly refresh. Keep the cheap headless checks of candidate pins that are not
   deployed. "Deploy within about a day, or don't gate it" applies only to the full 6–17 h gate. Ask the owner for one
   "push + upload + deploy pin X" approval per pin. Pin only QED64 commits that are pushed.
 * **Retention (K4).** The showcase reads the release `lean-v4.35.0-b081e7c` (pin O) and `lean-v4.34.0-53cb11e` (pin N,
-  for as long as it is kept). Keep those pins' records tracked on the deployed branch (`pins/521cf3f/`, `pins/58ebbad/`;
-  neither is on `origin/main` yet, they reach it with O's push): the kernel's retention rule reads them before any R2 or GitHub deletion, and a deletion is the owner's operation.
+  for as long as it is kept), and since P1 no longer reads `lean-v4.34.0-e1a79c1` (the retired pins I–K). Keep those
+  pins' records tracked on the deployed branch (`pins/521cf3f/`, `pins/58ebbad/`; on `origin/main` since O's push of
+  `b24587d`): the kernel's retention rule reads them before any R2 or GitHub deletion, and a deletion is the owner's
+  operation. O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` is a rollback target once a later version is
+  deployed (section 5), and H's `29176b6f-cc41-4a16-bed4-c8753c7bd5f2` stays one.
   `scripts/fetch-artifacts.mjs --qed64-origin` is also a reader.
 * Run all of section 3 again: preconditions on the new pin (a new UX verdict), upload, deploy, smoke.
 

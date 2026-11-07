@@ -1,5 +1,13 @@
 # QED64: defects and limitations found while building the widget showcase
 
+> **Note (2026-11-07, P1 and P2).** The showcase now registers only O `521cf3f` (live since 2026-11-05) and N `58ebbad`;
+> pins A–L are retired, their descriptors at the git tag `pins-history-2026-11-07`. P1 deleted the gallery's legacy mode
+> for the pre-v1 pages, and with it `gallery/qed64-bridge.js`: the bridge left the tree and is at that tag
+> (`git show pins-history-2026-11-07:qed64-showcase/gallery/qed64-bridge.js`). `tests/experiments/x4-click-paths.mjs` is
+> now raw only and exits non-zero if D1 or D2 reproduces on the page; it stays for your C17 and X4 request after D16. The
+> sections below are the record as written; where they say the showcase "keeps" or "ships" the bridge, that was true
+> until P1. P2 dropped the `widgets7` overlay.
+
 **To:** the QED64 owner. **From:** the qed64-showcase build, 2026-10-01 (updated 2026-10-02, 2026-10-03, 2026-10-04, 2026-10-06, 2026-10-08, 2026-10-09, 2026-10-10 and 2026-10-27; the newest: the last section).
 **Pins (keyed by QED64 commit; docs/REPIN-LOG.md "2026-10-02: multiple pins"; which one is served now: `scripts/showcase.sh
 pin current`):** since 2026-10-08 19:20Z the showcase **serves H `bf9d947`** (your main with the v1 page API and the keep-alive fix, runtime
@@ -1092,7 +1100,8 @@ is running ("2026-10-10: pin J" at the end).
 From the showcase repo:
 
 * `scripts/showcase.sh verify` checks the pin and the overlays.
-* `node tests/experiments/x4-click-paths.mjs` runs D1/D2, raw against bridge. It boots a browser,
+* `node tests/experiments/x4-click-paths.mjs` runs D1/D2 on the raw page (raw only since P1; it exits non-zero if either
+  reproduces). It boots a browser,
   so run it through `scripts/showcase.sh locked x4 -- node tests/experiments/x4-click-paths.mjs`:
   `locked` takes the browser lock (`scripts/with-browser-lock.sh`) and then refuses unless at
   least 6 GB is free+inactive, no headless Chrome is running and no bake is running.

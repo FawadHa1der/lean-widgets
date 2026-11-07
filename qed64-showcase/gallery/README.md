@@ -2,50 +2,29 @@
 
 A two-pane page that shows the eight widget examples **inside the stock QED64 page**. QED64 is not
 changed. The right pane is QED64's own `dist/index.html`, iframed from the same origin at
-`/?snapshots=snapshots/<dir>`, where `<dir>` is the overlay's **served directory** from `pin.json` `overlays`
-(`widgets8` on pins A–H, `widgets8.f69cca24d0878a58` on pins I and J; "Overlay names and served directories" under "Run it").
-The left rail drives it through the page's embedding API when the pin has one
-(`globalThis.qed64.api`, QED64 embedding contract v1, pins F to J: "Embedding API v1 (pins F, G and H)" below; the frame URL is then
-`/?embed=1&snapshots=…#code=…`) and, on older pins, through the
-hooks the page already exposed (`globalThis.qed64`, the `qed64.buffer` boot document).
+`/?embed=1&snapshots=snapshots/<dir>#code=…`, where `<dir>` is the overlay's **served directory** from `pin.json`
+`overlays` (`widgets8.<bid16>`, e.g. `widgets8.36d7f415704473d9` on pin O; "Overlay names and served directories" under
+"Run it"). The left rail drives it only through the page's embedding API (`globalThis.qed64.api`, QED64 embedding
+contract v1: "Embedding API v1" below).
 
 **Status.** Which verdicts apply to the current gallery is printed, not written here: `scripts/showcase.sh gallery`
-(gate, content sha256, `UX CURRENT …` / `UX STALE`) and `scripts/showcase.sh pin list`. *History (dated):* gallery
-`921b0b6a…` (the final-gate gallery `2081098d…` with only the memory wording changed) had verdict runs from the v2mit
-and last-mile lanes and no headed sign-off; a gallery-side L9 V2 mitigation (teardown on `pagehide`) was measured and
-rejected (`out/ux/v2mit-storm/RESULTS.md`). The boot-fix lane (2026-10-03) changed `gallery.js` (gallery `31f6d8d9…`):
-the first-boot wait is progress-aware, so a slow first visit gets a "Still downloading" notice instead of the error
-card, and a later `ready` closes a stall card ("Timeouts"; 10 Mbit/s: ready at 565 s, no card). The closure lane
-(2026-10-03) recorded two verdicts and a headed sign-off (34/34) on that gallery, and re-measured the throttled first
-visits and a 60-min soak (`out/ux/closure/RESULTS.md`). The pin-e lane (2026-10-04) switched the served pin to E
-`33b0967` (QED64 #54/#55), which regenerated `pin.json`. It recorded two verdicts and a headed sign-off on the resulting
-gallery and a passing 10 Mbit/s first visit ("Timeouts"; `out/ux/pin-e/RESULTS.md`). The v1-adoption lane (2026-10-05/06) made pin F
-`84d594e` (QED64 `feature/embedding-api`) active locally and moved the gallery onto QED64's embedding API v1 for it
-("Embedding API v1 (pins F, G and H)"), keeping the legacy flow for pins A–E. The pin-G lane (2026-10-06) made pin G
-`5c327c2` (F plus QED64's edit back-pressure, `e4cffcc`; API revision still `1.0.0`) the active pin and F a staged one;
-its first full run found QED64's keep-alive starvation, and G got one VERDICT (`g-full1c`) on gallery `931c33a7…`.
-From 2026-10-06 ~20:03Z the active pin was H `bf9d947` (QED64 main: G plus QED64's keep-alive fix), on gallery
-`d8a5bb6d…` (`pin use` regenerated `pin.json`). On it: VERDICTs `h-full1b`, `h-full3` and `h-full4`, the
-headed sign-off `h-headed2` (35/35), `C20` 135/135 in three runs, and three runs that each lost one test to a renderer
-crash during a QED64 boot ("QED64 limitations found", L9; docs/REPIN-LOG.md, pin H entry). From 2026-10-09 ~13:10Z the
-active pin was I `385a1ac` (QED64 main on the new runtime `wasm64-f69cca24d0878a58`, with QED64's #62, #63 and #64;
-docs/REPIN-LOG.md, pin I entry). The gallery code changed for it: `pin.json` carries the `overlays` map and the gallery
-frames the pin's per-runtime directory (gallery `3da79ea2…` after `pin use`; `check-gallery` live 170/0, sim-gallery
-244/0); I's first full run found a kernel-0036 regression in Chrome, so I is superseded and kept as that record. **Since
-2026-10-09 ~18:55Z the active pin is J `5e63edd`** (QED64 main: I plus QED64's interim for 0036, the same runtime and
-overlays; gallery `65279b0b…`). On it (2026-10-09/10): VERDICTs `j-full1` and `j-full5`, `C20` 135/135 in three runs, the
-headed sign-off `j-headed2` (35/35), the 10 Mbit/s first visit PASS (ready at 565.1 s, no card) and QED64's C11 ×3 ask
-3/3; three crashes in red runs were an artifact of the UX harness's tracing, now off (docs/REPIN-LOG.md, pin I entry,
-"Pin J" and "The crash classification and tracing"). E, F and G are staged; the live site serves H `bf9d947` (deployed 2026-10-08), and pushing and deploying are
-the user's decisions. **Browsers:** a Chromium-based desktop browser on a
+(gate, content sha256, `UX CURRENT …` / `UX STALE`) and `scripts/showcase.sh pin list`. **Since P1 (2026-11-07) the
+gallery has one mode, the v1 page API**: the legacy mode for the pre-v1 pages A–E (the `qed64.buffer` seed, the relay
+waits, the RPC bridge `qed64-bridge.js`, the gallery's own liveness probe, the `?mem` session wrap) is deleted, and so are
+the bridge file and `x3.html`; both are at the tag `pins-history-2026-11-07`. The registered pins are O `521cf3f` (live
+since 2026-11-05) and N `58ebbad`, both with `apiRevision` `1.0.0`. P1 also added two behaviours from the ux-parity
+review: a halt after QED64 served during the first boot is adopted once QED64 is ready ("Timeouts", "Halt after serve"),
+and the Simp Lens popup hint is a click, not a hover ("Browser bring-up", `hints.mjs`). P2 (the same re-gate) left one
+overlay, `widgets8`, with no fallback. *History (dated):* the gallery's lanes from the final gate (2026-10-02) to pin O
+(2026-10-27), with their gallery hashes and verdicts, are in docs/UX-RESULTS.md, docs/REPIN-LOG.md and docs/HISTORY.md;
+the status paragraph that listed them here until P1 is in git history. **Browsers:** a Chromium-based desktop browser on a
 computer with 16 GB of RAM or more, one showcase tab at a time (measured: 8.2–9.0 GiB per tab at ready, transient peaks
 of about 12 GB on a reload, about 17 GB or more for two tabs or for QED64's "Load exact imports"; README.md "Browsers
 and memory"); anything without cross-origin isolation, SharedArrayBuffer or WebAssembly Memory64 gets the capability
 card ("Boot flow" step 0). Run: Chromium 151 (headless shell, headed Chrome for Testing) and branded Chrome 154 headed;
 Safari 26.6.2 not run (WebDriver refused). A reload storm could crash the tab on every pin before E (QED64 L9 V2;
-"QED64 limitations found"). QED64's #55 fix is in E. Our storms on E (0/28) were in windows where C was also nearly
-clean, so they do not confirm it (`out/ux/pin-e/RESULTS.md`). On the v1 pins a residual remains, which QED64 reopened as
-#55 on 2026-10-07: a reload during QED64's boot can still crash the renderer on some machines (C10 1 of 9 storms in
+"QED64 limitations found"); QED64's #55 fix is in every registered pin. A residual remains, which QED64 reopened as #55
+on 2026-10-07: a reload during QED64's boot can still crash the renderer on some machines (C10 1 of 9 storms in
 chrome-headless-shell on G and H; "QED64 limitations found", L9). The gallery never reloads a booting page on its own
 except through the card's Restart Lean fallback, and its boots go through `about:blank`.
 
@@ -53,64 +32,34 @@ except through the card's Restart Lean fallback, and its boots go through `about
 index.html         the shell: top bar (Reset, Copy for VS Code, live status line), rail, stage (iframe, notice,
                    error card), narrow-screen select bar, card <template>
 gallery.css        tokens on :root, dark mode via prefers-color-scheme, two-pane ≥ 721 px, select bar ≤ 720 px
-gallery.js         the controller (boot, preflight, seeding, bridge install, switching, errors, keyboard, test API)
+gallery.js         the controller (boot, preflight, the page API, switching, persistence, errors, keyboard, test API)
 lib.js             pure logic shared with the Node gate: pairing preflight, overlay choice, ?mem parser, status classes
-qed64-bridge.js    the same-origin InfoView repair: D1 abortSignal, D2 applyEdit (stage A, X4) and D3 getWidgetSource
-                   coalescing (this bring-up; without it the renderer dies, see "QED64 limitations"); pins A–E only,
-                   not installed on pins F, G and H (fixed upstream)
 favicon.svg        the page icon (without one a headed browser asks for /favicon.ico, a 404: UX suite C19)
 thumbs/<pkg>.png   card thumbnails, 480 px wide, <= 60 KB, cropped from the REAL rendered panel by
                    tests/ux/bringup/widgets.mjs --thumbs (recorded with size and sha256 in examples.json)
 examples.json      GENERATED by scripts/build-gallery.mjs from lean/examples/*.lean + *.json (+ thumbs/)
 pin.json           GENERATED by scripts/build-gallery.mjs from QED64.lock.json (+ a check of the release bundle; + apiRevision
-                   and shell from the release's dist/qed64-build.json, null on pins A–E)
-x3.html            stage A's X3 skeleton (kept for the X3 experiment)
+                   and shell from the release's dist/qed64-build.json, which it requires since P1)
 ```
 
-## Two modes: the v1 page API and the legacy hooks
+## Embedding API v1 (the only mode since P1)
 
 `scripts/build-gallery.mjs` reads `release/<pin>/dist/qed64-build.json` (written by a QED64 build that implements
-`deps/qed64/docs/EMBEDDING.md`) and records its `apiRevision` and `shell` in `gallery/pin.json` (`null` when the pin's
-release has no such file; `scripts/check-gallery.mjs` #4 verifies both). The gallery decides its mode from that, with one
-exception: when the local server serves another pin's release than `pin.json` describes (`SHOWCASE_PIN=<id> serve.mjs`: the
-`X-Showcase-Pin` header of the `pin.json` response names that pin), the gallery follows the served release's own revision
-(`status().modeSource 'served'`) and logs one `console.warn` naming both. `scripts/serve.mjs` reads that revision once at
-start from the served release's `dist/qed64-build.json` and sends it on **every** response as `X-Showcase-Api`: the
-revision, `none` (no such file: a legacy release) or `invalid` (a file that cannot be parsed or has another schema than
-`qed64.build/v1`); the header always has a value. The gallery accepts only a revision (`API_REVISION_RE`) or `none`.
-Any other value, `invalid` included, counts as absent, and the gallery then asks the served release for its own
-`/qed64-build.json` (404 = legacy). That probe's checks fall back to `pin.json` for such a file. `serve.mjs` sends
-`/showcase/pin.json` with `Cache-Control: no-store`, so a server restarted on another pin is never answered from a cached
-`pin.json`; the rest of the gallery keeps `public, max-age=0, must-revalidate`. The deployed Worker sends neither
-`X-Showcase-Pin` nor `X-Showcase-Api`, so production and the active pin never probe, and a legacy deploy logs no 404. The UX
-suite's `API` follows the same rule (`tests/ux/lib/qed64.mjs` `GALLERY_PIN`), except that it refuses a server sending
-`X-Showcase-Api: invalid` (the served page's mode is unknown), as it refuses a `qed64-build.json` of another schema.
+`deps/qed64/docs/EMBEDDING.md`) and records its `apiRevision` and `shell` in `gallery/pin.json`; since P1 a release without
+that file, or without an `apiRevision`, fails the build (`scripts/check-gallery.mjs` #4 verifies both). The gallery requires
+`pin.apiRevision` and shows the "gallery data is missing" card without it. `serve.mjs` sends `/showcase/pin.json` with
+`Cache-Control: no-store`, so a server restarted on another pin is never answered from a cached `pin.json`; the rest of
+the gallery keeps `public, max-age=0, must-revalidate`. (Until P1 the gallery chose between this mode and the legacy
+hooks per pin, could follow a staged pin's served release through the `X-Showcase-Api` header, and recorded that in
+`status().modeSource`; all of that went with the legacy mode.)
 
-* **V1 (`pin.apiRevision != null`, pins F `84d594e`, G `5c327c2`, H `bf9d947`, I `385a1ac` and J `5e63edd`, all `apiRevision` `1.0.0`).** The gallery drives the page through its
-  declared API only. Next section.
-* **Legacy (`pin.apiRevision == null`, pins A–E; E `33b0967` is what the live site serves).** Exactly the flow described
-  in the rest of this document: the `qed64.buffer` seed, relay waits, the bridge, the liveness probe, the `?mem` session
-  wrap. The sections below describe that flow; each says where V1 differs. The only legacy-visible differences are the
-  bridge's expando name (`__showcaseBridge`) and test API version 9's additive fields ("Test API").
-
-`scripts/sim-gallery.mjs` runs both page models (runs 1–15 legacy, 16–20 V1) and asserts that a V1 run touches no
-internal; `check-gallery.mjs` runs it.
-
-## Embedding API v1 (pins F, G and H)
-
-The contract is QED64's `deps/qed64/docs/EMBEDDING.md` (§1–§5, §7.8, §8, §9). The code is `gallery.js`, whose helpers
-(`api()`, `apiStatus()`, `docText()`, `placeCursor()`, `restartLean()`, …) branch on `S.v1` at the lowest level, so the
-driver, the waits, the cards, the keyboard handling and the test API are shared by both modes. *Status (2026-10-10):* J
-`5e63edd` is the active pin of this checkout only, browser-gated with two VERDICTs and a headed sign-off (I `385a1ac`
-superseded; H `bf9d947`, G `5c327c2` and F `84d594e` are staged); H is browser-gated with three VERDICTs and a headed
-sign-off (docs/REPIN-LOG.md, pin H and pin I entries; current counts: `scripts/showcase.sh pin list`). I's and J's page
-API is H's (`1.0.0`); what changed for the
-gallery is the overlay's served directory ("Overlay names and served directories" under "Run it"). G
-differs from F only inside the page (QED64's `e4cffcc`: the edit coalescer holds full-text changes while the worker pool
-is under pressure, `?edithold=<n>`, at most 6 requests in flight, a `$/cancelRequest` for a still-queued request answered
-locally; EMBEDDING.md §7.8). H differs from G only in that coalescer: `$/lean/rpc/keepAlive` never waits for a request
-slot (QED64's fix for the starvation our C22 found on G). The gallery code is the same on all three; the console oracle
-allows G's and H's cancel reply text, and on G only the keep-alive starvation lines ("Console messages").
+The contract is QED64's `deps/qed64/docs/EMBEDDING.md` (§1–§5, §7.8, §8, §9). The code is `gallery.js`. The page API
+first shipped in pin F `84d594e` (QED64 `feature/embedding-api`); G added QED64's edit back-pressure (`e4cffcc`: the edit
+coalescer holds full-text changes while the worker pool is under pressure, `?edithold=<n>`, at most 6 requests in flight,
+a `$/cancelRequest` for a still-queued request answered locally; EMBEDDING.md §7.8), and H made `$/lean/rpc/keepAlive`
+never wait for a request slot (QED64's fix for the starvation our C22 found on G). From pin I on, what changed for the
+gallery was the overlay's served directory ("Overlay names and served directories" under "Run it"). The console oracle
+allows the cancel reply text ("Console messages").
 
 * **The frame URL.** `/?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<encodeURIComponent(example)>` (`<dir>`: the overlay's served directory)
   (`lib.js` `frameUrl`). `embed=1` makes the gallery the owner of the document: the page neither reads nor writes
@@ -124,25 +73,27 @@ allows G's and H's cancel reply text, and on G only the keep-alive starvation li
   `{api, frame}` on the gallery window. The gallery accepts it when `detail.frame === iframe.contentWindow` (fallback: a
   polled frozen `pageWin().qed64.api`) and binds it to the document that published it: while a reloaded document has
   not run its module, `status().api.present` is false and nothing is sent to the unloaded page. A page that lacks one of
-  the capabilities `documents`, `events`, `embedMode`, `restart` gets the hard "could not start" card
-  (`status().api.missing`).
+  the capabilities `documents`, `events`, `embedMode`, `restart`, `editorRpc` gets the hard "could not start" card
+  (`status().api.missing`; `editorRpc` since P1, because every `mk_rpc_widget%` panel fails without it and the bridge
+  that once stood in for it is gone; sim-gallery covers that card). A page without `widgetSourceCache` boots with one
+  `console.warn` (duplicate `getWidgetSource` requests are then not coalesced).
 * **Waits and switches.** Polling on `api.status()` (synchronous): ready = phase `ready` or `headerRefused` on relay
   `serving`, `api.getDocument().text` equal to the wanted text, and the version at least the one `setDocument` resolved
   with. A switch is `api.setDocument(text, {cursor, focus: false, undoable: false})`: not undoable (Ctrl+Z cannot revert
-  the gallery's replacement), and keyboard focus moves only once the example is ready, via `api.setCursor(pos, {focus})`,
-  as in legacy mode. Restarts are `api.restart()` (the relay's own rule for "Load exact imports" options; stall events'
+  the gallery's replacement), and keyboard focus moves only once the example is ready, via `api.setCursor(pos, {focus})`.
+  Restarts are `api.restart()` (the relay's own rule for "Load exact imports" options; stall events'
   `how` is `'api.restart'`); a refused header on a session without `mathlib` (`status().snapshots`) is
   `api.restart({snapshots: ['init','mathlib']})`. `__showcase.offer()` / `acceptOffer()` wrap `status().offer` and
-  `api.acceptOffer()`.
+  `api.acceptOffer()`; on a page whose `capabilities.offers` is false they are null / false.
 * **Events.** `boot` and `status` feed the progress-aware boot wait; `fileProgress` and `diagnostics` (except
   `origin: 'qed64'`, the page's own notes) are the stall watchdog's progress and the proof of life; `liveness`,
   `reboot` and `death` mirror QED64's own liveness into `status().liveness.qed64`; `offer` and `document` as below.
 * **Persistence: `qed64-showcase:document`.** Every `document` event (the text the relay forwarded) goes to that key, at
   most once per second, flushed on the gallery's and the frame's `pagehide`. The newest forwarded text is also kept in
   memory (`S.doc.lastText`), including when a write fails (a quota error on a multi-MB document, blocked storage).
-  On a gallery reload, the text the boot displaces from the key goes through `lib.js` `planSave` into the same kept-buffer
-  slots as legacy mode (`qed64-showcase:saved`, `…:saved-history`, `…:edited-example`), so "Open my saved buffer"
-  still offers it.
+  On a gallery reload, the text the boot displaces from the key goes through `lib.js` `planSave` into the kept-buffer
+  slots (`qed64-showcase:saved`, `…:saved-history`, `…:edited-example`; the keys of the legacy mode, which visitors may
+  still hold), so "Open my saved buffer" still offers it.
 * **When storage is full or blocked: held and unsaved texts** (`gallery.js` `seedBuffer`, `keepDisplaced`, `holdDocument`,
   `persistDocument`, `storageNotice`). The boot's `seedBuffer` tries to keep up to three distinct texts, each in its own
   write: the text stored under the key, a text an earlier boot could not keep (`S.doc.unsaved`), and the newest text in
@@ -174,13 +125,14 @@ allows G's and H's cancel reply text, and on G only the keep-alive starvation li
   (§3.1). The gallery therefore calls `api.setDocument(…)` synchronously in its `qed64:frame-api` handler with the newest
   text it saw forwarded (memory first, then the key, then the current example; another gallery tab's text under the
   shared key never replaces this tab's), records it in `status().api.adopted` / `adoptSet`, and then follows the page
-  as legacy mode did (the text may hold the user's edits: never overwritten).
-* **What stands down.** The RPC bridge (`capabilities.editorRpc` and `widgetSourceCache`: `status().bridge.stoodDown`;
-  "The RPC bridge"); the liveness probe (`capabilities.liveness`: `status().liveness.probe 'stood-down'`, "Errors"); the
-  `?mem` session wrap (`&memory=`; "Memory knob").
+  (the text may hold the user's edits: never overwritten).
+* **What the page does itself.** The InfoView's editor RPC (`capabilities.editorRpc`, HARDENING #56) and
+  `getWidgetSource` coalescing (`widgetSourceCache`), which the RPC bridge did on pins A–E ("The RPC bridge (removed in
+  P1)"); liveness (`capabilities.liveness`: `status().liveness.probe` is `'stood-down'`, "Errors"); the memory commit
+  (`&memory=`; "Memory knob").
 * **What is internal, and why the gallery does not touch it.** §9 makes every other member of `globalThis.qed64`
   (`relay`, `ui`, `artifacts`, `editor`, `status()`), the `qed64.buffer` key, every DOM id, class and label string, and
-  the `__qed64*` namespace internal: they may change in any commit. In V1 the gallery reads none of them, with one
+  the `__qed64*` namespace internal: they may change in any commit. The gallery reads none of them, with one
   exception: the narrow-screen stacking `<style>` (and the `#examples` rule, a no-op under `embed=1`), runtime styling
   of the page document that never throws and never fails a boot when the ids are missing, kept because `layout=` is
   v1.1. The page's resource timing entries (a standard Web API, not QED64's) still count as boot progress, and the F6
@@ -193,34 +145,34 @@ allows G's and H's cancel reply text, and on G only the keep-alive starvation li
 ```
 node scripts/build-gallery.mjs            # after any change to lean/examples or QED64.lock.json
 node scripts/serve.mjs                    # or scripts/serve-start.sh; port 5190
-open http://localhost:5190/showcase/      # e.g. http://localhost:5190/showcase/?overlay=widgets7#hasse-view
+open http://localhost:5190/showcase/      # e.g. http://localhost:5190/showcase/?overlay=widgets8#hasse-view
 
 # real-Chrome bring-up (one browser on the host at a time; the wrapper takes the host lock, --print-lock shows it)
 scripts/with-browser-lock.sh bringup node tests/ux/bringup/widgets.mjs --dir after --thumbs   # panels, shots, thumbs
 scripts/with-browser-lock.sh bringup node tests/ux/bringup/hints.mjs                          # every card hint
-scripts/with-browser-lock.sh bringup node tests/ux/bringup/questions.mjs                      # resolved questions
+scripts/with-browser-lock.sh bringup node tests/ux/bringup/questions.mjs                      # resolved questions (legacy-era: seeds qed64.buffer)
 node scripts/build-gallery.mjs && node scripts/check-gallery.mjs --live
 ```
 
 | Parameter | Meaning |
 |---|---|
-| `?overlay=<name\|dir>` | Snapshot overlay. A logical name (`widgets8`, `widgets7`) is an **alias** of the pin's served directory from `pin.json` `overlays` (`widgets8` on pins A–H, `widgets8.f69cca24d0878a58` on pins I and J); any other value is a literal directory under `/snapshots/<dir>/` (an explicit `widgets8.<bid16>` is shown as `widgets8`). Default: `widgets8`, and if that fails its preflight, `widgets7`. An explicit value is preflighted alone and never falls back. `rehearsal` works for wiring tests, but QED64 then refuses the widget headers. |
-| `?mem=<GiB>` | Memory knob (stage A X5): the initial memory commit for the session that loads the widgets region. Rounded to 256 MiB and clamped to [1, 6] GiB. See "Memory knob". |
+| `?overlay=<name\|dir>` | Snapshot overlay. The logical name `widgets8` is an **alias** of the pin's served directory from `pin.json` `overlays` (`widgets8.<bid16>`, e.g. `widgets8.36d7f415704473d9` on pin O); any other value is a literal directory under `/snapshots/<dir>/` (an explicit `widgets8.<bid16>` is shown as `widgets8`). Default: `widgets8`, one attempt. Since P2 there is no second overlay to fall back to (until then a failed `widgets8` fell back to `widgets7`, and `status().fellBack` said so). An explicit value is preflighted alone. `rehearsal` works for wiring tests, but QED64 then refuses the widget headers. |
+| `?mem=<GiB>` | Memory knob: the initial memory commit of the page's session, passed as `&memory=<GiB>`. Rounded to 256 MiB and clamped to [1, 6] GiB. See "Memory knob". |
 | `?stack=0\|1` | Narrow screens: stack the page's editor above its InfoView. The default is automatic at ≤ 720 px; `0` turns it off and `1` forces it on. |
 | `?pagebar=full` | Keep the QED64 page's own example menu (`#examples`). By default the gallery hides it: it swaps in a stock document behind the gallery's back and its label ("Mathlib — real numbers") reads as if it named the current example. |
 | `#<pkg>` | Deep link, e.g. `#simp-lens`. The gallery keeps the hash updated (`replaceState`), and editing it switches the example. |
 
-**Overlay names and served directories.** The gallery names overlays logically (`widgets8`, `widgets7`: `?overlay=`,
-the badge, the chips, the notices, `status().overlay`) and serves each from the directory `pin.json` `overlays` maps it
-to, written by `scripts/build-gallery.mjs` from `scripts/lib/pins.mjs` `overlayDirs` (the identity on pins A–H, schema
-`qed64-showcase.pin/v2`; `widgets{7,8}.<bid16>` for a v3 `"overlayDirs": "per-runtime"` pin such as I or J). A `pin.json`
-without the map (an older build) means the bare names; a malformed map (not an object, a value that is not a safe
+**Overlay names and served directories.** The gallery names the overlay logically (`widgets8`: `?overlay=`, the badge,
+the chips, the notices, `status().overlay`) and serves it from the directory `pin.json` `overlays` maps it to, written by
+`scripts/build-gallery.mjs` from `scripts/lib/pins.mjs` `overlayDirs` (`widgets8.<bid16>` for the schema v3
+`"overlayDirs": "per-runtime"` pins; the identity of the retired v2 pins A–H is gone). A `pin.json` without the map, or
+a malformed map (not an object, a value that is not a safe
 directory name, two names on one directory, a missing default name) stops `start()` with the data card. `lib.js`
 `overlayDirOf` / `overlayNameOf` / `parseOverlayDirs` translate; the frame URL, the badge's title, the preflight's URLs
 and `status().overlayDir` carry the directory, and each preflight attempt records both (`status().preflight.attempts[]
 {overlay, dir}`). The alias exists only in the gallery: the Worker serves `/snapshots/*` as it is, so on a per-runtime
-pin the bare `/snapshots/widgets8/` is not this pin's overlay (on our origin, after I is deployed, it is the previous
-runtime's), and `serve.mjs` answers 404 for it (`check-gallery` §10). A bookmark of the stock page
+pin the bare `/snapshots/widgets8/` is not this pin's overlay (on our origin it is H's, kept while H is a rollback
+target), and `serve.mjs` answers 404 for it (`check-gallery` §10). A bookmark of the stock page
 `/?snapshots=snapshots/widgets8` therefore stops after a runtime change with QED64's named unpaired error, while the
 gallery's `?overlay=widgets8` keeps working.
 
@@ -244,14 +196,12 @@ gallery's `?overlay=widgets8` keeps working.
    active pin's worker; every branch of `checkCapabilities`), UX C24 (real Chromium: a document served without COOP/COEP;
    Memory64 refused and low memory simulated by init scripts; Try anyway boots). No WebKit or Firefox Playwright build is
    cached on this host, so no other engine was run.
-1. **Data.** Fetch `pin.json` and `examples.json` (`cache: no-cache`, both started before either is awaited). A failure
-   shows the "gallery data is missing" card. `pin.json` decides the mode ("Two modes"); only when `X-Showcase-Pin` names
-   another pin than `pin.json` does the served release's mode count: from `X-Showcase-Api`, and only when that header
-   is absent or not a revision or `none`, from a fetch of the served `/qed64-build.json`.
+1. **Data.** Fetch `pin.json` and `examples.json` (`cache: no-cache`, both started before either is awaited). A failure,
+   or a `pin.json` without `apiRevision` or with a malformed `overlays` map, shows the "gallery data is missing" card.
 2. **Pairing preflight** (`lib.js` `preflightOverlay`, run before any navigation). It mirrors lean4game
    `game-boot.ts:113-145` and plan §7.3, and every check appears in the error card:
    * the overlay's served directory `<dir>` (the logical name mapped through `pin.json` `overlays`) is safe
-     (`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`; QED64's own `?snapshots=` segment rule, which `widgets8.f69cca24d0878a58`,
+     (`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`; QED64's own `?snapshots=` segment rule, which `widgets8.36d7f415704473d9`,
      25 characters, meets);
    * `/runtime/runtime-manifest.<buildId>.json` is JSON and names `pin.buildId`. This is the manifest the
      bundle fetches first (`qed64-boot.ts:62-66`);
@@ -264,59 +214,42 @@ gallery's `?overlay=widgets8` keeps working.
      `qed64-boot.ts:96-106` does) returns 200, with `content-length == transfer`, a non-HTML content
      type and no `content-encoding`.
    * Availability: the `mathlib` entry's `imports` list says which packages the region contains. That
-     drives the rail chips ("available" / "not in widgets7"). If `imports` is absent, availability is
-     unknown and the chips show the phase instead.
+     drives the rail chips ("available" / "not in <overlay>", which a literal `?overlay=` directory can still show). If
+     `imports` is absent, availability is unknown and the chips show the phase instead.
 
    `pin.buildId` comes from `QED64.lock.json`. `build-gallery.mjs` fails unless
    `release/<BID>/dist/assets/*.js` names exactly that buildId (plan S0.5 #6).
-3. **Seed.** If `localStorage['qed64.buffer']` holds a user buffer, it is kept (`lib.js` `planSave`): the
-   FIRST one goes to `qed64-showcase:saved`, which is never overwritten; later distinct ones go to
-   `qed64-showcase:saved-history` (newest first, at most 5). Not user buffers: our pristine example texts, the
-   `?mem` placeholder, and **an example edited in the gallery** — QED64 persists the editor, so every edit you
-   make to an example (e.g. any click hint) comes back as `qed64.buffer` on the next visit. A buffer whose first
-   4 lines (the two-line header, the blank line, the `/-! # Title` line) equal an example's is such an edit; the
-   latest one goes to its own slot `qed64-showcase:edited-example` (action `example`) and can never push a real
-   user buffer out of the history. Then `qed64.buffer` is set to the selected example. That key is the page's boot
-   document (`main.ts:335-342`). The rail footer shows "Open my saved buffer" when one buffer is kept; with two or
-   more, a chooser (`#restore-pick`, newest first: "newest: …", "older N: …", "first saved: …") and "Open". It
-   opens the chosen one — by default the NEWEST — in the editor; no card is then current and the status line says
-   "Your saved buffer is ready". `__showcase.restoreSaved(i)` does the same for entry `i` (verified over real reloads by
-   `questions.mjs` q14, `out/ux/bringup/questions-q13-q14.json`). Before a re-navigation (Retry), the old page is
-   first sent to `about:blank`. Its `pagehide` handler then unloads the relay, which kills the worker
-   and its multi-GiB heap. No pending 400 ms buffer save can then overwrite the seed.
-   **V1:** nothing is written to `qed64.buffer` (`status().seed.action` `'embed'`); the example travels in `#code=`. The
-   text the boot displaces from the gallery's own key `qed64-showcase:document` goes through the same `planSave` (action
-   `saved`, `history` or `example` when something was kept). The `about:blank` step stays.
-4. **Navigate.** `iframe.src = /?snapshots=snapshots/<dir>`. **V1:**
-   `/?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<example>`.
-5. **Bridge.** `qed64-bridge.js` is installed on the page window as early as possible. See below. **V1:** not
-   installed (`status().bridge.stoodDown`).
-6. **Ready.** Wait for `globalThis.qed64`, then for `qed64.status().phase === 'ready'` with
-   `qed64.relay.lastText === example.text`. `headerRefused` also counts as settled; the gallery then
-   shows a notice that the overlay lacks the package. **V1:** wait for the api (`qed64:frame-api`, within the same
-   120 s hook budget; the capability check runs here), then poll `api.status()` for `ready`/`headerRefused` on relay
-   `serving` with `api.getDocument().text === example.text`. The boot wait's progress comes from the `boot` and `status`
-   events instead of the `qed64.ui` wraps, and the page's own boot card is `status().boot.overlay` instead of `#boot`.
-7. **Cursor.** `editor.setPosition(firstCursor)`, `revealLineInCenter`, then `contentWindow.focus()`
-   and `editor.focus()`, so the InfoView shows the panel straight away (verified: keyboard focus lands in
-   Monaco, and the InfoView follows `setPosition` even without focus — "Resolved questions" 2). `firstCursor` is the spec's
-   `cursors[0]`: the 0-based LSP position converted to Monaco's 1-based position. Monaco columns count
-   UTF-16 units, as LSP characters do. **V1:** `api.setCursor(firstCursor, {focus: true})` (the page clamps and reveals)
-   after `contentWindow.focus()`.
+3. **Seed.** Nothing is written to the page's `qed64.buffer` (`status().seed.action` `'embed'`); the example travels in
+   `#code=`. The text the boot displaces from the gallery's own key `qed64-showcase:document` is kept by `lib.js`
+   `planSave`: the FIRST one goes to `qed64-showcase:saved`, which is never overwritten; later distinct ones go to
+   `qed64-showcase:saved-history` (newest first, at most 5). Not user texts: our pristine example texts and **an example
+   edited in the gallery**. A text whose first 4 lines (the two-line header, the blank line, the `/-! # Title` line)
+   equal an example's is such an edit; the latest one goes to its own slot `qed64-showcase:edited-example` (action
+   `example`) and can never push a real user text out of the history. The rail footer shows "Open my saved buffer" when
+   one text is kept; with two or more, a chooser (`#restore-pick`, newest first: "newest: …", "older N: …", "first
+   saved: …") and "Open". It opens the chosen one — by default the NEWEST — in the editor; no card is then current and
+   the status line says "Your saved buffer is ready". `__showcase.restoreSaved(i)` does the same for entry `i`. Before a
+   re-navigation (Retry), the old page is first sent to `about:blank`, which releases its runtime and its multi-GiB heap.
+   (The legacy mode seeded `qed64.buffer` itself and kept a visitor's buffer from that key the same way.)
+4. **Navigate.** `iframe.src = /?embed=1&snapshots=snapshots/<dir>[&memory=<GiB>]#code=<example>`.
+5. **Ready.** Wait for the api (`qed64:frame-api`, within the 120 s hook budget; the capability check runs here), then
+   poll `api.status()` for `ready`/`headerRefused` on relay `serving` with `api.getDocument().text === example.text`.
+   `headerRefused` also counts as settled; the gallery then shows a notice that the overlay lacks the package. The boot
+   wait's progress comes from the `boot` and `status` events, and the page's own boot card is `status().boot.overlay`.
+6. **Cursor.** `api.setCursor(firstCursor, {focus: true})` (the page clamps and reveals) after `contentWindow.focus()`,
+   so the InfoView shows the panel straight away. `firstCursor` is the spec's `cursors[0]`: the 0-based LSP position
+   converted to Monaco's 1-based position. Monaco columns count UTF-16 units, as LSP characters do.
 
-**Switching** (`switchTo()`): `editor.getModel().setValue(text)`, then wait for `ready` with
-`status.version > versionBefore` and `relay.lastText === text`, then set the cursor. Only one operation
-runs at a time, and the latest selection wins. A newer selection cancels the wait in flight
-(`Superseded`), and the driver goes straight on to the newest one. The rail, the select, deep links, hint
-buttons and the API all go through `choose()`. If the session was booted without Mathlib (the page reloaded
-into a user's init-only buffer), QED64 refuses the example's header and does not widen by itself; the
-gallery then calls `relay.restart({snapshots: ['init','mathlib']})` once and waits for the example on the
-new session. **V1:** `api.setDocument(text, {cursor, focus: false, undoable: false})`, then the wait of step 6 with the
-version `setDocument` resolved with; a halted relay is re-armed with `api.restart()` first, a stalled checker gets the
-text and then `api.restart()`, and the widen is `api.restart({snapshots: ['init','mathlib']})` with the wait on the
-replacement session.
+**Switching** (`switchTo()`): `api.setDocument(text, {cursor, focus: false, undoable: false})`, then the wait of step 5
+with the version `setDocument` resolved with, then the cursor. Only one operation runs at a time, and the latest
+selection wins. A newer selection cancels the wait in flight (`Superseded`), and the driver goes straight on to the
+newest one. The rail, the select, deep links, hint buttons and the API all go through `choose()`. A halted relay is
+re-armed with `api.restart()` first, and a stalled checker gets the text and then `api.restart()`. If the session was
+booted without Mathlib (the page reloaded into a user's init-only document), QED64 refuses the example's header and does
+not widen by itself; the gallery then calls `api.restart({snapshots: ['init','mathlib']})` once and waits for the example
+on the replacement session.
 
-**Edited.** The 250 ms monitor compares `relay.lastText` (V1: `api.getDocument().text`) with the shown example. When they differ (the
+**Edited.** The 250 ms monitor compares `api.getDocument().text` with the shown example. When they differ (the
 user typed, a widget link inserted text, or anything replaced the document) the card's chip reads
 "edited", the status line says "<example> (edited) is ready", and Reset example restores the example.
 
@@ -324,148 +257,47 @@ user typed, a widget link inserted text, or anything replaced the document) the 
 or an unknown id boots the first example with a notice ("There is no example called …"). Notices of
 that kind are transient: the user's next selection dismisses them. An error card hides any notice.
 
-**Reset example** calls `setValue(text)` even when the text is identical. A relay halted by the crash
-breaker re-arms only on a `didChange` (`lsp-relay.ts` `fromClient`). If no version bump arrives within
-3 s, `ready` on the same text is accepted. In Chrome the identical-text `setValue` does send a didChange
-(version 5 → 6 in 255 ms), and it re-arms a halted relay (fresh session in 8.1 s). **V1:** `api.setDocument` with
-identical text resolves `{unchanged: true}` and sends nothing, so a halted relay is re-armed by `api.restart()` (no
-arguments) instead.
+**Reset example** calls `api.setDocument(text)`. With identical text it resolves `{unchanged: true}` and sends nothing,
+so a relay halted by the crash breaker (which re-arms only on a `didChange`, `lsp-relay.ts` `fromClient`) is re-armed by
+`api.restart()` (no arguments) instead.
 
 **Copy for VS Code** copies the pristine example text. It needs a VS Code project that depends on
 Mathlib and on the package (`import Mathlib` / `import <Pkg>`, plan D2).
 
-## The RPC bridge: when it is installed, and why that is early enough
+## The RPC bridge (removed in P1)
 
-`qed64-bridge.js` fixes three defects of the shipped page. D1 (stage A, X4) strips the
-non-serialisable `abortSignal` from `sendClientRequest`; without that, every `mk_rpc_widget%` panel
-shows "Unrecognised error". D2 (X4) applies `applyEdit`, `showDocument` and `insertText` to the open Monaco
-model directly. D3 (this bring-up) coalesces concurrent `Lean.Widget.getWidgetSource` requests for one
-hash: the first goes to the page, its reply (seen on a tap of `qed64.relay.toClient`) is cached per hash
-and answers the held duplicates and later requests; an error reply, a lost reply or 15 s release the held
-ones to the page unchanged. Why D3 is needed: "QED64 limitations" L2. The bridge works by intercepting the
-messages that the InfoView iframe (`#infoview iframe`) posts to the **page window**; `bridgeStats().ws`
-counts `{fetched, cached, coalesced, released}`.
-
-**On pins F, G and H (v1) the bridge is not installed.** All three defects are fixed in the page: D1 and D2 by QED64's HARDENING #56
-(`capabilities.editorRpc`: the InfoView's RPC now crosses the iframe as `startClientRequest`/`awaitClientRequest`/
-`cancelClientRequest`, and the page implements `applyEdit`, `showDocument` and `insertText` on its one model), D3 by the
-page's own widget-source cache (`capabilities.widgetSourceCache`, EMBEDDING.md §2.5). With both capabilities the gallery
-records `status().bridge.stoodDown: true`, `installed: false`, no installs, and `bridgeStats()` is null; W1–W8 and C20
-assert that, and that the RPC panels and link edits still work. For a v1 page that lacks a capability (none exists
-today): without `editorRpc` the bridge is installed late with edits on and D3 on unless `widgetSourceCache`
-(`capabilityMismatch.repair 'late'`); with `editorRpc` but no `widgetSourceCache` it is NOT installed, because its D3
-path matches only the pre-#56 `sendClientRequest` name and would repair nothing (`repair 'unavailable'`, a
-`console.warn`). Everything below describes pins A–E.
-
-* **Install point.** Polling starts every 4 ms the moment `src` is set. The first tick that sees the
-  committed page document installs the bridge (`pageWin()` ignores the initial `about:blank`). In Chrome
-  the first tick that sees the committed document finds `readyState: 'interactive'` (not `loading`) with
-  `qed64Present: false` and `alreadyInstalled: false` — every bring-up boot, e.g. `{t: 82, reason:
-  'commit-poll', readyState: 'interactive', qed64Present: false}` in `out/ux/bringup/widgets-after.json`.
-  `interactive` is after parsing but before the deferred module script runs, so the bridge's listener is
-  registered before the page's own. The iframe's `load` event, every
-  wait-loop poll, the 250 ms monitor and every cursor placement re-check the install.
-* **Reloads the gallery did not start** (for example the page's own "Reload" button). Each installed
-  page window also gets a `pagehide` listener that restarts the 4 ms commit poll. The next document is
-  therefore caught while still `loading` too, not at `load`. The simulation shows this.
-* **Why "before the page's own listener" matters.** The page's InfoView listener is a plain
-  `window.addEventListener('message', …)` registered by its module script. Installed AFTER it, the bridge's
-  `stopImmediatePropagation` does not stop the page's handler (listeners at the target fire in registration
-  order in this Chrome), so both run: `out/ux/bringup/console-a.json` mode `parent-late` gives 3 page errors
-  (activation `unsupported`; `unsupported` at `$tryShowTextDocument` from the page's own applyEdit; an
-  unhandled rejection `Object`) and 2 InfoView warnings `Cannot read properties of undefined (reading
-  'resolve')` (the iframe got two replies to one request), while `parent-early` and the gallery give 1 page
-  error. With a widget panel the late install even shows "Unrecognised error" (`console-hasse.json`,
-  `parent-late: unrec true`). This is why the stage-A auditor, who installed from the parent after the page
-  was up, saw three page errors instead of one. The gallery records `qed64Present` per install; a late
-  install raises a notice and counts in `status().bridge.late` (the UX suite asserts 0).
-* **Why that precedes any widget RPC.** The InfoView iframe is created by lean4monaco only after the
-  page's module script has run (module scripts are deferred until the document is parsed), the editor
-  has started, and the LSP session has booted, which takes seconds. A widget RPC also needs the cursor
-  on a widget, and the gallery sets the cursor only after `ready`, once it has asserted that the bridge
-  is installed. Messages the bridge does not handle pass through untouched, so installing early does no
-  harm.
-* **Idempotence.** The bridge guards itself with `window.__showcaseBridge` (renamed from `__qed64Bridge`: the
-  `__qed64*` namespace is QED64's own, EMBEDDING.md §9) and installs one capture-phase
-  listener. The gallery also records each document it installed on (a `WeakSet`), with
-  `{t, reason, readyState, qed64Present, alreadyInstalled}` in `__showcase.status().bridge.installs`.
-  `scripts/check-gallery.mjs` installs the bridge three times on a fake window: the result is one
-  listener and the same stats object.
+`qed64-bridge.js` repaired three defects of the pre-v1 pages A–E from the gallery's side: D1 (stage A, X4: the
+non-serialisable `abortSignal` of `sendClientRequest`, without which no `mk_rpc_widget%` panel rendered), D2 (the
+InfoView's `applyEdit`, which the shipped page answered `unsupported`) and D3 (`getWidgetSource` coalescing, without
+which the renderer died; "QED64 limitations found", L2). It intercepted the messages the InfoView iframe posts to the page
+window and had to be installed before the page's module script registered its own listener. From F on QED64 fixed all
+three in the page (HARDENING #56 for D1 and D2, the widget-source cache for D3), so on the v1 pins the bridge stood down;
+P1 deleted it with the legacy mode. Its code, its install-timing evidence and its tests (the `vm` sandbox in
+`check-gallery.mjs`, `bridgeStats()`, `status().bridge`) are at the tag `pins-history-2026-11-07` and in
+docs/UPSTREAM-REPORT-QED64.md (D1–D3). `tests/experiments/x4-click-paths.mjs` re-checks D1 and D2 on the raw page.
 
 ## Memory knob (`?mem=<GiB>`)
 
-**On pins F, G and H (v1)** the knob is a boot parameter of the page: `?mem=<GiB>` travels as `&memory=<GiB>` on the frame URL
-(EMBEDDING.md §2.3, §4: rounded to 256 MiB, clamped to [1, 6] GiB and to the device's reservation ladder), so the FIRST
-session gets the commit and no light boot, wrap or restart is needed. `status().mem` reports `{requestedGiB, bytes, ok,
-applied, wrapped: false, light: null, sessions: []}`, with `applied` true when `api.status().memory.initialBytes` (the
-commit the worker made) equals the request. UX C3 checks it on the v1 pins with a same-tab re-navigation to `?mem=3`. The rest of
-this section is the legacy mechanism of pins A–E.
+The knob is a boot parameter of the page: `?mem=<GiB>` travels as `&memory=<GiB>` on the frame URL (EMBEDDING.md §2.3,
+§4: rounded to 256 MiB, clamped to [1, 6] GiB and to the device's reservation ladder), so the FIRST session gets the
+commit and no light boot, wrap or restart is needed. `status().mem` reports `{requestedGiB, bytes, ok, applied, wrapped:
+false, light: null, sessions: [], telemetry: null, memory}` (`wrapped`, `light`, `sessions` and `telemetry` are constants
+since P1), with `applied` true when `api.status().memory.initialBytes` (the commit the worker made) equals the request.
+UX C3 checks it with a same-tab re-navigation to `?mem=3`.
 
-**Constraint.** The relay builds the *first* session inside its own constructor and calls `start()`
-synchronously. `start()` passes `initialBytes` to `lean.boot()` before the page has even assigned
-`globalThis.qed64`. The bundle shows this order: `s=new Jtn(...)` comes before `globalThis.qed64={...}`
-(see `resident-session.ts:151-190` and `lsp-relay.ts` constructor). So no same-origin hook can change
-the first session's commit.
-
-**Approach.** The knob makes the first session **light**:
-
-1. The seed is a comment with no import lines, so `EDITOR_POLICY` boots `['init']` at 256 MiB.
-2. Once that session is ready, the gallery wraps `qed64.relay.makeSession`, the relay's own instance
-   property; X5 confirmed `ownProperty: true`. The relay calls `this.makeSession(...)` on every reboot,
-   and the wrapper sets the new session's `initialBytes` before its `start()` runs. `reboot()` awaits
-   the 1.5 s settle first.
-3. The gallery then calls `relay.restart({snapshots: ['init','mathlib']})` and `setValue(example)`.
-
-**Result.** The session that loads the widgets region is the wrapped one, and so is every later crash
-or heartbeat reboot. The cost is one light init boot, a few seconds. `__showcase.status().mem` reports:
-
-* `light`: the first session and its commit;
-* `sessions`: every wrapped session;
-* `applied`: `relay.session.initialBytes === bytes`;
-* `telemetry`: the worker's `memory` report, best effort.
-
-**Rejected alternative.** Patching `Worker.prototype.postMessage` in the page before its module script
-runs would race the navigation commit.
-
-**Measured in Chrome** (`tests/ux/bringup/memprobe.mjs`, all eight examples in turn, 1440×900, one run each).
-Each column pair uses ONE persistent profile: the first run on a fresh profile is *cold* (empty OPFS and HTTP
-cache), the second run on the same profile is *warm*. Default and `?mem=3` use separate profiles, so neither warms
-the other. (The first version of this table compared a warm default run, `mp-all-d3.json`, with a cold `?mem=3`
-run, `mem3.json`; the "+2.9 GiB RSS, +12 s" it reported was that mismatch, not a cost of `?mem`.)
-
-| | default, cold | default, warm | `?mem=3`, cold | `?mem=3`, warm |
-|---|---|---|---|---|
-| file (`out/ux/bringup/`) | `mem-def-cold.json` | `mem-def-warm.json` | `mem3-cold.json` | `mem3-warm.json` |
-| sessions | s1 `[init, mathlib]` 2048 MiB | same | s1 light `[init]` 256 MiB → s2 `[init, mathlib]` 3072 MiB | same |
-| worker log | `[mem] runtime-initialized: 2048 MiB` | same | `… 256 MiB`, then `[mem] runtime-initialized: 3072 MiB` | same |
-| wasm heap peak (telemetry `currentBytes`) | 2147483648 (= the commit; the 1,390,198,690-byte region fits, no grow) | 2147483648 | 3221225472 (= the commit) | 3221225472 |
-| boot to ready | 10.6 s | 6.6 s | 15.0 s | 11.0 s |
-| headless-shell RSS peak (total / largest renderer) | 9.42 / 9.01 GiB | 9.45 / 9.06 GiB | 9.73 / 9.31 GiB | 9.46 / 9.06 GiB |
-| examples ready / "Unrecognised error" / pthread pool peak / crash | 8/8 / 0 / 24 / no | 8/8 / 0 / 24 / no | 8/8 / 0 / 24 / no | 8/8 / 0 / 24 / no |
-| crash reboot (`mem3.json`, `--crash`) | — | — | s3 again 3221225472 `[init, mathlib]` (wrapper stays on the relay; 10.4 s) | |
-
-Like for like, `?mem=3` costs **+4.4 s of boot** (cold 10.6 → 15.0 s, warm 6.6 → 11.0 s: the extra light init boot
-and the restart) and **no measurable RSS** (+0.31 GiB cold, +0.01 GiB warm; single runs, within run-to-run noise:
-the cold default runs of `widgets.mjs` at deviceScaleFactor 2 peak anywhere in **8.9–12.3 GiB** total over five
-cold runs: `widgets-after-audit5.json` 8.86, `widgets-audit5.json` (the auditor's) 11.28, `widgets-after-audit5b.json`
-11.38, `widgets-rss-audit5c.json` 11.40, and 12.33 in the first `--thumbs` run of audit 5 whose file the second one
-replaced; ps is sampled once a second, so a single peak is not a stable figure and no single-number RSS is quoted
-any more). The 3 GiB commit is
-reserved address space, mostly untouched, so it does not show up as resident memory.
-
-**Decision: widgets8 does not need `?mem`.** Under the stock 2 GiB commit the heap never grew past
-2048 MiB through every first cursor (`mem-def-*.json`, `mp-all-d3.json`), all 46 spec cursors
-(`sp-all-cursors-d3.json`) and all 71 card hints (`hints.json`), with no worker death. `?mem=3` works end to end
-but costs about 4.4 s of boot for no benefit here; keep it as an opt-in knob for heavier regions.
+*History.* On the pre-v1 pages A–E the relay built its first session before the page assigned `globalThis.qed64`, so the
+legacy mode booted a light `['init']` session first, wrapped `qed64.relay.makeSession` and restarted with the commit. In
+Chrome that cost about 4.4 s of boot and no measurable RSS (`tests/ux/bringup/memprobe.mjs`, `out/ux/bringup/mem-*.json`),
+and widgets8 never needed it: under the stock 2 GiB commit the heap never grew past 2048 MiB through every first cursor,
+all 46 spec cursors and all 71 card hints. P1 deleted that mechanism; the measurements are in git history at the tag.
 
 ## Errors
 
 * **Preflight failure.** A blocking card lists each check with ✓ / ✗. It also has "Try again", a link
   to the stock page, and the raw attempts under "Technical details". Nothing is loaded.
-* **The page's own boot failure** (`#bootcard.failed`, for example a missing manifest or core pack)
-  before `globalThis.qed64` exists. A blocking card shows the page's `#bootlabel` message. **V1:** `status().boot.failed`
-  with its `message` gives the hard card at once, except while the relay is halted or when the message is the re-armed
-  halt's own death report (`hardBootFailure`); a death the relay retries never sets `boot.failed` on a v1 pin.
+* **The page's own boot failure** (for example a missing manifest or core pack). `api.status().boot.failed` with its
+  `message` gives the hard card at once, except while the relay is halted or when the message is the re-armed halt's own
+  death report (`hardBootFailure`); a death the relay retries never sets `boot.failed`.
 * **A death before the first `ready`** (`status().lastDeath`). QED64 retries up to 3 deaths in 120 s,
   so this gets a soft card that closes by itself if the page recovers.
 * **`halted`** (the crash breaker). A soft card "The Lean checker stopped" whose action button is
@@ -475,161 +307,58 @@ but costs about 4.4 s of boot for no benefit here; keep it as an opt-in knob for
   card turns compact (`is-compact`: title, one line "QED64’s own card below says what failed", Try again / Dismiss)
   at the top of the stage, so it never covers QED64's card. C11 asserts no overlap (`out/ux/<run>/tests/C11.json`
   `lasting.layout`).
-* **A frozen runtime (QED64 limitation L7): the liveness probe restarts it by itself.** QED64's whole Lean runtime can
-  freeze: every Lean pthread stops, while the worker's JS thread stays alive and keeps the heartbeat going, so QED64
-  never notices and keeps reporting `elaborating` on a serving relay with no death and no LSP message (see "QED64
-  limitations found", L7). The gallery watches every edit, not only its own operations. While QED64 reports
-  `elaborating` on a serving relay, any `$/lean/fileProgress` or `publishDiagnostics` message (counted by a wrapper on
-  `qed64.relay.toClient`; V1: the API's `fileProgress` and `diagnostics` events, `status().stall.source 'api-events'`) or
-  a new phase, version or session counts as progress.
-  * **Liveness probe (default, `?liveness=auto`). The gallery works with any QED64 pin, and decides per page, not per
-    build:** on a page WITH QED64's own liveness (pins `5ac5d00` and `9fdf9b8`, the #52 worker) **the probe starts after
-    30 s without progress**, because it defers to QED64's liveness (below): a frozen runtime that QED64 does not see is
-    restarted **about 41 s after the last progress and ready again about 49 s after it** (C21 (a) in `closeout2-full1`:
-    restart 40.9 s, ready 49.0 s after the click). On a page WITHOUT it (pin `1859b83`) the gallery's probe is the
-    primary recovery and starts after **10 s**. Which kind of page it is comes from `status().liveness` at run time
-    (`status().liveness.qed64.builtIn`); the UX suite requires that to equal the active pin's descriptor
-    (`pins/<id>/pin.json` `liveness.builtIn`). Either way the gallery then sends
-    `textDocument/hover` for the open document at 0:0 through `relay.fromClient`, with a **string** id
-    (`showcase-live-<n>`, which cannot collide with the editor's numeric ids) and full `params` (`textDocument` +
-    `position`; a Lean FileWorker request without params ends in "Got invalid JSON-RPC message" and kills the
-    worker). The reply is swallowed in the same `toClient` wrapper, so the editor never sees it. A hover answer needs a
-    Lean task thread and a proxied `fd_write`, which is exactly the path that dies in L7, and Lean answers it while
-    elaboration is busy elsewhere (UX suite C22: 3 probes answered in 1–3 ms during a 38 s silent `#eval`; verified first with a 40 s one, `tests/ux/tools/liveprobe.mjs`). An
-    answer, or any progress, means alive and re-arms the probe. **Two consecutive probes unanswered within 5 s each**
-    mean wedged: the gallery calls `relay.restart` with the session's own snapshots (a fresh worker on the same text)
-    and shows a small non-blocking notice, "Lean stopped responding and was restarted. Your text is kept." On the
-    previous pin (10 s threshold) that was about 20 s after the last progress (C21 then: restart 20.4 s after the click,
-    ready on the new session at 28.6 s); on pin C (QED64 liveness; served until 2026-10-04) it is about 41 s / 49 s, as above (docs/UX-RESULTS.md).
-    At most one automatic restart per **120 s**; a second wedge inside that window, or a restart that throws, is
-    left to the card below.
-  * **The main-loop probe (hardening lane, 2026-10-02; pin `1859b83`'s C22 (3)).** With every hover probe the gallery
-    also sends `$/showcase/liveness` (string id `showcase-main-<n>`, `params: {}`): an unknown method, which Lean's
-    FileWorker answers from its MAIN LOOP at once, without a pool thread (`FileWorker.lean` `handleRequest` →
-    `emitRequestResponse`, the `Except.error` branch: MethodNotFound -32601 through the normal output path; without
-    `params` the FileWorker would die). It is the same kind of request QED64's own liveness writes (`$/qed64/liveness`).
-    Its reply is swallowed by the `toClient` tap; a reply QED64's JS layer makes (failInFlight, halted) is not an answer
-    (`mainLoop.synthetic`, event `main-synthetic`). A Lean answer since the first probe of the sequence settles a timed-out
-    hover `alive` via `main-loop` (checked after `frame`, `late-answer` and `qed64-answered`), and counts as a recent sign
-    of life for the card's wording. `status().liveness.mainLoop` = `{method, sent, answered, synthetic, outstanding,
-    lastAnsweredAgoMs, lastMs, maxMs}`. A real L7 freeze stops it too (the main loop's reply needs the same proxied output
-    path), and C21's page-level freeze drops it like every other frame, so the recovery is unchanged. The hover stays the
-    second signal.
-  * **Late answers are classified by elapsed time (hardening lane).** A hover reply that arrives after `probeTimeoutMs`
-    is a LATE answer even when the 250 ms monitor tick has not yet looked at the probe (before, such a reply counted as on
-    time, so a host-delayed event loop could turn a late answer into an on-time one: the docs lane's one red sim run 12).
-    A real late reply to the outstanding probe settles the sequence `alive` via `late-answer` at once; a late error reply
-    is recorded (`late`, `proofOfLife: false`) and the probe still times out as a miss. `late` events carry `ms`.
-  * **Proof of life besides the hover (final audit).** A hover waits for a free Lean task thread. When parallel proofs
-    saturate the pool (24 parallel `theorem … := by sleep 45000; trivial`: pool `{unused 0, running 27}`) it goes
-    unanswered while Lean is healthy, and the audit saw the gallery restart such a session (a false "Lean stopped
-    responding", the work thrown away, ready at 140 s instead of about 50 s). So a probe that times out counts as
-    **missed** only if, since the first probe of the sequence, the page has seen **no server frame at all** (the same
-    `toClient` wrapper counts every non-probe message that comes from Lean) **and**, on a page with QED64's own liveness, **QED64's own
-    probe was not answered** in the 10 s before that first probe or at any time since. QED64's probe is an unknown
-    method the FileWorker's main loop answers at once, without a pool thread, and QED64 sends one after every 6 s
-    without a frame, so a live Lean side answers one about every 6–10 s. Otherwise the probe is settled `alive`
-    (event `alive`, `via` `frame`, `late-answer` or `qed64-answered`; `status().liveness.alive`, `aliveVia`) and
-    re-arms. A real L7 stops every signal (and QED64 then stalls, so the gallery defers to it).
-    **A late but real answer counts too (multi-pin lane, 2026-10-02; the critic's minor).** A hover that waited for a
-    free task thread past the 5 s timeout and is then answered by Lean (a non-error reply that QED64's JS layer did not
-    make) proves the Lean side alive just as a frame does: it is recorded (`status().liveness.lateAnswers`, event
-    `late` with `proofOfLife: true`), and a probe sequence that saw one settles `alive` via `late-answer` instead of
-    declaring the session wedged. This matters most on a page without QED64's liveness (pin `1859b83`), which has no
-    `qed64-answered` signal: there, a pool saturated for the whole 2 × 5 s sequence with no frame and no late answer
-    can still look wedged, and does in the browser: UX C22 (3) on pin `1859b83` (`multipin-A-liveness`, 2026-10-02) had
-    hovers waiting about 55 s, no frame and no late answer within 10 s, and the gallery restarted the healthy session
-    (`wedged 2, restarts 1`). **Fixed by the main-loop probe** (above): `harden-A-c21c22` (A on :5196) passes C22 (3),
-    settled `alive` via `main-loop` 3×, 0 restarts; A still has no full-suite verdict with this gallery. `sim-gallery.mjs` run 12 models it (hovers answered 0.9 s after a 0.5 s timeout, i.e. after the next 250 ms tick: 0 restarts;
-    the same page frozen: restarted), and fails with the `late-answer` line removed (2 FAIL).
-    UX suite C22 (3) checks the saturated pool in the browser; `sim-gallery.mjs` run 10 models it.
-    **Only frames from Lean count (close-out 3).** QED64's JS layer, which stays alive during an L7 freeze, makes some
-    frames itself: the front door's ContentModified (-32801) replies to completions it fails fast on an import line
-    (`lsp-front-door.js:288`), the relay's -32603 halted replies (`lsp-relay.ts:112`) and `failInFlight`'s -32603 /
-    -32900 replies (`lsp-relay.ts:212`), all with a message starting `QED64:`, and the relay's halted note (a
-    `publishDiagnostics` whose every diagnostic has source `QED64`). Those count neither as proof of life nor as
-    progress (`status().liveness.syntheticFrames`), and such a reply to a probe is not an answer (event
-    `synthetic-reply`, `syntheticReplies`). `sim-gallery.mjs` run 11 freezes a rollback-style page (no QED64
-    liveness) while those frames keep arriving and requires the restart; with the filter removed (mutant E) it fails.
-  * **On a QED64 page with its own liveness (pins `5ac5d00` and `9fdf9b8`): the gallery defers.** QED64 now fixes L7 itself (HARDENING #52; see "QED64 limitations found", L7): its worker serves the
-    runtime mailbox every second (a lost wakeup is "rescued" and counted; true on pins before QED64 `f83bc70`, which keeps
-    only the mailbox's `mode`, `exitHooked` and `exitEntries` and rescues nothing), probes the FileWorker after 6 s without a
-    server frame, logs a stall when that probe stays unanswered for 12 s, and 4 s later kills the session (died
-    `wedged`); the relay reboots it (`status().relay` `rebooting`, `rebootReason` `wedged`, the page's pill "the checker
-    stopped responding — restarting") and replays the text. The gallery detects this from `status().liveness`
-    (`{probes, answered, stalls, resumed, rescues}`) and then:
-    * starts its own probe only after **30 s** without progress (`probeDeferMs`, `?probeDefer=<s>`) instead of 10 s,
-      past QED64's worst-case window (6 + 12 + 4 s, each up to one 1 s tick late, about 25 s), so it never races
-      QED64's reboot;
-    * never probes or restarts while QED64 reports a stall in its grace window (`stalls > resumed`); a gallery wedge
-      decided then is recorded with action `deferred`, and the card stays the fallback;
-    * observes and reports QED64's own actions: `status().liveness.qed64` (`builtIn`, per-session `counters`, `totals`,
-      `wedgedReboots`, `lastReboot {from, to, lastDeath}`) and the events `qed64-detected`, `qed64-rescue`,
-      `qed64-stall`, `qed64-resumed`, `qed64-wedged` and `qed64-rebooted`; on a `wedged` reboot it shows the notice
-      "Lean stopped responding; QED64 is restarting it. Your text is kept."
-    * remains a fallback for what QED64's worker cannot see: a page-level freeze (C21's synthetic fixture: QED64's
-      worker keeps seeing frames, so its liveness rightly does nothing, and the gallery restarts about 40 s after the
-      click, before the 45 s card) or a QED64 liveness that never acts.
-    On the previous pin (no `status().liveness`) the 10 s probe above applies unchanged.
-  * **On pins F, G and H (v1): the probe stands down.** Its transport (`relay.fromClient` and a `toClient` filter) is internal
-    (EMBEDDING.md §9), and QED64's liveness is declared (`capabilities.liveness`). `status().liveness.probe` is
-    `'stood-down'` and `sent` stays 0 (W1–W8, C20–C23 assert it); without the capability it would read `'unavailable'`.
-    The gallery mirrors QED64's projection `api.status().liveness` (`stalled`, `lastAnswerAgoMs`, `lastFrameAgoMs`,
-    `probeAfterMs`, `wedgeAfterMs`, `graceMs`) and the `liveness`, `reboot` and `death` events into
-    `status().liveness.qed64` and the `qed64-*` events, shows the same notice on a `wedged` reboot, and uses
-    `lastAnswerAgoMs`/`lastFrameAgoMs` and the `fileProgress`/`diagnostics` events as the signs of life for the card's
-    wording. The 45 s stall card is then the gallery's recovery for a freeze QED64's worker cannot see (C21's synthetic
-    fixture), with Restart Lean = `api.restart()`.
-  * **Observe mode (`?liveness=observe`, or `__showcase.liveness('observe')`).** For hang hunts: the probe detects
-    and records the wedge (`status().liveness.events`, action `observed`) and never restarts anything, so the frozen
-    runtime can be captured (the UX harness's hang capture, `tests/ux/lib/qed64.mjs` `captureHang`, writes
-    `out/hang/captures/<run>-<iso>.json`). `?liveness=off` disables the probe. `?probe=<s>`, `?probeTimeout=<s>` and
-    `?restartGap=<s>` change the timings (tests only). On a pin with QED64 liveness (C, B) QED64's own reboot (about 22–25 s after the
-    last frame) comes before the gallery's observe-mode wedge (30 s + 2 × 5 s), so a hang QED64 handles is never seen
-    frozen from outside: the harness then writes a post-hoc record instead (`captureQed64Reboot`,
+* **A frozen runtime (QED64 limitation L7): QED64's own liveness restarts it.** QED64's whole Lean runtime can freeze:
+  every Lean pthread stops, while the worker's JS thread stays alive (see "QED64 limitations found", L7). Every
+  registered pin has QED64's #52 worker, which declares `capabilities.liveness`: it serves the runtime mailbox, probes the
+  FileWorker after 6 s without a server frame, logs a stall when that probe stays unanswered for 12 s, and 4 s later
+  kills the session (died `wedged`); the relay reboots it and replays the text. The gallery watches every edit, not only
+  its own operations: while QED64 reports `elaborating` on a serving relay, the API's `fileProgress` and `diagnostics`
+  events (except `origin: 'qed64'`, the page's own notes; `status().stall.source 'api-events'`) or a new phase, version
+  or session count as progress. It mirrors QED64's projection `api.status().liveness` (`stalled`, `lastAnswerAgoMs`,
+  `lastFrameAgoMs`, `probeAfterMs`, `wedgeAfterMs`, `graceMs`) and the `liveness`, `reboot` and `death` events into
+  `status().liveness.qed64` and the events `qed64-detected`, `qed64-stall`, `qed64-resumed`, `qed64-rescue`,
+  `qed64-reboot`, `qed64-wedged` and `qed64-death` (`qed64-rescue` is true on pins before QED64 f83bc70; from f83bc70
+  on, the worker does not count a rescue and the page does not emit the event; `qed64-rebooted` came from the pre-v1
+  arm and left in P1); on a `wedged` reboot it shows the notice "Lean stopped responding; QED64 is restarting it. Your
+  text is kept." `status().liveness.probe` is `'stood-down'` (`'unavailable'` without the capability) and `sent` stays 0
+  (W1–W8, C20–C23 assert it). `?liveness=`, `?probe=`, `?probeTimeout=`, `?restartGap=` and `?probeDefer=` are recorded
+  knobs only (`?probeTimeout` scales the card's "recent sign of life" window).
+  * **The gallery's own probe (pins A–E; removed in P1).** On the pre-v1 pages the gallery sent its own hover and
+    main-loop probes through `relay.fromClient`, restarted a wedged session itself, and deferred to QED64's liveness
+    where the page had one. That transport is internal (EMBEDDING.md §9), so the v1 pins never used it; its design and
+    evidence (sim runs 7–13, the C21/C22 history on pins A and C) are at the tag `pins-history-2026-11-07` and in
+    docs/HISTORY.md.
+  * **Observe mode (`?liveness=observe`, or `__showcase.liveness('observe')`).** For hang hunts. QED64's own reboot
+    (about 22–25 s after the last frame) comes first, so the UX harness writes a post-hoc record (`captureQed64Reboot`,
     `out/hang/captures/<run>-<iso>-qed64-wedged.json`: QED64's `lastReboot`, its liveness counters and the worker's
-    `[liveness]` lines; exercised in the browser by UX test C23 on a forced `die(null, "wedged")`), and C20 and W1–W8 accept such a reboot as an L7 occurrence handled upstream (one `wedged`
-    death plus its reboot each; console scenario `qed64WedgedReboot`).
+    `[liveness]` lines; exercised in the browser by UX test C23 on a forced `die(null, "wedged")`), and C20 and W1–W8
+    accept such a reboot as an L7 occurrence handled upstream (one `wedged` death plus its reboot each; console scenario
+    `qed64WedgedReboot`).
   * **Stall card (the fallback).** After **45 s** without progress (`?stall=<s>` overrides, ≥ 5) a soft `role=alert`
-    card "Lean has stopped making progress" offers **Restart Lean** (`relay.restart(...)` with the session's own
-    snapshots: a fresh worker on the same text, a few seconds; the page is reloaded instead if the relay is not
-    serving), **Reset example** (restart on the example) and **Keep waiting** (hides the card and re-arms the
-    watchdog). The toolbar's Reset on a stalled checker restarts it too (a didChange alone cannot reach a frozen
-    runtime). The card closes by itself when QED64 is ready again. In the default mode it appears only when the
-    automatic restart did not happen (rate limit, failed restart) or did not help, or when Lean keeps answering
-    probes but makes no progress for 45 s (no example needs more than about 2.5 s per command). In that last case,
-    i.e. when Lean gave a sign of life (a probe answer, a server frame including a late progress message, a QED64
-    probe answer) since this version of the file started checking and within the last 20 s, the card is worded **"Lean is still working"** instead ("… but Lean answered N s ago, so
-    this is most likely a long-running command, not a freeze"), with the same buttons; it re-words itself if that
-    changes while it is up (`status().stall.variant` `alive` or `stopped`, events `shown` and `reworded` carry it).
-  * **Tests (main-loop probe, hardening lane).** `sim-gallery.mjs` run 13: a page without QED64 liveness with a saturated
-    pool (hovers unanswered, no frame) stays alive via `main-loop` and the card says "Lean is still working"; main-loop
-    probes answered only by QED64's JS layer do not count (wedged → restart); a frozen Lean side answers neither (restart).
-    Run 12 now answers the hovers 0.65 s after a 0.6 s timeout, i.e. before the tick that checks it at 0.75 s, and requires
-    0 on-time answers (the old tick-order classification fails it: scratch mutant B, `SIM-GALLERY FAIL 99 ok, 2 failed`);
-    the 0.9 s margin is gone. UX C22 (3) also asserts that a main-loop probe went out with every hover and that the main
-    loop answered them during the saturation, and on a pin without QED64 liveness that the session was settled via
-    `main-loop`.
-  * **Tests.** UX suite C21 freezes the checker deterministically (synthetic, not L7 evidence) and checks the
-    automatic restart in the default mode and, in observe mode, the recorded wedge, the hang capture, the card,
-    Keep waiting and Reset. C22 is the negative: a legitimately slow elaboration is not restarted. W1–W8 and C20
-    assert the probe and the card are armed at their defaults and account for every relay restart.
-    On a pin with QED64 liveness (C, B) C21 (a) checks the deferred restart (between 39 and 45 s after the click, QED64 rebooting
-    nothing), and C22 also checks that QED64's own liveness takes no action during the 38 s silent `#eval` (no stall,
-    no reboot; it is normally not even probed, because the editor's and InfoView's requests keep server frames
-    flowing: longest gap 1,066 ms, `tests/ux/tools/qed64-liveness.mjs`). `scripts/sim-gallery.mjs` runs 7 and 8 model all of it without a browser, and run 9 models a page
-    with QED64's own liveness: deferral, QED64's rescue / stall / `wedged` reboot observed with no gallery probe and no
-    `relay.restart`, no probe during a QED64 stall, the fallback restart when QED64 never acts, and `deferred`;
-    run 10 models the saturated pool (settled `alive` via `qed64-answered` and via `frame`, no restart, the card's two
-    wordings). C21 (b) runs in a fresh browser, so it is not a second runtime boot in one renderer (QED64 L9).
+    card "Lean has stopped making progress" offers **Restart Lean** (`api.restart()`: a fresh worker on the same text, a
+    few seconds; the page is reloaded instead if a restart is not accepted), **Reset example** (restart on the example)
+    and **Keep waiting** (hides the card and re-arms the watchdog). The toolbar's Reset on a stalled checker restarts it
+    too (a didChange alone cannot reach a frozen runtime). The card closes by itself when QED64 is ready again. It is the
+    gallery's recovery for a freeze QED64's worker cannot see (C21's synthetic page-level fixture: QED64's worker keeps
+    seeing frames, so its liveness rightly does nothing) and for a long command. When Lean gave a sign of life
+    (`lastAnswerAgoMs` / `lastFrameAgoMs`, a progress event) since this version of the file started checking and within
+    the last 20 s, the card is worded **"Lean is still working"** instead ("… but Lean answered N s ago, so this is most
+    likely a long-running command, not a freeze"), with the same buttons; it re-words itself if that changes while it is
+    up (`status().stall.variant` `alive` or `stopped`, events `shown` and `reworded` carry it).
+  * **Tests.** UX suite C21 freezes the checker deterministically (synthetic, not L7 evidence) and checks the card,
+    Keep waiting, Restart Lean and Reset; C22 is the negative: a legitimately slow elaboration is not restarted, and
+    QED64's own liveness takes no action during the 38 s silent `#eval` (no stall, no reboot; it is normally not even
+    probed, because the editor's and InfoView's requests keep server frames flowing: longest gap 1,066 ms,
+    `tests/ux/tools/qed64-liveness.mjs`). W1–W8 and C20 assert the card is armed at its default and account for every
+    relay restart. `sim-gallery.mjs` models the card, its wordings and Keep waiting on the V1 page.
 * **`headerRefused`.** A notice, not an error. The page stays usable.
 * **Timeouts.** A card with the last status: switch 330 s (DistLens's 300 s budget plus slack), page hook 120 s.
   **The first boot is progress-aware** (boot-fix lane, 2026-10-03; it fixes the last-mile lane's defect: at 10 Mbit/s
   the old fixed 360 s budget showed "This is taking too long" at 467 s during QED64's normal ~710 MB download and never
   cleared, although QED64 was ready at 577 s):
-  * **Progress** is anything the gallery can see from the same origin: byte progress QED64 reports to its own status
-    sink (`globalThis.qed64.ui.progress(label, {phase, loaded, total, unit})`, wrapped once per page like the bridge;
-    the page's own sink still gets every call), counted per step at its high-water mark so a retry that re-sends the
+  * **Progress** is anything the gallery can see from the same origin: byte progress from the API's `boot` and `status`
+    events (until P1 the legacy mode wrapped QED64's internal status sink `qed64.ui.progress` for the same figures),
+    counted per step at its high-water mark so a retry that re-sends the
     same bytes is not progress; a stage label not seen before on this page; a QED64 phase/relay/session/version not seen
     before; a page resource (`performance` entries) from a URL (query and hash stripped) not seen before in this boot.
     Since the final audit (2026-10-03) a page that re-fetches the same file (a retry loop, a cache-busting query) adds
@@ -641,24 +370,34 @@ but costs about 4.4 s of boot for no benefit here; keep it as an opt-in knob for
     sits just below the QED64 page's own top bar (the gallery reads that bar's height; 44 px if it cannot), so it never
     covers the page's status pill with its download figures (final audit, 2026-10-03; before, it covered the pill). It
     appears from 360 s while progress continues, and already from `BOOT_NOTICE_MS` (120 s) once QED64's own boot
-    overlay (`#boot`) is gone and bytes arrived within the last 30 s (the stock page removes its overlay 120 s after its
+    overlay (`api.status().boot.overlay`; `#boot` in the legacy mode) is gone and bytes arrived within the last 30 s (the stock page removes its overlay 120 s after its
     editor opens, long before a slow download ends). It goes at ready (a notice it replaced comes back). The status
     line adds "· X of Y" while it waits.
   * **Pin E `33b0967` (QED64 #54; measured by the pin-e lane, 2026-10-04).** On E, QED64's boot overlay stays until
-    ready and shows the step, bytes, rate and time left, so the 120 s early-notice path (which needs `#boot` gone) does
+    ready and shows the step, bytes, rate and time left, so the 120 s early-notice path (which needs that overlay gone) does
     not fire. The notice comes from `BOOT_TIMEOUT_MS` after the first-boot wait began; the wait begins when the page
     publishes `globalThis.qed64`. At 10 Mbit/s / 40 ms that was 107.3 s, so the notice appeared at 466.9 s, below
     QED64's top bar and beside its card, with no overlap. Ready came at 565.1 s, with the error card in 0 of 575 samples,
     visible progress in 563 of 564 samples, the longest unchanged progress 6.0 s (C: 19.0 s; E reports progress inside
     runtime chunks and pack parts, `5e94697`/`76be299`), the panel equal to its golden, and `RESULT PASS`, rc 0
     (`out/ux/pinE-throttle/explore/throttle-pe10.json`, screenshot `…/screens/throttle-pe10-0481s.png`). No gallery
-    change was needed. The notice now repeats what QED64's card already shows; dropping it while `#boot` is visible would
+    change was needed. The notice now repeats what QED64's card already shows; dropping it while QED64's overlay is visible would
     be a gallery change with its own gates and was not made.
   * **Late ready.** If the stall card was shown and QED64 later reaches `ready` on the same page document (with the
-    example's text), the card closes and the boot finishes as usual: cursor, focus, panel (`status().boot.recovered`).
-    Another selection, Try again, or a new page document drops that.
-  * The same progress-aware wait is used for `?mem` boots and for a page reload the gallery adopts; the late-ready
-    recovery covers the normal first boot and adopted reloads, not `?mem` (its two-session boot is not resumed). `?bootTimeout`, `?bootStall`,
+    example's text), the card closes and the boot finishes as usual: cursor, focus, panel (`status().boot.recovered`,
+    event `recovered`; `status().boot.latePending` while armed). Another selection, Try again, or a new page document
+    drops that (event `late-dropped`).
+  * **Halt after serve (P1, from the ux-parity review).** A first boot (or an adopted reload) can end in a `halted`
+    card while QED64's own status says its boot is done and not failed (`api.status().boot.done && !boot.failed`): at
+    O this happens once QED64's 30 s check fallback fires before a first verdict. That is not the end of the page: the
+    relay re-arms on the visitor's next edit (a `didChange`). So `boot()` and `adoptReload()` arm the same late adoption
+    as a true stall (`gallery.js` `haltedAfterServe`: `S.boot.late = {kind: 'reload', …}`), and once QED64 reaches
+    `ready` on that page document `lateBootCheck` hides the card and adopts the page through `adoptShown` (the text may
+    hold the visitor's edit, so it is followed, not replaced). Before this the gallery stayed in phase `error` with
+    `booted` false even after QED64 was ready. `sim-gallery.mjs` run 19 (h) covers it (card, `latePending`, then the
+    adoption once QED64 is ready, with no internals touched).
+  * The same progress-aware wait is used for a page reload the gallery adopts; the late-ready recovery covers the
+    normal first boot and adopted reloads. `?bootTimeout`, `?bootStall`,
     `?bootNotice` (seconds) override the timings for tests; `status().boot` reports what the wait saw.
   * **Evidence.** `scripts/sim-gallery.mjs` run 15 (slow progress: notice, no card, ready; a true stall with re-sent
     bytes ignored: card; late ready: card closed, cursor, switching works; defaults); a mutant that ignores progress
@@ -712,19 +451,18 @@ but costs about 4.4 s of boot for no benefit here; keep it as an opt-in knob for
 
 ## Test API (`window.__showcase`, for Playwright)
 
-`__showcase.version` is 9 in both modes (9: the QED64 embedding contract v1: `status().mode` `'v1'`/`'legacy'` and `modeSource` (`'pin.json'`, or `'served'` when the server serves another pin's release than pin.json describes and the gallery followed that release's `/qed64-build.json`), `status().api` `{present, revision, embed, via, capabilities, missing, pinRevision, servedRevision, docs, adopted, adoptSet, events, deaths}`, `status().document`, `bridge.stoodDown` / `bridge.capabilityMismatch` (`repair` `'late'` or `'unavailable'`), `liveness.probe` (`'active'`, `'stood-down'`, `'unavailable'`), `stall.source` / `boot.source` / `boot.apiBootEvents`, `seed.action` `'embed'`, `offer()` and `acceptOffer()` (null / false in legacy mode); on a legacy pin these fields are present with their legacy values (`mode 'legacy'`, `api.present false`, `liveness.probe 'active'`, `stall.source 'relay-tap'`, `boot.source 'ui-tap'`); 8: the browser capability check `status().caps` and phase `unsupported`; the main-loop probe `status().liveness.mainLoop`, `aliveVia['main-loop']`, events `main-answered` / `main-synthetic`, `probe.main`; late answers by elapsed time with `ms`; 7: only frames from Lean are proof of life: `status().liveness.syntheticFrames`, `syntheticReplies`, event `synthetic-reply`; 6: proof of life besides the hover: `status().liveness` `frames`, `lastFrameAgoMs`, `alive`, `aliveVia`, `qed64.lastAnsweredAgoMs`, event `alive`; the card's wording, `status().stall.variant` and the `reworded` event; 5: `status().liveness.qed64` and the `qed64-*` events, `probeDeferMs`, `deferring`, `effectiveProbeAfterMs`, `deferred`, action `deferred`, `status().qed64.rebootReason`: the deferral to QED64's own liveness; 4: `liveness(mode)` and `status().liveness`, the L7 liveness probe; 3: `restoreSaved(i)` opens the newest kept buffer by default; `status().saved` lists the entries). The contract is frozen in `tests/ux/selectors.json` `showcaseApi` and checked by `check-gallery.mjs` 8b.
+`__showcase.version` is 10 (10, P1: one mode; `status().mode` is the constant `'v1'`; `modeSource`, `api.servedRevision`, `bridge`, `bridgeStats()` and `fellBack` (P2) are gone; `mem.wrapped`/`light`/`sessions`/`telemetry`, `boot.uiTapped`/`uiWrapped`/`uiCalls` and `liveness.mainLoop` stay as constants that V1 runs assert, until P11; `offer()` / `acceptOffer()` are null / false when `capabilities.offers` is false. 9: the QED64 embedding contract v1: `status().api` `{present, revision, embed, via, capabilities, missing, pinRevision, docs, adopted, adoptSet, events, deaths}`, `status().document`, `liveness.probe` (`'stood-down'`, `'unavailable'`), `stall.source` / `boot.source` / `boot.apiBootEvents`, `seed.action` `'embed'`, `offer()` and `acceptOffer()`. Versions 3 to 8 added the kept-buffer chooser, the gallery's own liveness probe and its fields, and the capability check `status().caps` with phase `unsupported`; the probe's fields survive as recorded zeros). The contract is frozen in `tests/ux/selectors.json` `showcaseApi` and checked by `check-gallery.mjs` 8b.
 
 | Call | Returns |
 |---|---|
 | `select(pkg)` | A Promise that resolves with `status()` once the example is `ready` (or `refused`) with the cursor set. It rejects on failure or when a newer selection supersedes it (`code: 'SUPERSEDED'`). |
 | `reset()` | Reset example through the driver (setValue even on identical text); resolves like `select`. |
 | `restoreSaved(i = 0)` | Puts kept buffer `i` in the editor (`lib.js` `savedEntries`: the history newest first, then the first one ever saved; 0 = newest); resolves `true` if it did. |
-| `status()` | `{phase, current, shown, overlay, requestedOverlay, fellBack, preflight:{ok, attempts, availability, regionImports}, booted, everReady, bootMs, lastSwitchMs, op, statusLine:{text, detail} (the visible status line and its technical tooltip; docs lane), error, notice, seed:{saved, action, error}, edited, custom, mode, modeSource, api:{…}, document:{…}, caps:{ok, hard, soft, missing, lacks, deviceMemory, checks, override}, saved:{present, history, entries, exampleEdit}, mem, bridge:{installed, installs, late}, cursor, qed64:{phase, version, header, session, relay, rebootReason, lastDeath, collision}, selections:[{token, id, source, outcome}], stall:{thresholdMs, active, variant, idleMs, shown, restarts, progressMsgs, tapped, events}, liveness:{…}}`. `selections` is how each of the last 20 selections settled (`ok`, `SUPERSEDED` or an error code), so a test can drive the real cards and still see supersession (C4). `stall` is the watchdog (see Errors). |
-| `bridgeStats()` | A copy of the page window's `__showcaseBridge` (`{stripped, applied, shown, inserted, passed, errors, ws:{fetched, cached, coalesced, released, tapped}}`), or null (always null on a v1 pin: the bridge stands down). |
-| `offer()` / `acceptOffer()` | V1: `api.status().offer` (`{kind:'exactImports', label}` or null) and `api.acceptOffer()` (true when something was offered); null / false on a legacy pin. |
+| `status()` | `{mode, api:{…}, document:{…}, phase, current, shown, overlay, overlayDir, overlayDirs, requestedOverlay, preflight:{ok, overlay, dir, attempts, availability, regionImports}, booted, everReady, bootMs, lastSwitchMs, op, statusLine:{text, detail} (the visible status line and its technical tooltip; docs lane), error, notice, seed:{saved, action, error}, edited, custom, caps:{ok, hard, soft, missing, lacks, deviceMemory, checks, override}, saved:{present, history, entries, exampleEdit}, mem, cursor, qed64:{phase, version, header, session, relay, rebootReason, lastDeath, collision, offer, snapshots, memory, boot, liveness}, selections:[{token, id, source, outcome}], stall:{thresholdMs, active, variant, idleMs, shown, restarts, progressMsgs, tapped, source, events}, liveness:{…}, boot:{…, recovered, latePending}}`. `selections` is how each of the last 20 selections settled (`ok`, `SUPERSEDED` or an error code), so a test can drive the real cards and still see supersession (C4). `stall` is the watchdog (see Errors). |
+| `offer()` / `acceptOffer()` | `api.status().offer` (`{kind:'exactImports', label}` or null) and `api.acceptOffer()` (true when something was offered); null / false when the page offers nothing (`capabilities.offers` false). |
 | `currentText()` | The editor model's text, or null. |
 | `examples()` | `[{id, title, module, phase, firstCursor, textSha256}]` |
-| `liveness(mode?)` | The L7 liveness probe. With `'auto'`, `'observe'` or `'off'` it switches the mode (observe: detect and record, never restart). Returns `status().liveness`: `{mode, probeAfterMs, probeTimeoutMs, restartGapMs, misses, sent, answered, missed, late, wedged, wedgedActive, restarts, rateLimited, restartFailed, outstanding, lastAnswerMs, maxAnswerMs, unavailable, lateAnswers, frames, lastFrameAgoMs, alive, aliveVia, mainLoop:{method, sent, answered, synthetic, outstanding, lastAnsweredAgoMs, lastMs, maxMs}, probeDeferMs, deferring, effectiveProbeAfterMs, deferred, qed64:{builtIn, detectedAt, session, counters, totals, lastAnsweredAgoMs, wedgedReboots, rebooting, lastReboot}, events}`; `events` are `probe` (with `main`, the main-loop probe's id), `answered`, `alive` (with `via`: `frame`, `late-answer`, `qed64-answered` or `main-loop`), `missed`, `late` (with `ms` and `proofOfLife`), `main-answered`, `main-synthetic`, `wedged` (with `action` `relay.restart`, `observed`, `rate-limited`, `restart-failed` or `deferred`), `resumed`, `cleared`, `mode` and QED64's own `qed64-detected`, `qed64-rescue`, `qed64-stall`, `qed64-resumed`, `qed64-wedged`, `qed64-rebooted`. |
+| `liveness(mode?)` | With `'auto'`, `'observe'` or `'off'` it records the mode (the gallery's own probe left in P1, so the mode changes nothing but what the harness's hang capture reads). Returns `status().liveness`: the mode, the recorded probe knobs and counters (all 0 since P1), `probe` (`'stood-down'`), `mainLoop` (constant), and `qed64:{builtIn, detectedAt, session, counters, totals, lastAnsweredAgoMs, wedgedReboots, rebooting, lastReboot}` with the events `qed64-detected`, `qed64-stall`, `qed64-resumed`, `qed64-rescue` (true on pins before QED64 f83bc70; from f83bc70 on, the worker does not count a rescue and the page does not emit the event), `qed64-reboot`, `qed64-wedged`, `qed64-death` and `mode`. |
 
 The gallery's `phase` is one of `starting`, `preflight`, `booting`, `switching`, `ready`, `refused`,
 `halted`, `error` or `unsupported` (the capability card). The frozen contract (this table, every gallery
@@ -753,13 +491,14 @@ node scripts/sim-gallery.mjs               # gallery.js against a fake DOM + mod
 * `pin.json` against the lock, including (§4, 2026-10-09) its `overlays` map: equal to `scripts/lib/pins.mjs`
   `overlayDirs` of the pin and to the lock's `overlays.<o>.url`, and accepted by `lib.js` `parseOverlayDirs`.
 * Section 7 also covers the overlay names: `overlayDirOf`/`overlayNameOf` with and without a map; `chooseOverlay` with a
-  per-runtime map (served at the directories → no fallback; a site that serves only the bare `widgets8/`/`widgets7/` →
-  not ok, `notFound`, never a silent legacy path; `?overlay=widgets8` as an alias, an explicit `widgets8.<bid16>`, a
-  literal `nope`; the legacy case without a map). The Memory64 probe bytes are compared with the active pin's worker
-  source: `public/workers/memory64-probe.js` evaluated in a `vm` context where it exists (QED64 385a1ac on), else the
-  `lean.worker.js` literal.
+  per-runtime map (served at the directory; a site that serves only the bare `widgets8/` → not ok, `notFound`, one
+  attempt, never a silent bare path; `?overlay=widgets8` as an alias, an explicit `widgets8.<bid16>`, a literal `nope`,
+  and a literal directory `partial7` whose region lacks packages, for the refused-header path); `parseOverlayDirs`
+  refuses an absent map since P1. The Memory64 probe bytes are compared with the active pin's worker
+  source: `public/workers/memory64-probe.js` evaluated in a `vm` context (QED64 385a1ac on, so every registered pin;
+  the `lean.worker.js` literal for older pins went in P1).
 * `--live` (§10): each logical overlay is preflighted at the pin's served directory, and on a per-runtime pin
-  `GET /snapshots/widgets{7,8}/index.json` must be a 404 (pin I, `$W/logs/pinI-check-gallery-live.log`:
+  `GET /snapshots/widgets8/index.json` (the bare directory) must be a 404 (pin I, then for `widgets{7,8}`, `$W/logs/pinI-check-gallery-live.log`:
   `CHECK-GALLERY OK 170 ok, 0 failed`).
 * Section 8b: every gallery id/class in `tests/ux/selectors.json` exists; `window.__showcase` implements
   the `showcaseApi` contract; all eight `thumbs/<pkg>.png` exist, are 480 px wide, ≤ 60 KB, and match the
@@ -808,10 +547,7 @@ first probe's timeout check (0.5–0.75 s) and before the second's (about 1.0–
 middle of that window. Not reproduced in 11 reruns at 0.7 s (so the cause is inferred, not shown); at 0.9 s 4 reruns
 and the final gate passed. Close-out 3 (gallery `92027286…`): `CHECK-GALLERY OK 123 ok`, `SIM-GALLERY OK 84 ok`. Earlier
 (close-out, gallery `c8492b70…`): `--live`: `CHECK-GALLERY OK 133 ok, 0 failed` (not re-run). New since audit 5:
-thumbnail wiring and cursor-label checks (8b), the `livenessObserved` and `qed64WedgedReboot` classifier tests (8c).
-* The bridge sandbox also checks D3: three concurrent `getWidgetSource` for one hash → one forwarded
-  (clean), two held and answered from the first reply; a cached hash is answered locally; an error reply
-  releases the held ones.
+thumbnail wiring and cursor-label checks (8b), the `livenessObserved` (until P1) and `qed64WedgedReboot` classifier tests (8c).
 * HTML:
   * ids are unique;
   * every id that `gallery.js` uses exists;
@@ -825,32 +561,27 @@ thumbnail wiring and cursor-label checks (8b), the `livenessObserved` and `qed64
 * `lib.js` unit tests:
   * the preflight rejects an unpaired runtime, a length mismatch, an HTML fallback, gzip encoding, a
     404 index or snapz, a foreign runtime manifest, and a missing `mathlib` entry;
-  * overlay fallback works, and an explicit overlay does not fall back.
-* The bridge in a `vm` sandbox: install idempotence, D1 strip and re-dispatch, D2 `applyEdit`, and
-  pass-through.
+  * the default overlay is one attempt (P2), and an explicit overlay is preflighted alone.
 * `sim-gallery.mjs`. This runs the **real** `gallery.js` against a DOM parsed from `index.html` and a
-  fake QED64 page. The fake page models what the controller relies on:
-  * when the navigation commits;
-  * the `loading` → module-script → `complete` order;
-  * the first session being created before `globalThis.qed64` is assigned;
-  * `relay.lastText`, `makeSession`, `restart`, re-arming a halted relay on `didChange`;
-  * versioned status, covered and refused headers;
-  * buffer persistence.
+  fake QED64 page with the embedding API v1 (since P1 the only page model; runs 1–15 and 19(d) of the legacy model were
+  ported to V1 or deleted). The fake page models what the controller relies on:
+  * when the navigation commits, and the `qed64:frame-api` event with the frozen api;
+  * `api.status()`, `getDocument`, `setDocument` (versions, `{unchanged: true}`), `setCursor`, `restart`, the events,
+    re-arming a halted relay, covered and refused headers;
+  * `status().boot` (`done`, `failed`, `overlay`) and the 30 s check fallback.
 
-  It checks these behaviours:
+  It checks these behaviours, among others:
   * the preflight runs before navigation, and refusals mean no navigation;
-  * the user buffer is saved, and the seed is in place before navigation;
-  * the bridge goes in at `readyState: 'loading'` before `qed64` exists, including after an external
-    reload;
-  * the first cursor is placed and focused;
+  * the example travels in `#code=`, nothing touches `qed64.buffer` or any other internal;
+  * the first cursor is placed and focused; `document.title` and the hash follow the selection;
   * switching works, and a storm of 6 selections settles on the last (5 `SUPERSEDED`);
-  * a refused header gives a notice;
+  * a refused header gives a notice; a session without `mathlib` widens with `api.restart({snapshots})`;
   * Reset works on identical text and on a halted relay;
   * hint buttons, roving arrow keys, Copy, `hashchange`, and adopting an external reload all work;
   * Retry after a preflight or boot failure first retires the old page through `about:blank`;
   * on a narrow screen the stack style is applied and the select bar switches examples;
-  * `?mem=3`: the light first session is 256 MiB `[init]`; the wrapped restart is 3 GiB
-    `[init,mathlib]`, and so is the session re-armed after a halt.
+  * a page without `editorRpc` gets the hard "could not start" card;
+  * the progress-aware boot, the late ready and the halt after serve (run 19 (h)).
 
   It is a *model* of QED64, so the open questions below are what the browser must confirm.
 * With `--live`, the real preflight against the served overlays, plus MIME and COOP/COEP checks on the
@@ -902,13 +633,13 @@ critical sections` ×3, while the previous plain `rm -f` takeover overlapped onc
 | script | what it proves | final result |
 |---|---|---|
 | `widgets.mjs --dir after --thumbs` | each card selected in turn (one cold boot); its first-cursor panel passes BOTH the position-bound golden check (below; svg counts compared over the whole draw-tag set, a missing kind = 0) AND the frozen `cursors[0].expect`, including `panelTitle` (the spec's "HTML Display", or none = an `mk_rpc_widget%` panel in the info block), texts, svg tag counts and link texts, all inside that panel; no "Unrecognised error"; console classified against the allowlist (exit 1 otherwise); full-page 1440×900 shots `after/gallery-<pkg>.png`, panel crops `after/panel-<pkg>.png`, thumbnails `gallery/thumbs/<pkg>.png` | latest (audit 5): `--dir after-audit5 --thumbs` (`work/logs/audit5-widgets-thumbs2.log`), `--dir after-audit5b` (screens with the new thumbnails, `audit5-widgets-after-audit5b.log`), `--dir rss-audit5c`: each `WIDGETS OK 8/8` (titles: 5× "HTML Display", 3× rpc block), boot 13.0–13.4 s cold, switches 0.4–2.2 s, bridge `stripped 3`, `unrecognised false` ×8, `CONSOLE OK` (1 `unsupported`, 1 esms warning, 6–7 empty errors, each paired with its own -32800 reply: `paired {n: 6, replies: 6}`; 1 QED64 load, 1 InfoView load) |
-| `hints.mjs` | every "Things to try" button of every card, clicked in the real UI. **cursor**: the InfoView's info block must be the one for the hint's own position (summary `<file>.lean:<line>:<char>`), and inside it the golden panel `expectPanel` (`examples.json`, from `lean/expect/w8/<pkg>.json`: the "HTML Display" panel or the rpc block, EXACT svg tag counts over the whole draw-tag set, texts that occur in no other cursor's panel of that example) plus the spec's texts; **click**: the link exists and changes the document by exactly the frozen edit, QED64 re-checks with 0 errors / 0 warnings, the chip says "edited", Reset restores; **select** (`expectSelectPanel`): BEFORE, the unselected golden panel of that position has rendered, 0 subterms are selected and none of the `appear` texts is in the block; shift-click the subterm(s) / hypothesis; AFTER, ≥ 1 `[class*=highlight-selected]` per pick and every claimed text in the block (whitespace-insensitive leaf runs); then the picks are shift-clicked off and the count must be 0 again; **hover** (`expectHover`): BEFORE, no `.tooltip .tooltip-code-content` popup; hover the innermost element reading `tagText` inside the panel's code element reading `codeText` (of THIS position's panel); AFTER, a popup whose own text is exactly `n : ℕ`, gone again when the mouse leaves; console classified (exit 1 on anything outside the allowlist) | `HINTS OK 71/71` (46 cursor, 21 click incl. 6 Try-this and the GraphScope edge found by `title`, 3 select: before `selectedCount 0`, after 1 / 2 / 1, cleared; 1 hover: popups before `[]`, after `["n : ℕ"]`, closed); click-to-settled 0.64–2.63 s; `CONSOLE OK` (1 `unsupported`, 1 esms warning, 33 empty errors, `paired {n: 33, replies: 33}`) (audit 5 re-run with the new hint copy: `work/logs/audit5-hints.log`, `hints.json`) |
-| `mutants.sh` | the checks are not vacuous. Cursor: a copy of the gallery with ONE hinted command replaced is served on :5192 (`serve.mjs GALLERY_DIR`), and exactly that hint must fail. M1 tree-scope L41 `#tree_evolve` → `#check (41 : Nat)`, M2 hasse-view L21 `#hasse (Fin 4)` → `#check (Fin 4)` (rpc panel), M3 graph-scope L36 `cycleGraph 6` → `cycleGraph 5` (a panel renders, but not the claimed one). Select / hover (audit 2), each must fail exactly as listed: M4 the hover retargeted (in the copy's `examples.json`, which `hints.mjs` then reads too) to the panel's plain `<code>simp only [add_zero, zero_add]</code>`, which has no popup; M5 `--fault no-hover` (everything but the hover); M6 `--fault no-select` (everything but the shift-clicks) on all 3 select hints; M7 expr-xray select #2 with only its first pick | `MUTANTS OK` (`work/logs/audit3-mutants-final.log`): M1 "info block :41:0 has no “HTML Display” panel"; M2 svg `{svg: want 1 got 0, rect: want 4 got 0, …}` and both texts missing; M3 svg `{g, line, circle, text: want 6 got 5}`, "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})" missing; M4 and M5 "no popup “n : ℕ” after the hover (popups: [])"; M6 all three fail with their `appear` texts missing; M7 "missing [mismatches (1, ranked), instance argument #3 of ite differs]" while select #1 passes; every other hint of those runs passes |
+| `hints.mjs` | every "Things to try" button of every card, clicked in the real UI. **cursor**: the InfoView's info block must be the one for the hint's own position (summary `<file>.lean:<line>:<char>`), and inside it the golden panel `expectPanel` (`examples.json`, from `lean/expect/<pkg>.json` (`lean/expect/w8/` until P2): the "HTML Display" panel or the rpc block, EXACT svg tag counts over the whole draw-tag set, texts that occur in no other cursor's panel of that example) plus the spec's texts; **click**: the link exists and changes the document by exactly the frozen edit, QED64 re-checks with 0 errors / 0 warnings, the chip says "edited", Reset restores; **select** (`expectSelectPanel`): BEFORE, the unselected golden panel of that position has rendered, 0 subterms are selected and none of the `appear` texts is in the block; shift-click the subterm(s) / hypothesis; AFTER, ≥ 1 `[class*=highlight-selected]` per pick and every claimed text in the block (whitespace-insensitive leaf runs); then the picks are shift-clicked off and the count must be 0 again; **hover** (`expectHover`; the Simp Lens popup hint, a click since P1): BEFORE, no `.tooltip .tooltip-code-content` popup; **click** the innermost element reading `tagText` inside the panel's code element reading `codeText` (of THIS position's panel); AFTER, a popup whose own text is exactly `n : ℕ`; then a click on a blank point of the InfoView must close it. A click pins the InfoView's type tooltip on every pin, and from QED64's ux-parity change on a hover no longer opens it, so the card says "Click `n` in the panel …" (`scripts/build-gallery.mjs`, `examples.json`) and UX W4 `checkHover` does the same; the hint kind keeps its name `hover`; console classified (exit 1 on anything outside the allowlist) | `HINTS OK 71/71` (46 cursor, 21 click incl. 6 Try-this and the GraphScope edge found by `title`, 3 select: before `selectedCount 0`, after 1 / 2 / 1, cleared; 1 hover: popups before `[]`, after `["n : ℕ"]`, closed); click-to-settled 0.64–2.63 s; `CONSOLE OK` (1 `unsupported`, 1 esms warning, 33 empty errors, `paired {n: 33, replies: 33}`) (audit 5 re-run with the new hint copy: `work/logs/audit5-hints.log`, `hints.json`) |
+| `mutants.sh` | the checks are not vacuous. Cursor: a copy of the gallery with ONE hinted command replaced is served on :5192 (`serve.mjs GALLERY_DIR`), and exactly that hint must fail. M1 tree-scope L41 `#tree_evolve` → `#check (41 : Nat)`, M2 hasse-view L21 `#hasse (Fin 4)` → `#check (Fin 4)` (rpc panel), M3 graph-scope L36 `cycleGraph 6` → `cycleGraph 5` (a panel renders, but not the claimed one). Select / hover (audit 2), each must fail exactly as listed: M4 the hover retargeted (in the copy's `examples.json`, which `hints.mjs` then reads too) to the panel's plain `<code>simp only [add_zero, zero_add]</code>`, which has no popup; M5 `--fault no-click` (everything but the click on the tag; `no-hover` until P1); M6 `--fault no-select` (everything but the shift-clicks) on all 3 select hints; M7 expr-xray select #2 with only its first pick | `MUTANTS OK` (`work/logs/audit3-mutants-final.log`): M1 "info block :41:0 has no “HTML Display” panel"; M2 svg `{svg: want 1 got 0, rect: want 4 got 0, …}` and both texts missing; M3 svg `{g, line, circle, text: want 6 got 5}`, "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})" missing; M4 and M5 "no popup “n : ℕ” after the hover (popups: [])"; M6 all three fail with their `appear` texts missing; M7 "missing [mismatches (1, ranked), instance argument #3 of ite differs]" while select #1 passes; every other hint of those runs passes |
 | `questions.mjs` | the open questions below. EVERY question (q2, q3, q4, q9–q14) and the malformed-hash case has an explicit `ok` predicate over exactly the fields the answer below cites, printed as `qN OK` or `qN FAIL (<failing parts>)`; the run passes only if every wanted question exists with `ok === true` (a question not reached fails). Console classified, with the breaker / relay-restart entries allowed because q3 runs; exit 1 on an error, a crash, a console failure or any failed question | `malformedHash OK`, `q2 OK` … `q14 OK`, `QUESTIONS OK`, `CONSOLE OK` (3 QED64 loads, 3 InfoView loads: 3 `unsupported`, 3 esms warnings, 7 empty errors each paired with its own -32800 reply, 4 "Outdated RPC session", 9+5 checker-halted) (`work/logs/audit5-questions.log`, `questions.json`). Mutant E (a gallery copy whose Reset handler returns at once, `:5193`): `q3 FAIL (identicalFinished, identicalBumped, afterResetReady, newSession, versionIncreased, relayServing, cardGone, freshPanelBack)`, `QUESTIONS FAIL`, exit 1 (`work/logs/audit5-mutE-fixed.log`, `questions-q3-mutE.json`) |
 | `narrow.mjs --dir after` | 390×844 (mobile emulation) with stacking, with `?stack=0`, and dark mode at 1440 and 390 | no horizontal page scroll (`scrollWidth 390`), see 5 and 6 |
 | `memprobe.mjs` | heap telemetry + RSS + pthread pool per example, `?mem`, crash reboot | see "Memory knob" and L2 |
-| `stockprobe.mjs`, `rpctrace.mjs` | the stock page WITHOUT the gallery (top-level, bridge by init script or none), to attribute L2 | see L2 |
-| `consoleprobe.mjs`, `emptyerr.mjs` | console census per bridge install mode, with stacks; the empty console.error's trigger | see "Console messages" |
+| `stockprobe.mjs`, `rpctrace.mjs` (removed in P1; at the tag) | the stock page WITHOUT the gallery (top-level, bridge by init script or none), to attribute L2 | see L2 |
+| `consoleprobe.mjs` (removed in P1; at the tag), `emptyerr.mjs` | console census per bridge install mode, with stacks; the empty console.error's trigger | see "Console messages" |
 
 **Correction (bring-up audit 2).** The second `HINTS OK 71/71` still counted 3 of its 4 select/hover hints
 without checking them. The hover check looked for `: ℕ` anywhere in the InfoView, and the goal `⊢ ∀ (n : ℕ), …`
@@ -923,7 +654,7 @@ interval-inspector selection was real. Now:
 * `lean/examples/expr-xray.json` now claims what only a selection produces. One pick gives “clean (explicit only)
   app if n = n then 1 else 0 : ℕ”: the X-Ray's root row is the selected subterm, not the goal. Two picks give
   “mismatches (1, ranked)” and “instance argument #3 of ite differs”: the two occurrences differ only in their
-  Decidable instance. Both are verified against `lean/expect/w8/expr-xray.json` `selections[]`. `lsp-golden.mjs`
+  Decidable instance. Both are verified against `lean/expect/expr-xray.json` `selections[]` (`lean/expect/w8/` until P2). `lsp-golden.mjs`
   matches such leaf runs the same way.
 * `hints.mjs` checks before and after each hint, and clears the selection afterwards (see the table).
 * `mutants.sh` M4–M7 show that each of these checks fails when the hover or selection is missing or wrong.
@@ -1064,7 +795,7 @@ scrolled into view (`loading="lazy"`), to be visible with `naturalWidth` 480.
 
 ## Console messages (the UX suite's allowlist)
 
-Census with stacks (`consoleprobe.mjs`, `emptyerr.mjs`; `console-a.json`, `console-hasse.json`,
+Census with stacks (`consoleprobe.mjs`, removed in P1, and `emptyerr.mjs`; `console-a.json`, `console-hasse.json`,
 `emptyerr.json`). Machine-readable copy: `tests/ux/selectors.json` `consoleAllowlist`. Everything else
 fails C14.
 
@@ -1092,17 +823,16 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
 | pageerror and `console.error` `QED64: checker halted after repeated crashes; edit the file to restart it` | the relay answering requests while halted | allow **only** in the breaker test (and the UX suite's boot-failure tests C8, C9, C11, C12, whose boots halt after three deaths) |
 | pageerror and `console.error` `QED64: the Lean checker died (bootFailed)`; `Failed to load resource: … 404 (Not Found)` | the relay's death path when a boot cannot load its snapshots (missing / unpaired / unreachable overlay); the missing file itself | allow **only** in the UX suite's `bootFailure` scenario (C8 missing overlay, C9 unpaired overlay, C11 lasting network cut, C12 unreachable overlay) |
 | `console.error` `Error: ?snapshots=<dir>: Failed to fetch` or `Error: ?snapshots=<dir>: /<dir>/index.json: HTTP <status>` followed by its stack (the main bundle; matched on the first line only) | **v1 pins (F, G, H; seen in runs since g-full1b)**: a `?snapshots=` overlay index that is unreachable or missing is a named boot failure before Lean starts (EMBEDDING.md §4; `qed64-boot.ts` `fetchSnapshotIndexFor`), reported as `api.status().boot` and `console.error`ed once by `main()`'s catch (`frontend/src/main.ts:625-629`); it replaces the relay death lines above, which legacy pins print for the same fault | allow **only** in the `bootFailure` scenario (`bootFailure[4]`, added in `d791b20`); first seen in run g-full1b (C8 stock and C12 overlay-offline-stock), and since then exactly once in each of those two loads in every full run on H (all seven, `h-full1` … `h-headed2`); any other uncaught `main()` error fails |
-| `console.error('Outdated RPC session')` (the main bundle, line0 627) with **no** session replaced | **pin G (5c327c2) only**, a QED64 defect (fixed in H `bf9d947`, which forwards the keep-alive without waiting for a slot; docs/UPSTREAM-REPORT-QED64.md K1): its edit coalescer's request cap (e4cffcc, `maxInFlightRequests` 6, EMBEDDING.md §7.8) makes the InfoView's `$/lean/rpc/keepAlive` wait behind waiting requests, so a silence over Lean's 30 s keep-alive window expires the RPC session and Lean answers the queued rpc calls `-32900` itself | allow **only** in C22's `rpcKeepAliveStarved` scenario, on the pins listed in `25-stall.spec.mjs` `KEEPALIVE_STARVED_PINS`, each line paired with its own Lean `-32900` reply (`qed64Kind` null, exact message; fail-closed without tap reports); C22 also requires each reply to end a phase silent for 30 s+, no relay-made `-32900`, and a reconnect (an `$/lean/rpc/connect` at or after the burst's first reply) plus the golden panel afterwards (seen in run g-full1b, C22: 9 lines). **H is strict**: `bf9d947` is not in `KEEPALIVE_STARVED_PINS`, so on H (and on every pin but `5c327c2`) one such line fails C22; strict C22 on H printed 0 (`h-c22-1`, and every full run on H). Never declared together with `relayRestartOrReboot`, whose unpaired entry for the same text would match first (`exclusiveScenarios`: such a verdict fails) |
+| `console.error('Outdated RPC session')` (the main bundle, line0 627) with **no** session replaced | **pin G (5c327c2) only**, a QED64 defect (fixed in H `bf9d947`, which forwards the keep-alive without waiting for a slot; docs/UPSTREAM-REPORT-QED64.md K1): its edit coalescer's request cap (e4cffcc, `maxInFlightRequests` 6, EMBEDDING.md §7.8) makes the InfoView's `$/lean/rpc/keepAlive` wait behind waiting requests, so a silence over Lean's 30 s keep-alive window expires the RPC session and Lean answers the queued rpc calls `-32900` itself | **removed in P1 (C7)**, with pin G: the `rpcKeepAliveStarved` scenario and `KEEPALIVE_STARVED_PINS` are gone, so such a line now fails C14 on every pin. Until P1: allowed **only** in C22's `rpcKeepAliveStarved` scenario, on the pins listed in `25-stall.spec.mjs` `KEEPALIVE_STARVED_PINS`, each line paired with its own Lean `-32900` reply (`qed64Kind` null, exact message; fail-closed without tap reports); C22 also requires each reply to end a phase silent for 30 s+, no relay-made `-32900`, and a reconnect (an `$/lean/rpc/connect` at or after the burst's first reply) plus the golden panel afterwards (seen in run g-full1b, C22: 9 lines). **H is strict**: `bf9d947` is not in `KEEPALIVE_STARVED_PINS`, so on H (and on every pin but `5c327c2`) one such line fails C22; strict C22 on H printed 0 (`h-c22-1`, and every full run on H). Never declared together with `relayRestartOrReboot`, whose unpaired entry for the same text would match first (`exclusiveScenarios`: such a verdict fails) |
 | pageerror and `console.error` `QED64: restarting with exact imports` (pins O and N), or `QED64: restarting the checker` (QED64 `f2783b4` on) (the main bundle line 627) | QED64's `relay.restart()` answers every request still in flight with this hard-coded text (`lsp-relay.ts` `failInFlight`; -32603, rpc calls -32900), whatever the restart is for; the rule takes exactly these two texts; lean4monaco logs each and leaves it unhandled. A stalled checker always has requests in flight, so the gallery's Restart Lean / Reset on one produces these | allow **only** in the UX suite's `stallRestart` scenario (C21; C20 and W1–W8 only when a real stall was recovered) |
-| `console.warn` `[showcase] liveness: Lean answered none of 2 probes on s<N> v<N> (observe mode: not restarting)` (`/showcase/gallery.js`) | the gallery's own note when its liveness probe, in observe mode, declares a frozen checker wedged (one per wedge) | allow **only** in the UX suite's `livenessObserved` scenario (C21 (b); C20 and W1–W8 only when an observe-mode wedge was recorded, i.e. a hang hunt) |
+| `console.warn` `[showcase] liveness: Lean answered none of 2 probes on s<N> v<N> (observe mode: not restarting)` (`/showcase/gallery.js`) | the gallery's own note when its liveness probe, in observe mode, declared a frozen checker wedged (one per wedge); the probe and this text left `gallery.js` in P1 | **removed in P1 (C7)**: the `livenessObserved` scenario is gone, so such a line now fails C14. Until P1: allowed **only** in the UX suite's `livenessObserved` scenario (C21 (b); C20 and W1–W8 only when an observe-mode wedge was recorded, i.e. a hang hunt) |
 | pageerror `Session disposed.` (stack through `….dispose (`) | QED64 N2 (every pin): the page's heap meter races `session.request('telemetry')` against 800 ms every 12 s with no rejection handler, so a session disposed while that request is pending (a death, reboot, restart or halt) leaves an unhandled rejection; seen once in 18 C12 stock runs (`multipin-C-full1`) | allow **only** in the scenarios in which a session is disposed (`bootFailure`, `crashBreakerTripped`, `relayRestartOrReboot`, `stallRestart`, `qed64WedgedReboot`), and only with that stack |
 | pageerror and `console.error` `QED64: the Lean checker died (wedged)` (the main bundle) | QED64 9fdf9b8+'s own liveness declared a session wedged (an L7 occurrence it handles itself): its relay answers every request still in flight with this text (`lsp-relay.ts` `onDied` → `failInFlight`), logged at the same site as the restart replies | allow **only** in the UX suite's `qed64WedgedReboot` scenario (C20 and W1–W8, only when `status().liveness.qed64.wedgedReboots` > 0; never seen so far) |
 | `console.warn` `[qed64] exact import failed: … serving the header from the preloaded library` | QED64's designed fallback after "Load exact imports" when the exact import cannot be compiled (`resident-session.ts:209-224`) | allow **only** in the UX suite's `exactImportsFallback` scenario (C16) |
 | `console.error` `Failed to load resource: net::ERR_…` (aborted / truncated); `console.warn` `[qed64] raw prefetch error: network error — the checker will stream it instead`, or since QED64 #63 (pin I) `[qed64] raw prefetch error: the transfer of <file> ended early: received <n> of <m> bytes — the checker will stream it instead` | Chromium reporting a resource the test cut on purpose; QED64's snapshot prefetcher falling back to streaming after a cut | allow **only** in the UX suite's `networkCut` scenario (C11 CHAOS cuts, C12 aborted routes) |
 | `console.error` `QED64: the document changed before this request reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pins F, G and H (v1) only**: QED64's edit coalescing (EMBEDDING.md §7.8, HARDENING #59) answers a semantic-tokens or completion request queued behind a full-text change that a newer change replaced with `ContentModified` (-32801, `error.data.qed64.kind` `'superseded'`); lean4monaco logs each such reply (typing with the suggest widget open prints one per superseding change) | **allow**, anchored to that exact text and site, and only PAIRED, like the `-32800` entry: each needs its own LSP `-32801` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. Pins A–E print no such text, so the entry matches nothing there |
 | `console.error` `QED64: the client cancelled this request before it reached the checker` (the main bundle, line0 627, the same NotificationService site) | **pin G (5c327c2) and later**: QED64's back-pressure (EMBEDDING.md §7.8, e4cffcc) answers a request still queued in its edit coalescer whose `$/cancelRequest` arrives with RequestCancelled (`-32800`, `error.data.qed64.kind` `'cancelled'`), through the relay's `toClient` (the LSP tap records it). The site logs every Error-severity notification, but an LSP reply reaches it only on the paths that hand the error to the notification service (the path that logs Lean's own empty `-32800` message, entry above). Added before any run on G, fail-closed; observed since in every full run on G and H (37–71 lines per run, e.g. 38 in 7 tests of g-full1b, 50 in h-full4), in tests such as C3, C4, C13a, C20, C22, W2, W4 and W7 | **allow**, anchored to that exact text and site, and only PAIRED: each needs its own LSP `-32800` reply seen by the LSP tap in the 3 s before it (or 0.5 s after); fail-closed without tap reports; no count limit. The `-32800` replies form ONE pool shared with the empty-text entry above (`console.mjs` `classifyConsole`: one pool per `lspErrorCode`, paired in wall order), so one reply never explains both an empty line and a cancel line. `tests/ux/lib/qed64.mjs` `classify()` also keeps QED64's local cancel replies (`qed64Kind` `'cancelled'`) out of the pool that explains empty errors. `check-gallery.mjs` unit-tests the entry and the shared pool. Pins A–F print no such text; G and H do |
-| `console.warn` `[showcase] the server serves QED64 pin … but gallery/pin.json describes …: following the served page (… mode)` (`/showcase/gallery.js`); `Failed to load resource: … 404` for `/qed64-build.json` | the gallery following a staged pin's release whose mode differs from `pin.json` ("Two modes"); the 404 is that probe on a legacy release | allow at most once per page load, **only** under `UX_PIN` when the served mode differs (the warning) and on a staged legacy release (the 404); never in an ordinary run |
-| `console.warn` `[showcase] QED64 page API has editorRpc but lacks widgetSourceCache …` / `… lacks editorRpc …: installing the InfoView repair late …` | a v1 page missing a capability the bridge decision reads ("The RPC bridge") | **never** (no such page exists; a run that logs it fails) |
+| `console.warn` `[showcase] QED64 page API lacks widgetSourceCache: …` | a v1 page without `capabilities.widgetSourceCache` ("Embedding API v1"; until P1 this and a missing `editorRpc` decided how the bridge was installed; since P1 a missing `editorRpc` is the hard card instead) | **never** (no such page exists among the registered pins; a run that logs it fails) |
 | pageerror `unsupported` at `$tryShowTextDocument`; an unhandled rejection `Object` | the page's own applyEdit path ran: the bridge was missing or late (D2) | **never** |
 | `console.warn('TODO: catch JSON.parse failure:  TypeError: Cannot read properties of undefined (reading \'resolve\')')` | the InfoView got two replies to one request: late bridge install | **never** |
 | `Unrecognised error`, `abortSignal` in the InfoView | D1 not repaired | **never** |
@@ -1123,7 +853,7 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
   (`sp-ck-hasse.json`: pool 32, crashed) and on a fresh hasse cursor (`sp-all-cursors.json`: 31, crashed);
   without the bridge no panel RPC reaches Lean and the pool stays at 24 (`sp-ck-hasse-nobridge.json`). It is
   machine-dependent (Lean's task manager uses `navigator.hardwareConcurrency` = 14 here) and flaky near the
-  edge (`rt-hasse.json`: 30 workers, survived). Fix in our repo: D3 coalescing in `qed64-bridge.js`; after
+  edge (`rt-hasse.json`: 30 workers, survived). Fix in our repo (pins A–E, removed with the bridge in P1): D3 coalescing in `qed64-bridge.js`; after
   it the pool stayed at 24 in those probes (`rt-hasse-d3.json` `coalesced 13`; `sp-all-cursors-d3.json`: all 46 spec
   cursors of all eight examples in one session, peak 24, 26 workers, no crash; `mp-all-d3.json` gallery
   sequence, one run; RSS varies 8.9–12.3 GiB between cold runs, see the Memory knob). Upstream report: @leanprover/infoview `importWidgetModule` should cache the
@@ -1144,8 +874,9 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
   dedicated threads (`status().pool.parked`); (2) the runtime mailbox notifies by postMessage instead of
   `Atomics.waitAsync`, so a lost wakeup is no longer permanent; (3) a 1 s raw mailbox kick that serves a lost wakeup
   and counts it as a confirmed rescue (`status().liveness.rescues`, log line `[liveness] a runtime-mailbox wakeup was
-  lost … rescue #n`, field evidence for the lost-wake hypothesis); (4) a Lean-side liveness probe that reboots a wedged
-  session (pill "the checker stopped responding — restarting"). The gallery defers to it (Errors, above). A user
+  lost … rescue #n`, field evidence for the lost-wake hypothesis; true on pins before QED64 f83bc70; from f83bc70 on,
+  the worker does not count a rescue and the page does not emit the event); (4) a Lean-side liveness probe that reboots a wedged
+  session (pill "the checker stopped responding — restarting"). The gallery mirrors it through the API (Errors, above). A user
   `#eval (IO.Process.exit n : IO Unit)` is caught only by QED64's new FileWorker exit hook (died `exit`; upstream
   report X1), not by any liveness probe. The history below describes the freeze on the previous pin (`wasm64-4b025db7…`).
   Seen once,
@@ -1229,8 +960,9 @@ with its LSP `-32800` reply (`pairWith`; the bring-up runs install the UX suite'
     V2 on `/showcase/` comes mainly from running the page in an iframe at all, which is what the gallery is) and not fixable from it: the
     gallery's own restarts (liveness fallback, the card, Reset) boot a new worker in the same renderer and are exposed
     the same way. Evidence and repro: docs/UPSTREAM-REPORT-QED64.md L9, docs/REPIN-LOG.md §9 and "2026-10-02".
-* **The page's own message listener wins over a late bridge** (bridge section): install before the module
-  script. The gallery does; `status().bridge.late` must stay 0.
+* **The page's own message listener wins over a late bridge** (pins A–E, until P1): the bridge had to be installed before
+  the module script, and `status().bridge.late` had to stay 0. The bridge left with the legacy mode ("The RPC bridge
+  (removed in P1)").
 * **No widening from an init-only session**: a Mathlib header on a session booted for an import-free
   buffer is refused; the gallery restarts the relay on `[init, mathlib]` (switch section).
 * **L1** (`docs/HEADLESS-RESULTS.md`): `(reflect := true)` on values built from non-exposed core `module`

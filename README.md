@@ -1,7 +1,7 @@
 # Lean InfoView Widgets (Lean v4.35.0)
 
-**Live:** https://qed64-showcase.fawadworkaddress.workers.dev/showcase/ (deployed 2026-10-05, serving the packages'
-v4.34.0 builds; Chromium-based desktop browser, ~16 GB RAM; first visit downloads ~680 MB).
+**Live:** https://qed64-showcase.fawadworkaddress.workers.dev/showcase/ (first deployed 2026-10-05; since 2026-11-05 pin
+O, serving the packages' v4.35.0 builds; Chromium-based desktop browser, ~16 GB RAM; first visit downloads ~680 MB).
 
 Eight InfoView widget packages for Lean 4 and Mathlib (v4.35.0), and two ways to see them without installing anything:
 a static gallery of their real panels, and the widgets running live in [QED64](https://github.com/FawadHa1der/QED64),
@@ -10,9 +10,9 @@ Lean compiled to wasm64 and running in the browser. Everything in this repositor
 The v4.32.2 original of the packages is the git tag
 [`lean-v4.32.2`](https://github.com/FawadHa1der/lean-widgets/tree/lean-v4.32.2). The port to v4.34.0 exists because
 QED64 pairs its snapshots to Lean 4.34.0 and Mathlib `5ed2965`; the last v4.34.0 state is commit `4d93a28` (branch
-`qed64-pin-i`). The QED64 showcase's registered pins (`qed64-showcase/pins/`, all on QED64's Lean 4.34.0 runtimes)
-serve overlays baked from the v4.34.0 packages. The packages are now on Lean v4.35.0 / Mathlib v4.35.0 (`56a00585`),
-ahead of re-pinning the QED64 showcase to a QED64 release on Lean 4.35.0. Every package has a `PORT-NOTES.md` that lists what changed and why
+`qed64-pin-i`). The packages are now on Lean v4.35.0 / Mathlib v4.35.0 (`56a00585`). The QED64 showcase has two
+registered pins (`qed64-showcase/pins/`): O `521cf3f`, live, on QED64's Lean 4.35.0 runtime with overlays baked from
+these v4.35.0 packages, and N `58ebbad`, on Lean 4.34.0 with overlays baked from the v4.34.0 packages. Every package has a `PORT-NOTES.md` that lists what changed and why
 ([v4.34.0 → v4.35.0](#port-summary-v4340--v4350), [v4.32.2 → v4.34.0](#port-summary-v4322--v4340)).
 
 ## What is in this repository
@@ -30,7 +30,7 @@ showcase/               static gallery: probes/ (dump scripts), dumps/ (committe
 qed64-showcase/         the widgets in the QED64 page
   deps/qed64            QED64 at the served pin (git submodule, github.com/FawadHa1der/QED64)
   pins/<id>/            per QED64 pin: pin.json and QED64.lock.json (sha256 of every file that is served)
-  gallery/              the /showcase/ page (rail of 8 examples, iframe of the stock page, a small bridge)
+  gallery/              the /showcase/ page (rail of 8 examples, iframe of the stock page, QED64's embedding API)
   scripts/              showcase.sh (one entry point), build-shell, fetch-artifacts, serve, deploy scripts, …
   tests/ux/             Playwright UX suite (35 tests)
   infra/                Cloudflare Worker (worker.js), its tests, wrangler pin, committed UX verdict record
@@ -106,13 +106,13 @@ scripts/showcase.sh ux              # the Playwright UX suite (35 tests, 25–40
 ```
 
 `bootstrap` checks out QED64's sources (the submodule), builds QED64's page from them with QED64's own build and
-installs it only if all its files (58 for E, 59 for F, G and H) are byte-identical to the committed lock. It then fetches QED64's binaries and the
+installs it only if all its files are byte-identical to the committed lock. It then fetches QED64's binaries and the
 widget overlays by path from the artifact origin and checks every file's sha256 against the lock, links the served pin
 and runs `verify`. So an origin never has to be trusted. `--origin` is the deployed showcase (for its deployed pin's runtime and packs), or `scripts/serve.mjs`
 of a checkout that has the artifacts (`PORT=5297 scripts/showcase.sh serve` there). `--qed64-origin
 https://qed64.fawadworkaddress.workers.dev` serves QED64's own files. The deployed Worker has only the overlays uploaded
-to it (on 2026-11-02, H's bare `widgets{7,8}/`); any other pin's overlays exist only where they were baked until they are
-uploaded.
+to it (since 2026-11-05 O's `widgets8.<runtime id>/`); any other pin's overlays exist only where they were baked until
+they are uploaded.
 
 Other checks: `node scripts/check-portable.mjs` (no machine path in code or configuration),
 `node scripts/deploy-manifest.mjs --check` (deploy gates), `node --test infra/worker.test.mjs` (the Worker),
@@ -149,32 +149,27 @@ GitHub runner. A full `lean-ci` run clones Mathlib once per Mathlib-dependent pa
         /snapshots/<dir>/                               our snapshot region: Mathlib + the eight packages
 ```
 
-`<dir>` is the pin's served overlay directory: `widgets8` (or `widgets7`) on the pins up to H, and
-`widgets8.<runtime id>` from pin I on (`widgets8.f69cca24d0878a58`), so each runtime's region has its own directory and a
-new runtime's upload never replaces the one a live page reads. The gallery's `?overlay=widgets8` maps to it.
+`<dir>` is the pin's served overlay directory, `widgets8.<runtime id>` (`widgets8.36d7f415704473d9` on O), so each
+runtime's region has its own directory and a new runtime's upload never replaces the one a live page reads. The
+gallery's `?overlay=widgets8` maps to it. (The retired pins up to H used the bare `widgets8` and `widgets7`; since P2 there
+is one overlay.)
 
 * **QED64 is a dependency, never a copy.** Its sources are the submodule `qed64-showcase/deps/qed64` at the served
   pin's commit. Several QED64 commits can be registered as pins (`pins/<id>/`); one is active. Each pin's
   `QED64.lock.json` records the sha256 of every file that is served.
 * **The widgets reach the browser as a snapshot region.** The packages are compiled to oleans with the kernel fork's
   native64 compiler, staged on top of QED64's served Mathlib tree and baked by QED64's pinned wasm runtime into a
-  snapshot (`widgets8`: the eight packages; `widgets7`: without DistLens). QED64 loads it like its own `mathlib`
+  snapshot (`widgets8`: the eight packages). QED64 loads it like its own `mathlib`
   region, so the example files start with a plain `import Mathlib` / `import HasseView` and also work in VS Code.
 * **The gallery** iframes the stock page from the same origin, checks that the region is paired with the runtime
-  before navigating, and fills the editor and moves the cursor through the page. On the QED64 pins up to E `33b0967`
-  it uses the page's internal hooks and installs a small bridge for three InfoView defects of the shipped page (D1, D2,
-  D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). On the v1 pins, F `84d594e` and
-  G `5c327c2` (QED64's `feature/embedding-api`; G adds QED64's edit back-pressure), H `bf9d947` (QED64 main: G plus
-  QED64's keep-alive fix; gated in the browser; deployed 2026-10-08, what the live site serves), I `385a1ac` (QED64 main
-  on the kernel fork's release `lean-v4.34.0-e1a79c1`, a new runtime, with QED64's fixes #62–#64; superseded after a
-  kernel-0036 regression in Chrome), J `5e63edd` (QED64 main: I plus QED64's interim for that regression, the same
-  runtime; gated in the browser 2026-10-09/10; superseded by K), K `62a06e2` (QED64 main with QED64's #68–#72, the same
-  runtime; gated in the browser 2026-10-13), L `37ff491` (QED64 main on the kernel fork's release
-  `lean-v4.34.0-53cb11e`, a new runtime; no VERDICT; superseded by N) and N `58ebbad` (QED64 main: L plus QED64's
-  #74–#76, the same runtime; the active pin of a local checkout since 2026-10-16, gated in the browser 2026-10-16; of
-  F–N only H is deployed), it uses QED64's declared embedding API v1 (`qed64.api`, `?embed=1`, `#code=`); those defects
-  are fixed in that page and the bridge stands down ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding
-  API v1").
+  before navigating, and drives the editor and the cursor through QED64's declared embedding API v1 (`qed64.api`,
+  `?embed=1`, `#code=`), which both registered pins, O `521cf3f` (QED64 main on the kernel fork's release
+  `lean-v4.35.0-b081e7c`, Lean 4.35.0; live since 2026-11-05) and N `58ebbad` (QED64 main on `lean-v4.34.0-53cb11e`,
+  Lean 4.34.0), provide ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1"). The pins A–L are
+  retired and kept at the git tag `pins-history-2026-11-07`; until then the gallery also had a legacy mode for the
+  pre-v1 pages A–E, which used the page's internal hooks and a small bridge for three InfoView defects of those pages (D1,
+  D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). H `bf9d947`, live from 2026-10-08 to
+  2026-11-05, is the rollback target.
 * **Tests:** a static gate (`showcase.sh gallery`), headless wasm checks in Node, and the Playwright UX suite.
   Every full `ux` run is recorded with the gallery, lock and overlay hashes it ran on. A run is a VERDICT only if it
   was green on unchanged inputs, and a deploy needs a verdict on exactly the inputs it deploys.
@@ -188,9 +183,9 @@ Chromium-based desktop browser and 16 GB of RAM, and a first visit downloads abo
 The QED64 showcase is hosted on Cloudflare the way lean4game and QED64 are: a Worker `qed64-showcase` serves the
 shell (QED64's page and the gallery, about 18 MB of static assets) and streams the artifacts from the R2 bucket
 `qed64-artifacts`: the runtime and the packs (1.26 GB at pin O) from the kernel's toolchain release under
-`lean4-wasm64/<release id>/`, never uploaded by us, and the stock snapshots, our overlays and the indexes (1.11 GB at pin O)
-under the prefix `qed64-showcase/`, with the cross-origin isolation headers the wasm runtime needs. (The live pin H still
-reads its own copy of the runtime and packs under that prefix.) A release has two steps:
+`lean4-wasm64/<release id>/`, never uploaded by us, and the stock snapshots, our overlays and the indexes (1.11 GB at pin O's upload, 0.745 GB from P2 on, with one overlay)
+under the prefix `qed64-showcase/`, with the cross-origin isolation headers the wasm runtime needs. (H, the rollback
+target, reads its own copy of the runtime and packs under that prefix.) A release has two steps:
 
 1. **Artifacts to R2**, from the machine that has them: `scripts/upload-artifacts.sh` (rclone, copy only, never sync;
    the bucket is shared with QED64 and lean4game, so it refuses QED64's root and their prefixes, and any prefix other

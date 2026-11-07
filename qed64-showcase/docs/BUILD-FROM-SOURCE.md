@@ -8,7 +8,7 @@ There are two paths. Most people need only the first.
   staged, and the pinned wasm runtime bakes the snapshot regions. Then come the headless verifiers, the gallery and the
   UX suite. This takes hours and a large Mac (it was built on a 36 GB machine). The bakes' peak RSS has grown with each
   runtime: about 11 GB on the first, 15.9 GB on `3ab1c6a9`, and up to about 18 GB on pin I's `f69cca24` (`time -l`
-  maxrss 16.6 GB for w7 and 18.1 GB for w8, peak tree RSS 15.45 and 16.87 GiB; `$W/logs/pinI-bake-w{7,8}.log`).
+  maxrss 18.1 GB for w8, peak tree RSS 16.87 GiB, and 16.6 GB / 15.45 GiB for the w7 bake that P2 retired; `$W/logs/pinI-bake-w{7,8}.log`).
 
 How QED64 itself is consumed (submodule, content-addressed binaries, toolchain) is described in
 [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -37,18 +37,17 @@ match is installed:
 2. `npm ci` (Playwright 1.62.1) if `node_modules/` is missing.
 3. **Widget sources.** `$W/widgets-src` = `git archive <lock WIDGETS_COMMIT> packages/` (`scripts/export-widgets.mjs`).
 4. **The page.** `scripts/build-shell.mjs` runs QED64's own `npm ci --prefix frontend && npm run build:site` in the
-   submodule and installs `release/<id>/dist` only if every file is byte-identical to the lock (58 on pins A–E, 59 on
-   F–H, 60 on I).
+   submodule and installs `release/<id>/dist` only if every file is byte-identical to the lock.
 5. **The binaries.** `scripts/fetch-artifacts.mjs` takes the tracked manifests from git and fetches the 81 runtime,
-   pack and snapshot files plus the 6 overlay files from the origins, checking sha256 against the lock. The overlays
-   come from the URL the lock records (`overlays.<o>.url`: `/snapshots/widgets{7,8}/` on pins A–H,
-   `/snapshots/widgets{7,8}.f69cca24d0878a58/` on pin I). The fetch is resumable.
-6. **The served pin's links.** `pin use <id>`: the lock link, `out/overlay/snapshots/widgets{7,8}` and
+   pack and snapshot files plus the 3 overlay files (6 until P2, with widgets7) from the origins, checking sha256 against
+   the lock. The overlay comes from the URL the lock records (`overlays.widgets8.url`, `/snapshots/widgets8.<bid16>/`;
+   O: `widgets8.36d7f415704473d9`). The fetch is resumable.
+6. **The served pin's links.** `pin use <id>`: the lock link, `out/overlay/snapshots/widgets8` and
    `gallery/pin.json`.
 7. `scripts/showcase.sh verify`.
 
 **Origins.** `--origin` is the showcase's own origin, which serves QED64's files *and* our overlays. The deployed
-Worker has only the overlays uploaded to it (on 2026-11-02, H's bare `widgets{7,8}/`). Any other pin's overlays exist only
+Worker has only the overlays uploaded to it (since 2026-11-05 O's `widgets8.36d7f415704473d9/`, and the unused `widgets7.<bid16>/` of O and the bare `widgets{7,8}/` of H, kept while each is a rollback target). Any other pin's overlays exist only
 where they were baked until they are uploaded, so point `--origin` at the `serve.mjs` of
 a checkout that has them (`PORT=5297 scripts/showcase.sh serve` there; plain HTTP GETs) or take the heavy path.
 `--qed64-origin` serves QED64's own files only, and QED64's live site serves them for **one** release, the one it
@@ -89,7 +88,7 @@ which pins; the native toolchain rows were unchanged for pin I (the e1a79c1 reco
 
 | Input | Where it comes from | Variable | Pinned in the lock as |
 |---|---|---|---|
-| The kernel fork, branch `qed64-wasm64` | github.com/FawadHa1der/lean4 (`wasm64-build/README.md` there). The served runtime's kernel is `kernel.commit` of QED64's release record `toolchain/lean4-wasm64-release.json` at the pin (QED64 `4f46477` on; I: `e1a79c1ce9`), for pins A–H QED64's `pipeline/toolchain/KERNEL-PIN` (E: `a8817d01f9`). The native64 compiler our oleans were built with is `NATIVE_COMMIT 857544b439` from build tree `BUILT_COMMIT 8d91aadcda` (pins up to 58ebbad; for `521cf3f` `b081e7c041` for both, the kernel release lean-v4.35.0-b081e7c) | `QED64_KERNEL_SRC` (optional; only `assert-untouched` watches it) | `qed64.kernel`, `toolchain.native64` |
+| The kernel fork, branch `qed64-wasm64` | github.com/FawadHa1der/lean4 (`wasm64-build/README.md` there). The served runtime's kernel is `kernel.commit` of QED64's release record `toolchain/lean4-wasm64-release.json` at the pin (QED64 `4f46477` on, so every registered pin; I: `e1a79c1ce9`), for the retired pins A–H QED64's `pipeline/toolchain/KERNEL-PIN` (E: `a8817d01f9`). The native64 compiler our oleans were built with is `NATIVE_COMMIT 857544b439` from build tree `BUILT_COMMIT 8d91aadcda` (pins up to 58ebbad; for `521cf3f` `b081e7c041` for both, the kernel release lean-v4.35.0-b081e7c) | `QED64_KERNEL_SRC` (optional; only `assert-untouched` watches it) | `qed64.kernel`, `toolchain.native64` |
 | Its build tree: `native/stage1/{bin/lean,bin/lake,lib/lean}` (the fork's native 64-bit Linux compiler, which writes oleans the wasm64 runtime can load), `mathlib/mathlib4` (Mathlib built with it), `mathlib/MATHLIB-COMMIT`, `BUILT-COMMIT`, `native/NATIVE-COMMIT` | in the kernel fork: `wasm64-build/build.sh` (Docker image + wasm build), `wasm64-build/import-release.sh build v4.34.0`, `wasm64-build/native64.sh v4.34.0`, `wasm64-build/mathlib-tree.sh v4.34.0` (pins up to 58ebbad; `521cf3f` uses the lean-v4.35.0-b081e7c build, e.g. `$W/kernel-build-native64-v4.35`). Do not use `lake exe cache get`: community oleans are GMP builds for another target | `QED64_KERNEL_BUILD` | `toolchain.native64` (`stage1/bin/{lean,lake}` sha256), `toolchain.mathlib` (`5ed2965`, ProofWidgets `106ff4f` up to 58ebbad; `56a00585`, ProofWidgets `df72b022` for 521cf3f) |
 | The Docker image `qed64-toolchain:emsdk-6.0.5` | `docker build -t qed64-toolchain:emsdk-6.0.5 docker-wasm64` in the kernel fork (the fork's `wasm64-build/build.sh` does this; the recipe is `docker-wasm64/Dockerfile`, last changed in `974ee228b0`). Docker Desktop with an 8 GB VM is enough for our build (peak 3.75 GiB) | `QED64_TOOLCHAIN_IMAGE` (default that tag) | `toolchain.docker.id` plus `equivalent` ids (see "Docker image drift" below) |
 | QED64's served olean trees: the slim base tree the stock `mathlib` region was baked from (5004 modules) and the slim core lib | QED64's `docs/REBUILD.md` §2–3 in the submodule (`work/lib-tree-slim`, `work/core-lib-slim`; per pin `pins/<id>/pin.json servedTrees`, e.g. E: `${QED64_REPO}/work/bump-0035b/slim/…`) and `work/lib-tree` for the fat tree (from `521cf3f` on the descriptor names the fat base too, `servedTrees.baseFat`, which `stage fat` then uses instead). **Pin I:** `baseSlim` is H's (digest-identical, `8c247f41…`), and `coreSrc` is the release's own core library, `node <package>/cli.mjs fetch --from <release dir> --id lean-v4.34.0-e1a79c1 --digest <digest> --out $W/toolchains/lean-v4.34.0-e1a79c1 --only lean-lib`, then `node <package>/cli.mjs unpack --slim --manifest $W/toolchains/lean-v4.34.0-e1a79c1/profiles/lean-lib.manifest.json --out $W/core-lib-slim.f69cca24d0878a58` (10,074 files, 0.77 GB; tree digest `sha256:e442c951…` == QED64's `embedding/base-tree.json` `core-lib-slim`) | `QED64_REPO` (a QED64 checkout with its `work/` trees built; read-only); `QED64_SHOWCASE_WORK` for pin I's `coreSrc` | `pin.json servedTrees` (optional `baseSlimDigest` / `baseFatDigest` / `coreDigest`, checked by `stage-trees.mjs --check-digest baseSlim\|baseFat\|coreSrc`; pins up to K record none, so the check prints SKIP; L and N record `coreDigest`, `521cf3f` all three) |
@@ -127,19 +126,19 @@ cp -cpR "$K/mathlib/mathlib4" "$W/mathlib4.<Mathlib 8 hex>"               # a co
 #    T = the unpacked tools package, REL = the release directory, ID/DIGEST from the record)
 node "$T/cli.mjs" fetch --from "$REL" --id "$ID" --digest "$DIGEST" --out "$W/toolchains/$ID" --only runtime   # FETCH VERIFIED
 mkdir -p "$W/runtimes/<bid>/stage1" && cp -Rc "$W/toolchains/$ID/bin" "$W/runtimes/<bid>/stage1/bin"
-#    (pins up to H: cp -Rc <QED64>/pipeline/toolchain/work/build/stage1/bin "$W/runtimes/<bid>/stage1/bin")
+#    (the retired pins up to H took cp -Rc <QED64>/pipeline/toolchain/work/build/stage1/bin)
 
 # 1. native: the widget oleans with the fork's native64 compiler in Docker (--network none)
 scripts/showcase.sh native all        # identity → reuse gate → delta (38 Mathlib modules, lean/native/delta-phase1.txt)
                                       # → append lean/lakefile-append.lean → widgets (64) → distlens (410, T=4) →
                                       # header gates (no GMP, empty githash) → reuse gate → native-report.py
 # 2. stage: the bake trees = QED64's served slim tree + our delta and widget oleans
-scripts/showcase.sh stage all         # tree-slim-w7 (5107 modules), tree-slim-w8 (5684), tree-fat; gates G1–G6
+scripts/showcase.sh stage all         # tree-slim-w8 (5684 modules), tree-fat; gates G1–G6 (tree-slim-w7 until P2)
 # 3. bake: the snapshot regions with the pinned wasm runtime (under the browser lock; no browser or Docker alongside;
 #    peak RSS up to about 18 GB on pin I's runtime; bake.sh's default floor is MIN_FREE_GB=12, pin I's ran with 16)
 scripts/showcase.sh bake all          # bake-snapshot.mjs from deps/qed64; judge-bake; pair-check (digest, runtime)
 # 4. overlay: the page-loadable regions (widgets renamed 'mathlib', the stock init beside it); the preflight boots each
-#    at the pin's served directory (pins.mjs overlay-dir) with QED64's pipeline/release/preflight.mjs where it exists
+#    at the pin's served directory (pins.mjs overlay-dir) with QED64's pipeline/release/preflight.mjs
 scripts/showcase.sh overlay all --preflight
 node scripts/pin-qed64.mjs record-overlays   # record their sha256s and served URL in the lock (what bootstrap checks fetched overlays against)
 # 5. headless: wasm verification in Node (E1/E3/E3b, E2, controls; ~20 min, 12 GB+ peaks; pin I: about 17 min, 14.24 GB peak)
