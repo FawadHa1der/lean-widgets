@@ -92,8 +92,9 @@ test('C7 unknown module (stock page): import Mathlib.NotAModule is refused with 
   console.log(`C7 ${JSON.stringify(m.status)}`);
   expect(q.phase).toBe('headerRefused');
   expect(q.header).toMatchObject({ mode: 'refused', missing: ['Mathlib.NotAModule'] });
-  // the stock text (wasm64-lean-kernel src/Lean/Server/FileWorker.lean:451)
-  expect(d.some((x) => x.sev === 1 && x.line === 0 && x.msg === 'modules #[Mathlib.NotAModule] are not loaded in this session — use "Load exact imports"')).toBe(true);
+  // the stock text (wasm64-lean-kernel src/Lean/Server/FileWorker.lean), by its stable part: at O it reads 'modules
+  // #[Mathlib.NotAModule] are not loaded in this session — use "Load exact imports"', and the kernel's K3 rewords the rest
+  expect(d.some((x) => x.sev === 1 && x.line === 0 && typeof x.msg === 'string' && x.msg.includes('are not loaded in this session')), 'an error at line 0 containing "are not loaded in this session"').toBe(true);
 });
 
 test('C8 bad overlay: the stock page shows its boot-failure card; the gallery refuses before navigation with a friendly card', async ({ ux }) => {

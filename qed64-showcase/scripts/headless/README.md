@@ -181,6 +181,12 @@ panel, selection, hover, Try-this and click logic is copied from there.
    worker runs. For pin K `62a06e2` on that is `["--worker", "-Dserver.reportDelayMs=0", "-DElab.async=false"]`
    (QED64 HARDENING #70). A pin whose worker has no `RESIDENT_ARGV` (before K: the argv is inlined in `callMain`) is
    refused before anything boots. The log names the argv (`lean --worker … (RESIDENT_ARGV of …)`).
+   A pin that ships `public/workers/worker-constants.js` (QED64's shared Lean policy, `e367f95` on; not O or N) is run
+   by it instead, as its browser worker and its `resident-probe.mjs` are: the argv is
+   `Qed64WorkerConstants.residentArgv()` (same shape check; the log says `Qed64WorkerConstants.residentArgv() of …`),
+   `LEAN_WASM_PARKED_DEDICATED` is set at preRun, and the task manager gets
+   `leanWorkers(os.availableParallelism())` workers through `_lean_init_task_manager_using`. Without the file, steps 2
+   and 7 are as before (`_lean_init_task_manager()`, the hardware default), so O's results stay comparable.
 
 *Note (2026-10-27): `Elab.async`.* Until 2026-10-27 `wasm-lsp.mjs` hard-coded `["--worker",
 "-Dserver.reportDelayMs=0"]`, so every E3 result up to pin N (`58ebbad`), whose worker already ran

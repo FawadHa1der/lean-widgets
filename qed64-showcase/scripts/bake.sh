@@ -58,6 +58,20 @@ mkdir -p "$W/logs"
 # a real bake process is `[/usr/bin/time -l] node … bake-snapshot.mjs`; a bare `pgrep -fl bake-snapshot`
 # also matches other sessions' shells whose command text merely mentions the name
 if pgrep -fl '^(/usr/bin/time -l )?node .*bake-snapshot\.mjs'; then echo "REFUSED: a bake is already running (above)"; exit 3; fi
+# A SIGKILLed bake leaves <work>/.bake.lock (QED64 affd85c on: the bake's pid, then its runner's, one per line; QED64
+# never takes one over, so the next bake exits 2 'in use'). The lock is kept while a runner outlives its bake, and the
+# pgrep above matches only bake-snapshot.mjs: so refuse while any pid in it still runs, else log and remove it.
+LOCKF="$WORK/.bake.lock"
+if [ -e "$LOCKF" ]; then
+  [ -r "$LOCKF" ] || { echo "REFUSED: $LOCKF is not readable; remove it once no bake uses $WORK"; exit 3; }
+  if grep -qvE '^[0-9]+$' "$LOCKF"; then echo "REFUSED: $LOCKF holds something other than pids ($(head -c 200 "$LOCKF" | tr '\n' ' ')); remove it once no bake uses $WORK"; exit 3; fi
+  lockpids="$(tr '\n' ' ' < "$LOCKF")"
+  # ps -p, not kill -0: a pid of another user answers too
+  for pid in $lockpids; do
+    if ps -p "$pid" >/dev/null 2>&1; then echo "REFUSED: $LOCKF names pid $pid, which is running ($(ps -o comm= -p "$pid" 2>/dev/null)); a bake or its runner still uses $WORK"; exit 3; fi
+  done
+  echo "removing the stale $LOCKF (pids ${lockpids:-none}: none running)"; rm -f "$LOCKF"
+fi
 procs_by_exe 'chrome-headless-shell|Google Chrome for Testing|ms-playwright/firefox-'
 if [ $? != 1 ]; then echo "REFUSED: a browser session is running (above), or ps failed; bakes never overlap a browser"; exit 3; fi
 if [ -n "$(docker ps -q 2>/dev/null)" ]; then echo "REFUSED: a Docker container is running"; docker ps; exit 3; fi

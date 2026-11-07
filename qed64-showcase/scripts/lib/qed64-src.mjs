@@ -78,7 +78,7 @@ export function ensureSrc(commit, id = commit.slice(0, 7), log = console.log) {
     execFileSync('git', ['-C', SUBMODULE, 'fetch', '--quiet', 'origin', commit], { stdio: 'inherit' });
   }
   fs.mkdirSync(WORKTREES, { recursive: true });
-  // QED64 scripts run from a worktree resolve their npm dependencies (e.g. tests/adversarial/preflight.mjs: playwright)
+  // QED64 scripts run from a worktree resolve their npm dependencies (e.g. pipeline/release/preflight.mjs: playwright)
   // by walking up the directory tree, as they do from deps/qed64 (which reaches qed64-showcase/node_modules)
   const nm = path.join(WORKTREES, 'node_modules');
   if (!fs.existsSync(nm) && fs.existsSync(path.join(SC, 'node_modules'))) fs.symlinkSync(path.join(SC, 'node_modules'), nm);

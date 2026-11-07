@@ -24,9 +24,12 @@ try {
       const T = self.__qed64TestExports; if (!T || !T.liveness) return { error: 'no __qed64TestExports.liveness' };
       const L = T.liveness.state(); const now = performance.now();
       const fd = T.frontDoor && typeof T.frontDoor.status === 'function' ? T.frontDoor.status() : null;
+      // the runtime mailbox: {mode, exitHooked, exitEntries} on every pin; before QED64 f83bc70 (O, N) it also has
+      // mailboxPtr, served and notified (the mailbox the worker located and served), recorded only where it does
+      const mb = T.liveness.runtimeMailbox || {};
       return L ? { silentMs: Math.round(now - L.lastFrameAt), outstanding: [...L.outstanding.keys()].map(String).slice(0, 8), outstandingN: L.outstanding.size,
         probe: L.probe ? { id: L.probe.id, ageMs: Math.round(now - L.probe.sentAt) } : null, stalled: !!L.stalledAt, counters: { ...L.counters },
-        mailbox: { mode: T.liveness.runtimeMailbox.mode, located: T.liveness.runtimeMailbox.mailboxPtr !== null, served: T.liveness.runtimeMailbox.served, notified: T.liveness.runtimeMailbox.notified },
+        mailbox: { mode: mb.mode, exitHooked: mb.exitHooked, exitEntries: mb.exitEntries, ...(mb.mailboxPtr !== undefined ? { located: mb.mailboxPtr !== null, served: mb.served, notified: mb.notified } : {}) },
         frontDoorPhase: fd && fd.phase || null } : { error: 'liveness not started (no resident loop)' };
     }).catch((e) => ({ error: String(e.message).slice(0, 160) })), sleep(3000).then(() => ({ noAnswerIn3s: true }))]);
   };

@@ -3,7 +3,7 @@
 // docs/UPSTREAM-REPORT-QED64.md, gallery/README.md, docs/DEPLOY*.md). Read-only; it recomputes everything from the
 // recorded runs, so a doc that disagrees with it is wrong:
 //   * every UX run directory out/ux/<run>/ with run-meta.json + report.json (the pin is run-meta.pin.qed64, mapped to
-//     the registered pins/<id>/pin.json; a test crashed when its tests/<id>.json records "crashed": true OR one of its
+//     the registered pins/<id>/pin.json, or for the retired pins A-L to the letters below; a test crashed when its tests/<id>.json records "crashed": true OR one of its
 //     session streams tests/<id>.<label>.console.jsonl has a {"kind":"crash"} line, i.e. the renderer died:
 //     Playwright's page 'crash' event. The stream is needed because that event can arrive after the test already
 //     failed on the dead page (Playwright's own "Assertion error") and after the fixture computed the session's console
@@ -25,8 +25,14 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UX = path.join(SC, 'out', 'ux');
 const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
 
-// pins: id -> letter (from the descriptor's label "A: …")
-const PINS = {};
+// pins: id -> letter (from the descriptor's label "A: …"). The retired pins A-L (P1, 2026-11) have no descriptor in
+// pins/ any more (they are at the tag pins-history-2026-11-07), but the recorded runs and storms name them: their ids
+// and letters, copied from those descriptors (their runtimes are not repeated here: showcase.sh verify allows a runtime
+// id only where pins.mjs gives it). A registered descriptor wins.
+const RETIRED = { '1859b83': 'A', '9fdf9b8': 'B', '5ac5d00': 'C', '3b42714': 'D', '33b0967': 'E', '84d594e': 'F', '5c327c2': 'G',
+  'bf9d947': 'H', '385a1ac': 'I', '5e63edd': 'J', '62a06e2': 'K', '37ff491': 'L' };
+const RETIRED_AT = 'pins-history-2026-11-07';
+const PINS = Object.fromEntries(Object.entries(RETIRED).map(([id, letter]) => [id, { id, letter, buildId: null, retired: RETIRED_AT }]));
 for (const id of fs.existsSync(path.join(SC, 'pins')) ? fs.readdirSync(path.join(SC, 'pins')) : []) {
   const p = readJson(path.join(SC, 'pins', id, 'pin.json'));
   if (p && p.id) PINS[p.id] = { id: p.id, letter: (String(p.label || '').match(/^([A-Z]):/) || [])[1] || p.id, buildId: p.buildId };
@@ -156,7 +162,7 @@ for (const f of fullRecs.filter((x) => x.why.length)) L(`  ${f.run.padEnd(22)} $
 for (const pin of Object.keys(perPin).sort((a, b) => (PINS[a] ? PINS[a].letter : a).localeCompare(PINS[b] ? PINS[b].letter : b))) {
   const p = perPin[pin];
   L('');
-  L(`== pin ${pinName(pin)} (${PINS[pin] ? PINS[pin].buildId : '?'})`);
+  L(`== pin ${pinName(pin)} (${PINS[pin] ? PINS[pin].buildId || `retired, at the tag ${PINS[pin].retired}` : '?'})`);
   L(`  full runs: ${p.fullRuns.length}`);
   for (const r of p.fullRuns) L(`    ${r.run.padEnd(22)} ${String(r.start).slice(0, 16)}Z  ${r.passed} passed, ${r.failed} failed, ${r.skipped} skipped${r.failedIds.length ? `  failed: ${r.failedIds.join(' ')}` : ''}${r.crashed.length ? `  RENDERER CRASH in ${r.crashed.join(' ')}` : ''}`);
   L(`  C10 (reload storm in the suite): ran in ${p.C10.runs} runs (${p.C10.full} full); crashed ${p.C10.crashed.length}${p.C10.crashed.length ? ` (${p.C10.crashed.join(', ')})` : ''}; passed ${p.C10.passed.length}${p.C10.other.length ? `; other ${p.C10.other.join(', ')}` : ''}`);

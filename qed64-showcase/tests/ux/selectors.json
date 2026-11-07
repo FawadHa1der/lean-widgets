@@ -217,11 +217,11 @@
       ],
   "stallRestart": [
         {
-          "consoleError": "^QED64: restarting with exact imports$",
+          "consoleError": "^QED64: restarting (with exact imports|the checker)$",
           "url": "@qed64-main-bundle"
         },
         {
-          "pageerror": "^QED64: restarting with exact imports"
+          "pageerror": "^QED64: restarting (with exact imports|the checker)"
         },
         {
           "pageerror": "^Session disposed\\.$",
@@ -245,7 +245,7 @@
       "networkCut": "tests that cut the network on purpose (C11 CHAOS, C12 aborted routes): Chromium logs the aborted / truncated resource, and QED64's snapshot prefetcher warns that it falls back to streaming ('[qed64] raw prefetch error: <msg> — the checker will stream it instead', frontend lib/qed64-boot.ts): <msg> is 'network error' for a transport error (our CHAOS socket-destroy with a Content-Length), or, since QED64 #63 (385a1ac: lean.worker.js / snapshot-prefetch.worker.js), 'the transfer of <file> ended early: received <n> of <m> bytes' for a short body; the second wording never occurs on pins <= bf9d947, so no pin gate. Never allowed in any other test.",
       "exactImportsFallback": "C16 only: after 'Load exact imports' QED64 compiles the header's import lines against the essential pack; when that fails it warns '[qed64] exact import failed: …; serving the header from the preloaded library' and keeps serving the covered header (resident-session.ts:209-224, the designed degradation C16 checks).",
       "qed64WedgedReboot": "C23 (its forced-death fixture), and C20 and W1-W8 only when QED64 9fdf9b8+ itself declared a session wedged and rebooted it (an L7 occurrence handled upstream, status().liveness.qed64.wedgedReboots > 0): its relay answers every request in flight with 'QED64: the Lean checker died (wedged)' (lsp-relay.ts onDied -> failInFlight), which lean4monaco logs at the same site as stallRestart. Never allowed in any other test.",
-      "stallRestart": "tests that answer a stalled checker (QED64 L7) with the gallery's Restart Lean / Reset (C21; C20 and W1-W8 only when a real stall was recovered): QED64's relay.restart() answers every request still in flight with the hard-coded error 'QED64: restarting with exact imports' (lsp-relay.ts:127 failInFlight; -32603, rpc calls -32900), which lean4monaco logs at its NotificationService site and leaves as an unhandled rejection. A stalled checker always has requests in flight (nothing was answered), so a restart of one produces these; a restart from ready (C16) has none. Never allowed in any other test."
+      "stallRestart": "tests that answer a stalled checker (QED64 L7) with the gallery's Restart Lean / Reset (C21; C20 and W1-W8 only when a real stall was recovered): QED64's relay.restart() answers every request still in flight with the hard-coded error 'QED64: restarting with exact imports' (pins O and N; 'QED64: restarting the checker' from QED64 f2783b4 on; lsp-relay.ts failInFlight; -32603, rpc calls -32900; the rule takes exactly those two texts), which lean4monaco logs at its NotificationService site and leaves as an unhandled rejection. A stalled checker always has requests in flight (nothing was answered), so a restart of one produces these; a restart from ready (C16) has none. Never allowed in any other test."
     }
   }
 }

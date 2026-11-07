@@ -20,11 +20,19 @@
 //   2026-10-27 this file hard-coded ["--worker", "-Dserver.reportDelayMs=0"]
 //   (Elab.async left on): results recorded before that (pin N and earlier)
 //   are not directly comparable with later ones (scripts/headless/README.md).
+//   A pin that ships public/workers/worker-constants.js (QED64's shared Lean
+//   policy, architecture review R3: e367f95 on; not O 521cf3f or N 58ebbad)
+//   is run by it, as its worker and its own resident-probe.mjs are: the argv
+//   from Qed64WorkerConstants.residentArgv(), LEAN_WASM_PARKED_DEDICATED at
+//   preRun, and the task manager sized by leanWorkers(os.availableParallelism())
+//   through _lean_init_task_manager_using. Without the file, every step is
+//   as before.
 // Client frames obey the worker front door's rules (public/workers/
 // lsp-front-door.js): the FileWorker reads `initialize` then `didOpen`
 // directly (never answers initialize; no `initialized`), and only the
 // allowlisted notifications are forwarded (anything else would kill it).
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { spawn } from 'node:child_process';
@@ -41,11 +49,31 @@ const FORWARDED_NOTIFICATIONS = new Set(['textDocument/didChange', '$/cancelRequ
   '$/lean/rpc/release', '$/lean/rpc/keepAlive']);
 const MiB = 1048576, GiB = 1073741824, PAGE = 65536;
 
-/** The resident FileWorker's argv exactly as the pin's browser worker passes it: `const RESIDENT_ARGV = [...]` (or
- *  Object.freeze([...])) in <QED64 sources>/public/workers/lean.worker.js, parsed, never copied here. A worker without
- *  it (pins before K 62a06e2, which inline the argv in callMain) or with an unexpected shape is refused: the headless lane
- *  runs the pin's own command line or nothing. */
-export function residentArgv(src = QED64_SRC) {
+/** QED64's shared Lean policy, when the pin ships it: <QED64 sources>/public/workers/worker-constants.js (QED64 e367f95 on)
+ *  publishes globalThis.Qed64WorkerConstants (no exports); imported once, the global kept. null for a pin without the
+ *  file (O 521cf3f, N 58ebbad and every earlier pin): then argv, parking and the task manager are as before. */
+export async function loadWorkerConstants(src = QED64_SRC) {
+  const f = path.join(src, 'public/workers/worker-constants.js');
+  if (!fs.existsSync(f)) return null;
+  await import(pathToFileURL(f).href);
+  const K = globalThis.Qed64WorkerConstants;
+  if (!K || typeof K.residentArgv !== 'function' || typeof K.leanWorkers !== 'function' || typeof K.PARKED_DEDICATED !== 'string')
+    throw new Error(`${f}: no globalThis.Qed64WorkerConstants with residentArgv(), leanWorkers() and PARKED_DEDICATED`);
+  return K;
+}
+
+/** The resident FileWorker's argv exactly as the pin's browser worker passes it, never copied here: with the pin's
+ *  worker constants (loadWorkerConstants), `constants.residentArgv()`; else `const RESIDENT_ARGV = [...]` (or
+ *  Object.freeze([...])) in <QED64 sources>/public/workers/lean.worker.js, parsed. A worker without either (pins before K
+ *  62a06e2, which inline the argv in callMain) or an argv of an unexpected shape is refused: the headless lane runs the
+ *  pin's own command line or nothing. */
+export function residentArgv(src = QED64_SRC, constants = null) {
+  if (constants) {
+    const argv = constants.residentArgv();
+    if (!Array.isArray(argv) || argv[0] !== '--worker' || !argv.every((a) => typeof a === 'string'))
+      throw new Error(`${path.join(src, 'public/workers/worker-constants.js')}: residentArgv() ${JSON.stringify(argv)} is not ["--worker", …] (strings)`);
+    return [...argv];
+  }
   const f = path.join(src, 'public/workers/lean.worker.js');
   const js = fs.readFileSync(f, 'utf8');
   const m = /\bconst\s+RESIDENT_ARGV\s*=\s*(?:Object\.freeze\(\s*)?(\[[^\]]*\])/.exec(js);
@@ -100,11 +128,13 @@ export class WasmLsp extends ClientBase {
   /** opts: {artifact, lib, snaps: [paths], initialBytes?, maximumBytes?, log, wasmLog (file)} */
   static async boot(opts) {
     await import(pathToFileURL(path.join(QED64_SRC, 'public/workers/lsp-frames.js')).href); // globalThis.Qed64LspFrames
+    const constants = await loadWorkerConstants(); // globalThis.Qed64WorkerConstants, or null (pins before QED64 e367f95)
     const c = new WasmLsp(opts.log);
+    c.#K = constants;
     await c.#boot(opts);
     return c;
   }
-  #M = null; #ring = null; #mem = null; #frames = null; #CAP = 1 << 20; #wasmLogFd = null;
+  #M = null; #ring = null; #mem = null; #frames = null; #CAP = 1 << 20; #wasmLogFd = null; #K = null;
   timings = {}; loads = []; memory = {}; stdoutLines = []; argv = null;
 
   #wlog(line) { if (this.#wasmLogFd !== null) fs.writeSync(this.#wasmLogFd, line + '\n'); }
@@ -116,9 +146,11 @@ export class WasmLsp extends ClientBase {
     const artifactDir = fs.realpathSync(path.resolve(opts.artifact)), lib = fs.realpathSync(path.resolve(opts.lib));
     const leanJs = path.join(artifactDir, 'bin/lean.js');
     if (!fs.existsSync(leanJs)) throw new Error(`${leanJs} not found`);
-    // the worker's command line, from the pin's lean.worker.js (refused before anything is booted when it has none)
-    this.argv = residentArgv();
-    this.log(`lean ${this.argv.join(' ')} (RESIDENT_ARGV of ${path.join(QED64_SRC, 'public/workers/lean.worker.js')})`);
+    // the worker's command line, from the pin's worker constants or else its lean.worker.js (refused before anything is
+    // booted when it has neither)
+    const K = this.#K;
+    this.argv = residentArgv(QED64_SRC, K);
+    this.log(`lean ${this.argv.join(' ')} (${K ? `Qed64WorkerConstants.residentArgv() of ${path.join(QED64_SRC, 'public/workers/worker-constants.js')}` : `RESIDENT_ARGV of ${path.join(QED64_SRC, 'public/workers/lean.worker.js')}`})`);
     if (opts.wasmLog) this.#wasmLogFd = fs.openSync(opts.wasmLog, 'w');
     const umbrella = opts.snaps.some((s) => path.basename(s) !== 'init.snap');
     const initialBytes = opts.initialBytes ?? (umbrella ? 2048 * MiB : 256 * MiB);
@@ -154,6 +186,8 @@ export class WasmLsp extends ClientBase {
           FS.mount(NODEFS, { root: artifactDir }, artifactDir);
           globalThis.Module.ENV.LEAN_PATH = '/lib/lean';
           globalThis.Module.ENV.LEAN_SYSROOT = '/';
+          // the page's parked dedicated threads (HARDENING #69), only from the pin's own worker constants
+          if (K) globalThis.Module.ENV.LEAN_WASM_PARKED_DEDICATED = K.PARKED_DEDICATED;
           FS.chdir('/workspace');
         }],
         onRuntimeInitialized() {
@@ -162,7 +196,13 @@ export class WasmLsp extends ClientBase {
             M._lean_initialize_runtime_module();
             M._lean_initialize();
             M._lean_io_mark_end_initialization();
-            if (M._lean_init_task_manager) M._lean_init_task_manager();
+            // with the pin's worker constants and the export, the page's thread budget (at most LEAN_WORKERS_MAX); else
+            // the hardware default, as every pin without the constants always ran (O has the export, not the constants)
+            if (K && M._lean_init_task_manager_using) {
+              const n = K.leanWorkers(os.availableParallelism());
+              M._lean_init_task_manager_using(n);
+              self.log(`task manager: ${n} worker(s) (leanWorkers(${os.availableParallelism()})); parked dedicated threads: ${K.PARKED_DEDICATED}`);
+            } else if (M._lean_init_task_manager) M._lean_init_task_manager();
             if (M._lean_enable_initializer_execution) M._lean_enable_initializer_execution();
             const sp = M._lean_init_search_path();
             const tagOf = (res) => Number(M.getValue(Number(res) + 7, 'i8')) & 0xff;

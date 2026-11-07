@@ -550,6 +550,21 @@ section('8c. tests/ux/bringup/console.mjs classifyConsole against selectors.json
   const restartPe = { message: 'QED64: restarting with exact imports\n\nError: QED64: restarting with exact imports', stack: '' };
   ok(!classifyConsole(W({ messages: [restartErr] }), A).ok && !classifyConsole(W({ pageErrors: [restartPe] }), A).ok && classifyConsole(W({ messages: [restartErr, restartErr], pageErrors: [restartPe] }), A, { scenarios: ['stallRestart'] }).ok, 'the in-flight replies of a stall restart only in the stallRestart scenario');
   {
+    // QED64 f2783b4 on: the same replies read 'QED64: restarting the checker'; the rule takes exactly the two texts
+    const said = (t) => ({ e: { ...restartErr, text: t }, pe: { message: `${t}\n\nError: ${t}`, stack: '' } });
+    const nu = said('QED64: restarting the checker');
+    const sr = { scenarios: ['stallRestart'] };
+    ok(!classifyConsole(W({ messages: [nu.e] }), A).ok && !classifyConsole(W({ pageErrors: [nu.pe] }), A).ok
+      && classifyConsole(W({ messages: [nu.e, nu.e], pageErrors: [nu.pe] }), A, sr).ok
+      && classifyConsole(W({ messages: [restartErr, nu.e], pageErrors: [restartPe, nu.pe] }), A, sr).ok,
+    'the new in-flight reply text "QED64: restarting the checker" only in the stallRestart scenario');
+    const other = ['QED64: restarting', 'QED64: restarting something else', 'QED64: restarting the checker now', 'QED64: restarting with exact imports!', 'QED64: restarting  the checker'].map(said);
+    ok(other.every((x) => !classifyConsole(W({ messages: [x.e] }), A, sr).ok)
+      && other.filter((x) => !/^QED64: restarting (with exact imports|the checker)/.test(x.e.text)).every((x) => !classifyConsole(W({ pageErrors: [x.pe] }), A, sr).ok)
+      && !classifyConsole(W({ messages: [{ ...nu.e, url: '/showcase/gallery.js' }] }), A, sr).ok,
+    'stallRestart refuses any other "QED64: restarting…" console error (and another prefix-only pageerror) and the new text from another file');
+  }
+  {
     // QED64 9fdf9b8+'s own "wedged" reboot (an L7 occurrence handled upstream): its in-flight replies, only in qed64WedgedReboot
     const wErr = { type: 'error', text: 'QED64: the Lean checker died (wedged)', url: MAIN_BUNDLE, line: 627 };
     const wPe = { message: 'QED64: the Lean checker died (wedged)\n\nError: QED64: the Lean checker died (wedged)', stack: '' };

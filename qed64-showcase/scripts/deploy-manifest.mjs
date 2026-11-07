@@ -59,7 +59,8 @@
 //       Print this usage. An unknown argument, a value flag without its value, or two modes print it and
 //       exit 2 before anything is read or written.
 //
-// Layout (one origin; infra/worker.js): assets = the pinned QED64 dist at "/" + gallery/ at "/showcase/";
+// Layout (one origin; infra/worker.js): assets = the pinned QED64 dist at "/" (less its copies of profiles/index.json and
+// snapshots/index.json, D2: scripts/lib/dist-assets.mjs) + gallery/ at "/showcase/";
 // R2 key = <prefix> + URL path without the leading "/" for /snapshots/ and /profiles/index.json, and
 // lean4-wasm64/<release id>/ + URL path without the leading "/" for every other file of /runtime/ and /profiles/.
 // Invariants (each prints OK/FAIL; any FAIL -> exit 1):
@@ -103,6 +104,7 @@ import { verdictFor, laterFailures, readRuns } from './lib/ux-record.mjs';
 import { loadDeployEnv, checkSharedBucket } from './lib/deploy-env.mjs';
 import { OVERLAYS, overlayDir, pinIdOf, pinDescriptor } from './lib/pins.mjs';
 import { releaseKey } from './lib/release-routing.mjs';
+import { distAssetFiles, a2Shadowed } from './lib/dist-assets.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MiB = 1024 * 1024;
@@ -237,9 +239,12 @@ function build(opts) {
       size, sha256, contentType: contentType(src), immutable: isImmutable(urlPath),
       phase: isImmutable(urlPath) ? 'immutable' : 'mutable', multipart: size > MULTIPART_OVER });
   };
-  // assets: pinned dist at "/", gallery at "/showcase/" (its docs are not shipped)
-  if (!fs.existsSync(path.join(R, 'dist'))) throw new Error(`${rel(path.join(R, 'dist'))} missing: build it from source with 'node scripts/build-shell.mjs'`);
-  for (const f of walk(path.join(R, 'dist'))) addAsset(f, path.relative(path.join(R, 'dist'), f));
+  // assets: pinned dist at "/", gallery at "/showcase/" (its docs are not shipped). D2: dist's copies of the two shared
+  // indexes (profiles/index.json, snapshots/index.json; QED64 14562fa on) are not assets: R2 serves those paths
+  // (scripts/lib/dist-assets.mjs; A2 still refuses any other file under runtime/, profiles/ or snapshots/)
+  const DIST = path.join(R, 'dist');
+  if (!fs.existsSync(DIST)) throw new Error(`${rel(DIST)} missing: build it from source with 'node scripts/build-shell.mjs'`);
+  for (const [f, apath] of distAssetFiles(DIST, walk(DIST))) addAsset(f, apath);
   for (const f of walk(path.join(SC, 'gallery'))) {
     const r = path.relative(path.join(SC, 'gallery'), f);
     if (!isShippedGalleryFile(r.split(path.sep).join('/'))) continue;   // same rule as the gallery content hash
@@ -331,8 +336,8 @@ function validate({ manifest: m, ctx }) {
   // A1–A5
   const big = m.assets.filter((a) => a.size > ASSET_CAP);
   ok(!big.length, `A1 every asset ≤ 25 MiB (${m.assets.length} files, largest ${Math.max(...m.assets.map((a) => a.size))} B)`, big.map((a) => `${a.path} ${a.size}`).join(', '));
-  const shadow = m.assets.filter((a) => /^(runtime|profiles|snapshots)\//.test(a.path));
-  ok(!shadow.length, 'A2 no asset under runtime/, profiles/ or snapshots/ (the worker routes those to R2)', shadow.map((a) => a.path).join(', '));
+  const shadow = a2Shadowed(m.assets.map((a) => a.path));   // scripts/lib/dist-assets.mjs
+  ok(!shadow.length, 'A2 no asset under runtime/, profiles/ or snapshots/ (the worker routes those to R2)', shadow.join(', '));
   const refs = [...fs.readFileSync(path.join(SC, 'gallery/index.html'), 'utf8').matchAll(/(?:src|href)="([^"#:]+)"/g)].map((x) => x[1]).filter((x) => !x.startsWith('/'));
   const missingRefs = refs.filter((r) => !assetPaths.has(`showcase/${r}`));
   ok(assetPaths.has('index.html') && assetPaths.has('showcase/index.html') && !missingRefs.length,

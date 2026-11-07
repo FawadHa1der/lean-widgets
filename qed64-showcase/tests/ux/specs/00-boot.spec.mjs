@@ -79,7 +79,9 @@ test('C1 cold boot: fresh profile (empty OPFS and HTTP cache) to ready, phase ti
     console.log(`C1 v1 ${JSON.stringify(m.v1)}`);
     expect(b.s.api, 'the gallery holds the v1 API of the framed page').toMatchObject({ present: true, revision: API_REVISION, embed: true });
     expect(['frame-api', 'poll'], 'obtained from the qed64:frame-api event, or the frozen api by polling').toContain(b.s.api.via);
-    expect(b.s.api.capabilities).toMatchObject({ editorRpc: true, widgetSourceCache: true, documents: true, events: true, restart: true, embedMode: true, liveness: true, memory: true, offers: true });
+    expect(b.s.api.capabilities).toMatchObject({ editorRpc: true, widgetSourceCache: true, documents: true, events: true, restart: true, embedMode: true, liveness: true, memory: true });
+    // offers: true on O and N, false from QED64 5463581 on (D1: "Load exact imports" retired); not a capability the gallery needs
+    expect(typeof b.s.api.capabilities.offers, 'api.capabilities.offers is a boolean').toBe('boolean');
     expect(a && a.revision, 'pin.json apiRevision is the page\'s api.revision').toBe(API_REVISION);
     expect(a && a.frozen, 'api and api.capabilities are frozen').toBe(true);
     // the round-5 fields (selectors.json _status_v1): a clean cold boot holds no document, has storage, and lost nothing

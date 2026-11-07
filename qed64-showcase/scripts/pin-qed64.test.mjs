@@ -7,7 +7,9 @@
  * whole-file check over the decoded bytes); a v2 identity file; a wrong part digest, decodedBytes or whole-file digest; the
  * format's rules, refused before any part is read; an encoding the schema does not allow; the pin's schema against
  * closure.json's runtime.manifestSchemas (absent list = v1 only, absent schema = v1, the release record's schema first); the
- * script still runs as a script now that it can be imported, also through a symlink.
+ * script still runs as a script now that it can be imported, also through a symlink. Also scripts/deploy-manifest.mjs's
+ * dist assets over a fake dist (D2, scripts/lib/dist-assets.mjs): exactly dist/profiles/index.json and
+ * dist/snapshots/index.json are not assets, and check A2 still names any other file under snapshots/.
  */
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { runtimeChecks, runtimeFileChecks, runtimeFileFault, runtimeSchemaCheck } from './pin-qed64.mjs';
+import { distAssetFiles, a2Shadowed } from './lib/dist-assets.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./pin-qed64.mjs', import.meta.url));
 const V1 = 'org.lean-browser64.runtime/v1';
@@ -314,4 +317,44 @@ test('run directly, or through a symlink, the script dispatches (usage, exit 2);
   fs.symlinkSync(path.dirname(path.dirname(SCRIPT)), dirLink);
   const preserved = spawnSync(process.execPath, ['--preserve-symlinks-main', path.join(dirLink, 'scripts/pin-qed64.mjs')], { encoding: 'utf8' });
   assert.equal(preserved.status, 2, preserved.stderr);
+});
+
+// ---- deploy-manifest's dist assets (D2): a fake dist, walked as deploy-manifest.mjs walks it (absolute paths, sorted) ----
+const walkAbs = (dir) => fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  .flatMap((e) => (e.isDirectory() ? walkAbs(path.join(dir, e.name)) : e.isFile() ? [path.join(dir, e.name)] : []));
+/** The asset paths and A2's findings for a fake dist holding `files` (relative paths). */
+function fakeDist(name, files) {
+  const dist = path.join(root, 'dist-' + name);
+  for (const f of files) { fs.mkdirSync(path.dirname(path.join(dist, f)), { recursive: true }); fs.writeFileSync(path.join(dist, f), `${f}\n`); }
+  const assets = distAssetFiles(dist, walkAbs(dist));
+  for (const [f, a] of assets) assert.equal(f, path.join(dist, a), 'each asset keeps its file');
+  const paths = assets.map(([, a]) => a);
+  return { paths, shadowed: a2Shadowed(paths) };
+}
+const SHELL = ['index.html', 'qed64-build.json', 'assets/index-X.js', 'workers/lean.worker.js', 'infoview/index.js'];
+const INDEXES = ['profiles/index.json', 'snapshots/index.json'];   // QED64 14562fa's build copies them into dist
+
+test('D2 (a): dist with both index copies: exactly those two are not assets, and A2 passes', () => {
+  const { paths, shadowed } = fakeDist('a', [...SHELL, ...INDEXES]);
+  assert.deepEqual(paths, ['assets/index-X.js', 'index.html', 'infoview/index.js', 'qed64-build.json', 'workers/lean.worker.js']);
+  assert.deepEqual(shadowed, []);
+});
+
+test('D2 (b): plus snapshots/other/index.json: it stays an asset and A2 fails naming only it', () => {
+  const { paths, shadowed } = fakeDist('b', [...SHELL, ...INDEXES, 'snapshots/other/index.json']);
+  assert.ok(paths.includes('snapshots/other/index.json'));
+  assert.ok(!INDEXES.some((p) => paths.includes(p)));
+  assert.deepEqual(shadowed, ['snapshots/other/index.json']);
+});
+
+test('D2 (c): plus assets/snapshots/index.json: it stays an asset and A2 passes', () => {
+  const { paths, shadowed } = fakeDist('c', [...SHELL, ...INDEXES, 'assets/snapshots/index.json']);
+  assert.ok(paths.includes('assets/snapshots/index.json'));
+  assert.ok(!INDEXES.some((p) => paths.includes(p)));
+  assert.deepEqual(shadowed, []);
+});
+
+test('D2: a dist without the copies (pins O and N) keeps every file; A2 names a runtime/ or profiles/ file', () => {
+  assert.deepEqual(fakeDist('o', SHELL).paths, ['assets/index-X.js', 'index.html', 'infoview/index.js', 'qed64-build.json', 'workers/lean.worker.js']);
+  assert.deepEqual(fakeDist('r', [...SHELL, 'runtime/runtime-manifest.json', 'profiles/core.json']).shadowed, ['profiles/core.json', 'runtime/runtime-manifest.json']);
 });

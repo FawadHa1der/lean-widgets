@@ -54,8 +54,9 @@ test('C21 stall handling (QED64 L7) on a frozen checker: the liveness probe rest
   const m = ux.metrics; m.v1 = true;
   const id = 'hasse-view'; const ex = BY_ID[id]; const gold = GOLDENS[id];
   // Restart Lean / Reset on the frozen session answer its requests in flight with QED64's "restarting with exact imports"
-  // (stallRestart), and the InfoView's old RPC session may be refused once per request. No livenessObserved: the gallery's
-  // probe never runs in v1, so its observe-mode console.warn must not appear either.
+  // (pins O and N; "restarting the checker" from QED64 f2783b4 on; stallRestart), and the InfoView's old RPC session may
+  // be refused once per request. No livenessObserved: the gallery's probe never runs in v1, so its observe-mode
+  // console.warn must not appear either.
   ux.scenarios.push('stallRestart', 'relayRestartOrReboot');
   const s = await ux.launch({ profile: 'warm' });
 

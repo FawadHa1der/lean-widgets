@@ -19,7 +19,9 @@
 //                                       needs this: `showcase.sh bootstrap` rebuilds release/<id> from source + fetches.
 //   node scripts/pin-qed64.mjs verify [--pin <id>] [--allow-skip] [--strict]
 //                                       S0.5 chain of trust; one "OK"/"FAIL" line per check (N/A for a rebuild-only
-//                                       input this checkout does not have: the kernel build, a downloaded browser);
+//                                       input this checkout does not have: the kernel build, a downloaded browser; and
+//                                       for a pin that is not the active one, #7's widget export while $W/widgets-src
+//                                       is exactly the active pin's);
 //                                       exit 1 on any FAIL. A check that cannot run (docker not reachable, Playwright
 //                                       not installed) is a FAIL unless --allow-skip is passed, in which case it prints
 //                                       SKIP. Rebuild-only inputs that moved (the Docker image behind
@@ -664,7 +666,8 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   // WIDGETS_SOURCE_HASH: recomputed from the bytes of every file in $W/widgets-src; WIDGETS_COMMIT: the export is
   // exactly `git archive WIDGETS_COMMIT packages/` (file set + git blob ids re-derived from the bytes)
   // $W/widgets-src is ONE export shared by every pin: after `pin use` of a pin built from other widget sources it is the
-  // previous pin's, so each mismatch names the restore command (it moves the current export aside; nothing is deleted)
+  // previous pin's, so each mismatch names the restore command (it moves the current export aside; nothing is deleted).
+  // Verifying a pin that is not the active one while the export is the active pin's is N/A, not FAIL (below).
   const wc = lock.WIDGETS_COMMIT, wcOk = /^[0-9a-f]{40}$/.test(wc || '');
   const restoreCmd = `restore this pin's export: node scripts/export-widgets.mjs --commit ${wc}`;
   const restore = (good) => (good || !wcOk ? '' : `; ${restoreCmd}`);
@@ -672,18 +675,32 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   else if (!fs.existsSync(WIDGETS_SRC)) ok(false, `#7 ${WIDGETS_SRC} exists`, `run: node scripts/export-widgets.mjs${wcOk ? ` --commit ${wc}` : ''}`);
   else {
     const { hash, files } = await widgetsSourceHash();
-    ok(hash === lock.WIDGETS_SOURCE_HASH, `#7 WIDGETS_SOURCE_HASH recomputed over $W/widgets-src (${files} files) == lock`, `${hash.slice(0, 16)}… vs lock ${String(lock.WIDGETS_SOURCE_HASH).slice(0, 16)}…${restore(hash === lock.WIDGETS_SOURCE_HASH)}`);
     const rec = recordedWidgetsHash();
-    ok(rec === lock.WIDGETS_SOURCE_HASH, '#7 widgets-src/SOURCE-HASH.txt == lock WIDGETS_SOURCE_HASH', `${rec.slice(0, 16)}${restore(rec === lock.WIDGETS_SOURCE_HASH)}`);
+    // A pin that is not the active one, while $W/widgets-src is exactly the ACTIVE pin's export (its recomputed hash and
+    // SOURCE-HASH.txt are the active lock's WIDGETS_SOURCE_HASH, SOURCE-COMMIT.txt its WIDGETS_COMMIT): the export is
+    // simply not this pin's, so the four export checks are N/A, naming the restore command. Any other mismatch FAILs.
+    let actLock = null;
+    if (act && act !== ID && hash !== lock.WIDGETS_SOURCE_HASH) { try { actLock = readJson(path.join(repoPinDir(act), 'QED64.lock.json')); } catch { /* no lock: FAIL below */ } }
+    const activesExport = !!actLock && !!actLock.WIDGETS_SOURCE_HASH && hash === actLock.WIDGETS_SOURCE_HASH && rec === actLock.WIDGETS_SOURCE_HASH
+      && WSRC.recordedCommit() === actLock.WIDGETS_COMMIT;
+    if (activesExport) {
+      na(`#7 $W/widgets-src (${files} files) is this pin's export (WIDGETS_SOURCE_HASH, SOURCE-HASH.txt, SOURCE-COMMIT.txt, git archive ${wcOk ? wc.slice(0, 7) : '?'} packages/)`,
+        `$W/widgets-src holds the active pin ${act}'s export (${hash.slice(0, 16)}…, commit ${String(actLock.WIDGETS_COMMIT).slice(0, 12)}); restore this pin's with node scripts/export-widgets.mjs --commit ${wcOk ? wc : '<WIDGETS_COMMIT>'} to check it`);
+    } else {
+      ok(hash === lock.WIDGETS_SOURCE_HASH, `#7 WIDGETS_SOURCE_HASH recomputed over $W/widgets-src (${files} files) == lock`, `${hash.slice(0, 16)}… vs lock ${String(lock.WIDGETS_SOURCE_HASH).slice(0, 16)}…${restore(hash === lock.WIDGETS_SOURCE_HASH)}`);
+      ok(rec === lock.WIDGETS_SOURCE_HASH, '#7 widgets-src/SOURCE-HASH.txt == lock WIDGETS_SOURCE_HASH', `${rec.slice(0, 16)}${restore(rec === lock.WIDGETS_SOURCE_HASH)}`);
+    }
     if (!wcOk) ok(false, '#7 WIDGETS_COMMIT (a full commit id) present in QED64.lock.json', `${wc || 'missing'} (run: node scripts/export-widgets.mjs; pin-qed64.mjs record-widgets-hash)`);
     else {
       let present = true; try { WSRC.git('cat-file', '-e', `${wc}^{commit}`); } catch { present = false; }
       ok(present, `#7 WIDGETS_COMMIT ${wc.slice(0, 12)} present in the repository's object store`);
-      ok(WSRC.recordedCommit() === wc, '#7 widgets-src/SOURCE-COMMIT.txt == lock WIDGETS_COMMIT', `${String(WSRC.recordedCommit()).slice(0, 12)}${restore(WSRC.recordedCommit() === wc)}`);
+      if (!activesExport) ok(WSRC.recordedCommit() === wc, '#7 widgets-src/SOURCE-COMMIT.txt == lock WIDGETS_COMMIT', `${String(WSRC.recordedCommit()).slice(0, 12)}${restore(WSRC.recordedCommit() === wc)}`);
       if (present) {
-        const c = WSRC.compareWithCommit(wc);
-        ok(c.ok, `#7 $W/widgets-src == git archive ${wc.slice(0, 7)} packages/ (${c.files} files: same set, every blob id re-derived from the bytes)`,
-          [c.missing.length && `missing ${c.missing.slice(0, 3)}`, c.extra.length && `extra ${c.extra.slice(0, 3)}`, c.differ.length && `differ ${c.differ.slice(0, 3)}`, !c.ok && restoreCmd].filter(Boolean).join('; '));
+        if (!activesExport) {
+          const c = WSRC.compareWithCommit(wc);
+          ok(c.ok, `#7 $W/widgets-src == git archive ${wc.slice(0, 7)} packages/ (${c.files} files: same set, every blob id re-derived from the bytes)`,
+            [c.missing.length && `missing ${c.missing.slice(0, 3)}`, c.extra.length && `extra ${c.extra.slice(0, 3)}`, c.differ.length && `differ ${c.differ.slice(0, 3)}`, !c.ok && restoreCmd].filter(Boolean).join('; '));
+        }
         // the checkout's packages/ moved on since the build: the served overlays no longer come from HEAD's sources
         let head = null, at = null; try { head = WSRC.packagesTree('HEAD'); at = WSRC.packagesTree(wc); } catch {}
         drift(head !== null && head === at, `#7 HEAD:packages == WIDGETS_COMMIT:packages (the checkout's widget sources are the built ones)`, `${String(head).slice(0, 12)} vs ${String(at).slice(0, 12)}`);
@@ -767,7 +784,7 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
     }
   }
 
-  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : '', warns ? `${warns} WARN` : '', nas ? `${nas} N/A (rebuild-only input not on this host)` : ''].filter(Boolean).join('; ');
+  const notes = [skips ? `${skips} SKIP allowed by --allow-skip` : '', drifts ? `${drifts} DRIFT in a rebuild-only input` : '', warns ? `${warns} WARN` : '', nas ? `${nas} N/A (an input not on this host: a rebuild-only input, or another pin's widget export)` : ''].filter(Boolean).join('; ');
   console.log(fails ? `VERIFY FAILED (${fails} FAIL${drifts ? `, ${drifts} DRIFT` : ''}${warns ? `, ${warns} WARN` : ''}${nas ? `, ${nas} N/A` : ''})` : (notes ? `VERIFY OK (${notes})` : 'VERIFY OK'));
   process.exit(fails ? 1 : 0);
 }
