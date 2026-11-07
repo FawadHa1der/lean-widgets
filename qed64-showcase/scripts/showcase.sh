@@ -389,10 +389,10 @@ cmd_bootstrap() {
 # QED64 main bundle (selectors.json says "@qed64-main-bundle"). So a real runtime buildId is accepted ONLY in PIN_SITES
 # (gallery/pin.json, generated from the active lock by build-gallery.mjs), with exact counts and equal to the active pin's;
 # a hashed QED64 bundle name (/assets/index-<8>.js) or a release/wasm64-… path anywhere is a FAIL. The all-zero / all-f ids
-# are deliberate fake runtimes (the gallery gate's mutation tests; the UX suite's C9 unpaired-runtime fixture) and are
-# accepted ONLY in SENTINEL_SITES, with exact counts.
+# are deliberate fake runtimes (the gallery gate's mutation tests; the UX suite's C9 unpaired-runtime fixture; the deploy
+# tests' "another runtime", which the release does not have) and are accepted ONLY in SENTINEL_SITES, with exact counts.
 PIN_SITES="gallery/pin.json:2"
-SENTINEL_SITES="scripts/check-gallery.mjs:3 scripts/sim-gallery.mjs:1 tests/ux/specs/30-robustness.spec.mjs:2"
+SENTINEL_SITES="scripts/check-gallery.mjs:3 scripts/sim-gallery.mjs:1 tests/ux/specs/30-robustness.spec.mjs:2 scripts/deploy-rehearsal/rehearse.sh:2 scripts/pin-qed64.test.mjs:1 infra/worker.test.mjs:1"
 check_pin_constants() {
   node - "$SC" "$PIN_SITES" "$SENTINEL_SITES" <<'EOF'
 const fs = require('fs'), path = require('path');
