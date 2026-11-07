@@ -10,7 +10,7 @@
 //        JS pairing preflight (lib.js) → iframe src with the example as #code= → the page API → 'ready' on our text → cursor.
 // Switch: api.setDocument(text) → wait for 'ready' at that version with our text → cursor. A newer selection supersedes an
 //        in-flight wait (switch storms settle on the last one).
-// ?overlay=<name|dir> (default widgets8, fallback widgets7; a logical name is the alias of pin.json's directory for it, any
+// ?overlay=<name|dir> (default widgets8, the one overlay; a logical name is the alias of pin.json's directory for it, any
 // other value a literal directory: lib.js chooseOverlay)   ?mem=<GiB> (passed to the page as &memory=<GiB>, see boot)
 // ?liveness=auto|observe|off (recorded only: QED64's own liveness restarts a frozen runtime, see PROBE_AFTER_MS)
 // #<pkg> deep links.   window.__showcase = { select, reset, restoreSaved, status, currentText, examples, liveness,
@@ -1214,10 +1214,6 @@ async function boot(w) {
   S.availability = choice.result.availability;
   E.overlayBadge.textContent = `snapshot ${S.overlay}`;
   E.overlayBadge.title = `Snapshot overlay /snapshots/${S.overlayDir}/ — region imports: ${(choice.result.regionImports || ['(not listed)']).join(', ')}`;
-  if (choice.fellBack) {
-    const first = choice.attempts[0];
-    showNotice(`${first.overlay} is ${first.result.notFound ? 'not built yet' : 'not usable'}; using ${S.overlay}.${S.availability && S.availability['dist-lens'] === false ? ' DistLens needs widgets8.' : ''}`);
-  }
   if (S.availability && S.availability[ex.id] === false) showNotice(`${ex.title} is not in the ${S.overlay} overlay; QED64 will refuse its header.`);
   renderChips();
 
@@ -1483,7 +1479,6 @@ function snapshot() {
       pinRevision: S.pin ? S.pin.apiRevision ?? null : null, docs: S.api.docs, adopted: S.api.adopted, adoptSet: S.api.adoptSet, events: { ...S.api.counts }, deaths: S.api.deaths },
     document: { version: S.doc.version, length: S.doc.length, persisted: S.doc.persisted, lastEventAgoMs: S.doc.lastEventAt == null ? null : Math.round(now() - S.doc.lastEventAt), writes: S.doc.writes, error: S.doc.error, held: S.doc.held ? { ...S.doc.held } : null, unsaved: S.doc.unsaved ? { length: S.doc.unsaved.text.length, error: S.doc.unsaved.error, at: S.doc.unsaved.at, copied: !!S.doc.unsaved.copied } : null },
     phase: S.phase, current: S.current, shown: S.shownId, overlay: S.overlay, overlayDir: S.overlayDir, overlayDirs: S.overlayDirs ? { ...S.overlayDirs } : null, requestedOverlay: S.requestedOverlay,
-    fellBack: S.choice ? S.choice.fellBack : null,
     preflight: S.choice ? { ok: S.choice.ok, overlay: S.choice.overlay, dir: S.choice.dir, attempts: S.choice.attempts.map((a) => ({ overlay: a.overlay, dir: a.dir, ok: a.ok, notFound: a.result.notFound, failed: a.result.checks.filter((c) => !c.ok).map((c) => c.id) })), availability: S.availability, regionImports: S.choice.result.regionImports } : null,
     booted: S.booted, everReady: S.everReady, bootMs: S.bootMs, lastSwitchMs: S.lastSwitchMs,
     op: { label: S.op.label, elapsedMs: Math.round(now() - S.op.t0), doneMs: S.op.doneMs == null ? null : Math.round(S.op.doneMs) },

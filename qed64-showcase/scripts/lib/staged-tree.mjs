@@ -1,4 +1,4 @@
-// staged-tree.mjs — which pin a SHARED olean tree under $W belongs to. The staged trees $W/tree-slim-w7, tree-slim-w8 and
+// staged-tree.mjs — which pin a SHARED olean tree under $W belongs to. The staged trees $W/tree-slim-w8 and
 // tree-fat (scripts/stage-trees.mjs, with their .EXPECTED-N and $W/logs/stage-trees-*.json) and the controls' stock copy
 // $W/tree-stock (scripts/headless/run-controls.sh) are ONE set for every pin, not per-runtime stores like
 // $W/runtimes/<bid>/ (scripts/lib/pins.mjs W_ENTRIES), and so, for the pins of one Mathlib commit, is the native build they
@@ -43,8 +43,8 @@ import { lockOf, pinDescriptor, targetPinId } from './pins.mjs';
 
 export const STAGED_SCHEMA = 'qed64-showcase.staged-tree/v1';
 export const STOCK_SCHEMA = 'qed64-showcase.tree-stock/v1';
-/** The staged trees under $W (showcase.sh stage w7 | w8 | fat). */
-export const STAGED_TREES = { w7: 'tree-slim-w7', w8: 'tree-slim-w8', fat: 'tree-fat' };
+/** The staged trees under $W (showcase.sh stage w8 | fat). */
+export const STAGED_TREES = { w8: 'tree-slim-w8', fat: 'tree-fat' };
 export const recordPath = (tree) => `${path.resolve(tree)}.STAGED.json`;
 export const sourcePath = (copy) => `${path.resolve(copy)}.SOURCE.json`;
 export const NATIVE_BUILD = path.join(SC, 'out/native-build.json');
@@ -61,7 +61,7 @@ export const samePath = (a, b) => !!a && !!b && real(a) === real(b);
 export const stagedTreeOf = (dir, w = W) => { const r = real(dir); return Object.values(STAGED_TREES).includes(path.basename(r)) && samePath(path.dirname(r), w) ? r : null; };
 const short = (h) => (h ? String(h).slice(0, 12) : String(h));
 const writeAtomic = (f, obj) => { const tmp = `${f}.tmp-${process.pid}`; fs.writeFileSync(tmp, JSON.stringify(obj, null, 1) + '\n'); fs.renameSync(tmp, f); };
-/** `showcase.sh stage` names a tree by w7 | w8 | fat; any other tree: all */
+/** `showcase.sh stage` names a tree by w8 | fat; any other tree: all */
 const stageArg = (tree) => Object.keys(STAGED_TREES).find((k) => STAGED_TREES[k] === path.basename(tree)) || 'all';
 const restage = (id, tree) => `SHOWCASE_PIN=${id} scripts/showcase.sh stage ${stageArg(tree)} --force`;
 

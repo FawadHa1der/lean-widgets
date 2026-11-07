@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # bake.sh — BUILD-PLAN §5 C3/C4 (+ §9 step 2): bake the widgets superset region for the pinned runtime.
 #
-#   scripts/bake.sh w7 [--reserve BYTES]     QED64.Essential + 7 roots   -> work/bake-out-w7, work/bake-work-w7
-#   scripts/bake.sh w8 [--reserve BYTES]     ... + DistLens              -> work/bake-out-w8, work/bake-work-w8
+#   scripts/bake.sh w8 [--reserve BYTES]     QED64.Essential + 8 roots   -> work/bake-out-w8, work/bake-work-w8
+#   (one overlay since P2, 2026-11: the 7-root bake is retired)
 #
 # Runs QED64's bake-snapshot.mjs from the pin's SOURCE dependency (the submodule deps/qed64 at the pin's commit, or
 # the pin's worktree: scripts/lib/qed64-src.mjs; never another QED64 checkout) with absolute
@@ -15,7 +15,7 @@
 #   3. bake with QED64_ALLOW_LEGACY_IMPORTS=1 (harmless, C4) under /usr/bin/time -l, while a sampler
 #      records the peak summed RSS of the bake's process tree every 2 s
 #   4. on "object compactor: out of memory growing the region buffer" rebake once with reserve+512 MiB
-#   5. write bake-logs/bake-widgets<7|8>.metrics.json (wall s, peak RSS, reserve, rc) — judging is
+#   5. write bake-logs/bake-widgets8.metrics.json (wall s, peak RSS, reserve, rc) — judging is
 #      scripts/judge-bake.mjs, run separately
 set -u
 SC="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,9 +32,8 @@ MIN_FREE_GB=${MIN_FREE_GB:-12}
 
 tag="${1:-}"; shift || true
 case "$tag" in
-  w7) ROOTS=(ChartKit ExprXRay GraphScope HasseView IntervalInspector SimpLens TreeScope); RESERVE=3758096384 ;;
   w8) ROOTS=(ChartKit ExprXRay GraphScope HasseView IntervalInspector SimpLens TreeScope DistLens); RESERVE=4294967296 ;;
-  *) echo "usage: $0 w7|w8 [--reserve BYTES]"; exit 2 ;;
+  *) echo "usage: $0 w8 [--reserve BYTES]"; exit 2 ;;
 esac
 while [ $# -gt 0 ]; do case "$1" in --reserve) RESERVE="$2"; shift 2 ;; *) echo "unknown arg $1"; exit 2 ;; esac; done
 n="${tag#w}"

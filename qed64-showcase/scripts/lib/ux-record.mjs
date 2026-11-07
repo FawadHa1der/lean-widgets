@@ -36,7 +36,7 @@ import { galleryFiles, isShippedGalleryFile } from './gallery-hash.mjs';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const UX_RUNS = path.join(SC, 'out', 'ux', 'showcase-ux-runs.jsonl');
-export const OVERLAYS = ['widgets7', 'widgets8'];
+export const OVERLAYS = ['widgets8']; // scripts/lib/pins.mjs OVERLAYS (its own copy; one overlay since P2)
 export const ALLOWED_SKIPS = ['C19'];
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 

@@ -15,7 +15,7 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const { W } = await import(path.join(SC, 'scripts/lib/env.mjs')); // the work dir (QED64_SHOWCASE_WORK)
 const OUT = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : path.join(HOUT, 'summary.json');
 const PK8 = ['chart-kit', 'expr-xray', 'graph-scope', 'hasse-view', 'interval-inspector', 'simp-lens', 'tree-scope', 'dist-lens'];
-const BAKES = { w8: { snapset: 'widgets8', pkgs: PK8 }, w7: { snapset: 'widgets7', pkgs: PK8.slice(0, 7) } };
+const BAKES = { w8: { snapset: 'widgets8', pkgs: PK8 } }; // one overlay since P2 (2026-11)
 const rd = (f) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null);
 const stats = (xs) => {
   const v = xs.filter((x) => typeof x === 'number').sort((a, b) => a - b);
@@ -84,16 +84,16 @@ for (const r of summary.e2 ?? []) {
   r.rootCaused = l ? l.id : null;
 }
 summary.knownLimitations = lim;
-const w8 = summary.bakes.w8.packages, w7 = summary.bakes.w7.packages;
+const w8 = summary.bakes.w8.packages;
 summary.gate = {
-  E1: { w8: `${w8.filter((r) => r.e1?.ok).length}/${w8.length}`, w7: `${w7.filter((r) => r.e1?.ok).length}/${w7.length}` },
-  E3: { w8: `${w8.filter((r) => r.e3?.ok).length}/${w8.length}`, w7: `${w7.filter((r) => r.e3?.ok).length}/${w7.length}` },
-  E3b: { w8: `${w8.filter((r) => r.e3b?.ok).length}/${w8.length}`, w7: `${w7.filter((r) => r.e3b?.ok).length}/${w7.length}` },
+  E1: { w8: `${w8.filter((r) => r.e1?.ok).length}/${w8.length}` },
+  E3: { w8: `${w8.filter((r) => r.e3?.ok).length}/${w8.length}` },
+  E3b: { w8: `${w8.filter((r) => r.e3b?.ok).length}/${w8.length}` },
   E2: summary.e2 ? `${summary.e2.filter((r) => r.ok).length}/${summary.e2.length} clean` : 'not run',
   E2rootCaused: summary.e2 ? summary.e2.filter((r) => r.rootCaused).map((r) => `${r.pkg}: ${r.rootCaused}`) : [],
 };
 summary.gate.E2Green = !!summary.e2 && summary.e2.every((r) => r.ran && (r.ok || r.rootCaused));
-summary.gate.stage4Green = [...w8, ...w7].every((r) => r.ok);
+summary.gate.stage4Green = w8.every((r) => r.ok);
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(summary, null, 1) + '\n');
 

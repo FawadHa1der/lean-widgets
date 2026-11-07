@@ -2331,3 +2331,11 @@ test's PIPE case, because GitHub's Linux runner starts a step with SIGPIPE ignor
 1. Still open with the owner: whether the browser lanes' memory floor may go below 16 GiB. The machine sat at 6.2-12.8 GiB
    free for most of this run.
 2. Then P1+P2 in one re-gate (`$W/reports/p1-p2-plan-2026-11-02.md`, with the amendments from the audit), then the re-pin.
+
+### P2 locks (2026-11-07, branch `p1-p2`, not pushed)
+
+P2 drops the widgets7 overlay. `pin-qed64.mjs record-overlays` rewrote both kept locks, `pins/521cf3f/` (O) and
+`pins/58ebbad/` (N): each lost only its `overlays.widgets7` block (the widgets8 record is byte-identical). N's recorded
+verdicts (`n-full1`, `n-full2`, `n-headed1`) and O's (`o-full1`, `o-full2`, `o-headed4`) name the old lock sha, so
+`scripts/showcase.sh pin list` now shows 0 verdicts for both until the P1+P2 re-gate. Any deploy of N needs a new gate
+anyway. O's `widgets7.<bid16>/` objects stay in R2 while O is a rollback target. The full P1+P2 entry follows the re-gate.

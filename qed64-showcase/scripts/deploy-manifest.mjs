@@ -2,9 +2,10 @@
 // deploy-manifest.mjs — what a deployment of the showcase on its OWN origin uploads, exactly (docs/DEPLOY.md).
 // It never uploads, deploys or logs in anywhere; publishing needs the owner's account and go-ahead.
 //
-//   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8,widgets7] [--no-stock-snapshots]
+//   node scripts/deploy-manifest.mjs [generate] [--overlays widgets8] [--no-stock-snapshots]
 //                                    [--prefix <r2 key prefix>] [--out out/deploy] [--from-lock]
-//       --overlays takes LOGICAL names (widgets7, widgets8; any other name is a literal directory). Each is uploaded under
+//       --overlays takes LOGICAL names (widgets8, the one overlay since P2; any other name is a literal directory, except the
+//       retired widgets7, which R5 refuses). Each is uploaded under
 //       its SERVED directory, /snapshots/<dir>/ with <dir> = scripts/lib/pins.mjs overlayDir(<o>, pin) = '<o>.<bid16>'
 //       (pin.json v3, per-runtime); options.overlayDirs records the map, and every lookup of an overlay index goes
 //       through it.
@@ -420,7 +421,12 @@ function validate({ manifest: m, ctx }) {
     const dir = (m.options.overlayDirs || {})[o];
     const ixs = m.r2.filter((x) => x.group === `overlay-${o}`);
     const under = ixs.every((x) => x.url.startsWith(`/snapshots/${dir}/`));
-    if (!OVERLAYS.includes(o)) { ok(dir === o && under, `R5 overlay ${o}: not a logical overlay, served at its literal directory /snapshots/${dir}/ (${ixs.length} objects)`); continue; }
+    if (!OVERLAYS.includes(o)) {
+      // widgets7 is retired (P2, 2026-11): as a literal directory it would upload under the bare /snapshots/widgets7/, which
+      // H's live shell reads while H is a rollback target (its objects live there), so the name is refused, never literal
+      if (o === 'widgets7') { ok(false, `R5 overlay ${o}: refused (retired since P2; a literal ${o} would upload under the bare /snapshots/${o}/, which H's live shell reads)`, `${ixs.length} objects`); continue; }
+      ok(dir === o && under, `R5 overlay ${o}: not a logical overlay, served at its literal directory /snapshots/${dir}/ (${ixs.length} objects)`); continue;
+    }
     let want = null, why = '';
     try { want = overlayDir(o, m.pin.id); } catch (e) { why = e.message; }
     const lockUrl = ctx.lock.overlays && ctx.lock.overlays[o] && ctx.lock.overlays[o].url;
@@ -521,7 +527,7 @@ function writeOut(m) {
   return Object.keys(lists).sort();
 }
 const optsFromArgv = () => ({
-  overlays: val('--overlays', 'widgets8,widgets7').split(',').filter(Boolean),
+  overlays: val('--overlays', 'widgets8').split(',').filter(Boolean),
   stockSnapshots: !flag('--no-stock-snapshots'), prefix: val('--prefix', ''),
   fromLock: flag('--from-lock'),
 });

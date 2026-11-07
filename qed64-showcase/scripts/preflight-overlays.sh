@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # preflight-overlays.sh — BUILD-PLAN §5 C6 live half: QED64's own read-only preflight against our overlays.
 #
-#   scripts/preflight-overlays.sh [widgets7 widgets8 ...]
+#   scripts/preflight-overlays.sh [widgets8 ...]
 #
 # Memory discipline: waits (up to WAIT_S, default 900 s) until no real bake runs (the anchored pattern below)
 # (no bake may overlap a browser), requires >= 6 GiB free+inactive before each boot, then for each
@@ -32,7 +32,7 @@ TBID="$(node "$SC/scripts/lib/pins.mjs" target-bid)" || exit 2
 LT=""; if [ -n "${SHOWCASE_PIN:-}" ]; then LT="-$TPIN"
   [ "$PORT" != 5190 ] || { echo "REFUSED: SHOWCASE_PIN=$SHOWCASE_PIN needs its own PORT (5190 serves the active pin)"; exit 2; }; fi
 served_pin() { curl -s -D - -o /dev/null --max-time 5 "http://localhost:$PORT/showcase/pin.json" | tr -d '\r' | sed -n 's/^[Xx]-[Ss]howcase-[Pp]in: *//p' | head -1; }
-dirs=("$@"); [ ${#dirs[@]} -eq 0 ] && dirs=(widgets7 widgets8)
+dirs=("$@"); [ ${#dirs[@]} -eq 0 ] && dirs=(widgets8)
 # a real bake is `[/usr/bin/time -l] node … bake-snapshot.mjs`, as in bake.sh; a bare `pgrep -fl bake-snapshot` also
 # matches other sessions' shells whose command text merely mentions the name
 needle='^(/usr/bin/time -l )?node .*bake-snapshot\.mjs'

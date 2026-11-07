@@ -30,7 +30,7 @@ not_found_handling = "none"
 html_handling = "auto-trailing-slash"
 
 # Artifacts: /runtime/ and /profiles/ come from the toolchain release's prefix lean4-wasm64/<id>/ (infra/worker.js);
-# /snapshots/ (incl. our overlays /snapshots/<dir>/: widgets8.<bid16>/ and widgets7.<bid16>/, scripts/lib/pins.mjs
+# /snapshots/ (incl. our overlay /snapshots/<dir>/: widgets8.<bid16>/, scripts/lib/pins.mjs
 # overlayDir; no alias here) and /profiles/index.json from R2_PREFIX.
 # Default: SHARED with QED64 (bucket qed64-artifacts, which already holds the release, QED64's objects at the root and
 # lean4game's under lean4game/); the showcase's objects live under R2_PREFIX, so the mutable index sets never

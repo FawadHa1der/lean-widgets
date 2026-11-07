@@ -5,19 +5,18 @@
 # packages' Lean, or LEAN_TOOLCHAIN_DIR set to it), QED64_KERNEL_BUILD holds the target pin's kernel build and every
 # golden env the packages use is a successful golden-env.sh build (golden-env.sh check: its BUILT-FROM stamp).
 #   run-all.sh [pkg ...]      (default: all eight)
-# Environments: w7 = phase-1 bake (Essential + 7 roots), w8 = phase-2 bake (+ DistLens).
-# The primary env is w7 for the 7 phase-1 packages and w8 for dist-lens; phase-1
-# packages are ALSO gated and frozen in w8, because the phase-2 bake serves all eight.
+# Environment: w8 = the one bake (Essential + 8 roots, incl. DistLens), for every package (one overlay since P2,
+# 2026-11; the 7-root env is retired).
 # Per package:
 #   1. closure CLI gate   (import Mathlib blanked, package's own `lake env lean`)   -> must be 0 errors
 #   2. superset CLI gate  (unmodified text) in every env of the package            -> must be 0 errors
-#   3. LSP golden         per env (writes lean/expect/[w8/]<pkg>.json + expect/html/[w8/]<pkg>.json,
+#   3. LSP golden         (writes lean/expect/<pkg>.json + expect/html/<pkg>.json,
 #                          incl. LSP post-click re-elaboration of every declared click and the
 #                          declared code actions)
 #   4. every declared click's edited file through the superset CLI gate, per env
 #      (clean => rc 0, 0 warnings) and, for information, through the closure CLI gate
 #   5. click-all (lsp-golden.mjs --click-all) per env: EVERY rendered MakeEditLink / Try-this
-#      link applied to a fresh copy and re-elaborated -> 0 broken (lean/expect/click-all/[w8/]<pkg>.json)
+#      link applied to a fresh copy and re-elaborated -> 0 broken (lean/expect/click-all/<pkg>.json)
 #   6. click-all CLI cross-check (primary env): every click-all edited file through the
 #      superset CLI gate must agree with the LSP classification
 #   7. LSP closure-mode run (sensitivity: does the package closure alone give the same panels?)
@@ -28,16 +27,15 @@ need QED64_KERNEL_BUILD   # lsp-golden.mjs (superset) checks the golden env agai
 need_tc_packages          # every superset gate and LSP golden loads the packages' oleans with $TC
 G="$SC/lean/goldens"
 PKGS=("$@"); [ ${#PKGS[@]} -eq 0 ] && PKGS=(chart-kit expr-xray simp-lens interval-inspector graph-scope tree-scope hasse-view dist-lens)
-# lsp-golden.mjs refuses an env without its stamp: refuse once here, not as a FAIL row per LSP gate (w8 for every
-# package, w7 for the phase-1 ones)
-genvs=w8; for p in "${PKGS[@]}"; do [ "$p" = dist-lens ] || genvs="w7 w8"; done
+# lsp-golden.mjs refuses an env without its stamp: refuse once here, not as a FAIL row per LSP gate
+genvs=w8
 for e in $genvs; do "$G/golden-env.sh" check "$e" || exit 2; done
 mkdir -p "$W/goldens" "$W/logs"
 TSV="$W/goldens/run-all.tsv"; : > "$TSV"
 fail=0
 row() { printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "$5" >> "$TSV"; echo "$1 | $2 | $3 | $4 | $5"; }
 for p in "${PKGS[@]}"; do
-  envs=(w7 w8); prim=w7; [ "$p" = dist-lens ] && { envs=(w8); prim=w8; }
+  envs=(w8); prim=w8
   out=$(GATE_ENV=closure "$G/native-gate.sh" "$p"); rc=$?
   row "$p" example closure-cli "$rc" "$out"; [ $rc -ne 0 ] && fail=1
   for e in "${envs[@]}"; do

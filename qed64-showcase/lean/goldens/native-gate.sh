@@ -12,9 +12,8 @@
 # superset: the source is copied UNMODIFIED (header `import Mathlib`) to
 #   ...<name>.superset.lean and compiled with plain `lean` and the golden-env
 #   LEAN_PATH (shadow Mathlib umbrella = QED64.Essential + bake roots), i.e.
-#   the browser-equivalent environment (see golden-env.sh).  GOLDEN_ENV=w7|w8 picks
-#   the umbrella (default: w7, dist-lens w8); a non-default env adds `.<env>` to the
-#   copy/log names.
+#   the browser-equivalent environment (see golden-env.sh).  GOLDEN_ENV=w8 is the one
+#   umbrella (one overlay since P2, 2026-11; any other name is refused by golden-env.sh path).
 # Output: $W/logs/examples-native-<name>[.superset].log ; exit code = lean's.
 set -uo pipefail
 . "$(cd "$(dirname "$0")/../../scripts/lib" && pwd)/env.sh"   # SC, W, WS (= <repo>/packages), TC: scripts/lib/env.sh
@@ -26,10 +25,9 @@ grep -qx 'import Mathlib' "$src" || { echo "no 'import Mathlib' line in $src" >&
 start=$(date +%s)
 if [ "$mode" = superset ]; then
   need_tc_packages   # before starting Lean: stock Lean of another version cannot load the packages' oleans
-  defenv=w7; [ "$pkg" = dist-lens ] && defenv=w8
-  envname="${GOLDEN_ENV:-$defenv}"
-  [ "$pkg" = dist-lens ] && [ "$envname" != w8 ] && { echo "dist-lens exists only in w8" >&2; exit 91; }
-  esuf=""; [ "$envname" != "$defenv" ] && esuf=".$envname"
+  envname="${GOLDEN_ENV:-w8}"
+  [ "$envname" = w8 ] || { echo "GOLDEN_ENV=$envname: only w8 (one overlay since P2)" >&2; exit 91; }
+  esuf=""
   dst="$W/examples-native/$pkg/$name.superset$esuf.lean"; log="$W/logs/examples-native-$name.superset$esuf.log"
   cp "$src" "$dst"
   LP="$("$SC/lean/goldens/golden-env.sh" path "$envname")"

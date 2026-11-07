@@ -1,7 +1,7 @@
 {
  "package": "graph-scope",
  "mode": "superset",
- "generatedAt": "2026-10-27T10:26:05.621Z",
+ "generatedAt": "2026-10-27T10:28:01.231Z",
  "generator": "lean/goldens/lsp-golden.mjs",
  "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
@@ -9,10 +9,10 @@
    "import Mathlib",
    "import GraphScope"
   ],
-  "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
-   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
@@ -35,7 +35,7 @@
  },
  "exampleSha256": "20a3c1258f03d7e6677083856098fc64407b1942dfdcd3f3425ac91ff77e21d0",
  "documentSha256": "20a3c1258f03d7e6677083856098fc64407b1942dfdcd3f3425ac91ff77e21d0",
- "elaborationMs": 2301,
+ "elaborationMs": 2556,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
       "importsInfoview": true
      },
-     "rpcMs": 7,
+     "rpcMs": 5,
      "error": null,
      "tagCounts": {
       "circle": 5,
@@ -443,7 +443,7 @@
        }
       }
      ],
-     "htmlSha256": "134d43aaf98972dea2835a3cc99894f3b920cb70a8aa19d7f2e03f857bec4757"
+     "htmlSha256": "a29906eb7635363f0bb2e5e794a29f644a6034ccc8a4298ea233c07b97453c9d"
     }
    ]
   },
@@ -474,7 +474,7 @@
       "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
       "importsInfoview": true
      },
-     "rpcMs": 2,
+     "rpcMs": 1,
      "error": null,
      "tagCounts": {
       "circle": 4,
@@ -851,7 +851,7 @@
        }
       }
      ],
-     "htmlSha256": "66b8ee6d215e20a1d4120cbd5aa29412030e0f995c5c88793fba8e79bf580a5e"
+     "htmlSha256": "e7b1849c7b001ba1fa46e010d49bd1242fc0ab7afe3f12d03d5625be3696003d"
     }
    ]
   },
@@ -1323,7 +1323,7 @@
        }
       }
      ],
-     "htmlSha256": "e2b17eda4ad55746dfaadedb444d9a992d25e41fc1347979e4d1780899cb39e6"
+     "htmlSha256": "d6e004e696751a29722ea70eba6bcd0ee4d2ec5dfa47c84099b98f344aba51ce"
     }
    ]
   },
@@ -1354,7 +1354,7 @@
       "sha256": "55b0d6bdbde00b611a04399805b66a12044bc862e0187ef35380b0be01cd0a64",
       "importsInfoview": true
      },
-     "rpcMs": 3,
+     "rpcMs": 2,
      "error": null,
      "tagCounts": {
       "circle": 7,
@@ -1705,7 +1705,7 @@
        }
       }
      ],
-     "htmlSha256": "db490cc0599e632829ede9c1be512d240a13a0c8728722193c5f06f944c0d501"
+     "htmlSha256": "1f18003a8d6526b180223999298c65b61b40767967c53c20020f9480a7a98d31"
     }
    ]
   },
@@ -2177,7 +2177,7 @@
        }
       }
      ],
-     "htmlSha256": "ab86858d600afedfbe0dae233e6a5c1489fc26d038f4b14e4718172c80485f43"
+     "htmlSha256": "133c2394ede1e9ad7629a8c362b51256f52cec41ce48214dc06db9a4a7e01e74"
     }
    ]
   }
@@ -2214,9 +2214,9 @@
     }
    },
    "editedSha256": "e7b9876cc7a0950329c358b9ff982308b9c24bde5140a0810572f142d901fb46",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset/Showcase.click1.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click1.lean",
    "diagnosticsVersion": 2,
-   "reElaborationMs": 507,
+   "reElaborationMs": 508,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2253,9 +2253,9 @@
     }
    },
    "editedSha256": "6de934f566815602644f36b3d11e67987dadc40f895f03306628343ac2630d89",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset/Showcase.click2.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click2.lean",
    "diagnosticsVersion": 4,
-   "reElaborationMs": 508,
+   "reElaborationMs": 509,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2292,9 +2292,9 @@
     }
    },
    "editedSha256": "8b5f6e2ef8a8064fcc42e1baf8d4bf976f68b9e9c33e14b96c04816720c90845",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset/Showcase.click3.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click3.lean",
    "diagnosticsVersion": 6,
-   "reElaborationMs": 509,
+   "reElaborationMs": 508,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2331,9 +2331,9 @@
     }
    },
    "editedSha256": "82b5ae8e5543db8a28330992f100b661443456bedd78af0ef5479a5a0a3ff48e",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset/Showcase.click4.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/graph-scope-superset-w8/Showcase.click4.lean",
    "diagnosticsVersion": 8,
-   "reElaborationMs": 530,
+   "reElaborationMs": 527,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2451,5 +2451,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 6462
+ "totalMs": 6712
 }

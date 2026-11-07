@@ -12,8 +12,8 @@
 //                       (apiRevision), the only mode the gallery runs. RESTART_HOW is the restart `how` it records.
 //   domSignature()      the env-independent panel signature read from the REAL InfoView DOM (tag multiset, svg tag
 //                       multiset, component counts, text leaves, InteractiveCode texts, MakeEditLink texts/titles),
-//                       compared field by field with the frozen golden (lean/expect/w8/<pkg>.json, dist-lens:
-//                       lean/expect/dist-lens.json). htmlSha256 and the MakeEditLink textDocument/version are NOT compared
+//                       compared field by field with the frozen golden (lean/expect/<pkg>.json, the widgets8
+//                       environment). htmlSha256 and the MakeEditLink textDocument/version are NOT compared
 //                       (env-dependent, TEST-PLAN-DELTAS §1).
 //   classify()          the console oracle: tests/ux/bringup/console.mjs classifyConsole with EXACTLY
 //                       tests/ux/selectors.json consoleAllowlist, plus a stricter correlation of the allowlisted empty
@@ -130,11 +130,11 @@ export const EXAMPLES = JSON.parse(fs.readFileSync(path.join(SC, 'gallery/exampl
 export const BY_ID = Object.fromEntries(EXAMPLES.map((e) => [e.id, e]));
 export const IDS = EXAMPLES.map((e) => e.id);
 export const SPECS = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readFileSync(path.join(SC, 'lean/examples', `${id}.json`), 'utf8'))]));
-/** The golden of the widgets8 environment the gallery serves: w8 for phase 1, the only (w8) golden for dist-lens. */
-export const goldenPath = (id) => (fs.existsSync(path.join(SC, 'lean/expect/w8', `${id}.json`)) ? path.join(SC, 'lean/expect/w8', `${id}.json`) : path.join(SC, 'lean/expect', `${id}.json`));
+/** The golden of the widgets8 environment the gallery serves (one golden set since P2). */
+export const goldenPath = (id) => path.join(SC, 'lean/expect', `${id}.json`);
 export const GOLDENS = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readFileSync(goldenPath(id), 'utf8'))]));
 /** lean/expect/click-all: the native click-all of the same environment (w8). */
-export const clickAllPath = (id) => (fs.existsSync(path.join(SC, 'lean/expect/click-all/w8', `${id}.json`)) ? path.join(SC, 'lean/expect/click-all/w8', `${id}.json`) : path.join(SC, 'lean/expect/click-all', `${id}.json`));
+export const clickAllPath = (id) => path.join(SC, 'lean/expect/click-all', `${id}.json`);
 export const CLICKALL = Object.fromEntries(IDS.map((id) => [id, JSON.parse(fs.readFileSync(clickAllPath(id), 'utf8'))]));
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');

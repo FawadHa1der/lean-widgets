@@ -138,11 +138,12 @@ function checkPin(id, { full = false } = {}) {
   const s1 = path.join(WR, 'stage1', 'bin', 'lean.wasm');
   const s1id = exists(s1) ? `wasm64-${sha256File(s1).slice(0, 16)}` : 'missing';
   ok(s1id === bid, `$W/runtimes/${bid}/stage1 buildId == ${bid}`, s1id);
-  const need = ['raw/init.snap', 'raw/mathlib.snap', 'raw/widgets7.snap', 'raw/widgets8.snap', 'bake-out-w7/index.json', 'bake-out-w8/index.json',
-    'bake-work-w7/widgets.snap', 'bake-work-w8/widgets.snap', 'BAKE-KEY-w7.txt', 'BAKE-KEY-w8.txt', 'bake-logs/bake-widgets7.log', 'bake-logs/bake-widgets8.log'];
+  // one overlay since P2 (2026-11): the w8 stores only (a runtime's retired 7-root stores may still sit beside them, unread)
+  const need = ['raw/init.snap', 'raw/mathlib.snap', 'raw/widgets8.snap', 'bake-out-w8/index.json',
+    'bake-work-w8/widgets.snap', 'BAKE-KEY-w8.txt', 'bake-logs/bake-widgets8.log'];
   const miss = need.filter((f) => !exists(path.join(WR, f)));
-  ok(!miss.length, `$W/runtimes/${bid}: raw/{init,mathlib,widgets7,widgets8}.snap, bake-out/bake-work w7+w8, BAKE-KEY w7+w8, bake logs w7+w8 present`, miss.join(', '));
-  for (const n of [7, 8]) {
+  ok(!miss.length, `$W/runtimes/${bid}: raw/{init,mathlib,widgets8}.snap, bake-out/bake-work w8, BAKE-KEY w8, bake log w8 present`, miss.join(', '));
+  for (const n of [8]) {
     const f = path.join(WR, `raw/widgets${n}.snap`), g = path.join(WR, `bake-work-w${n}/widgets.snap`);
     if (exists(f) && exists(g)) ok(fs.statSync(f).size === fs.statSync(g).size, `raw/widgets${n}.snap size == bake-work-w${n}/widgets.snap`, `${fs.statSync(f).size} B`);
   }
@@ -197,7 +198,7 @@ function checkPin(id, { full = false } = {}) {
   return out;
 }
 
-/** Audit (pin D lane): the ACTIVE overlay links (out/overlay/snapshots/widgets7|8, what serve.mjs, the UX suite and the
+/** Audit (pin D lane): the ACTIVE overlay link (out/overlay/snapshots/widgets8, what serve.mjs, the UX suite and the
  *  deploy manifest read) must hold regions paired with the runtime the ACTIVE LOCK (QED64.lock.json) names: every entry of
  *  the index.json reached through the link has runtime == lock qed64.buildId. Catches a lock link and overlay links that
  *  disagree (an interrupted or hand-made switch, an overlay rebuilt for another runtime through the link). [{ok, msg}] */

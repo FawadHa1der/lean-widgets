@@ -40,7 +40,7 @@
 // where the goldens rendered some).
 //
 // Usage: node lsp-golden.mjs --pkg <pkg> [--mode superset|closure]
-//          [--env w7|w8] [--update-spec] [--click-all] [--out <file>]
+//          [--env w8] [--update-spec] [--click-all] [--out <file>]
 // Exit 2 (REFUSED, before Lean starts): TC is not the packages' Lean, or (superset) the golden env is not a successful
 // golden-env.sh build (golden-env.sh check) of QED64_KERNEL_BUILD's essential list.
 import { spawn, execFileSync } from 'node:child_process';
@@ -70,18 +70,16 @@ const CLICK_ALL = flag('--click-all');
 if (!PKG) { console.error('--pkg required'); process.exit(2); }
 const EXAMPLE = path.join(SC, 'lean/examples', `${PKG}.lean`);
 const SPEC_PATH = path.join(SC, 'lean/examples', `${PKG}.json`);
-// Golden environment: w7 (phase-1 bake: Essential + 7 roots) or w8 (phase-2 bake: + DistLens).
-// Primary env = w7 for the 7 phase-1 packages, w8 for dist-lens (which does not exist in w7).
-// Phase-1 packages are ALSO frozen in w8 (the phase-2 bake serves all eight) under expect/w8/.
-const PRIMARY_ENV = PKG === 'dist-lens' ? 'w8' : 'w7';
+// Golden environment: w8 (the one bake: Essential + 8 roots, incl. DistLens), for every package. One overlay since P2
+// (2026-11); the 7-root env and its expect/ subdirectory are retired, so every golden sits at the base path.
+const PRIMARY_ENV = 'w8';
 const ENV = opt('--env', PRIMARY_ENV);
-if (!['w7', 'w8'].includes(ENV) || (PKG === 'dist-lens' && ENV !== 'w8')) { console.error(`bad --env ${ENV} for ${PKG}`); process.exit(2); }
-const ENV_SUB = ENV === PRIMARY_ENV ? '' : `${ENV}/`; // non-primary env outputs live in a subdirectory
-const OUT = opt('--out', CLICK_ALL ? path.join(SC, 'lean/expect/click-all', `${ENV_SUB}${PKG}${MODE === 'superset' ? '' : '.' + MODE}.json`)
-  : MODE === 'superset' ? path.join(SC, 'lean/expect', `${ENV_SUB}${PKG}.json`)
+if (ENV !== PRIMARY_ENV) { console.error(`bad --env ${ENV} for ${PKG} (only ${PRIMARY_ENV})`); process.exit(2); }
+const OUT = opt('--out', CLICK_ALL ? path.join(SC, 'lean/expect/click-all', `${PKG}${MODE === 'superset' ? '' : '.' + MODE}.json`)
+  : MODE === 'superset' ? path.join(SC, 'lean/expect', `${PKG}.json`)
   : path.join(W, 'goldens', `${PKG}.closure.json`));
 const HTML_OUT = MODE === 'superset'
-  ? path.join(SC, 'lean/expect/html', `${ENV_SUB}${PKG}.json`)
+  ? path.join(SC, 'lean/expect/html', `${PKG}.json`)
   : path.join(W, 'goldens', `${PKG}.closure.html.json`);
 const ELAB_TIMEOUT_MS = Number(opt('--timeout-ms', PKG === 'dist-lens' ? 900000 : 300000));
 const log = (...a) => console.log(`[${PKG}/${MODE}${MODE === 'superset' ? '/' + ENV : ''}]`, ...a);
@@ -247,7 +245,7 @@ if (MODE === 'superset') {
   leanPath = execFileSync(ENV_SH, ['closure', PKG]).toString().trim();
   text = text.replace(/^import Mathlib\n/, '\n'); // keep line numbering identical
 }
-const runDir = path.join(W, 'golden-run', `${PKG}-${MODE}${MODE === 'superset' && ENV !== PRIMARY_ENV ? '-' + ENV : ''}${CLICK_ALL ? '-clickall' : ''}`);
+const runDir = path.join(W, 'golden-run', `${PKG}-${MODE}${CLICK_ALL ? '-clickall' : ''}`);
 fs.mkdirSync(runDir, { recursive: true });
 const docPath = path.join(runDir, 'Showcase.lean');
 fs.writeFileSync(docPath, text);

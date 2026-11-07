@@ -673,24 +673,6 @@
     "export": "git archive 1a610034b75e00ea26ab48e2423886660ac3be18 packages/ (prefix packages/ stripped): scripts/export-widgets.mjs"
   },
   "overlays": {
-    "widgets7": {
-      "dir": "out/runtimes/wasm64-36d7f415704473d9/overlay/widgets7",
-      "url": "/snapshots/widgets7.36d7f415704473d9/",
-      "files": {
-        "index.json": {
-          "bytes": 854,
-          "sha256": "3c0603c1ad630255963fcfca3823b9adef719f5d5ef952b63662e04ee6ab9d2a"
-        },
-        "init.81276a747b990f32.snapz": {
-          "bytes": 31719003,
-          "sha256": "81276a747b990f320b76afa182192d188aeb0cec6b50b63d19bbda812e9168ba"
-        },
-        "widgets.4f02caae6eb88d1d.snapz": {
-          "bytes": 329857835,
-          "sha256": "4f02caae6eb88d1d893230bd0116b122b19918a9af0f132e361c146ee63d1f6b"
-        }
-      }
-    },
     "widgets8": {
       "dir": "out/runtimes/wasm64-36d7f415704473d9/overlay/widgets8",
       "url": "/snapshots/widgets8.36d7f415704473d9/",

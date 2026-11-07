@@ -14,7 +14,7 @@
 #                                               /profiles/index.json)
 #                                               change only once the new shell is live (decision E1 of the pin I plan;
 #                                               QED64 HARDENING #64). A per-runtime overlay index
-#                                               (/snapshots/widgets{7,8}.<bid16>/index.json, pin.json v3) is a NEW key no
+#                                               (/snapshots/widgets8.<bid16>/index.json, pin.json v3) is a NEW key no
 #                                               older shell reads: phase 2, so the new gallery has its overlays as soon
 #                                               as the new Worker is live.
 #                                               A phase is uploaded only when every EARLIER phase is selected too or was
@@ -23,8 +23,8 @@
 #                                               record names its phases (target.env phases=...) and lists only their files.
 #
 # Target: infra/deploy.env (R2_REMOTE=qed64-r2, R2_BUCKET=qed64-artifacts, R2_PREFIX=qed64-showcase/); environment
-# variables of the same name override it. MANIFEST_ARGS passes extra options to the manifest generator (smaller
-# variants: "--overlays widgets8 --no-stock-snapshots"; --overlays takes the LOGICAL names, which
+# variables of the same name override it. MANIFEST_ARGS passes extra options to the manifest generator (a smaller
+# variant: "--no-stock-snapshots"; --overlays takes the LOGICAL names (widgets8, the one overlay since P2), which
 # deploy-manifest.mjs uploads under each pin's served directory, /snapshots/<dir>/ = scripts/lib/pins.mjs overlayDir:
 # '<o>.<bid16>', the per-runtime directory). DEPLOY_OUT (default out/deploy).
 # VERIFY=0 skips the post-upload `rclone check`.

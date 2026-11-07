@@ -208,13 +208,13 @@ section('7. lib.js unit tests');
   const m = (x) => L.parseMem(x);
   ok(m(null).ok && m(null).bytes === null && m('3').bytes === 3 * GiB && m('2.5').bytes === 2.5 * GiB && m('9').bytes === 6 * GiB && m('0.1').bytes === GiB
     && !m('abc').ok && !m('-1').ok && m('3.1').bytes % (256 * 2 ** 20) === 0, 'parseMem: null, 3, 2.5, clamp 9→6, 0.1→1, rejects abc/-1, 256 MiB steps');
-  ok(L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', 'widgets7') === '/snapshots/widgets7/init.35c8c5f5419e0c33.snapz'
+  ok(L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', 'partial7') === '/snapshots/partial7/init.35c8c5f5419e0c33.snapz'
     && L.rerootUrl('https://x/y.snapz', 'w') === 'https://x/y.snapz' && L.frameUrl('widgets8') === '/?snapshots=snapshots/widgets8', 'rerootUrl / frameUrl mirror qed64-boot.ts');
   { // the v1 frame URL (EMBEDDING.md §3, §4): embed=1, the overlay, &memory=<GiB>, #code=<encodeURIComponent(text)>; the legacy form is unchanged
     const text = 'import Mathlib\nimport HasseView\n\n/-! # é & #1 -/\n';
     const u = L.frameUrl('widgets8', { embed: true, memoryGiB: 3, code: text });
     ok(u === `/?embed=1&snapshots=snapshots/widgets8&memory=3#code=${encodeURIComponent(text)}` && L.codeOfFrameUrl(u) === text && L.frameUrl('widgets8', { embed: true }) === '/?embed=1&snapshots=snapshots/widgets8'
-      && L.frameUrl('widgets7', { embed: true, code: 'x' }) === '/?embed=1&snapshots=snapshots/widgets7#code=x' && L.codeOfFrameUrl('/?snapshots=snapshots/widgets8') === null && L.frameUrl('widgets8', {}) === '/?snapshots=snapshots/widgets8' && L.DOCUMENT_KEY === 'qed64-showcase:document',
+      && L.frameUrl('partial7', { embed: true, code: 'x' }) === '/?embed=1&snapshots=snapshots/partial7#code=x' && L.codeOfFrameUrl('/?snapshots=snapshots/widgets8') === null && L.frameUrl('widgets8', {}) === '/?snapshots=snapshots/widgets8' && L.DOCUMENT_KEY === 'qed64-showcase:document',
       `frameUrl v1 options: ${u.slice(0, 70)}… (embed, memory, #code= round-trips through codeOfFrameUrl); legacy form unchanged`);
   }
   const cs = (st, r) => L.classifyStatus(st, r).kind;
@@ -297,63 +297,65 @@ const site = (overlay, opts = {}, headOverrides = {}) => ({
 });
 const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
 {
-  const r = await L.preflightOverlay({ overlay: 'widgets7', buildId: BID, fetch: mockFetch(site('widgets7')), modules });
+  const r = await L.preflightOverlay({ overlay: 'partial7', buildId: BID, fetch: mockFetch(site('partial7')), modules });
   ok(r.ok && r.availability['chart-kit'] === true && r.availability['dist-lens'] === false && r.checks.length >= 10, `preflight good overlay: ok, ${r.checks.length} checks, availability chart-kit=true dist-lens=false`);
   const bad = async (name, files, wantFail) => {
-    const x = await L.preflightOverlay({ overlay: 'widgets7', buildId: BID, fetch: mockFetch(files), modules });
+    const x = await L.preflightOverlay({ overlay: 'partial7', buildId: BID, fetch: mockFetch(files), modules });
     const failed = x.checks.filter((c) => !c.ok).map((c) => c.id);
     ok(!x.ok && failed.includes(wantFail), `preflight rejects ${name}: failed [${failed.join(', ')}]`);
     return x;
   };
-  await bad('unpaired runtime', site('widgets7', { runtime: 'wasm64-0000000000000000' }), 'entry-mathlib-runtime');
-  await bad('content-length != transfer', site('widgets7', {}, { 'content-length': T.region - 1 }), 'entry-mathlib-head');
-  await bad('HTML answer for .snapz (SPA fallback)', site('widgets7', {}, { 'content-type': 'text/html; charset=utf-8' }), 'entry-mathlib-head');
-  await bad('content-encoding gzip', site('widgets7', {}, { 'content-encoding': 'gzip' }), 'entry-mathlib-head');
+  await bad('unpaired runtime', site('partial7', { runtime: 'wasm64-0000000000000000' }), 'entry-mathlib-runtime');
+  await bad('content-length != transfer', site('partial7', {}, { 'content-length': T.region - 1 }), 'entry-mathlib-head');
+  await bad('HTML answer for .snapz (SPA fallback)', site('partial7', {}, { 'content-type': 'text/html; charset=utf-8' }), 'entry-mathlib-head');
+  await bad('content-encoding gzip', site('partial7', {}, { 'content-encoding': 'gzip' }), 'entry-mathlib-head');
   const nf = await bad('missing index (404)', {}, 'index-http');
   ok(nf.notFound === true, 'missing index sets notFound');
-  const s2 = site('widgets7'); s2[`/snapshots/widgets7/index.json`].headers['content-type'] = 'text/html';
+  const s2 = site('partial7'); s2[`/snapshots/partial7/index.json`].headers['content-type'] = 'text/html';
   await bad('HTML index', s2, 'index-http');
-  const s3 = site('widgets7'); delete s3[`/snapshots/widgets7/widgets.0123456789abcdef.snapz`];
+  const s3 = site('partial7'); delete s3[`/snapshots/partial7/widgets.0123456789abcdef.snapz`];
   await bad('missing .snapz (404 on HEAD)', s3, 'entry-mathlib-head');
-  const s4 = site('widgets7'); s4[`/runtime/runtime-manifest.${BID}.json`].body = JSON.stringify({ buildId: 'wasm64-ffffffffffffffff' });
+  const s4 = site('partial7'); s4[`/runtime/runtime-manifest.${BID}.json`].body = JSON.stringify({ buildId: 'wasm64-ffffffffffffffff' });
   await bad('runtime manifest for another build', s4, 'runtime-manifest');
-  const s5 = site('widgets7'); s5['/snapshots/widgets7/index.json'].body = JSON.stringify({ schema: L.SNAPSHOT_SCHEMA, snapshots: [JSON.parse(goodIndex('widgets7')).snapshots[0]] });
+  const s5 = site('partial7'); s5['/snapshots/partial7/index.json'].body = JSON.stringify({ schema: L.SNAPSHOT_SCHEMA, snapshots: [JSON.parse(goodIndex('partial7')).snapshots[0]] });
   await bad('index without a mathlib entry', s5, 'index-names');
   const bn = await L.preflightOverlay({ overlay: '../x', buildId: BID, fetch: mockFetch({}), modules });
   ok(!bn.ok && bn.checks[0].id === 'overlay-name' && bn.checks.length === 1, 'preflight rejects an unsafe overlay name without fetching');
   // chooseOverlay
-  const c1 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch(site('widgets7')), modules });
-  ok(c1.ok && c1.overlay === 'widgets7' && c1.fellBack && c1.attempts[0].overlay === 'widgets8' && c1.attempts[0].result.notFound, 'chooseOverlay: widgets8 404 → falls back to widgets7');
-  const c2 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch({ ...site('widgets7'), ...site('widgets8', { imports: ['QED64.Essential', 'DistLens'] }) }), modules });
-  ok(c2.ok && c2.overlay === 'widgets8' && !c2.fellBack && c2.result.availability['dist-lens'] === true, 'chooseOverlay: widgets8 preferred when paired');
-  const c3 = await L.chooseOverlay({ requested: 'widgets8', buildId: BID, fetch: mockFetch(site('widgets7')), modules });
+  // one overlay since P2 (2026-11): a widgets8 404 is not ok, after one attempt (nothing to fall back to); partial7 is a
+  // fixture directory beside it, never a default
+  const c1 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch(site('partial7')), modules });
+  ok(!c1.ok && c1.overlay === 'widgets8' && c1.attempts.length === 1 && c1.attempts[0].overlay === 'widgets8' && c1.result.notFound, 'chooseOverlay: widgets8 404 → not ok, one attempt (no fallback)');
+  const c2 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch({ ...site('partial7'), ...site('widgets8', { imports: ['QED64.Essential', 'DistLens'] }) }), modules });
+  ok(c2.ok && c2.overlay === 'widgets8' && c2.attempts.length === 1 && c2.result.availability['dist-lens'] === true, 'chooseOverlay: widgets8 chosen when paired');
+  const c3 = await L.chooseOverlay({ requested: 'widgets8', buildId: BID, fetch: mockFetch(site('partial7')), modules });
   ok(!c3.ok && c3.attempts.length === 1, 'chooseOverlay: explicit ?overlay= never falls back');
   const c4 = await L.chooseOverlay({ requested: null, buildId: BID, fetch: mockFetch({ ...site('widgets8', { runtime: 'wasm64-0000000000000000' }) }), modules });
-  ok(!c4.ok && c4.overlay === 'widgets8', 'chooseOverlay: reports the unpaired widgets8 over the absent widgets7');
+  ok(!c4.ok && c4.overlay === 'widgets8' && c4.attempts.length === 1 && !c4.result.notFound, 'chooseOverlay: reports the unpaired widgets8 (a pairing failure, not a 404)');
 }
 { // the SERVED overlay directories (gallery/pin.json overlays = scripts/lib/pins.mjs overlayDirs): a per-runtime pin (pin/v3)
   // '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's directory, any other value a literal directory. A
   // pin.json without the map is refused (parseOverlayDirs); the lib's overlayDirOf / chooseOverlay still read a null map (or
   // the identity map) as the bare names, which c1-c4 and the bare fixtures below keep covered
-  const D = { widgets7: 'widgets7.0123456789abcdef', widgets8: 'widgets8.0123456789abcdef' };
-  const ID = { widgets7: 'widgets7', widgets8: 'widgets8' };
+  const D = { partial7: 'partial7.0123456789abcdef', widgets8: 'widgets8.0123456789abcdef' };
+  const ID = { partial7: 'partial7', widgets8: 'widgets8' };
   okTry(() => L.overlayDirOf('widgets8', null) === 'widgets8' && L.overlayDirOf('widgets8', undefined) === 'widgets8' && L.overlayDirOf('widgets8', ID) === 'widgets8'
-    && L.overlayDirOf('widgets8', D) === D.widgets8 && L.overlayDirOf('widgets7', D) === D.widgets7 && L.overlayDirOf(D.widgets8, D) === D.widgets8
+    && L.overlayDirOf('widgets8', D) === D.widgets8 && L.overlayDirOf('partial7', D) === D.partial7 && L.overlayDirOf(D.widgets8, D) === D.widgets8
     && L.overlayDirOf('nope', D) === 'nope' && L.overlayDirOf('toString', D) === 'toString' && L.overlayDirOf('__proto__', D) === '__proto__'
-    && L.overlayNameOf(D.widgets8, D) === 'widgets8' && L.overlayNameOf(D.widgets7, D) === 'widgets7' && L.overlayNameOf('widgets8', D) === 'widgets8'
+    && L.overlayNameOf(D.widgets8, D) === 'widgets8' && L.overlayNameOf(D.partial7, D) === 'partial7' && L.overlayNameOf('widgets8', D) === 'widgets8'
     && L.overlayNameOf('nope', D) === 'nope' && L.overlayNameOf('widgets8.0123456789abcdef', null) === 'widgets8.0123456789abcdef' && L.overlayNameOf('widgets8', ID) === 'widgets8',
   'overlayDirOf / overlayNameOf: own-property alias under the map (no prototype names), literal otherwise, the bare name without a map; reverse lookup');
   const pod = (v) => L.parseOverlayDirs(v);
   okTry(() => !pod(undefined).ok && pod(undefined).dirs === null && /no overlays map/.test(pod(undefined).error) && !pod(null).ok && pod(ID).ok && JSON.stringify(pod(D).dirs) === JSON.stringify(D)
-    && !pod([]).ok && !pod('widgets8').ok && !pod({}).ok && !pod({ ...D, widgets8: '../x' }).ok && !pod({ ...D, widgets8: 7 }).ok && !pod({ widgets8: D.widgets8 }).ok
-    && !pod({ widgets7: 'same', widgets8: 'same' }).ok && !pod({ widgets7: 'widgets8', widgets8: 'widgets7' }).ok && !pod({ ...D, 'bad/key': 'x' }).ok,
+    && !pod([]).ok && !pod('widgets8').ok && !pod({}).ok && !pod({ ...D, widgets8: '../x' }).ok && !pod({ ...D, widgets8: 7 }).ok && pod({ widgets8: D.widgets8 }).ok && !pod({ partial7: 'x' }).ok
+    && !pod({ partial7: 'same', widgets8: 'same' }).ok && !pod({ partial7: 'widgets8', widgets8: 'partial7' }).ok && !pod({ ...D, 'bad/key': 'x' }).ok,
   `parseOverlayDirs: absent is refused ("${pod(undefined).error}"); accepts the identity and a per-runtime map; rejects non-objects, empty, unsafe or non-string dirs, a missing default name, duplicate dirs, a dir naming another logical overlay, an unsafe key ("${pod({ ...D, widgets8: '../x' }).error}")`);
   okTry(() => L.frameUrl(D.widgets8, { embed: true }) === '/?embed=1&snapshots=snapshots/widgets8.0123456789abcdef' && L.frameUrl(D.widgets8) === '/?snapshots=snapshots/widgets8.0123456789abcdef'
     && L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', D.widgets8) === '/snapshots/widgets8.0123456789abcdef/init.35c8c5f5419e0c33.snapz',
   'frameUrl / rerootUrl take the served directory: /?embed=1&snapshots=snapshots/widgets8.0123456789abcdef');
   const logged = (files) => { const log = []; const f = mockFetch(files); return { log, fetch: (u, i = {}) => { log.push(`${i.method || 'GET'} ${new URL(u, 'http://mock').pathname}`); return f(u, i); } }; };
-  const both = { ...site(D.widgets7), ...site(D.widgets8, { imports: ['QED64.Essential', 'DistLens'] }) };
-  const bare = { ...site('widgets7'), ...site('widgets8', { imports: ['QED64.Essential', 'DistLens'] }) };
+  const both = { ...site(D.partial7), ...site(D.widgets8, { imports: ['QED64.Essential', 'DistLens'] }) };
+  const bare = { ...site('partial7'), ...site('widgets8', { imports: ['QED64.Essential', 'DistLens'] }) };
   { // preflight under the directory: fetches the index and HEADs the re-rooted .snapz there, reports the logical name
     const m = logged(both);
     const r = await L.preflightOverlay({ overlay: 'widgets8', dir: D.widgets8, buildId: BID, fetch: m.fetch, modules });
@@ -368,13 +370,11 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   }
   const ch = (o, files) => L.chooseOverlay({ buildId: BID, fetch: mockFetch(files), modules, ...o });
   const a1 = await ch({ requested: null, dirs: D }, both);
-  ok(a1.ok && a1.overlay === 'widgets8' && a1.dir === D.widgets8 && !a1.fellBack && a1.attempts.length === 1 && a1.attempts[0].dir === D.widgets8 && a1.result.availability['dist-lens'] === true,
+  ok(a1.ok && a1.overlay === 'widgets8' && a1.dir === D.widgets8 && a1.attempts.length === 1 && a1.attempts[0].dir === D.widgets8 && a1.result.availability['dist-lens'] === true,
     `chooseOverlay per-runtime map, site serves the directories: widgets8 at /snapshots/${a1.dir}/, no fallback`);
   const a2 = await ch({ requested: null, dirs: D }, bare);
-  ok(!a2.ok && a2.result.notFound && a2.attempts.length === 2 && a2.attempts.every((a) => a.result.notFound && !a.ok) && a2.attempts.map((a) => a.dir).join() === `${D.widgets8},${D.widgets7}` && a2.attempts.map((a) => a.overlay).join() === 'widgets8,widgets7',
-    'chooseOverlay per-runtime map, site serves ONLY the bare widgets8/ widgets7/: not ok, notFound on both directories (never a silent legacy path)');
-  const a3 = await ch({ requested: null, dirs: D }, site(D.widgets7));
-  ok(a3.ok && a3.overlay === 'widgets7' && a3.dir === D.widgets7 && a3.fellBack && a3.attempts[0].dir === D.widgets8 && a3.attempts[0].result.notFound, 'chooseOverlay per-runtime map: widgets8 directory 404 → falls back to the widgets7 directory');
+  ok(!a2.ok && a2.result.notFound && a2.attempts.length === 1 && a2.attempts.every((a) => a.result.notFound && !a.ok) && a2.attempts.map((a) => a.dir).join() === D.widgets8 && a2.attempts.map((a) => a.overlay).join() === 'widgets8',
+    'chooseOverlay per-runtime map, site serves ONLY the bare widgets8/: not ok, notFound at the directory, one attempt (never a silent legacy path)');
   const a4 = await ch({ requested: 'widgets8', dirs: D }, both);
   ok(a4.ok && a4.requested === 'widgets8' && a4.overlay === 'widgets8' && a4.dir === D.widgets8 && a4.attempts.length === 1, '?overlay=widgets8 is the alias of the pin\'s widgets8 directory');
   const a5 = await ch({ requested: D.widgets8, dirs: D }, both);
@@ -619,7 +619,7 @@ if (LIVE) {
     // a logical store (out/overlay/snapshots/widgets8) is SERVED at pin.json's directory for it (widgets8.<bid16>, the
     // per-runtime directory); any other on-disk name (a fixture) is served under its own name
     const dirs = L.parseOverlayDirs(pin.overlays).dirs;
-    for (const ov of [...new Set([...overlays, 'widgets8', 'widgets7', 'nope'])]) {
+    for (const ov of [...new Set([...overlays, 'widgets8', 'nope'])]) {
       const dir = L.overlayDirOf(ov, dirs);
       const r = await L.preflightOverlay({ overlay: ov, dir, buildId: pin.buildId, fetch: (u, i) => fetch(u, i), modules, origin });
       const rts = overlays.includes(ov) ? indexRuntimes(ov) : null;

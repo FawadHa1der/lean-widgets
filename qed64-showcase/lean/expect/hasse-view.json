@@ -1,7 +1,7 @@
 {
  "package": "hasse-view",
  "mode": "superset",
- "generatedAt": "2026-10-27T10:29:58.760Z",
+ "generatedAt": "2026-10-27T10:31:46.810Z",
  "generator": "lean/goldens/lsp-golden.mjs",
  "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
@@ -9,10 +9,10 @@
    "import Mathlib",
    "import HasseView"
   ],
-  "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
-   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
@@ -35,7 +35,7 @@
  },
  "exampleSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
  "documentSha256": "b474a9cc8345fb49e6340ccc84c94a6dbb53762642f4a3306b9b4c4111803266",
- "elaborationMs": 2410,
+ "elaborationMs": 2560,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 33,
+     "rpcMs": 30,
      "error": null,
      "tagCounts": {
       "div": 11,
@@ -579,7 +579,7 @@
        }
       }
      ],
-     "htmlSha256": "4960117d60b2d9de52701dc57a9d7b6af7cf84eb8cfedb6609365fed3811dbcd"
+     "htmlSha256": "e844698250c67705b74393f09978eeabc81a665daff11d128f6a70696fd00737"
     }
    ]
   },
@@ -610,7 +610,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 4,
+     "rpcMs": 3,
      "error": null,
      "tagCounts": {
       "div": 11,
@@ -819,7 +819,7 @@
        }
       }
      ],
-     "htmlSha256": "b53886bd09ac0abc05ef0c479288ed9fd2be165c5662fd7459250ffb6cc10665"
+     "htmlSha256": "cc74035b595eab7de7c6b844345915e3b0460ae448f2078566c15092120804ef"
     }
    ]
   },
@@ -1092,7 +1092,7 @@
        }
       }
      ],
-     "htmlSha256": "df49b2c449f466e47e1a39b3d1f4ccc85d5c7dff4a74f3e04e2f41d8e3335d81"
+     "htmlSha256": "33106468aff50a4a1c5d85374e3fb22f556f5d1fb63ac02fbfdacfcbc5c78125"
     }
    ]
   },
@@ -1123,7 +1123,7 @@
       "sha256": "1001164a177828d71ab08d6300778ba7ba539776aa45023a2a8df07b576a79b5",
       "importsInfoview": true
      },
-     "rpcMs": 26,
+     "rpcMs": 25,
      "error": null,
      "tagCounts": {
       "div": 14,
@@ -1640,7 +1640,7 @@
        }
       }
      ],
-     "htmlSha256": "cc478506203dbee04e484c752d51d28c9850ac6aa90eaf2640420aee3e518b26"
+     "htmlSha256": "4665952042b0956bc4fa7266d0adee298d9b22bc7b4267f880e2d7021cf92fc0"
     }
    ]
   },
@@ -1979,7 +1979,7 @@
        }
       }
      ],
-     "htmlSha256": "056b9d38024971ff56f9b4137899c04dc792203978e82587f6582bd241b3342e"
+     "htmlSha256": "5e7ac5502dc749e1159b2a2f1010266e1aa22f0d12dad6c60f82faf58a493822"
     }
    ]
   }
@@ -2016,9 +2016,9 @@
     }
    },
    "editedSha256": "67f4dd46b0222a9147d264f3eedcb468e6831cde321d38dbf4255c18c19c0f67",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click1.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click1.lean",
    "diagnosticsVersion": 2,
-   "reElaborationMs": 573,
+   "reElaborationMs": 571,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2055,9 +2055,9 @@
     }
    },
    "editedSha256": "89fd4edd78cc02d2f26b06a8a9456a02925e684cae29fb19ecafc1aa7b944ad6",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click2.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click2.lean",
    "diagnosticsVersion": 4,
-   "reElaborationMs": 565,
+   "reElaborationMs": 554,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2094,9 +2094,9 @@
     }
    },
    "editedSha256": "9052daeb559b613bbdfc4bbce0a525c216cdb1ac3ac28cc357fcb574780d8a2c",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click3.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click3.lean",
    "diagnosticsVersion": 6,
-   "reElaborationMs": 568,
+   "reElaborationMs": 561,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2133,9 +2133,9 @@
     }
    },
    "editedSha256": "d10f11a680e5869c47f74789fbe42b783443519f07b3a3b3d143c2ba7a0732ef",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click4.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click4.lean",
    "diagnosticsVersion": 8,
-   "reElaborationMs": 518,
+   "reElaborationMs": 522,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2172,9 +2172,9 @@
     }
    },
    "editedSha256": "3a95db69b39cbf4fcf65e0cdfcc5f99382b4f11fd02bc357d121565fe4e8b893",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset/Showcase.click5.lean",
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8/Showcase.click5.lean",
    "diagnosticsVersion": 10,
-   "reElaborationMs": 522,
+   "reElaborationMs": 523,
    "postClickDiagnostics": [],
    "verdict": {
     "ok": true,
@@ -2312,5 +2312,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 8005
+ "totalMs": 8112
 }

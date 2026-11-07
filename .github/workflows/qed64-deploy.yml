@@ -1,6 +1,6 @@
 # Deploy the qed64-showcase APP SHELL (QED64's page built from source at the pin + the gallery; about 18 MB of static
 # files) to the Cloudflare Worker `qed64-showcase`, the lean4game way: pushes redeploy the shell; the R2 artifacts
-# (1.1 GB: snapshots, our overlays and the shared indexes; the runtime and packs are the kernel's published release, in
+# (about 0.75 GB: snapshots, our overlay and the shared indexes; the runtime and packs are the kernel's published release, in
 # the same bucket) are uploaded from the owner's machine with qed64-showcase/scripts/upload-artifacts.sh and are never
 # uploaded from here.
 #

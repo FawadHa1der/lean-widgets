@@ -1,7 +1,7 @@
 // C20 (new): the in-browser twin of lean/expect/click-all. EVERY link the InfoView renders in the eight examples (every
-// distinct MakeEditLink and Try this link of lean/expect/click-all/w8/<pkg>.json and lean/expect/click-all/dist-lens.json,
+// distinct MakeEditLink and Try this link of lean/expect/click-all/<pkg>.json,
 // the widgets8 environment the gallery serves; the total is counted from them, lean/expect/click-all/summary.json has the
-// per-env counts) is clicked with the real mouse in the real InfoView, each from a freshly reset example (the gallery's
+// counts) is clicked with the real mouse in the real InfoView, each from a freshly reset example (the gallery's
 // Reset button). For each link: the panel it lives in equals its golden first (so the link
 // exists where the native run found it), the post-click document equals the native click-all edit (applyEdit of the
 // frozen range/newText AND the sha256 of the native edited file), and QED64 re-checks that version with 0 errors and

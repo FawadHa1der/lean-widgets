@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Stage 4 (BUILD-PLAN §6): E1 + E3 + E3b for every package on the widget bakes, serially.
 #
-#   scripts/headless/run-stage4.sh [w8|w7|all] [pkg …]
+#   scripts/headless/run-stage4.sh [w8|all] [pkg …]
+#
+# One overlay since P2 (2026-11): the widgets8 bake only; `all` is kept as an alias of w8 (showcase.sh headless all
+# passes it).
 #
 # Every step is logged to $W/logs/s4-<step>.log (with /usr/bin/time -l), its exit code is
 # collected, AND its verdict line is required (an uncaught crash that happens to exit 1/0
@@ -17,18 +20,17 @@ cd "$ROOT" || exit 2
 # the TARGET pin (scripts/lib/pins.mjs: SHOWCASE_PIN=<id>, else the active pin) and its runtime's stores: raw regions,
 # bakes, bake keys and the headless results (the active links, or that pin's own store paths)
 P="$ROOT/scripts/lib/pins.mjs"
-# the staged trees this run reads ($W/tree-slim-w8/w7) are shared by every pin: each must have been staged for the target
+# the staged tree this run reads ($W/tree-slim-w8) is shared by every pin: it must have been staged for the target
 # pin (stage-trees.mjs --check-provenance: <tree>.STAGED.json), checked before anything runs or is written
-for b in w8 w7; do case "${1:-all}" in "$b"|all) node "$ROOT/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-$b" || exit 2 ;; esac; done
+case "${1:-all}" in w8|all) node "$ROOT/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-w8" || exit 2 ;; esac
 RAW="$(node "$P" store raw)" || exit 2; HOUT="$(node "$P" store headless)" || exit 2
-BW7="$(node "$P" store bake-work-w7)"; BW8="$(node "$P" store bake-work-w8)"; BO7="$(node "$P" store bake-out-w7)"; BO8="$(node "$P" store bake-out-w8)"
-BK7="$(node "$P" store BAKE-KEY-w7.txt)"; BK8="$(node "$P" store BAKE-KEY-w8.txt)"
+BW8="$(node "$P" store bake-work-w8)"; BO8="$(node "$P" store bake-out-w8)"
+BK8="$(node "$P" store BAKE-KEY-w8.txt)"
 mkdir -p "$HOUT"
 echo "stage 4 on pin $(node "$P" target) ($(node "$P" target-bid)): results $HOUT"
 WHICH="${1:-all}"; shift || true
-PKGS7=(chart-kit expr-xray graph-scope hasse-view interval-inspector simp-lens tree-scope)
-PKGS8=("${PKGS7[@]}" dist-lens)
-if [ $# -gt 0 ]; then PKGS7=("$@"); PKGS8=("$@"); fi
+PKGS8=(chart-kit expr-xray graph-scope hasse-view interval-inspector simp-lens tree-scope dist-lens)
+if [ $# -gt 0 ]; then PKGS8=("$@"); fi
 TSV=$W/logs/s4-steps.tsv
 [ -f "$TSV" ] || printf 'when\tbake\tpkg\tstep\trc\tverdict\twall_s\tmaxrss_bytes\tpeak_footprint_bytes\tlog\n' > "$TSV"
 FAILS=0
@@ -55,12 +57,10 @@ step() { # step <bake> <pkg> <E1|E3|E3b> <verdict-regex> -- cmd…
   echo "[$(date +%T)]   rc=$rc  ${verdict:-<no verdict line>}  ($((t1-t0)) s, maxrss ${rss:-?})"
 }
 
-run_bake() { # run_bake w7|w8
+run_bake() { # run_bake w8
   local b=$1 n snapset idx bw bk; n=${b#w}; snapset=widgets$n
-  if [ "$b" = w8 ]; then idx=$BO8/index.json; bw=$BW8; bk=$BK8; else idx=$BO7/index.json; bw=$BW7; bk=$BK7; fi
-  local -a pk; if [ "$b" = w8 ]; then pk=("${PKGS8[@]}"); else pk=("${PKGS7[@]}"); fi
-  for p in "${pk[@]}"; do
-    [ "$b" = w7 ] && [ "$p" = dist-lens ] && continue
+  idx=$BO8/index.json; bw=$BW8; bk=$BK8
+  for p in "${PKGS8[@]}"; do
     # stale outputs must never be judged: E1/E3/E3b rewrite them
     rm -f "$HOUT/$p.$snapset".{e1,rpc,html,react}.json
     local B=120000 T=300000
@@ -79,10 +79,8 @@ run_bake() { # run_bake w7|w8
 }
 
 case "$WHICH" in
-  w8) run_bake w8 ;;
-  w7) run_bake w7 ;;
-  all) run_bake w8; run_bake w7 ;;
-  *) echo "usage: $0 [w8|w7|all] [pkg …]"; exit 2 ;;
+  w8|all) run_bake w8 ;;
+  *) echo "usage: $0 [w8|all] [pkg …]"; exit 2 ;;
 esac
 echo "STAGE4 $WHICH: $FAILS failing step(s)"
 [ $FAILS = 0 ]

@@ -28,20 +28,20 @@
 #                                   Docker job at a time; refused while a bake runs. delta, append, widgets and
 #                                   distlens first remove the native build records (out/native-build.json and the
 #                                   clone's .lake/showcase-native-build.json): only a complete `native all` writes them.
-#   stage [w7|w8|fat|all] [--force]
+#   stage [w8|fat|all] [--force]
 #                                   S3  C1/C2 olean trees (stage-trees.mjs). Refused while a bake runs (fat and all:
 #                                   also unless $W/widgets-src is the target pin's export, checked before any tree is
 #                                   replaced). The trees are shared by every pin: staging them for the target pin
 #                                   replaces the trees another pin uses, whose lanes then refuse (<tree>.STAGED.json)
 #                                   until it restages, unless it shares the target's runtime, base and widget export.
-#   bake [w7|w8|all]            S3  C4 bake + C5 judge + C6 offline pairing. The bake itself runs under
+#   bake [w8|all]               S3  C4 bake + C5 judge + C6 offline pairing. The bake itself runs under
 #                                   the browser lock (no browser may overlap a bake); refused while a
 #                                   browser, a Docker container or another bake runs.
-#   overlay [w7|w8|all] [--preflight]
+#   overlay [w8|all] [--preflight]
 #                                   S3  C7 overlay for the stock page + pairing (--cmp against the raw
 #                                   bake region). --preflight adds QED64's own read-only preflight
 #                                   (boots a headless browser: takes the browser lock).
-#   headless [all|controls|stage4 [w8|w7|all] [pkg…]|e2 [pkg…]|summary]
+#   headless [all|controls|stage4 [w8|all] [pkg…]|e2 [pkg…]|summary]
 #                                   S4  wasm verification in Node (no browser): controls, E1/E3/E3b, E2.
 #   gallery [--live]            S6  regenerate gallery data only if stale, then the static gate; prints the
 #                                   gallery content sha256 (scripts/lib/gallery-hash.mjs) the result is for,
@@ -66,9 +66,9 @@
 #                                   out/native-build.json, is the target pin's native build: clone, Mathlib and
 #                                   native commits, widget export, no clone-writing build step stamped in the clone
 #                                   after it; else it re-runs,
-#                                   once $W/widgets-src is the target pin's export), stage (the three trees exist
-#                                   and their provenance records match the target pin; else all three are
-#                                   restaged), bake w7/w8 (judge-bake GREEN), overlay w7/w8
+#                                   once $W/widgets-src is the target pin's export), stage (the two trees exist
+#                                   and their provenance records match the target pin; else both are
+#                                   restaged), bake w8 (judge-bake GREEN), overlay w8
 #                                   (index.json exists), headless (out/headless/summary.json for the lock's
 #                                   buildId has gate.stage4Green and gate.E2Green, and no bake/overlay was
 #                                   redone in this run). gallery and ux always run.
@@ -135,8 +135,8 @@ BASE_FAT="${BASE_FAT:-$(pin_field servedTrees.baseFat)}"
 if [ -z "$BASE_FAT" ] && [[ "$(pin_field servedTrees)" != *'"baseFat"'* ]]; then BASE_FAT="${Q:+$Q/work/lib-tree}"; fi
 CORE_SRC="${CORE_SRC:-$(pin_field servedTrees.coreSrc)}"   # the served core lib (exact bytes) for a core delta
 BASE_N="${BASE_N:-$(pin_field servedTrees.baseN)}"                                     # modules in the served region's tree
-ROOTS7="QED64.Essential,ChartKit,ExprXRay,GraphScope,HasseView,IntervalInspector,SimpLens,TreeScope"
-ROOTS8="$ROOTS7,DistLens"
+# one overlay since P2 (2026-11): the widgets8 roots (the 7-root set without DistLens is retired)
+ROOTS8="QED64.Essential,ChartKit,ExprXRay,GraphScope,HasseView,IntervalInspector,SimpLens,TreeScope,DistLens"
 ROOTSFAT="$ROOTS8,LeanWidgetKit"
 
 DRY=0; ARGS=()
@@ -304,7 +304,7 @@ lock_buildid() { node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],
 
 # ---------------------------------------------------------------- subcommands
 # pin: the multiple-pin model (scripts/lib/pins.mjs; docs/REPIN-LOG.md "Multiple pins"). Pins are keyed by QED64 commit
-# (id = first 7 hex digits); one is active (the links QED64.lock.json, out/overlay/snapshots/widgets{7,8},
+# (id = first 7 hex digits); one is active (the links QED64.lock.json, out/overlay/snapshots/widgets8,
 # out/headless, $W/stage1 …). Subcommands:
 #   pin list | current | check <id> [--full]     scripts/pin-switch.mjs (read-only)
 #   pin use <id> [--dry-run] [--no-deploy]        switch the active pin (scripts/pin-switch.mjs use: guards, atomic links,
@@ -468,7 +468,7 @@ check_stage1() {
 # the ACTIVE pin's overlays: each logical store out/overlay/snapshots/<o> (the active link) holds a well-formed index of
 # the active runtime, and the active lock's overlays.<o>.url is the pin's SERVED directory (scripts/lib/pins.mjs overlayUrl:
 # /snapshots/widgets8.<bid16>/, the per-runtime directory)
-check_overlays_cheap() {   # [widgets7|widgets8 …] (default both)
+check_overlays_cheap() {   # [widgets8 …] (default: scripts/lib/pins.mjs OVERLAYS)
   node - "$SC/out/overlay/snapshots" "$(lock_buildid)" "$SC/QED64.lock.json" "$SC/scripts/lib/pins.mjs" "$@" <<'EOF'
 (async () => {
 const fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
@@ -528,7 +528,7 @@ cmd_verify() {
   step stage1 check_stage1 || rc=1
   step overlays check_overlays_cheap || rc=1
   if [ "$deep" = 1 ]; then
-    for n in 7 8; do vstep "pair-overlay-w$n" node "$SC/scripts/pair-check.mjs" "$SC/out/overlay/snapshots/widgets$n" || rc=1; done
+    for n in 8; do vstep "pair-overlay-w$n" node "$SC/scripts/pair-check.mjs" "$SC/out/overlay/snapshots/widgets$n" || rc=1; done
   fi
   vstep gallery-fresh node "$SC/scripts/build-gallery.mjs" --check || rc=1
   [ -n "$untouched" ] && { step untouched bash "$SC/scripts/assert-untouched.sh" check "$untouched" || rc=1; }
@@ -601,8 +601,8 @@ widgets_src_guard() {
   [ -n "$wc" ] || how="node scripts/export-widgets.mjs; the lock records no WIDGETS_COMMIT (a full commit id), so then: pin-qed64.mjs record-widgets-hash"
   guard_fail "\$W/widgets-src is the export ${wh:-<none>}, not the target pin's WIDGETS_SOURCE_HASH ${lh:-<none>} ($lf): export it first ($how)"
 }
-# fat_ready: what `stage fat` needs before it starts; `stage all` checks it before w7, so it cannot refuse at fat after
-# w7/w8 were already replaced
+# fat_ready: what `stage fat` needs before it starts; `stage all` checks it before w8, so it cannot refuse at fat after
+# w8 was already replaced
 fat_ready() {
   [ -n "$BASE_FAT" ] || die "no fat base tree: the target pin's servedTrees.baseFat did not resolve ($(node "$SC/scripts/lib/pins.mjs" field servedTrees.baseFat 2>&1 >/dev/null)), and without that field QED64_REPO's work/lib-tree is the fallback"
   widgets_src_guard
@@ -611,7 +611,7 @@ cmd_stage() {
   local which="${1:-all}" force=""; [ "${2:-}" = --force ] && force=--force
   [ "${1:-}" = --force ] && { which=all; force=--force; }
   no_bake "a bake reads these trees"
-  # The trees ($W/tree-slim-w7/w8, tree-fat, their .EXPECTED-N and $LOGS/stage-trees-*.json) are ONE set shared by every
+  # The trees ($W/tree-slim-w8, tree-fat, their .EXPECTED-N and $LOGS/stage-trees-*.json) are ONE set shared by every
   # pin, not per-runtime stores: staging them for the target pin replaces trees another pin may use (pin 521cf3f's are
   # Lean 4.35, every earlier pin's 4.34; K's w8/fat hold the b81f1b75 widget export, I/J's c2efe78f). stage-trees.mjs
   # records the target's runtime, served base and widget export in <tree>.STAGED.json once every gate passed, and every
@@ -624,19 +624,18 @@ cmd_stage() {
   # --clone: the delta's source oleans come from the clone `native` built (the target pin's MATHLIB_CLONE), never a default
   local st="$SC/scripts/stage-trees.mjs" common=(--core-src "$CORE_SRC" --base-n "$BASE_N" --clone "$MATHLIB_CLONE")
   case "$which" in
-    w7)  must stage-w7 ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_SLIM" --into "$W/tree-slim-w7" --slim --roots "$ROOTS7" "${common[@]}" --report "$LOGS/stage-trees-w7.json" $force ;;
     w8)  must stage-w8 ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_SLIM" --into "$W/tree-slim-w8" --slim --roots "$ROOTS8" "${common[@]}" --report "$LOGS/stage-trees-w8.json" $force ;;
     fat) fat_ready   # the Demo headers (the fat tree's extra roots) come from $W/widgets-src
          local hdrs; hdrs="$(find "$W/widgets-src" -mindepth 3 -maxdepth 3 -name Demo.lean | LC_ALL=C sort | paste -sd, -)"
          must stage-fat ${AWAKE[@]+"${AWAKE[@]}"} node "$st" --base "$BASE_FAT" --into "$W/tree-fat" --fat --roots "$ROOTSFAT" --root-headers "$hdrs" "${common[@]}" --report "$LOGS/stage-trees-fat.json" $force ;;
-    all) fat_ready; cmd_stage w7 $force; cmd_stage w8 $force; cmd_stage fat $force ;;
+    all) fat_ready; cmd_stage w8 $force; cmd_stage fat $force ;;
     *) die "stage: unknown tree '$which'" ;;
   esac
 }
 
 cmd_bake() {
   local which="${1:-all}"
-  case "$which" in w7|w8) ;; all) cmd_bake w7; cmd_bake w8; return ;; *) die "bake: unknown '$which'" ;; esac
+  case "$which" in w8) ;; all) cmd_bake w8; return ;; *) die "bake: unknown '$which'" ;; esac
   bake_preflight                 # fast refusal before queueing for the lock; re-checked inside it
   # the staged tree must be the target pin's (bake.sh checks it again, before it deletes anything): refuse before queueing
   local prov; prov="$(node "$SC/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-$which" 2>&1)" || guard_fail "${prov#REFUSED: }"
@@ -655,10 +654,10 @@ cmd_bake() {
 
 cmd_overlay() {
   local which=all pre=0
-  for a in "$@"; do case "$a" in w7|w8|all) which="$a" ;; --preflight) pre=1 ;; *) die "overlay: unknown arg $a" ;; esac; done
+  for a in "$@"; do case "$a" in w8|all) which="$a" ;; --preflight) pre=1 ;; *) die "overlay: unknown arg $a" ;; esac; done
   if [ "$which" = all ]; then
     local extra=(); [ $pre = 1 ] && extra=(--preflight)
-    cmd_overlay w7 "${extra[@]+"${extra[@]}"}"; cmd_overlay w8 "${extra[@]+"${extra[@]}"}"; return
+    cmd_overlay w8 "${extra[@]+"${extra[@]}"}"; return
   fi
   local n="${which#w}"
   must "make-$which" node "$SC/scripts/make-overlay.mjs" "$which"
@@ -837,9 +836,9 @@ headless_green() {
     }
   ' "$SC/out/headless/summary.json" "$(lock_buildid)"
 }
-# trees_staged: the three staged trees exist and their provenance records (<tree>.STAGED.json) match the target pin; one
+# trees_staged: the two staged trees exist and their provenance records (<tree>.STAGED.json) match the target pin; one
 # OK/REFUSED line per tree (stage-trees.mjs --check-provenance)
-trees_staged() { node "$SC/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-w7" "$W/tree-slim-w8" "$W/tree-fat"; }
+trees_staged() { node "$SC/scripts/stage-trees.mjs" --check-provenance "$W/tree-slim-w8" "$W/tree-fat"; }
 cmd_all() {
   local rebuild=0; [ "${1:-}" = --rebuild ] && rebuild=1
   local redone=0 verify_red=0 fails=()
@@ -855,13 +854,13 @@ cmd_all() {
   local nl="$LOGS/showcase-$LANE_TAG-all-native.log"
   if [ $rebuild = 0 ] && node "$SC/scripts/stage-trees.mjs" --check-native > "$nl" 2>&1; then say "SKIP native: $(head -1 "$nl" | cut -c6-240) (--rebuild to redo)"
   else [ $rebuild = 1 ] || say "native: $(grep -m1 '^REFUSED' "$nl" | cut -c1-240)… (log $nl) — rebuilding it for the target pin"; widgets_src_guard; cmd_native all; fi
-  # stage is skipped only when all three trees exist AND were staged for the target pin (trees_staged): they are shared by
+  # stage is skipped only when both trees exist AND were staged for the target pin (trees_staged): they are shared by
   # every pin, so trees another pin staged are restaged here (`all` is a full build for its target), and no path below
   # reaches cmd_bake (whose bake.sh deletes the bake-out first) with a tree staged for another pin
   local tl="$LOGS/showcase-$LANE_TAG-all-trees.log"
-  if [ $rebuild = 0 ] && trees_staged > "$tl" 2>&1; then say "SKIP stage: tree-slim-w7/w8 and tree-fat were staged for the target pin (their provenance records match; --rebuild to redo)"
-  else [ $rebuild = 1 ] || say "stage: $(grep -m1 '^REFUSED' "$tl" | cut -c1-240)… (log $tl) — restaging all three for the target pin"; cmd_stage all --force; fi
-  for t in w7 w8; do
+  if [ $rebuild = 0 ] && trees_staged > "$tl" 2>&1; then say "SKIP stage: tree-slim-w8 and tree-fat were staged for the target pin (their provenance records match; --rebuild to redo)"
+  else [ $rebuild = 1 ] || say "stage: $(grep -m1 '^REFUSED' "$tl" | cut -c1-240)… (log $tl) — restaging both for the target pin"; cmd_stage all --force; fi
+  for t in w8; do
     if [ $rebuild = 0 ] && node "$SC/scripts/judge-bake.mjs" "$t" > "$LOGS/showcase-$LANE_TAG-all-judge-$t.log" 2>&1; then say "SKIP bake $t: judge-bake $t is GREEN on the existing bake ($(tail -1 "$LOGS/showcase-$LANE_TAG-all-judge-$t.log"))"
     else cmd_bake "$t"; redone=1; fi
     # an overlay is skipped only when its cheap check passes (index schema, {init, mathlib}, runtime == lock, every
@@ -895,7 +894,7 @@ if [ -n "${SHOWCASE_PIN:-}" ]; then
       serve|stop) [ "$PORT" != 5190 ] || refuse "SHOWCASE_PIN=$TGT is a staged pin: serve it on another PORT (5190 serves the active pin $ACT)" ;;
     esac
     case "$SUB" in
-      stage) say "target: staged pin $TGT (runtime $(node "$SC/scripts/lib/pins.mjs" target-bid)): stage REPLACES the trees \$W/tree-slim-w7/w8 and tree-fat, which are shared with the active pin $ACT; their provenance records then name $TGT, so $ACT's bake, judge and headless stage4/e2 lanes refuse until it restages (scripts/showcase.sh stage all --force without SHOWCASE_PIN), unless $ACT shares $TGT's runtime, served base and widget export. Its links are not touched" ;;
+      stage) say "target: staged pin $TGT (runtime $(node "$SC/scripts/lib/pins.mjs" target-bid)): stage REPLACES the trees \$W/tree-slim-w8 and tree-fat, which are shared with the active pin $ACT; their provenance records then name $TGT, so $ACT's bake, judge and headless stage4/e2 lanes refuse until it restages (scripts/showcase.sh stage all --force without SHOWCASE_PIN), unless $ACT shares $TGT's runtime, served base and widget export. Its links are not touched" ;;
       bake|overlay|headless) say "target: staged pin $TGT (runtime $(node "$SC/scripts/lib/pins.mjs" target-bid)), its own stores (the shared staged trees only when their provenance records name its runtime); the active pin $ACT and its links are not touched" ;;
     esac
   fi

@@ -14,23 +14,23 @@
 //                                      git worktree $W/qed64-pins/<id> (scripts/lib/qed64-src.mjs; storePath('qed64'))
 //                release/<id>/         dist/ (QED64's page built from those sources) + public/ (the content-addressed
 //                                      runtime, packs and stock snapshots), each file's sha256 == the lock
-//   per runtime  out/runtimes/<bid>/   overlay/widgets7, overlay/widgets8 (the paired snapshot regions), headless/ (the
+//   per runtime  out/runtimes/<bid>/   overlay/widgets8 (the paired snapshot regions), headless/ (the
 //                                      wasm verifiers' results)
 //                SERVED as             /snapshots/<dir>/ with <dir> = overlayDir(<o>, id) = '<o>.<bid16>' (pin.json schema
 //                                      v3 with "overlayDirs": "per-runtime", e.g. /snapshots/widgets8.f69cca24d0878a58/),
 //                                      so a new runtime's overlays never overwrite the bare directories an older live shell
 //                                      reads (H's, which stay in R2 while H is a rollback target).
-//                                      Stores, links, lock keys, records and the UI keep the logical names widgets7/widgets8;
+//                                      Stores, links, lock keys, records and the UI keep the logical name widgets8;
 //                                      only URLs (the lock's overlays.<o>.url, gallery/pin.json overlays, R2 keys) use <dir>.
-//                $W/runtimes/<bid>/    stage1/ (the runtime artifact), raw/, bake-out-w7|w8/, bake-work-w7|w8/,
-//                                      BAKE-KEY-w7|w8.txt, bake-logs/ (the bake logs judge-bake.mjs reads)
+//                $W/runtimes/<bid>/    stage1/ (the runtime artifact), raw/, bake-out-w8/, bake-work-w8/,
+//                                      BAKE-KEY-w8.txt, bake-logs/ (the bake logs judge-bake.mjs reads)
 //
 // The ACTIVE pin is materialized by symlinks, switched by `scripts/showcase.sh pin use <id>` (scripts/pin-switch.mjs):
 //   SERVE links (always):   QED64.lock.json -> pins/<id>/QED64.lock.json
-//                           out/overlay/snapshots/widgets{7,8} -> ../../runtimes/<bid>/overlay/widgets{7,8}
+//                           out/overlay/snapshots/widgets8 -> ../../runtimes/<bid>/overlay/widgets8
 //   BUILD links (where this checkout BUILT the runtime's stores; a checkout bootstrapped from fetched artifacts has none):
 //                           out/headless -> runtimes/<bid>/headless
-//                           $W/{stage1,raw,bake-out-w7,bake-out-w8,bake-work-w7,bake-work-w8,BAKE-KEY-w7.txt,BAKE-KEY-w8.txt,bake-logs} -> runtimes/<bid>/…
+//                           $W/{stage1,raw,bake-out-w8,bake-work-w8,BAKE-KEY-w8.txt,bake-logs} -> runtimes/<bid>/…
 // and gallery/pin.json is regenerated from the active lock (scripts/build-gallery.mjs). So every existing path keeps
 // working and always names the active pin; the active lock (its qed64.commit) is the single source of truth.
 import fs from 'node:fs';
@@ -52,8 +52,10 @@ export const outRtDir = (bid) => path.join(SC, 'out', 'runtimes', bid);
 export const wRtDir = (bid) => path.join(W, 'runtimes', bid);
 
 // bake-logs: the bake's own log, metrics and RSS samples, which judge-bake.mjs reads (per runtime, like the bake itself)
-export const W_ENTRIES = ['stage1', 'raw', 'bake-out-w7', 'bake-out-w8', 'bake-work-w7', 'bake-work-w8', 'BAKE-KEY-w7.txt', 'BAKE-KEY-w8.txt', 'bake-logs'];
-export const OVERLAYS = ['widgets7', 'widgets8'];
+export const W_ENTRIES = ['stage1', 'raw', 'bake-out-w8', 'bake-work-w8', 'BAKE-KEY-w8.txt', 'bake-logs'];
+// One overlay since P2 (2026-11). The 7-root overlay is retired: O's objects of it stay in R2 while O is a rollback
+// target, but no store, link, lock or gallery names it any more.
+export const OVERLAYS = ['widgets8'];
 
 // ---- the SERVED overlay directories (the naming contract; every serve/deploy/gallery/test path asks these) ----
 // The logical names OVERLAYS stay the names of stores, links, lock keys, records and the UI. The directory a pin's
@@ -85,9 +87,9 @@ export function overlayDirOfDescriptor(o, desc) {
   if (!OVERLAY_DIR_RE.test(dir)) throw new Error(`overlayDir: '${dir}' does not match ${OVERLAY_DIR_RE}`);
   return dir;
 }
-/** The served directory of logical overlay `o` (widgets7|widgets8) for pin `id`: 'widgets8.<bid16>'. */
+/** The served directory of logical overlay `o` (widgets8) for pin `id`: 'widgets8.<bid16>'. */
 export function overlayDir(o, id = targetPinId()) { return overlayDirOfDescriptor(o, pinDescriptor(id)); }
-/** {widgets7: <dir>, widgets8: <dir>} for pin `id`. */
+/** {widgets8: <dir>} for pin `id`. */
 export function overlayDirs(id = targetPinId()) { const d = pinDescriptor(id); return Object.fromEntries(OVERLAYS.map((o) => [o, overlayDirOfDescriptor(o, d)])); }
 /** The served URL prefix of logical overlay `o` for pin `id`: /snapshots/<dir>/ (the lock's overlays.<o>.url). */
 export function overlayUrl(o, id = targetPinId()) { return `/snapshots/${overlayDir(o, id)}/`; }
@@ -149,8 +151,8 @@ export function targetPinId() {
 export const targetBuildId = () => pinDescriptor(targetPinId()).buildId;
 /** true when SHOWCASE_PIN names a pin (then stores are addressed directly, never through the active links) */
 export const targetIsExplicit = () => !!process.env[TARGET_ENV];
-/** A store of the target pin. Per runtime: the W_ENTRIES ('stage1', 'raw', 'bake-out-w7', …, 'bake-logs'), 'headless'
- *  and 'overlay/widgets7|widgets8'; per pin: 'qed64' (QED64's sources at the pin's commit: the submodule deps/qed64 or
+/** A store of the target pin. Per runtime: the W_ENTRIES ('stage1', 'raw', 'bake-out-w8', …, 'bake-logs'), 'headless'
+ *  and 'overlay/widgets8'; per pin: 'qed64' (QED64's sources at the pin's commit: the submodule deps/qed64 or
  *  the pin's worktree, scripts/lib/qed64-src.mjs; throws with a hint when not checked out) and 'lock' (QED64.lock.json).
  *  Without SHOWCASE_PIN: the active link path ($W/stage1, out/headless, out/overlay/snapshots/widgets8 …);
  *  with it: the store path itself. `real: true` resolves links (the store path; for tools that delete-and-recreate). */
@@ -162,7 +164,7 @@ export function storePath(entry, { id = targetPinId(), real = false } = {}) {
   if (entry === 'lock') return viaLink ? path.join(SC, 'QED64.lock.json') : path.join(repoPinDir(id), 'QED64.lock.json');
   if (W_ENTRIES.includes(entry)) return viaLink ? path.join(W, entry) : path.join(wRtDir(bid), entry);
   if (entry === 'headless') return viaLink ? path.join(SC, 'out', 'headless') : path.join(outRtDir(bid), 'headless');
-  const m = /^overlay\/(widgets[78])$/.exec(entry);
+  const m = /^overlay\/(widgets8)$/.exec(entry);
   if (m) return viaLink ? path.join(SC, 'out', 'overlay', 'snapshots', m[1]) : path.join(outRtDir(bid), 'overlay', m[1]);
   throw new Error(`storePath: unknown store '${entry}'`);
 }

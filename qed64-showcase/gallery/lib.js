@@ -5,7 +5,7 @@
 //
 // Facts this mirrors (QED64 at the registered pins, read from the submodule deps/qed64):
 //   * ?snapshots=<dir> fetches /<dir>/index.json and re-roots every entry url that starts with
-//     /snapshots/ to /<dir>/ (lib/qed64-boot.ts:157-178). The gallery names overlays LOGICALLY (widgets8, widgets7;
+//     /snapshots/ to /<dir>/ (lib/qed64-boot.ts:157-178). The gallery names overlays LOGICALLY (widgets8;
 //     ?overlay=, badges, chips, notices) and SERVES them from /snapshots/<served dir>/: gallery/pin.json's `overlays` map
 //     (build-gallery.mjs, from scripts/lib/pins.mjs overlayDirs): '<name>.<bid16>' for every registered pin (schema v3,
 //     e.g. widgets8.f69cca24d0878a58). overlayDirOf / overlayNameOf translate. A failed or malformed override index
@@ -21,7 +21,7 @@
 
 export const SNAPSHOT_SCHEMA = 'qed64.snapshot-index/v1';
 export const REQUIRED_SNAPSHOTS = ['init', 'mathlib'];
-export const DEFAULT_OVERLAYS = ['widgets8', 'widgets7'];
+export const DEFAULT_OVERLAYS = ['widgets8']; // one overlay since P2 (2026-11)
 export const OVERLAY_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 export const MiB = 1048576;
 export const GiB = 1073741824;
@@ -195,11 +195,11 @@ export async function preflightOverlay(o) {
 }
 
 /**
- * Choose the overlay: an explicit ?overlay= is preflighted alone (never falls back); otherwise widgets8,
- * then widgets7. `dirs`: pin.json's overlays map (null: bare names, the lib's own tests). Each candidate is served from overlayDirOf(name, dirs)
+ * Choose the overlay: an explicit ?overlay= is preflighted alone; otherwise the DEFAULT_OVERLAYS (widgets8), one
+ * attempt each (there is nothing to fall back to). `dirs`: pin.json's overlays map (null: bare names, the lib's own tests). Each candidate is served from overlayDirOf(name, dirs)
  * (`?overlay=widgets8` is the alias of the pin's widgets8 directory; any other value a literal directory) and reported by
  * its logical name overlayNameOf(dir, dirs) (an explicit `widgets8.<bid16>` of this pin reads as widgets8).
- * Returns {ok, overlay, dir, result, attempts:[{overlay, dir, ok, result}], fellBack, requested}.
+ * Returns {ok, overlay, dir, result, attempts:[{overlay, dir, ok, result}], requested}.
  */
 export async function chooseOverlay({ requested, dirs = null, buildId, fetch: f, modules, origin = '' }) {
   const list = requested ? [requested] : DEFAULT_OVERLAYS;
@@ -209,11 +209,11 @@ export async function chooseOverlay({ requested, dirs = null, buildId, fetch: f,
     const overlay = overlayNameOf(dir, dirs);
     const result = await preflightOverlay({ overlay, dir, buildId, fetch: f, modules, origin });
     attempts.push({ overlay, dir, ok: result.ok, result });
-    if (result.ok) return { ok: true, overlay, dir, result, attempts, fellBack: attempts.length > 1, requested: requested || null };
+    if (result.ok) return { ok: true, overlay, dir, result, attempts, requested: requested || null };
   }
   // all failed: report the first attempt whose index exists (a real pairing failure beats a plain 404)
   const best = attempts.find((a) => !a.result.notFound) || attempts[0];
-  return { ok: false, overlay: best.overlay, dir: best.dir, result: best.result, attempts, fellBack: false, requested: requested || null };
+  return { ok: false, overlay: best.overlay, dir: best.dir, result: best.result, attempts, requested: requested || null };
 }
 
 /**

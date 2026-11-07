@@ -1,7 +1,7 @@
 {
  "package": "expr-xray",
  "mode": "superset",
- "generatedAt": "2026-10-27T10:22:30.829Z",
+ "generatedAt": "2026-10-27T10:22:47.448Z",
  "generator": "lean/goldens/lsp-golden.mjs",
  "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
@@ -9,10 +9,10 @@
    "import Mathlib",
    "import ExprXRay"
   ],
-  "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
-   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
@@ -35,7 +35,7 @@
  },
  "exampleSha256": "4f95808c4a557f109f5fcfd5602560a837be0d67f2dcecce23cb25f8d2954763",
  "documentSha256": "4f95808c4a557f109f5fcfd5602560a837be0d67f2dcecce23cb25f8d2954763",
- "elaborationMs": 2233,
+ "elaborationMs": 2456,
  "documentDiagnostics": [],
  "cursors": [
   {
@@ -65,7 +65,7 @@
       "sha256": "77405258d1bb34a22686da6261bc5f7380fd7b7727349920046de48f0c485160",
       "importsInfoview": true
      },
-     "rpcMs": 0,
+     "rpcMs": 1,
      "error": null,
      "tagCounts": {
       "code": 103,
@@ -1063,7 +1063,7 @@
       "sha256": "531e7bb65217a938a6ba86afcf7c0574bd3bab3a3d049585472d52afa49a236a",
       "importsInfoview": true
      },
-     "rpcMs": 19,
+     "rpcMs": 16,
      "error": null,
      "tagCounts": {
       "code": 177,
@@ -1690,7 +1690,7 @@
       "sha256": "531e7bb65217a938a6ba86afcf7c0574bd3bab3a3d049585472d52afa49a236a",
       "importsInfoview": true
      },
-     "rpcMs": 13,
+     "rpcMs": 7,
      "error": null,
      "tagCounts": {
       "code": 80,
@@ -2023,7 +2023,7 @@
       "sha256": "531e7bb65217a938a6ba86afcf7c0574bd3bab3a3d049585472d52afa49a236a",
       "importsInfoview": true
      },
-     "rpcMs": 8,
+     "rpcMs": 9,
      "error": null,
      "tagCounts": {
       "code": 55,
@@ -2321,5 +2321,5 @@
  "codeActions": [],
  "ok": true,
  "failures": [],
- "totalMs": 2351
+ "totalMs": 2554
 }

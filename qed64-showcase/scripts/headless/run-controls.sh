@@ -80,7 +80,7 @@ expect1 e-e3-flipped-index "${NODE_TOOL[@]}" "$H/rpc-probe.mjs" --example "$C/ha
 expect1 e-e1-flipped-index "${NODE_TOOL[@]}" "$H/exact-header.mjs" --example "$C/e1-essential.lean" --bake-key "$C/stock-mathlib.BAKE-KEY.txt" \
   --snap "$M/init.snap" --index "$IX" --lib "$W/tree-stock" --snapset mut --out "$W/headless/mut/e1.mut.e1.json"
 expect1 e-e3-golden-html-missing "${NODE_TOOL[@]}" "$H/rpc-probe.mjs" --transport native --native-env w8 --pkg graph-scope \
-  --golden "$SC/lean/expect/w8/graph-scope.json" --golden-html "$M/no-such-html.json" --snapset nohtml --out "$W/headless/mut/graph-scope.nohtml.rpc.json"
+  --golden "$SC/lean/expect/graph-scope.json" --golden-html "$M/no-such-html.json" --snapset nohtml --out "$W/headless/mut/graph-scope.nohtml.rpc.json"
 rm -rf "$M"
 
 echo; fail=0

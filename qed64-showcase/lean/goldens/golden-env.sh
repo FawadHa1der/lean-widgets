@@ -9,16 +9,16 @@
 # (an umbrella over exactly that module list) and putting its directory first
 # on LEAN_PATH, so the unmodified browser text `import Mathlib` resolves to the
 # same module set the browser region holds.
-#   w7 = Essential + ChartKit ExprXRay GraphScope HasseView IntervalInspector SimpLens TreeScope
-#   w8 = w7 + DistLens   (phase 2)
-# Usage: golden-env.sh build        -> builds both umbrellas; both envs' BUILT-FROM stamps are removed before merge_pw
-#                                     (pw-merged is what both compile against), and each env's (the sha256 of the
-#                                     umbrella source it compiled) is written again only once its build succeeded
-#        golden-env.sh check <w7|w8> -> REFUSED (exit 2, naming the rebuild) unless BUILT-FROM is the sha256 of that
+#   w8 = Essential + ChartKit ExprXRay GraphScope HasseView IntervalInspector SimpLens TreeScope DistLens
+#   (the one env since P2, 2026-11: the 7-root env is retired; $W/golden-env/<that env> may still sit beside it, unread)
+# Usage: golden-env.sh build        -> builds the umbrella; its BUILT-FROM stamp is removed before merge_pw
+#                                     (pw-merged is what it compiles against), and written again (the sha256 of the
+#                                     umbrella source it compiled) only once its build succeeded
+#        golden-env.sh check w8     -> REFUSED (exit 2, naming the rebuild) unless BUILT-FROM is the sha256 of that
 #                                     env's source: a build that failed anywhere (merge_pw included) leaves no stamp,
 #                                     and an env built before build wrote stamps has none (rebuild once). Run by
 #                                     lsp-golden.mjs (superset) and, up front, run-all.sh
-#        golden-env.sh path <w7|w8> -> prints LEAN_PATH for that env
+#        golden-env.sh path w8      -> prints LEAN_PATH for that env (any other name: REFUSED, exit 2)
 #        golden-env.sh closure <pkg-dir-name> -> prints the package's own LEAN_PATH (no shadow)
 # build and path refuse (exit 2) unless $TC runs the packages' Lean (need_tc_packages): it loads their .lake oleans.
 set -euo pipefail
@@ -60,15 +60,15 @@ case "${1:-}" in
   build)
     need QED64_KERNEL_BUILD
     need_tc_packages
-    # both stamps go first: merge_pw rewrites the pw-merged tree BOTH envs compile against (and a MISMATCH leaves it
+    # the stamp goes first: merge_pw rewrites the pw-merged tree the env compiles against (and a MISMATCH leaves it
     # half rebuilt), so a build that fails anywhere below leaves no env that `check` passes
-    rm -f "$W/golden-env/w7/BUILT-FROM" "$W/golden-env/w8/BUILT-FROM"
+    rm -f "$W/golden-env/w8/BUILT-FROM"
     merge_pw
-    for env in w7 w8; do
+    for env in w8; do
       mkdir -p "$W/golden-env/$env/src" "$W/golden-env/$env/lib"
       # the umbrella olean goes first too: a build that fails below never leaves an older olean by the rewritten source
       rm -f "$W/golden-env/$env/lib/Mathlib.olean"
-      roots="$ROOTS7"; [ "$env" = w8 ] && roots="$ROOTS7 DistLens"
+      roots="$ROOTS7 DistLens"
       { echo "-- SHADOW umbrella for golden env $env: QED64.Essential module list + package roots"
         sed 's/^/import /' "$ESS"
         for r in $roots; do echo "import $r"; done; } > "$W/golden-env/$env/src/Mathlib.lean"
@@ -85,7 +85,7 @@ case "${1:-}" in
       ( cd "$W/golden-env/$env/src" && sha256_ Mathlib.lean ) > "$W/golden-env/$env/BUILT-FROM"
     done ;;
   check)
-    case "${2:-}" in w7|w8) ;; *) echo "usage: $0 check <w7|w8>" >&2; exit 2 ;; esac
+    case "${2:-}" in w8) ;; *) echo "usage: $0 check w8 (the one golden env since P2)" >&2; exit 2 ;; esac
     d="$W/golden-env/$2"; re="rebuild it with lean/goldens/golden-env.sh build"
     [ -f "$d/src/Mathlib.lean" ] || { echo "REFUSED: $d/src/Mathlib.lean is missing: no golden env $2; $re" >&2; exit 2; }
     [ -f "$d/BUILT-FROM" ] || { echo "REFUSED: $d/BUILT-FROM is missing: no successful golden-env.sh build of this source (or one from before build wrote BUILT-FROM); $re" >&2; exit 2; }
@@ -93,9 +93,12 @@ case "${1:-}" in
     want="$(cd "$d/src" && sha256_ Mathlib.lean)"
     [ "$got" = "${want%% *}" ] || { echo "REFUSED: $d/BUILT-FROM is not the sha256 of $d/src/Mathlib.lean: no successful golden-env.sh build of this source; $re" >&2; exit 2; } ;;
   path)
+    # only w8: a missing or retired env dir would leave just union_path, where `import Mathlib` resolves to the real
+    # Mathlib, so a native run would pass on the wrong environment
+    case "${2:-}" in w8) ;; *) echo "REFUSED: golden-env.sh path ${2:-<none>}: only w8 (the one golden env since P2)" >&2; exit 2 ;; esac
     need_tc_packages
     echo "$W/golden-env/$2/lib:$(union_path)" ;;
   closure)
     ( cd "$WS/$2" && lake env printenv LEAN_PATH ) ;;
-  *) echo "usage: $0 build | check <w7|w8> | path <w7|w8> | closure <pkg>" >&2; exit 2 ;;
+  *) echo "usage: $0 build | check w8 | path w8 | closure <pkg>" >&2; exit 2 ;;
 esac

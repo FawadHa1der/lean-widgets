@@ -8,7 +8,7 @@
 //   gallery/pin.json       the runtime pairing the gallery's JS preflight checks, derived from QED64.lock.json:
 //                          buildId, QED64 commit/promote, Lean version — after checking that the pinned release
 //                          bundle (release/<pin id>/dist/assets/*.js) names exactly that buildId (plan S0.5 #6);
-//                          and `overlays` {widgets7, widgets8: <served dir>} = scripts/lib/pins.mjs overlayDirs(<pin>)
+//                          and `overlays` {widgets8: <served dir>} = scripts/lib/pins.mjs overlayDirs(<pin>)
 //                          ('<name>.<bid16>', the per-runtime directory of a pin/v3), checked against
 //                          the lock's overlays.<o>.url == /snapshots/<dir>/ (no recorded overlays yet: a warning).
 //
@@ -36,7 +36,8 @@ const args = new Set(process.argv.slice(2));
 const CHECK = args.has('--check');
 const STRICT_GOLDENS = args.has('--strict-goldens');
 
-// Display order: phase 1 (bake widgets7) first, in the plan's W1–W7 order; DistLens (phase 2, widgets8) last.
+// Display order: the plan's phase 1 packages first, in its W1–W7 order; DistLens (phase 2) last. One overlay, widgets8,
+// serves all eight since P2 (2026-11).
 const ORDER = ['chart-kit', 'hasse-view', 'interval-inspector', 'simp-lens', 'expr-xray', 'tree-scope', 'graph-scope', 'dist-lens'];
 const PHASE2 = new Set(['dist-lens']); // plan D4
 const THUMB_MAX = 60 * 1024;
@@ -137,8 +138,8 @@ function lineAt(lines, line, character, command, where) {
 
 // ---------- golden-derived panel expectations ----------
 // Every cursor hint must be checkable against a widget panel bound to the hint's own position, not just "something
-// rendered somewhere". The frozen golden (lean/expect/w8/<pkg>.json, else lean/expect/<pkg>.json: the env the default
-// overlay widgets8 serves) records, per cursor, the one panel the native server produced: its widget id, its
+// rendered somewhere". The frozen golden (lean/expect/<pkg>.json: the env the one overlay
+// widgets8 serves) records, per cursor, the one panel the native server produced: its widget id, its
 // "HTML Display" title (static #html-style panels) or none (mk_rpc_widget% panels rendering in the cursor's info
 // block), its svg tag counts and its text leaves. expectPanel carries exactly those, plus up to two text leaves that
 // occur in NO other cursor's panel of the same example, so a leftover panel from a previous cursor cannot satisfy it.
@@ -146,13 +147,13 @@ const DRAW_TAGS = ['svg', 'g', 'rect', 'line', 'circle', 'ellipse', 'polyline', 
 const SHAPE_TAGS = ['rect', 'line', 'circle', 'ellipse', 'polyline', 'polygon', 'path'];
 const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
 function loadGolden(id) {
-  for (const [p, hp] of [[path.join(EXPECT_DIR, 'w8', `${id}.json`), path.join(EXPECT_DIR, 'html', 'w8', `${id}.json`)], [path.join(EXPECT_DIR, `${id}.json`), path.join(EXPECT_DIR, 'html', `${id}.json`)]]) {
+  for (const [p, hp] of [[path.join(EXPECT_DIR, `${id}.json`), path.join(EXPECT_DIR, 'html', `${id}.json`)]]) {
     if (!fs.existsSync(p)) continue;
     const out = { file: path.relative(SC, p), g: readJson(p), vis: new Map(), selVis: new Map(), htmlFile: null };
     // What a card may quote must be what the panel RENDERS by default, not just what its DOM holds: the golden's
     // text leaves include text inside closed <details> (e.g. the X-Ray's "+implicit" rows, SimpLens's "h lands at:"
     // folds), which the user does not see until they expand it (UX suite W4/W5 hiddenCardClaims; bring-up audit 4).
-    // The frozen Html of every panel (lean/expect/html[/w8]/<pkg>.json, written by lean/goldens/lsp-golden.mjs from
+    // The frozen Html of every panel (lean/expect/html/<pkg>.json, written by lean/goldens/lsp-golden.mjs from
     // the same run) tells which leaves are visible: a leaf under a <details> without open=true is hidden unless it
     // sits in that details' own <summary>; display:none / visibility:hidden / hidden hide their subtree.
     if (fs.existsSync(hp)) {
@@ -259,7 +260,7 @@ function claimTexts(specTexts, ep, otherSpecTexts) {
 }
 // ---------- golden-derived selection expectations ----------
 // A select hint's claim must hold only AFTER the shift-click(s): build-gallery checks each spec text against the
-// frozen golden of that exact selection (lean/expect[/w8]/<pkg>.json selections[], the panel the native server
+// frozen golden of that exact selection (lean/expect/<pkg>.json selections[], the panel the native server
 // produced for those selectedLocations) and against the golden of the same position WITHOUT a selection (the cursor
 // entry). Texts are matched like the native harness joins them (leaves concatenated) with all whitespace removed,
 // so a run of leaves ("clean (explicit only)" + "app " + "if n = n then 1 else 0" + " : ℕ" = the x-ray's root row)
@@ -367,7 +368,7 @@ function hintsFor(spec, lines, golden) {
   }
   // 4. hovers inside a panel's InteractiveCode
   // The popup is checked inside the InfoView's hover tooltip (.tooltip .tooltip-code-content), which must be absent
-  // before the hover; its text "<expr> : <type>" comes from the frozen golden hover (lean/expect[/w8]/<pkg>.json
+  // before the hover; its text "<expr> : <type>" comes from the frozen golden hover (lean/expect/<pkg>.json
   // hovers[]: codeText = the panel code element hovered, exprExplicitText, typeText), and the spec's typeText must
   // agree with it.
   for (const h of spec.hovers || []) {

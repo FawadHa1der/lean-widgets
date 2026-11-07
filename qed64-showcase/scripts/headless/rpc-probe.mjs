@@ -27,19 +27,18 @@
 //        --snap <raw.snap> [--snap <raw2.snap> …]   loaded in this order (browser: init, then the umbrella)
 //        --lib <olean tree>  [--artifact <stage1>] [--snapset <label>]
 //        [--expect-mode covered|exact|refused] [--expect-missing A,B]   (default: spec.headless, else covered)
-//        [--golden-env w7|w8]   which frozen native golden set the run is judged against:
-//                               w7 -> lean/expect/<pkg>.json (dist-lens: not in w7 -> usage error)
-//                               w8 -> lean/expect/w8/<pkg>.json (dist-lens: lean/expect/dist-lens.json)
-//                               default: the golden's own environment.golden (w7 for phase-1, w8 dist-lens)
+//        [--golden-env w8]      which frozen native golden set the run is judged against:
+//                               w8 -> lean/expect/<pkg>.json (one overlay, one golden set since P2, 2026-11)
+//                               default: the golden's own environment.golden (w8)
 //        [--golden <expect.json> | --golden none]   explicit golden (overrides --golden-env)
-//        [--golden-html <html.json>]   golden Html dump; default: lean/expect/<sub>/x.json ->
-//                               lean/expect/html/<sub>/x.json, <x>.rpc.json -> <x>.html.json.
+//        [--golden-html <html.json>]   golden Html dump; default: lean/expect/x.json ->
+//                               lean/expect/html/x.json, <x>.rpc.json -> <x>.html.json.
 //                               Missing while the golden has MakeEditLink panels = FAIL (never a skip).
 //        [--index <index.json>]…  pair each --snap's CONTENT with a served .snapz (gunzip + sha256);
 //                               without --index, <snap>.provenance.json (derive-raw.sh) is used;
 //                               unpaired = FAIL unless [--allow-unpaired]
 //        [--transport wasm|native]   native = stock `lean --server` + golden-env LEAN_PATH (control goldens only)
-//        [--native-env w7|w8]  (default: --golden-env, else w7; dist-lens w8)
+//        [--native-env w8]     (default: --golden-env, else w8)
 //        [--timeout-ms 300000]  [--min-free-gb 12]  [--out <json>]
 // exit 0 = every check passed, 1 = some check failed, 2 = usage / setup / boot error.
 import fs from 'node:fs';
@@ -56,7 +55,7 @@ const transport = o.transport ?? 'wasm';
 const example = o.example ? path.resolve(o.example) : o.pkg ? path.join(SC, 'lean/examples', `${o.pkg}.lean`) : null;
 const specPath = o.spec ? path.resolve(o.spec) : example ? example.replace(/\.lean$/, '.json') : null;
 if (!example || (transport === 'wasm' && (!o.snap?.length || !o.lib))) {
-  console.error('usage: rpc-probe.mjs (--pkg <pkg> | --example <f.lean> [--spec f.json]) --snap <raw.snap>… --lib <tree> [--snapset s] [--expect-mode m] [--expect-missing A,B] [--golden-env w7|w8] [--golden f|none] [--golden-html f] [--index index.json]… [--allow-unpaired] [--transport wasm|native] [--native-env w7|w8] [--out f]');
+  console.error('usage: rpc-probe.mjs (--pkg <pkg> | --example <f.lean> [--spec f.json]) --snap <raw.snap>… --lib <tree> [--snapset s] [--expect-mode m] [--expect-missing A,B] [--golden-env w8] [--golden f|none] [--golden-html f] [--index index.json]… [--allow-unpaired] [--transport wasm|native] [--native-env w8] [--out f]');
   process.exit(2);
 }
 const name = o.pkg ?? path.basename(example, '.lean');
@@ -74,19 +73,20 @@ const hs = spec.headless ?? {};
 const expectMode = o['expect-mode'] ?? hs.expectMode ?? 'covered';
 const expectMissing = o['expect-missing'] != null ? o['expect-missing'].split(',').filter(Boolean) : hs.expectMissing ?? [];
 const goldenEnv = o['golden-env'] ?? null;
-if (goldenEnv && !['w7', 'w8'].includes(goldenEnv)) { console.error(`${WHO}: --golden-env must be w7 or w8`); process.exit(2); }
-if (goldenEnv === 'w7' && o.pkg === 'dist-lens') { console.error(`${WHO}: dist-lens has no w7 golden (it exists only in the w8 bake)`); process.exit(2); }
-const defaultGolden = (pkg, env) => (env === 'w8' && pkg !== 'dist-lens') ? path.join(SC, 'lean/expect/w8', `${pkg}.json`) : path.join(SC, 'lean/expect', `${pkg}.json`);
-let goldenPath = o.golden === 'none' ? null : o.golden ? path.resolve(o.golden) : o.pkg ? defaultGolden(o.pkg, goldenEnv) : null;
+if (goldenEnv && goldenEnv !== 'w8') { console.error(`${WHO}: --golden-env must be w8 (one overlay since P2)`); process.exit(2); }
+const defaultGolden = (pkg) => path.join(SC, 'lean/expect', `${pkg}.json`);
+let goldenPath = o.golden === 'none' ? null : o.golden ? path.resolve(o.golden) : o.pkg ? defaultGolden(o.pkg) : null;
 if (goldenPath && !fs.existsSync(goldenPath)) { console.error(`${WHO}: golden ${goldenPath} not found`); process.exit(2); }
-/** Golden Html dump next to a golden: lean/expect/[w8/]x.json -> lean/expect/html/[w8/]x.json; <x>.rpc.json -> <x>.html.json. */
+/** Golden Html dump next to a golden: lean/expect/x.json -> lean/expect/html/x.json; <x>.rpc.json -> <x>.html.json. */
 function goldenHtmlPathFor(g) {
   if (o['golden-html']) return path.resolve(o['golden-html']);
   const EX = path.join(SC, 'lean/expect') + path.sep;
   if (g.startsWith(EX)) return path.join(SC, 'lean/expect/html', g.slice(EX.length));
   return g.replace(/\.rpc\.json$/, '').replace(/\.json$/, '') + '.html.json';
 }
-const nativeEnv = o['native-env'] ?? goldenEnv ?? (o.pkg === 'dist-lens' ? 'w8' : 'w7');
+// default w8: golden-env.sh path does not check that the env exists, so a wrong default could resolve `import Mathlib`
+// to the real Mathlib and pass on the wrong environment (the 7-root env is retired since P2)
+const nativeEnv = o['native-env'] ?? goldenEnv ?? 'w8';
 
 // ---------- text helpers (LSP positions are UTF-16 = JS string units) ----------
 const lineStarts = (t) => { const s = [0]; for (let i = 0; i < t.length; i++) if (t[i] === '\n') s.push(i + 1); return s; };
@@ -577,7 +577,7 @@ if (goldenPath) {
   const allGoldPanels = [...(golden.cursors ?? []), ...(golden.selections ?? [])].flatMap((x) => x.panels ?? []);
   const nMel = allGoldPanels.filter((p) => p.components?.MakeEditLink).length;
   cmpCheck(gh || nMel === 0, `golden Html dump present (${nMel} MakeEditLink panel(s) need it)`, gh ? path.relative(SC, ghPath) : `missing: ${ghPath}`);
-  const gEnv = golden.environment?.golden ?? null; // lsp-golden.mjs goldens record w7|w8; ad-hoc rpc.json goldens record run.goldenEnv
+  const gEnv = golden.environment?.golden ?? null; // lsp-golden.mjs goldens record w8; ad-hoc rpc.json goldens record run.goldenEnv
   const gEnvAny = gEnv ?? golden.run?.goldenEnv ?? null;
   if (goldenEnv) cmpCheck(gEnvAny === goldenEnv, `golden environment == --golden-env ${goldenEnv}`, gEnvAny);
   const bakeTag = [...new Set(snaps.map((s) => /-(w[78])\//.exec(s)?.[1] ?? /widgets([78])\.snap$/.exec(s)?.[1]?.replace(/^/, 'w')).filter(Boolean))];

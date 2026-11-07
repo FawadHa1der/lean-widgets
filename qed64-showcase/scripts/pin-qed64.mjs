@@ -40,7 +40,7 @@
 //                                       (SOURCE-COMMIT.txt), and write hash + WIDGETS_COMMIT into that pin's lock
 //   node scripts/pin-qed64.mjs record-overlays [--pin <id>]
 //                                       write the sha256/bytes of the pin's runtime overlays (out/runtimes/<bid>/overlay/
-//                                       widgets7|widgets8: index.json + both .snapz) into its lock (`overlays`), after
+//                                       widgets8: index.json + both .snapz) into its lock (`overlays`), after
 //                                       the cheap pairing check; the lock is what bootstrap verifies fetched overlays by.
 //                                       Each record's `url` is where the overlay is SERVED, /snapshots/<dir>/ with
 //                                       <dir> = overlayDir(<o>, id) (scripts/lib/pins.mjs): '<o>.<bid16>' for the v3
@@ -707,7 +707,7 @@ async function verify({ allowSkip = false, strictToolchain = false } = {}) {
   ok(dcopies.length > 0 && !dbad.length, `#10 the ${dcopies.length} dist/ copies of tracked public/ files == git show ${QPIN.slice(0, 7)}:public/<f> (incl. dist/workers/lean.worker.js)`, dbad.slice(0, 3).join(', '));
   ok(dcopies.includes('dist/workers/lean.worker.js'), '#10 dist/workers/lean.worker.js is among them');
 
-  // 11. the pin's runtime overlays (served at /snapshots/<dir>/, <dir> = overlayDir(<o>, id): widgets7|8.<bid16>, the v3
+  // 11. the pin's runtime overlays (served at /snapshots/<dir>/, <dir> = overlayDir(<o>, id): widgets8.<bid16>, the v3
   // per-runtime directory) == the lock's `overlays` sha256/bytes; each record names this
   // runtime's store (out/runtimes/<bid>/overlay/<o>) and the served URL overlayUrl(<o>, id)
   const ov = lock.overlays || {};

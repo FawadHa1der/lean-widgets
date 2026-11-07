@@ -7,7 +7,7 @@
 //   J4 raw bytes of <work>/widgets.snap == stock region + k x (.olean bytes of delta+own), k in [0.6, 1.2], the delta
 //      read from $W/logs/stage-trees-<tag>.json, which must be this tree's report (into: the same real path, as
 //      checkProvenance compares it, so an alias of W judges like W; expectedN; no FAIL; else RED, k not computed);
-//      the plan's estimate range (w7 [1.13, 1.30] GB, w8 [1.35, 1.75] GB) is reported as INFO/WARN
+//      the plan's estimate range (w8 [1.35, 1.75] GB) is reported as INFO/WARN
 //   J5 <out>/index.json: exactly {init (verbatim served entry), widgets}; widgets.bytes == raw size,
 //      widgets.imports == BAKE-KEY lines, widgets.runtime == BID, widgets.url names an existing .snapz
 //
@@ -15,7 +15,7 @@
 // target pin (scripts/lib/staged-tree.mjs checkProvenance): the trees are shared by every pin, so another pin's tree would
 // judge this bake against that pin's EXPECTED-N; refused (exit 3), not judged.
 //
-//   node scripts/judge-bake.mjs w7|w8        exit 0 = GREEN, 1 = RED, 3 = REFUSED (the tree is not the target pin's)
+//   node scripts/judge-bake.mjs w8           exit 0 = GREEN, 1 = RED, 3 = REFUSED (the tree is not the target pin's)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,8 +29,8 @@ const PIN = targetPinId();
 const BID = targetBuildId();
 const RELEASE = releaseOf(PIN);
 const tag = process.argv[2];
-const RANGE = { w7: [1.13e9, 1.30e9], w8: [1.35e9, 1.75e9] };
-if (!RANGE[tag]) { console.error('usage: judge-bake.mjs w7|w8'); process.exit(2); }
+const RANGE = { w8: [1.35e9, 1.75e9] }; // one overlay since P2 (2026-11)
+if (!RANGE[tag]) { console.error('usage: judge-bake.mjs w8'); process.exit(2); }
 const n = tag.slice(1);
 const tree = path.join(W, `tree-slim-${tag}`);
 const prov = checkProvenance(tree, { id: PIN });

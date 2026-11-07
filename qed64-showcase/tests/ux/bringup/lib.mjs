@@ -18,7 +18,7 @@ export const LAUNCH_ARGS = ['--enable-features=SharedArrayBuffer']; // tests/exp
 // the served overlay directories (scripts/lib/pins.mjs overlayDir, carried by gallery/pin.json `overlays`: '<name>.<bid16>'
 // on a per-runtime pin, the bare logical name on a pin.json without `overlays`);
 // OVERLAY_W8 is tests/ux/lib/qed64.mjs's OVERLAY_W8. overlayDirOf(<logical name>) maps a name, any other value is kept.
-export const OVERLAY_DIRS = (() => { let o = null; try { o = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'pin.json'), 'utf8')).overlays; } catch { o = null; } return { widgets7: 'widgets7', widgets8: 'widgets8', ...(o || {}) }; })();
+export const OVERLAY_DIRS = (() => { let o = null; try { o = JSON.parse(fs.readFileSync(path.join(process.env.GALLERY_DIR || path.join(SC, 'gallery'), 'pin.json'), 'utf8')).overlays; } catch { o = null; } return { widgets8: 'widgets8', ...(o || {}) }; })();
 export const overlayDirOf = (name) => (Object.prototype.hasOwnProperty.call(OVERLAY_DIRS, name) ? OVERLAY_DIRS[name] : name);
 export const OVERLAY_W8 = OVERLAY_DIRS.widgets8;
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

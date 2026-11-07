@@ -1,7 +1,7 @@
 {
  "package": "hasse-view",
  "mode": "superset",
- "generatedAt": "2026-10-27T10:30:32.829Z",
+ "generatedAt": "2026-10-27T10:32:07.547Z",
  "generator": "lean/goldens/lsp-golden.mjs --click-all",
  "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
@@ -9,10 +9,10 @@
    "import Mathlib",
    "import HasseView"
   ],
-  "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
-   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
@@ -77,11 +77,11 @@
    "classification": "clean",
    "diagnosticsVersion": 2,
    "editedVersion": 2,
-   "reElaborationMs": 574,
+   "reElaborationMs": 566,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "67f4dd46b0222a9147d264f3eedcb468e6831cde321d38dbf4255c18c19c0f67",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link1.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link1.lean"
   },
   {
    "n": 2,
@@ -126,7 +126,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "b14d43ace7098977417a4ab0c13fd4b5bb7cfbb96bf715706073fdb41ea44101",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link2.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link2.lean"
   },
   {
    "n": 3,
@@ -167,11 +167,11 @@
    "classification": "clean",
    "diagnosticsVersion": 4,
    "editedVersion": 4,
-   "reElaborationMs": 519,
+   "reElaborationMs": 523,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "a39319fc7233d3ef1cabb3d0d59e69aeeb70b415fdda67025ac02857a65e8418",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link3.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link3.lean"
   },
   {
    "n": 4,
@@ -212,11 +212,11 @@
    "classification": "clean",
    "diagnosticsVersion": 5,
    "editedVersion": 5,
-   "reElaborationMs": 518,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "15505f040ecca0d6e2dee7852bc43f50878805532496ae7b119df403f49c4d09",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link4.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link4.lean"
   },
   {
    "n": 5,
@@ -257,11 +257,11 @@
    "classification": "clean",
    "diagnosticsVersion": 6,
    "editedVersion": 6,
-   "reElaborationMs": 520,
+   "reElaborationMs": 519,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "547902833d485d505f4132239b57de015ba83a497c6d2e007b024cc97f949db6",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link5.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link5.lean"
   },
   {
    "n": 6,
@@ -302,11 +302,11 @@
    "classification": "clean",
    "diagnosticsVersion": 7,
    "editedVersion": 7,
-   "reElaborationMs": 520,
+   "reElaborationMs": 523,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "709ec832bb9fb6f61bdf1f5af969768630522ead465271e134de32eca2612d11",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link6.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link6.lean"
   },
   {
    "n": 7,
@@ -347,11 +347,11 @@
    "classification": "clean",
    "diagnosticsVersion": 8,
    "editedVersion": 8,
-   "reElaborationMs": 520,
+   "reElaborationMs": 519,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "b76352cf23d3dd63da641114ca368ca3bcfaa3b8f718065223814000f4acbd7a",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link7.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link7.lean"
   },
   {
    "n": 8,
@@ -392,11 +392,11 @@
    "classification": "clean",
    "diagnosticsVersion": 9,
    "editedVersion": 9,
-   "reElaborationMs": 520,
+   "reElaborationMs": 523,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "3bc0ac4fd00a131c6c4fa10cad4a93556171e1aee54b4045760a3e7de9389f8e",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link8.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link8.lean"
   },
   {
    "n": 9,
@@ -437,11 +437,11 @@
    "classification": "clean",
    "diagnosticsVersion": 10,
    "editedVersion": 10,
-   "reElaborationMs": 519,
+   "reElaborationMs": 522,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "1c2ed8c3bc42d8e39a10056c2b1cfa07d58f7265475d3688e970f0600a4edbfa",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link9.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link9.lean"
   },
   {
    "n": 10,
@@ -482,11 +482,11 @@
    "classification": "clean",
    "diagnosticsVersion": 11,
    "editedVersion": 11,
-   "reElaborationMs": 522,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "34ee000d95695b6c522443896698db788a6ed77ecca49b0774654168afd1d585",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link10.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link10.lean"
   },
   {
    "n": 11,
@@ -527,11 +527,11 @@
    "classification": "clean",
    "diagnosticsVersion": 12,
    "editedVersion": 12,
-   "reElaborationMs": 517,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "c1332f09829b5e6034c930f2428dcf560b1810472cb97fd49379299bed00d715",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link11.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link11.lean"
   },
   {
    "n": 12,
@@ -576,7 +576,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "6a80e80bcf0f91998d1e456e1c3303777a50611233882c889d1310743904e140",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link12.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link12.lean"
   },
   {
    "n": 13,
@@ -617,11 +617,11 @@
    "classification": "clean",
    "diagnosticsVersion": 14,
    "editedVersion": 14,
-   "reElaborationMs": 518,
+   "reElaborationMs": 525,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "89fd4edd78cc02d2f26b06a8a9456a02925e684cae29fb19ecafc1aa7b944ad6",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link13.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link13.lean"
   },
   {
    "n": 14,
@@ -662,11 +662,11 @@
    "classification": "clean",
    "diagnosticsVersion": 15,
    "editedVersion": 15,
-   "reElaborationMs": 521,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "9052daeb559b613bbdfc4bbce0a525c216cdb1ac3ac28cc357fcb574780d8a2c",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link14.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link14.lean"
   },
   {
    "n": 15,
@@ -707,11 +707,11 @@
    "classification": "clean",
    "diagnosticsVersion": 16,
    "editedVersion": 16,
-   "reElaborationMs": 549,
+   "reElaborationMs": 563,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "8e73a4e4c19c349c6c2ea8f9f5884b3dfcd31f41f2453fa850851cff0cd9e5d4",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link15.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link15.lean"
   },
   {
    "n": 16,
@@ -752,11 +752,11 @@
    "classification": "clean",
    "diagnosticsVersion": 17,
    "editedVersion": 17,
-   "reElaborationMs": 521,
+   "reElaborationMs": 519,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "0007ec932093efe0a065e2033d806d8fa304e9aea9b3d20b8c319331826de6ff",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link16.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link16.lean"
   },
   {
    "n": 17,
@@ -797,11 +797,11 @@
    "classification": "clean",
    "diagnosticsVersion": 18,
    "editedVersion": 18,
-   "reElaborationMs": 515,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "576ea374b5d541a05c956faaf322e681e5212ed097c354fbaf0365d6591987d7",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link17.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link17.lean"
   },
   {
    "n": 18,
@@ -842,11 +842,11 @@
    "classification": "clean",
    "diagnosticsVersion": 19,
    "editedVersion": 19,
-   "reElaborationMs": 518,
+   "reElaborationMs": 522,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "6d047f37a78a97773f77a0c3fbb1cd40eddc522c5edcaa7e5ca9d03032329f0d",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link18.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link18.lean"
   },
   {
    "n": 19,
@@ -887,11 +887,11 @@
    "classification": "clean",
    "diagnosticsVersion": 20,
    "editedVersion": 20,
-   "reElaborationMs": 518,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "1b73b429b068221ba60e5f4a4ff5cadd7fd5084f316dead020ca64e1b5d7b7a2",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link19.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link19.lean"
   },
   {
    "n": 20,
@@ -936,7 +936,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "2a8bccb978140ac256be46dc946456f6332ca955ff6f1f513702fe7fcad84076",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link20.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link20.lean"
   },
   {
    "n": 21,
@@ -977,11 +977,11 @@
    "classification": "clean",
    "diagnosticsVersion": 22,
    "editedVersion": 22,
-   "reElaborationMs": 522,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "58c3df75631c2b458a702960c7c793b3a86baf1b3c39b6bf8d33c38e8f723496",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link21.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link21.lean"
   },
   {
    "n": 22,
@@ -1022,11 +1022,11 @@
    "classification": "clean",
    "diagnosticsVersion": 23,
    "editedVersion": 23,
-   "reElaborationMs": 521,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "b98ae395b5887bf99c4050e3e75fad6e00855f1036166b92c0832c977d7eae65",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link22.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link22.lean"
   },
   {
    "n": 23,
@@ -1067,11 +1067,11 @@
    "classification": "clean",
    "diagnosticsVersion": 24,
    "editedVersion": 24,
-   "reElaborationMs": 522,
+   "reElaborationMs": 525,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "5163945b6cb24771bd50bfa43bcae3bd0f49638e72baf8fc6460addd331a7fcf",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link23.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link23.lean"
   },
   {
    "n": 24,
@@ -1112,11 +1112,11 @@
    "classification": "clean",
    "diagnosticsVersion": 25,
    "editedVersion": 25,
-   "reElaborationMs": 520,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "0d752d12fe2239af4248bad435270a15d82e97636f8ddfc23d3649f634db115d",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link24.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link24.lean"
   },
   {
    "n": 25,
@@ -1157,11 +1157,11 @@
    "classification": "clean",
    "diagnosticsVersion": 26,
    "editedVersion": 26,
-   "reElaborationMs": 519,
+   "reElaborationMs": 523,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "148847a2bdd66c2e6f805eab4a8ec3031b123c347d8c65e7380af8db081c9405",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link25.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link25.lean"
   },
   {
    "n": 26,
@@ -1202,11 +1202,11 @@
    "classification": "clean",
    "diagnosticsVersion": 27,
    "editedVersion": 27,
-   "reElaborationMs": 521,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "19a2ebd1d730544e9bed68fe34569e05046f0346444bf4f072ab484745150512",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link26.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link26.lean"
   },
   {
    "n": 27,
@@ -1247,11 +1247,11 @@
    "classification": "clean",
    "diagnosticsVersion": 28,
    "editedVersion": 28,
-   "reElaborationMs": 517,
+   "reElaborationMs": 520,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "c5b49e5c8b61bc50ee97ab5e04b6ba598cdd9a440eda0ae569d825dbb6591a94",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link27.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link27.lean"
   },
   {
    "n": 28,
@@ -1292,11 +1292,11 @@
    "classification": "clean",
    "diagnosticsVersion": 29,
    "editedVersion": 29,
-   "reElaborationMs": 520,
+   "reElaborationMs": 525,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "65f1ac771b5293d3323332c2cee9e454d1eb4fa708d574775c755a8283dd8f85",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link28.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link28.lean"
   },
   {
    "n": 29,
@@ -1337,11 +1337,11 @@
    "classification": "clean",
    "diagnosticsVersion": 30,
    "editedVersion": 30,
-   "reElaborationMs": 517,
+   "reElaborationMs": 531,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "eec329eb397dcd488155f6601304c017ae1b001f6282419ce9df7176d968ca1f",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link29.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link29.lean"
   },
   {
    "n": 30,
@@ -1382,11 +1382,11 @@
    "classification": "clean",
    "diagnosticsVersion": 31,
    "editedVersion": 31,
-   "reElaborationMs": 519,
+   "reElaborationMs": 537,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "155aa200a6e46e7189ca1567080127e185f699ca238b4474b9a64fc988487eae",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link30.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link30.lean"
   },
   {
    "n": 31,
@@ -1427,11 +1427,11 @@
    "classification": "clean",
    "diagnosticsVersion": 32,
    "editedVersion": 32,
-   "reElaborationMs": 523,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "e467fdff08c6367efcfd3b80617117f83218a305ce69e3b3bb67c942b71a17bb",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link31.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link31.lean"
   },
   {
    "n": 32,
@@ -1476,7 +1476,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "be9491ee46a2e798ca2a1130fdcd304b7cfbb31e2d60e9d5917859ae5af6b2dd",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link32.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link32.lean"
   },
   {
    "n": 33,
@@ -1517,11 +1517,11 @@
    "classification": "clean",
    "diagnosticsVersion": 34,
    "editedVersion": 34,
-   "reElaborationMs": 529,
+   "reElaborationMs": 530,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "706f5343bb6611b75aa0aac9daffaa6869db5e739f07795547a0a79219600e73",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link33.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link33.lean"
   },
   {
    "n": 34,
@@ -1562,11 +1562,11 @@
    "classification": "clean",
    "diagnosticsVersion": 35,
    "editedVersion": 35,
-   "reElaborationMs": 523,
+   "reElaborationMs": 522,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "7705056d39795de76ab4b0101b003f017ca982e147695d75bb48e8f1d51cb4b7",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link34.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link34.lean"
   },
   {
    "n": 35,
@@ -1607,11 +1607,11 @@
    "classification": "clean",
    "diagnosticsVersion": 36,
    "editedVersion": 36,
-   "reElaborationMs": 521,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "ab22bc16c4a721f2806f0d6fe412f3ef3b9f4a6bd5ba1049a6bf56e3dfe82b3b",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link35.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link35.lean"
   },
   {
    "n": 36,
@@ -1652,11 +1652,11 @@
    "classification": "clean",
    "diagnosticsVersion": 37,
    "editedVersion": 37,
-   "reElaborationMs": 531,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "2addaf8b1429d26a46cd886653101b47afc6e3d026097096891351251626f91a",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link36.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link36.lean"
   },
   {
    "n": 37,
@@ -1701,7 +1701,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "59740586747385d67c060a8cdbeb870bc1151f467c83da37a0e096de59a17ec3",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link37.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link37.lean"
   },
   {
    "n": 38,
@@ -1742,11 +1742,11 @@
    "classification": "clean",
    "diagnosticsVersion": 39,
    "editedVersion": 39,
-   "reElaborationMs": 528,
+   "reElaborationMs": 525,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "828c82d3bd5413c94f0c7035dc657e67b0318021446d7d33dce37b67dc49b9f0",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link38.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link38.lean"
   },
   {
    "n": 39,
@@ -1787,11 +1787,11 @@
    "classification": "clean",
    "diagnosticsVersion": 40,
    "editedVersion": 40,
-   "reElaborationMs": 520,
+   "reElaborationMs": 523,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "10dfbaefd95870e5be22d70a64ea7052383ca961b32544215f74112cf87d1d97",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link39.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link39.lean"
   },
   {
    "n": 40,
@@ -1832,11 +1832,11 @@
    "classification": "clean",
    "diagnosticsVersion": 41,
    "editedVersion": 41,
-   "reElaborationMs": 519,
+   "reElaborationMs": 521,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "3a95db69b39cbf4fcf65e0cdfcc5f99382b4f11fd02bc357d121565fe4e8b893",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link40.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link40.lean"
   },
   {
    "n": 41,
@@ -1877,11 +1877,11 @@
    "classification": "clean",
    "diagnosticsVersion": 42,
    "editedVersion": 42,
-   "reElaborationMs": 518,
+   "reElaborationMs": 529,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "073b9cc758c035ba6bd41f7c6e64df220ef94b24775502b6b7a9197b2031877c",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link41.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link41.lean"
   },
   {
    "n": 42,
@@ -1922,11 +1922,11 @@
    "classification": "clean",
    "diagnosticsVersion": 43,
    "editedVersion": 43,
-   "reElaborationMs": 519,
+   "reElaborationMs": 532,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "72ab305e27391e7c3d9f2b11c24ac47768441068842cdb4b321c1a1ffff85447",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link42.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link42.lean"
   },
   {
    "n": 43,
@@ -1967,11 +1967,11 @@
    "classification": "clean",
    "diagnosticsVersion": 44,
    "editedVersion": 44,
-   "reElaborationMs": 521,
+   "reElaborationMs": 530,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "df4b38ee10ff787c116ce7c3121fd7ce3bbcda4023652f1d4871c29df7723221",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link43.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link43.lean"
   },
   {
    "n": 44,
@@ -2016,7 +2016,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "d785de2c4190d6701ca3a4264e6f449a6a7f3a1b3695cf2c808cc2e4d5dcb12f",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link44.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link44.lean"
   },
   {
    "n": 45,
@@ -2061,7 +2061,7 @@
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "42f65cd5f836940d96ac03a0c150a6f1fe6f1b896fea7d4a076f4a022229fb51",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link45.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link45.lean"
   },
   {
    "n": 46,
@@ -2102,11 +2102,11 @@
    "classification": "clean",
    "diagnosticsVersion": 47,
    "editedVersion": 47,
-   "reElaborationMs": 530,
+   "reElaborationMs": 535,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "37c5a061e8a22ba4b1b598c24d97fa0d2cffd09b838bf77f5f565d1c3345c6fc",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link46.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link46.lean"
   },
   {
    "n": 47,
@@ -2147,11 +2147,11 @@
    "classification": "clean",
    "diagnosticsVersion": 48,
    "editedVersion": 48,
-   "reElaborationMs": 519,
+   "reElaborationMs": 524,
    "errorsWarnings": [],
    "infoCount": 0,
    "editedSha256": "d10f11a680e5869c47f74789fbe42b783443519f07b3a3b3d143c2ba7a0732ef",
-   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-clickall/Showcase.link47.lean"
+   "editedFile": "/Users/fawadhaider/code/qed64-showcase-work/golden-run/hasse-view-superset-w8-clickall/Showcase.link47.lean"
   }
  ],
  "counts": {
@@ -2163,5 +2163,5 @@
  },
  "declaredClicksCovered": "5/5",
  "ok": true,
- "totalMs": 27214
+ "totalMs": 27634
 }

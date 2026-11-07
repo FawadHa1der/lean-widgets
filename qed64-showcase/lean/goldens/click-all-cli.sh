@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # CLI cross-check of the --click-all results: every edited file recorded in
-#   lean/expect/click-all/[<env>/]<pkg>.json   (links[].editedFile)
+#   lean/expect/click-all/<pkg>.json   (links[].editedFile)
 # is compiled with the superset CLI gate (native-gate.sh, plain `lean`, golden-env
 # LEAN_PATH) and must give rc 0 and 0 warnings when the LSP run classified it
 # `clean` (a `designed` link must give rc!=0 or warnings, i.e. agree with LSP).
-#   [GOLDEN_ENV=w7|w8] click-all-cli.sh <pkg>      (parallel: CLICK_ALL_JOBS, default 4)
-# Writes $W/goldens/click-all-cli.<pkg>[.<env>].tsv (n, classification, rc, warnings, agree)
+#   [GOLDEN_ENV=w8] click-all-cli.sh <pkg>      (parallel: CLICK_ALL_JOBS, default 4; w8 is the one env since P2)
+# Writes $W/goldens/click-all-cli.<pkg>.tsv (n, classification, rc, warnings, agree)
 # and exits 1 if any row disagrees.
 set -uo pipefail
 . "$(cd "$(dirname "$0")/../../scripts/lib" && pwd)/env.sh"   # SC, W: scripts/lib/env.sh
 G="$SC/lean/goldens"
 pkg="$1"
-defenv=w7; [ "$pkg" = dist-lens ] && defenv=w8
-env="${GOLDEN_ENV:-$defenv}"
-sub=""; esuf=""; [ "$env" != "$defenv" ] && { sub="$env/"; esuf=".$env"; }
-J="$SC/lean/expect/click-all/$sub$pkg.json"
+env="${GOLDEN_ENV:-w8}"
+[ "$env" = w8 ] || { echo "GOLDEN_ENV=$env: only w8 (one overlay since P2)" >&2; exit 2; }
+esuf=""
+J="$SC/lean/expect/click-all/$pkg.json"
 [ -f "$J" ] || { echo "missing $J" >&2; exit 2; }
 TSV="$W/goldens/click-all-cli.$pkg$esuf.tsv"; : > "$TSV"
 export W G pkg env esuf

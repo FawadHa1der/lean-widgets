@@ -82,7 +82,7 @@
               "Sum of two dice",
               "probability"
             ],
-            "golden": "lean/expect/w8/chart-kit.json"
+            "golden": "lean/expect/chart-kit.json"
           },
           "line": 30,
           "character": 0,
@@ -119,7 +119,7 @@
               "P(sum <= s)",
               "CDF of two dice"
             ],
-            "golden": "lean/expect/w8/chart-kit.json"
+            "golden": "lean/expect/chart-kit.json"
           },
           "line": 35,
           "character": 0,
@@ -156,7 +156,7 @@
               "n^2/10 vs 2^n/10",
               "n^2/10"
             ],
-            "golden": "lean/expect/w8/chart-kit.json"
+            "golden": "lean/expect/chart-kit.json"
           },
           "line": 38,
           "character": 0,
@@ -190,7 +190,7 @@
             "texts": [
               "n^2 mod 11"
             ],
-            "golden": "lean/expect/w8/chart-kit.json"
+            "golden": "lean/expect/chart-kit.json"
           },
           "line": 46,
           "character": 0,
@@ -227,7 +227,7 @@
               "Commits per weekday",
               "commits"
             ],
-            "golden": "lean/expect/w8/chart-kit.json"
+            "golden": "lean/expect/chart-kit.json"
           },
           "line": 57,
           "character": 0,
@@ -330,7 +330,7 @@
               "text": 16
             },
             "texts": [],
-            "golden": "lean/expect/w8/hasse-view.json"
+            "golden": "lean/expect/hasse-view.json"
           },
           "line": 17,
           "character": 0,
@@ -494,7 +494,7 @@
               "poset: 4 elements, 3 cover edges",
               "coatoms: 2"
             ],
-            "golden": "lean/expect/w8/hasse-view.json"
+            "golden": "lean/expect/hasse-view.json"
           },
           "line": 20,
           "character": 0,
@@ -528,7 +528,7 @@
               "poset: 4 elements, 4 cover edges",
               "atoms: (true, false), (false, true)"
             ],
-            "golden": "lean/expect/w8/hasse-view.json"
+            "golden": "lean/expect/hasse-view.json"
           },
           "line": 21,
           "character": 0,
@@ -562,7 +562,7 @@
               "highlight: 0, 7",
               "upset of {0}: {0}, {0, 1}, {0, 2}, {0, 1, 2}"
             ],
-            "golden": "lean/expect/w8/hasse-view.json"
+            "golden": "lean/expect/hasse-view.json"
           },
           "line": 24,
           "character": 0,
@@ -598,7 +598,7 @@
               "poset: 5 elements, 6 cover edges",
               "atoms: 1, 2"
             ],
-            "golden": "lean/expect/w8/hasse-view.json"
+            "golden": "lean/expect/hasse-view.json"
           },
           "line": 31,
           "character": 0,
@@ -722,7 +722,7 @@
               "Ioc 1 2 ∪ Ioc 2 3 = Ioc 1 3",
               "1 ≤ 2 ✓ ready"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 17,
           "character": 0,
@@ -761,7 +761,7 @@
             ],
             "squash": true,
             "picks": 1,
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 51,
           "character": 2,
@@ -874,7 +874,7 @@
               "Icc 0 3 ⊆ Icc 1 2",
               "refine Set.Icc_subset_Icc ?_ ?_"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 20,
           "character": 0,
@@ -912,7 +912,7 @@
               "3 ∈ Icc 1 4",
               "refine Set.mem_Icc.mpr ⟨?_, ?_⟩"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 23,
           "character": 0,
@@ -949,7 +949,7 @@
               "(Ioc 1 2).Nonempty",
               "Nonempty ↔ 1 < 2"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 26,
           "character": 0,
@@ -986,7 +986,7 @@
               "open segments not shaded: no DenselyOrdered instance (they may be empty)",
               "Ico 0 2 ⊆ Icc 0 1"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 29,
           "character": 0,
@@ -1024,7 +1024,7 @@
               "Ioc a b ∪ Ioc b c = Ioc a c",
               "a ≤ b ✓ ready"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 40,
           "character": 2,
@@ -1061,7 +1061,7 @@
               "Ico 0 1 ⊆ Icc 0 1",
               "from set-builder"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 45,
           "character": 2,
@@ -1099,7 +1099,7 @@
               "x ∈ Ioo 0 2",
               "order unknown between x, 0"
             ],
-            "golden": "lean/expect/w8/interval-inspector.json"
+            "golden": "lean/expect/interval-inspector.json"
           },
           "line": 51,
           "character": 2,
@@ -1207,7 +1207,7 @@
               "— 4 rewrites",
               "simp only [add_zero, zero_add]"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 15,
           "character": 0,
@@ -1384,7 +1384,7 @@
             "exprText": "n",
             "typeText": "ℕ",
             "popupText": "n : ℕ",
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 15,
           "character": 0,
@@ -1415,7 +1415,7 @@
               "— 7 rewrites",
               "simp only [List.append_nil, List.map_id_fun, id_eq, List.map_nil]"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 18,
           "character": 0,
@@ -1446,7 +1446,7 @@
               "— 5 rewrites",
               "simp only [add_zero, List.append_nil, and_self]"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 23,
           "character": 2,
@@ -1477,7 +1477,7 @@
               "simp only [add_zero] at h ⊢",
               "at ⊢"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 27,
           "character": 2,
@@ -1508,7 +1508,7 @@
               "simp only [not_true_eq_false] at h",
               "✓ closes the goal"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 31,
           "character": 0,
@@ -1539,7 +1539,7 @@
               "simp only [↓reduceIte]",
               "(+1 side-condition lemma)"
             ],
-            "golden": "lean/expect/w8/simp-lens.json"
+            "golden": "lean/expect/simp-lens.json"
           },
           "line": 34,
           "character": 0,
@@ -1646,7 +1646,7 @@
               ": Decidable (2 = 2)",
               "if 2 = 2 then 1 else 0"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 16,
           "character": 0,
@@ -1684,7 +1684,7 @@
             ],
             "squash": true,
             "picks": 1,
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 39,
           "character": 4,
@@ -1731,7 +1731,7 @@
             ],
             "squash": true,
             "picks": 2,
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 39,
           "character": 4,
@@ -1761,7 +1761,7 @@
               ": {α β : Type} → {γ : outParam Type} → [self : HAdd α β γ] → α…",
               "@HAdd.hAdd"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 20,
           "character": 0,
@@ -1792,7 +1792,7 @@
               ": {R : Type} → [NatCast R] → ℕ → R",
               "↑coe"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 23,
           "character": 0,
@@ -1820,7 +1820,7 @@
               ": ℕ → ℕ",
               "mismatches (2, ranked)"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 29,
           "character": 0,
@@ -1849,7 +1849,7 @@
               "universe levels of PUnit differ: [1] vs [2] (NOT defeq — this blocks rw)",
               ": Type 1"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 32,
           "character": 0,
@@ -1878,7 +1878,7 @@
               "Expr X-Ray 🩻",
               "(if n = n then 1 else 0) = if n = n then 1 else 0"
             ],
-            "golden": "lean/expect/w8/expr-xray.json"
+            "golden": "lean/expect/expr-xray.json"
           },
           "line": 39,
           "character": 4,
@@ -1989,7 +1989,7 @@
               "tree: 4 nodes, depth 4",
               "cons 10"
             ],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 16,
           "character": 0,
@@ -2025,7 +2025,7 @@
               "tree: 9 nodes, depth 4",
               "num 1"
             ],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 26,
           "character": 0,
@@ -2062,7 +2062,7 @@
               "7:\"g\"",
               "tree: 7 nodes, depth 3"
             ],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 31,
           "character": 0,
@@ -2098,7 +2098,7 @@
               "9:\"i\"",
               "bh ⚠"
             ],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 37,
           "character": 0,
@@ -2133,7 +2133,7 @@
               "step 0: init",
               "tree: 1 nodes, depth 1"
             ],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 40,
           "character": 0,
@@ -2162,7 +2162,7 @@
               "text": 23
             },
             "texts": [],
-            "golden": "lean/expect/w8/tree-scope.json"
+            "golden": "lean/expect/tree-scope.json"
           },
           "line": 45,
           "character": 0,
@@ -2271,7 +2271,7 @@
               "graph: 5 vertices, 5 edges",
               "degrees: 2 2 2 2 2 (min 2, max 2)"
             ],
-            "golden": "lean/expect/w8/graph-scope.json"
+            "golden": "lean/expect/graph-scope.json"
           },
           "line": 19,
           "character": 0,
@@ -2410,7 +2410,7 @@
               "graph: 4 vertices, 6 edges",
               "degrees: 3 3 3 3 (min 3, max 3)"
             ],
-            "golden": "lean/expect/w8/graph-scope.json"
+            "golden": "lean/expect/graph-scope.json"
           },
           "line": 22,
           "character": 0,
@@ -2445,7 +2445,7 @@
             "texts": [
               "components: 2 (disconnected)"
             ],
-            "golden": "lean/expect/w8/graph-scope.json"
+            "golden": "lean/expect/graph-scope.json"
           },
           "line": 29,
           "character": 0,
@@ -2480,7 +2480,7 @@
               "graph: 5 vertices, 4 edges",
               "degrees: 1 2 2 2 1 (min 1, max 2)"
             ],
-            "golden": "lean/expect/w8/graph-scope.json"
+            "golden": "lean/expect/graph-scope.json"
           },
           "line": 32,
           "character": 0,
@@ -2513,7 +2513,7 @@
             "texts": [
               "bipartite: yes (parts: {0, 2, 4} / {1, 3, 5})"
             ],
-            "golden": "lean/expect/w8/graph-scope.json"
+            "golden": "lean/expect/graph-scope.json"
           },
           "line": 35,
           "character": 0,

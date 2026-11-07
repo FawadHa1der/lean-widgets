@@ -1,7 +1,7 @@
 // W1–W8 (BUILD-PLAN §8.2 as amended by docs/TEST-PLAN-DELTAS.md §2), lane L-isolated: one warm-profile gallery boot
 // per widget (#<pkg>), then in the REAL InfoView DOM:
 //   * every declared cursor (lean/examples/<pkg>.json cursors[]): the panel's full env-independent signature equals
-//     the frozen golden (lean/expect/w8/<pkg>.json; dist-lens: lean/expect/dist-lens.json);
+//     the frozen golden (lean/expect/<pkg>.json, the widgets8 environment);
 //   * every declared click (MakeEditLink / Try this) by a real mouse click: the document changes by exactly the frozen
 //     edit (and equals the native post-click file, sha256) and re-checks with 0 errors / 0 warnings; Reset restores;
 //   * selections by real shift-clicks (expr-xray 1 and 2 picks, interval-inspector hx): the golden of that selection;

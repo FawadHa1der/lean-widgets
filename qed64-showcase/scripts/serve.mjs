@@ -4,11 +4,11 @@
 // Routes, first match wins:
 //   1. /showcase/...             -> $SC/gallery/...                     (/showcase/ -> index.html)
 //   2. /snapshots/<dir>/...      -> the pin's runtime store out/runtimes/<buildId>/overlay/<o>/ for the pin's SERVED overlay
-//                                   directories <dir> = overlayDir(<o>, pin) of widgets7 and widgets8 (scripts/lib/pins.mjs:
+//                                   directory <dir> = overlayDir(<o>, pin) of widgets8 (scripts/lib/pins.mjs:
 //                                   '<o>.<bid16>', the pin.json v3 "per-runtime" directory; resolved
 //                                   ONCE at start), else $SC/out/overlay/snapshots/<dir>/... (only when that dir exists: the
 //                                   UX suite's own fixture overlays, e.g. ux-unpaired-<pid>). A bare logical name
-//                                   (widgets7, widgets8) is NEVER served through that fixture route: for a per-runtime pin
+//                                   (widgets8) is NEVER served through that fixture route: for a per-runtime pin
 //                                   out/overlay/snapshots/widgets8 is the active link, possibly of another pin, and
 //                                   production serves that path from whatever R2 holds there, so a gallery that still
 //                                   framed /snapshots/widgets8/ would pass locally and fail live. It falls through to

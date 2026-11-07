@@ -5,7 +5,7 @@
 # Target: infra/deploy.env (R2_REMOTE, R2_BUCKET, R2_PREFIX, WORKER_NAME); an environment variable of the same name
 # wins, subject to the shared-bucket guard (scripts/lib/deploy-env.mjs). Other knobs: DEPLOY_OUT (default
 # out/deploy: manifest.json, rclone lists, assets/, published/ release records), MANIFEST_ARGS (extra options for
-# `deploy-manifest.mjs` generate, e.g. "--overlays widgets8 --no-stock-snapshots"),
+# `deploy-manifest.mjs` generate, e.g. "--no-stock-snapshots"),
 # ALLOW_NO_UX_VERDICT=1 (proceed although G2 found no verdict UX run for this gallery + lock + overlays).
 
 die() { echo "$(basename "$0"): $*" >&2; exit 3; }

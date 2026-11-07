@@ -1,7 +1,7 @@
 {
  "package": "chart-kit",
  "mode": "superset",
- "generatedAt": "2026-10-27T10:21:56.642Z",
+ "generatedAt": "2026-10-27T10:22:17.121Z",
  "generator": "lean/goldens/lsp-golden.mjs --click-all",
  "toolchain": "Lean (version 4.35.0, arm64-apple-darwin24.6.0, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
  "environment": {
@@ -9,10 +9,10 @@
    "import Mathlib",
    "import ChartKit"
   ],
-  "golden": "w7",
-  "resolvesTo": "shadow Mathlib umbrella w7 = QED64.Essential (4438) + bake roots",
+  "golden": "w8",
+  "resolvesTo": "shadow Mathlib umbrella w8 = QED64.Essential (4438) + bake roots incl. DistLens",
   "leanPath": [
-   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w7/lib",
+   "/Users/fawadhaider/code/qed64-showcase-work/golden-env/w8/lib",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/chart-kit/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/expr-xray/.lake/build/lib/lean",
    "/Users/fawadhaider/code/lean questions/infoview-widget-research/widgets-v4.34/packages/graph-scope/.lake/build/lib/lean",
@@ -46,5 +46,5 @@
  },
  "declaredClicksCovered": "0/0",
  "ok": true,
- "totalMs": 2536
+ "totalMs": 6473
 }

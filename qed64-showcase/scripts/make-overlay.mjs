@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // make-overlay.mjs — BUILD-PLAN §5 C7: the ?snapshots= overlay the STOCK page boots from.
 //
-//   node scripts/make-overlay.mjs w7|w8     -> out/runtimes/<bid>/overlay/widgets7|widgets8/ (the store; the active
-//                                              pin's link out/overlay/snapshots/widgets7|widgets8 points at it)
+//   node scripts/make-overlay.mjs w8        -> out/runtimes/<bid>/overlay/widgets8/ (the store; the active
+//                                              pin's link out/overlay/snapshots/widgets8 points at it)
 //
-// The store keeps the LOGICAL name widgets7|widgets8; the pin SERVES it as /snapshots/<dir>/ with
+// The store keeps the LOGICAL name widgets8; the pin SERVES it as /snapshots/<dir>/ with
 // <dir> = scripts/lib/pins.mjs overlayDir (widgets8.<bid16>, the per-runtime directory), printed below.
 // index.json has exactly two entries:
 //   init     copied verbatim from the bake-out index (itself the served entry, see bake.sh / judge J5)
@@ -24,7 +24,7 @@ const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { targetPinId, targetBuildId, storePath, overlayUrl } = await import(path.join(SC, 'scripts/lib/pins.mjs'));
 const { cloneFile } = await import(path.join(SC, 'scripts/lib/platform.mjs'));
 const tag = process.argv[2];
-if (!['w7', 'w8'].includes(tag)) { console.error('usage: make-overlay.mjs w7|w8'); process.exit(2); }
+if (tag !== 'w8') { console.error('usage: make-overlay.mjs w8'); process.exit(2); } // one overlay since P2 (2026-11)
 // the TARGET pin's runtime stores (SHOWCASE_PIN=<id>, else the active pin). The destination is the REAL store dir
 // out/runtimes/<buildId>/overlay/widgetsN: removing and recreating the active LINK path out/overlay/snapshots/widgetsN
 // would replace the pin link with a real directory (`pin current` FAIL "real"; found in the pin D lane)
