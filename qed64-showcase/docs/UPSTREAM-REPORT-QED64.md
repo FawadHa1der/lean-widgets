@@ -1,9 +1,10 @@
 # QED64: defects and limitations found while building the widget showcase
 
 > **Note (2026-11-07, P1 and P2).** The showcase now registers only O `521cf3f` (live since 2026-11-05) and N `58ebbad`;
-> pins A–L are retired, their descriptors at the git tag `pins-history-2026-11-07`. P1 deleted the gallery's legacy mode
+> pins A–L are retired, their descriptors at the git tag `pins-history-2026-11-07`, which is the commit `b24587d` on our
+> `main` (`git show b24587d:qed64-showcase/pins/<id>/pin.json` works without the tag). P1 deleted the gallery's legacy mode
 > for the pre-v1 pages, and with it `gallery/qed64-bridge.js`: the bridge left the tree and is at that tag
-> (`git show pins-history-2026-11-07:qed64-showcase/gallery/qed64-bridge.js`). `tests/experiments/x4-click-paths.mjs` is
+> (`git show pins-history-2026-11-07:qed64-showcase/gallery/qed64-bridge.js`, or `b24587d:` in place of the tag). `tests/experiments/x4-click-paths.mjs` is
 > now raw only and exits non-zero if D1 or D2 reproduces on the page; it stays for your C17 and X4 request after D16. The
 > sections below are the record as written; where they say the showcase "keeps" or "ships" the bridge, that was true
 > until P1. P2 dropped the `widgets7` overlay.

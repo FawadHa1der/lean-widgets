@@ -215,7 +215,8 @@ API only. `gallery/pin.json` `apiRevision`, which `scripts/build-gallery.mjs` re
 (2026-11-07)** the pre-v1 pins A–E ran the gallery in a **legacy mode** on QED64 internals (`contentWindow.qed64`,
 `qed64.editor`, `relay` taps, `qed64.ui` wraps, the `qed64.buffer` seed, `relay.makeSession` for `?mem`, and
 `gallery/qed64-bridge.js` for D1–D3), and `serve.mjs` sent `X-Showcase-Api` so the gallery could follow a staged pin's
-release; P1 deleted all of it (the table's legacy column is in git history at the tag `pins-history-2026-11-07`).
+release; P1 deleted all of it (the table's legacy column is in git history at the tag `pins-history-2026-11-07`, the commit
+`b24587d`; a retired pin's descriptor reads without the tag as `git show b24587d:qed64-showcase/pins/<id>/pin.json`).
 [QED64-EMBEDDING-V1-REVIEW.md](QED64-EMBEDDING-V1-REVIEW.md) maps each row to the v1 draft (2026-10-04) and, in its
 "Adoption" section, to what F's API became (G's and H's API keeps revision `1.0.0`; `e4cffcc` adds the `?edithold=<n>` boot parameter to §4, a note that a `telemetry` reply may follow a `status` event, and the back-pressure and local cancel replies to §7.8); the "Review rows" column refers to
 its table. The gallery's side of v1 is described in gallery/README.md "Embedding API v1".

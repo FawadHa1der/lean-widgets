@@ -1,10 +1,18 @@
 # Deploying the showcase to Cloudflare, the lean4game way
 
 > **Status: DEPLOYED 2026-10-05** at https://qed64-showcase.fawadworkaddress.workers.dev (see "First deploy — record" below). Before that date the kit was only rehearsed locally.
+>
+> **Now (2026-11-07):** pin O is live (Worker version `476d6c11`, deployed 2026-11-05 from `b24587d`, record
+> `20261105T200927Z`). P1 and P2 (local branch `p1-p2`, not pushed) are re-gated, with the verdict `p12r-full2` committed
+> in `fb3174a`, and rehearsed (CI mirror, rehearsal state and 8 deploy scenarios all OK on `8362a6f`; rehearsed again
+> on `fb3174a`, result in docs/REPIN-LOG.md "P1 and P2").
+> Their deploy is the owner's `git push origin p1-p2:main`: one push, no upload ([first deploy checklist](#first-deploy-checklist)).
+> Rollback targets: O (`476d6c11`, record `20261105T200927Z`) and H (`29176b6f`, record `20261005T152953Z`), section 5.
+>
 > Every script and command below was run against local fakes (an rclone `local` remote, a local S3 endpoint and
 > `wrangler dev --local`) or as a dry run, inside a macOS sandbox that blocks all outbound traffic except to localhost.
 > See [Rehearsal](#rehearsal). The GitHub Actions deploy (`.github/workflows/qed64-deploy.yml`, section 9) last ran on
-> GitHub for pin H (the push of `d60b15e`, 2026-10-08); its job was also run on this machine in fresh clones by
+> GitHub for pin O (the push of `b24587d`, 2026-11-05; before that for pin H, the push of `d60b15e`, 2026-10-08); its job was also run on this machine in fresh clones by
 > `ci/rehearse-deploy.sh` ([CI rehearsal](#ci-rehearsal)). **Start with the [first deploy checklist](#first-deploy-checklist).** Two kinds of
 > command were not run here:
 > * commands marked **[account]**, which need your Cloudflare login or R2 token;
@@ -16,8 +24,8 @@
 > deploy code at that commit: the Worker reads the runtime and the packs from the toolchain release, the upload is 12
 > objects, 1.107 GB at pin O (9 objects, 0.745 GB from P2 on, with one overlay), and `deploy-app.sh` checks each new
 > version on its preview URL before it takes traffic. O was deployed with it on 2026-11-05 (section 6); H, on the Worker
-> from before that commit, is the rollback target (section 5). P1 and P2 (local branch `p1-p2`, not pushed) retire the
-> pins A–L and the widgets7 overlay; nothing in this guide's deploy path changes for O. Both rehearsals of this code passed, 2026-11-02 to
+> from before that commit, is the rollback target (section 5). P1 and P2 (local branch `p1-p2`, re-gated 2026-11-07,
+> not pushed) retire the pins A–L and the widgets7 overlay; nothing in this guide's deploy path changes for O. Both rehearsals of this code passed, 2026-11-02 to
 > 11-04: [Rehearsal](#rehearsal) and [CI rehearsal](#ci-rehearsal) have the results. The other dated records in this file
 > are from before that commit.
 >
@@ -179,9 +187,18 @@ repository's settings; nothing else contacts Cloudflare. Run the commands in `qe
 has the artifacts (`release/<pin>/public/`, `out/overlay/snapshots/`), i.e. the machine that baked them.
 
 The Worker `qed64-showcase` and its repository secrets already exist (H went live through a `qed64-deploy` run on
-2026-10-08), so deploying O over H needs only step 2, step 3, the Preview URLs of step 6, the push
-(`git push origin release-routing:main`, not step 1's command, while the local `main` is behind that branch) and step 8.
-docs/NEXT-STEPS.md gives the order. The other steps are for a new account or a new Worker.
+2026-10-08). *The record of O's deploy (2026-11-05, done):* deploying O over H needed only step 2, step 3, the Preview
+URLs of step 6, the push (`git push origin release-routing:main`, not step 1's command, while the local `main` was behind
+that branch) and step 8; docs/NEXT-STEPS.md has that order.
+
+**This deploy (P1 and P2 over O):** the push only, `git push origin p1-p2:main`, then step 8. No upload: the 9 objects,
+0.745 GB, are O's and already in the bucket, and `deploy-manifest --check` G2 names the verdict run `p12r-full2`
+(committed in `fb3174a`). The tag `pins-history-2026-11-07` need not be pushed (pushing it starts a `lean-ci` run on
+`b24587d`, which goes red because the lockfifo fix `470dda3` comes after it; nothing reads the tag). A local deploy with
+`scripts/deploy-app.sh` instead needs `scripts/upload-artifacts.sh` first (0 B transferred, a new 9-key record that
+`deploy-app.sh` checks), and after that a rollback to O first runs
+`scripts/rollback-artifacts.sh out/deploy/published/20261105T200927Z` (section 5). The other steps are for a new account
+or a new Worker.
 
 1. **Push the repository** (`git push origin main`, plus `git push origin lean-v4.32.2` for the v4.32.2 tag).
    `lean-ci` runs; `qed64-deploy` runs and logs `CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skipping
@@ -638,7 +655,8 @@ immutable object of that record is gone, which is why O's objects, its `widgets7
 **Rollback from O to H.** H `bf9d947` (runtime `wasm64-3ab1c6a9da03bc29`) has no release routing: QED64 `391a075`, which
 gave `createWorker` its `release` option, is in every pin from I on and not in H, and `deploy-manifest` refuses to
 generate a manifest for a pin before `385a1ac`. So H comes back only as its own record and its own Worker version. It
-needs no descriptor: H's `pins/bf9d947/` was retired in P1 (it is at the tag `pins-history-2026-11-07`), and
+needs no descriptor: H's `pins/bf9d947/` was retired in P1 (it is at the tag `pins-history-2026-11-07`, the commit
+`b24587d`: `git show b24587d:qed64-showcase/pins/bf9d947/pin.json`), and
 `rollback-artifacts.sh` reads only the record and the deploy env (`scripts/lib/deploy-env.mjs`, `deploy-common.sh`).
 Working on H's own harness means a worktree at `d60b15e`, since HEAD refuses its v2 descriptor:
 ```

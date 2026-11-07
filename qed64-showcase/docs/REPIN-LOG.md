@@ -2331,26 +2331,34 @@ test's PIPE case, because GitHub's Linux runner starts a step with SIGPIPE ignor
 1. Still open with the owner: whether the browser lanes' memory floor may go below 16 GiB. The machine sat at 6.2-12.8 GiB
    free for most of this run.
 2. Then P1+P2 in one re-gate (`$W/reports/p1-p2-plan-2026-11-02.md`, with the amendments from the audit), then the re-pin.
+   The re-gate is done (2026-11-07, verdict `p12r-full2`, next section); the push and the re-pin remain.
 
 ### P2 locks (2026-11-07, branch `p1-p2`, not pushed)
 
-P2 drops the widgets7 overlay. `pin-qed64.mjs record-overlays` rewrote both kept locks, `pins/521cf3f/` (O) and
-`pins/58ebbad/` (N): each lost only its `overlays.widgets7` block (the widgets8 record is byte-identical). N's recorded
-verdicts (`n-full1`, `n-full2`, `n-headed1`) and O's (`o-full1`, `o-full2`, `o-headed4`) name the old lock sha, so
-`scripts/showcase.sh pin list` now shows 0 verdicts for both until the P1+P2 re-gate. Any deploy of N needs a new gate
-anyway. O's `widgets7.<bid16>/` objects stay in R2 while O is a rollback target. The P1+P2 entry is the next section;
-its re-gate results will be added there.
+P2 drops the widgets7 overlay. `pin-qed64.mjs record-overlays` rewrote both kept locks, `pins/521cf3f/` (O, now sha256
+`df7cf00e…`) and `pins/58ebbad/` (N): each lost only its `overlays.widgets7` block (the widgets8 record is
+byte-identical). So N's recorded verdicts (`n-full1`, `n-full2`, `n-headed1`) no longer match N's lock, and nothing
+re-gated N: `scripts/showcase.sh pin list` shows 0 verdicts for N, and any deploy of N needs a new gate anyway. O's old
+verdicts (`o-full1`, `o-full2`, `o-headed4`) name the old lock sha too; O's verdicts on the new lock are the P1+P2
+re-gate's (`p12-full1`, `p12-full2`, then `p12r-full1`, `p12r-full2`; next section). O's `widgets7.<bid16>/` objects stay
+in R2 while O is a rollback target.
 
-## 2026-11-07: P1 and P2 — pins A–L retired, the legacy mode deleted, one overlay (branch `p1-p2`, not pushed; re-gate pending)
+## 2026-11-07: P1 and P2 — pins A–L retired, the legacy mode deleted, one overlay (branch `p1-p2`; re-gated, verdict `p12r-full2` in `fb3174a`; not pushed)
 
 The plan is `$W/reports/p1-p2-plan-2026-11-02.md` (approved by the owner 2026-11-01, with the amendments from the
 fd95a2a audit and the ux-parity review). The work is on the local branch `p1-p2`, from `c7b7e49` (release-routing: `b24587d`, the commit O was
-deployed from and `origin/main`, plus 470dda3 and c7b7e49, unpushed, so the owner's push carries them too), in the commits "P1 C1" to "P1 C10" and "P2". Nothing is pushed; the push is the owner's, after the
-re-gate (the plan's section 6) has recorded a verdict on the final gallery, lock and overlays.
+deployed from and `origin/main`, plus 470dda3 and c7b7e49, unpushed, so the owner's push carries them too), in the commits "P1 C1" to "P1 C10" and "P2"
+(with `26af108` between C5 and C6: `showcase.sh verify` lists the deploy tests' fake runtime id as a sentinel site), then
+`94496e5` (the Simp Lens hint chip reads "click"), the first verdict commit `8362a6f`, the halt-adoption fix `8046cc3`,
+the verdict commit `fb3174a` (below, "The re-gate") and the docs-only commits after it. Nothing is pushed; the push is
+the owner's (below, "Not done").
 
 **The tag.** `pins-history-2026-11-07` is an annotated tag on `b24587d` ("All 14 pin descriptors before P1"), made locally
 before the first commit. Every descriptor and lock of the 14 pins is there. `b24587d` is on `origin/main`, so nothing
-depends on the tag being pushed; pushing it is the owner's choice.
+depends on the tag: every command below that names it works with `b24587d` instead, for example
+`git show b24587d:qed64-showcase/pins/<id>/pin.json`. Pushing the tag is optional, and it has a side effect: `lean-ci`
+runs on every push, tags included, so it would start a run on `b24587d`, which goes red in qed64-static because the
+lockfifo fix `470dda3` comes after it. Nothing reads the tag.
 
 **What retired.**
 - **Pins (P1 C2):** A `1859b83`, B `9fdf9b8`, C `5ac5d00`, D `3b42714`, E `33b0967`, F `84d594e`, G `5c327c2`,
@@ -2362,7 +2370,7 @@ depends on the tag being pushed; pushing it is the owner's choice.
   gallery's own liveness probe, the `?mem` session wrap, `X-Showcase-Api`), `gallery/qed64-bridge.js` and
   `gallery/x3.html`. `editorRpc` is now a required capability. The test API is version 10. Two additions from the
   ux-parity review went into the same commit: a halt after QED64 served during the first boot is adopted once QED64 is
-  ready (`haltedAfterServe`, sim run 19 (h)), and the Simp Lens popup hint is a click (card text, W4 `checkHover`,
+  ready (`haltedAfterServe`, sim run 19 (h); since `8046cc3` any halt during a boot, below), and the Simp Lens popup hint is a click (card text, W4 `checkHover`,
   `hints.mjs`, fault `no-click`). The sim (C1, C5) and the UX suite (C7) are V1 only.
 - **Tools (P1 C4):** `tests/experiments/x1-preflight.mjs`, `x2-rehearsal.mjs`, `x3-gallery-skeleton.mjs`,
   `x5-memory-knob.mjs`, `x4-debug.mjs`; `scripts/headless/hang-repro.mjs`; `tests/ux/bringup/consoleprobe.mjs`,
@@ -2375,19 +2383,19 @@ depends on the tag being pushed; pushing it is the owner's choice.
   objects, 0.745 GB; for this deploy nothing needs uploading, since O's upload put all 9 in the bucket.
 
 **How to read a retired pin.** `git show pins-history-2026-11-07:qed64-showcase/pins/<id>/pin.json` (and
-`…/QED64.lock.json`). To work on one (switch to it, stage it, run its gates), make a worktree at the tag; for H's own
+`…/QED64.lock.json`), or without the tag `git show b24587d:qed64-showcase/pins/<id>/pin.json`. To work on one (switch to it, stage it, run its gates), make a worktree at the tag (or at `b24587d`); for H's own
 harness use `d60b15e`, the commit it was deployed from. HEAD refuses a v2 descriptor, and `pin use`, `pin check`,
 `SHOWCASE_PIN=<id>` and `pin-qed64.mjs verify --pin <id>` at HEAD know only O and N.
 
 **N's lock.** P2's `record-overlays` removed the `widgets7` block from both kept locks (the widgets8 record is
 byte-identical; "P2 locks" above). N's recorded verdicts (`n-full1`, `n-full2`, `n-headed1`) therefore no longer match
-its lock, and neither do O's (`o-full1`, `o-full2`, `o-headed4`): `pin list` shows 0 for both until the re-gate. Any
-deploy of N needs a new gate anyway. The alternative, relaxing #11 and `fetch-artifacts.mjs` to tolerate an unknown
+its lock, and nothing re-gated N, so `pin list` shows 0 for N. O's old verdicts (`o-full1`, `o-full2`, `o-headed4`) do not
+match O's new lock either; the re-gate below recorded O's verdicts on it. Any deploy of N needs a new gate anyway. The alternative, relaxing #11 and `fetch-artifacts.mjs` to tolerate an unknown
 overlay key, was not taken.
 
 **Commands in this log that name a retired pin** (`pin use 5ac5d00`, `pin check bf9d947`, `SHOWCASE_PIN=385a1ac …`,
 `pin-qed64.mjs verify --pin …`, the storm harnesses with per-pin servers) no longer run at HEAD. Run them from a worktree
-at the tag, or, for a script that takes `OLD_REF` (`ci/rehearse-deploy.sh old-shell`), with `OLD_REF` set to the commit
+at the tag (or at `b24587d`, the same commit), or, for a script that takes `OLD_REF` (`ci/rehearse-deploy.sh old-shell`), with `OLD_REF` set to the commit
 the old shell was deployed from (`d60b15e` for H, `b24587d` for O) or to the tag.
 
 **Unchanged on purpose** (the plan's section 3): `pins/521cf3f/` and `pins/58ebbad/` (K4 reads them),
@@ -2398,10 +2406,82 @@ from `b24587d` through 470dda3, not through P1/P2), H's record
 and O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` becomes a rollback target with the next deploy
 (docs/DEPLOY-CLOUDFLARE.md sections 5 and 6).
 
+### The re-gate (2026-11-07)
+
+The plan's section 6, rows 1-16, run as detached chains under `$W/pinP12/` with the owner's floors (browser lanes 16 GiB,
+headless 12 GiB), lane `pinP12`, pin O active. Chain log `$W/logs/pinP12-chain.log`; each step's log is
+`$W/logs/p12-<step>.log` (pass 1) or `$W/logs/p12r-<step>.log` (pass 2).
+
+**Pass 1, on `94496e5`, gallery `9791de27…`, lock `df7cf00e…`, overlay `widgets8`** (`chainP12a.sh`, 17:21Z-19:34Z; its
+first start stopped at `verify` because Docker was not running, and it restarted, pid 77611, with `QED64_KERNEL_BUILD`
+unset). Rows 1-13 all green:
+- Row 1: `showcase.sh verify` all checks OK; N's `pin-qed64.mjs verify --pin 58ebbad` VERIFY OK (1 DRIFT in a rebuild-only
+  input, 2 N/A on #7: the native toolchain without `QED64_KERNEL_BUILD`, and `$W/widgets-src`, which holds O's export);
+  `pin-switch.mjs check 58ebbad --full` PIN CHECK OK.
+- Row 2 (G1): gate GREEN, `CHECK-GALLERY OK 139 ok`, `SIM-GALLERY OK 191 ok`.
+- Rows 3-5: `CONTROLS PASS`; stage4 w8 0 failing steps; the summary with `stage4Green` and `E2Green` (E2 7/8, L1).
+- Row 6: the click-all CLI on w8 for dist-lens, graph-scope, hasse-view, interval-inspector and simp-lens, then the
+  summary: `CLICK-ALL GATE: PASS`, 135 links, broken 0 (`lean/expect/click-all/summary.json`, now w8 only, in `8362a6f`).
+- Row 7: X4 raw `pass=true`; `widgets.mjs` `WIDGETS OK 8/8`; `hints.mjs --only simp-lens` (the new click-and-close)
+  `HINTS OK 13/13`, and its `--fault no-click` run `HINTS FAIL 12/13`, rc 1, as it must.
+- Row 8: the v1 smoke 22/22.
+- Row 9: `p12-full1` and `p12-full2`, VERDICT, 34 passed and 1 skipped each.
+- Row 10: C20 ×3 (`p12-c20-1..3`), each 1 passed (all 135 rendered links).
+- Row 11: the headed sign-off `p12-headed1`, 35 passed, HEADED SIGN-OFF.
+- Row 12: the 10 Mbit/s first visit, `RESULT PASS`: ready at 513.9 s, error card in 0 samples.
+- Row 13: `deploy-manifest --check` OK, G2 names `p12-full2`; 9 R2 objects, 0.745 GB, to upload (all already in the
+  bucket from O's upload); `--record-verdict`, committed as `8362a6f`.
+
+Then rows 14-16 on `8362a6f` (`chainP12b.sh`, 19:34Z-20:09Z), all OK: the qed64-static CI mirror (job `success`,
+`$W/pinP12/ci-verdict-8362a6f`), `rehearse.sh upload-dry upload rollback load` in `$W/deploy-rehearsal-P12` (`LOAD-R2 OK`,
+90 objects; the rollback restored the overlay index byte-identical and refused each of its negative controls), and
+`ci/rehearse-deploy.sh` with its 8 scenarios but old-shell (`REHEARSE-DEPLOY OK: skip dry-run unpublished no-preview
+deploy no-origin no-verdict tamper`). Logs `$W/logs/p12-ci-local.log`, `p12-rh-state.log`, `p12-rehearse-deploy.log`
+(the rerun on `fb3174a` below writes the same names).
+
+**The halt fix.** A cross-commit review then found that C6 armed the late adoption only after a halt while QED64's status
+read boot done and not failed, which at O holds only once QED64's 30 s check fallback has fired. A halt before that
+(three deaths within 120 s, often within 30 s of the first serve) left the gallery in its error state even after the
+fallback made the page editable and the visitor's edit let QED64 reach ready. `8046cc3` arms the late adoption for every
+halt during a boot (`gallery.js` `isHalt`, in place of `haltedAfterServe`); `lateBootCheck` still adopts only when the same
+page document reports ready with its relay serving, so a page that never recovers keeps the card. Sim run 19 (h2) covers
+the early halt (the card stays while the page is halted, then the page is adopted) and fails with the old rule. The
+gallery became `65e7e14b…`; lock and overlay unchanged.
+
+**Pass 2, on `8046cc3`, gallery `65e7e14b…`** (`chainP12c.sh`, 19:57Z-21:38Z). Rows 1-2 and 8-13 again; rows 3-7 stand
+from pass 1. Rows 3-6 and row 7's X4 raw (the stock page) do not load the gallery. Row 7's `widgets.mjs` and both
+`hints.mjs` runs do (on gallery `9791de27…`, which still had the old rule), but `8046cc3` changes only what follows a halt
+during a boot, and none of the three halted: each loaded the gallery once and booted to ready in about 8 s, then gave
+`WIDGETS OK 8/8`, `HINTS OK 13/13` and, with `--fault no-click`, `HINTS FAIL 12/13` as it must. All green:
+- Row 1: verify all checks OK; N's verify VERIFY OK (the same 1 DRIFT and 2 N/A); N's full check PIN CHECK OK.
+- Row 2 (G1): gate GREEN, `CHECK-GALLERY OK 139 ok`, `SIM-GALLERY OK 193 ok` (run 19 (h2)'s new checks).
+- Row 8: the v1 smoke 22/22.
+- Row 9: `p12r-full1` and `p12r-full2`, VERDICT, 34 passed and 1 skipped each.
+- Row 10: C20 ×3 (`p12r-c20-1..3`), each 1 passed.
+- Row 11: `p12r-headed1`, 35 passed, HEADED SIGN-OFF.
+- Row 12: the 10 Mbit/s first visit, `RESULT PASS`: ready at 513.9 s, error card in 0 samples.
+- Row 13: `deploy-manifest --check` OK, G2 names `p12r-full2` on this gallery; the same 9 objects, 0.745 GB, already in the
+  bucket; `--record-verdict`.
+
+**The verdict** is `fb3174a`: `infra/ux-verdict.json` names run `p12r-full2` (end 2026-11-07T20:36:22Z, lane `pinP12`,
+pin `521cf3f`) on gallery `65e7e14b…`, lock `df7cf00e…`, overlay `widgets8` `a57cde34…`.
+
+**Rows 14-16 on `fb3174a`** (the CI mirror, the rehearsal state in `$W/deploy-rehearsal-P12-fb3174a`, the deploy
+rehearsal with the same 8 scenarios): rehearsed on `fb3174a`.
+RESULT-PENDING: rows 14-16 on fb3174a.
+
 ### Not done (P1 and P2, 2026-11-07)
 
-1. The re-gate (the plan's section 6) on the final gallery: static, G1, controls, stage4 w8, the click-all CLI on w8, X4
-   raw and `widgets.mjs` without `--thumbs`, the smoke, two full `ux` VERDICTs, C20 ×3, the headed sign-off, the 10 Mbit/s
-   first visit, the manifest and the verdict commit, the CI mirror, the deploy rehearsal.
-2. The owner's push of the branch to `main` (one push; no upload), then the smoke on the live URL.
-3. After the smoke: trash the w7 stores and the retired pins' stores (docs/HOUSEKEEPING.md section 0).
+1. The owner's push: `git push origin p1-p2:main`, one push. Its tip is `fb3174a` plus docs-only commits (`*.md`), so the
+   tip's `infra/ux-verdict.json` still names `p12r-full2` on the same gallery `65e7e14b…`, lock `df7cf00e…` and overlay
+   `widgets8`, and `deploy-manifest --check` G2 passes at the tip. No upload: the 9 objects, 0.745 GB, are O's and
+   already in the bucket. The `qed64-deploy` run must show `PRE-PROMOTION OK`, `DEPLOYED-URL` and `SMOKE OK`. The tag need not be pushed (above, "The tag").
+   A deploy from this machine instead (`deploy-app.sh`) needs `scripts/upload-artifacts.sh` first (it transfers 0 B and
+   writes a new 9-key record), and after that a rollback to O first runs
+   `scripts/rollback-artifacts.sh out/deploy/published/20261105T200927Z`. Rollback targets: O (Worker version
+   `476d6c11-a119-4b17-8545-65e0b9f34987`, record `20261105T200927Z`) and H (`29176b6f-cc41-4a16-bed4-c8753c7bd5f2`,
+   record `20261005T152953Z`); docs/DEPLOY-CLOUDFLARE.md section 5.
+2. After the smoke: trash the w7 stores and the retired pins' stores (docs/HOUSEKEEPING.md section 0; the plan's
+   section 9).
+3. The relays drafted in the plan's section 7, item 5 (to the kernel session and to QED64), for the owner to send.
+4. Then the re-pin to QED64 `f2b623a` (docs/NEXT-STEPS.md).

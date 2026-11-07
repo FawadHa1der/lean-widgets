@@ -11,9 +11,12 @@ contract v1: "Embedding API v1" below).
 (gate, content sha256, `UX CURRENT …` / `UX STALE`) and `scripts/showcase.sh pin list`. **Since P1 (2026-11-07) the
 gallery has one mode, the v1 page API**: the legacy mode for the pre-v1 pages A–E (the `qed64.buffer` seed, the relay
 waits, the RPC bridge `qed64-bridge.js`, the gallery's own liveness probe, the `?mem` session wrap) is deleted, and so are
-the bridge file and `x3.html`; both are at the tag `pins-history-2026-11-07`. The registered pins are O `521cf3f` (live
+the bridge file and `x3.html`; both are at the tag `pins-history-2026-11-07`, the commit `b24587d` (`git show
+b24587d:qed64-showcase/gallery/qed64-bridge.js`; a retired pin: `git show b24587d:qed64-showcase/pins/<id>/pin.json`,
+no tag needed). The registered pins are O `521cf3f` (live
 since 2026-11-05) and N `58ebbad`, both with `apiRevision` `1.0.0`. P1 also added two behaviours from the ux-parity
-review: a halt after QED64 served during the first boot is adopted once QED64 is ready ("Timeouts", "Halt after serve"),
+review: a halt during a boot is adopted once QED64 is ready (`8046cc3` widened it from a halt after QED64's check
+fallback to any halt; "Timeouts", "Halt after serve"),
 and the Simp Lens popup hint is a click, not a hover ("Browser bring-up", `hints.mjs`). P2 (the same re-gate) left one
 overlay, `widgets8`, with no fallback. *History (dated):* the gallery's lanes from the final gate (2026-10-02) to pin O
 (2026-10-27), with their gallery hashes and verdicts, are in docs/UX-RESULTS.md, docs/REPIN-LOG.md and docs/HISTORY.md;
@@ -387,15 +390,19 @@ all 46 spec cursors and all 71 card hints. P1 deleted that mechanism; the measur
     example's text), the card closes and the boot finishes as usual: cursor, focus, panel (`status().boot.recovered`,
     event `recovered`; `status().boot.latePending` while armed). Another selection, Try again, or a new page document
     drops that (event `late-dropped`).
-  * **Halt after serve (P1, from the ux-parity review).** A first boot (or an adopted reload) can end in a `halted`
-    card while QED64's own status says its boot is done and not failed (`api.status().boot.done && !boot.failed`): at
-    O this happens once QED64's 30 s check fallback fires before a first verdict. That is not the end of the page: the
-    relay re-arms on the visitor's next edit (a `didChange`). So `boot()` and `adoptReload()` arm the same late adoption
-    as a true stall (`gallery.js` `haltedAfterServe`: `S.boot.late = {kind: 'reload', …}`), and once QED64 reaches
-    `ready` on that page document `lateBootCheck` hides the card and adopts the page through `adoptShown` (the text may
-    hold the visitor's edit, so it is followed, not replaced). Before this the gallery stayed in phase `error` with
-    `booted` false even after QED64 was ready. `sim-gallery.mjs` run 19 (h) covers it (card, `latePending`, then the
-    adoption once QED64 is ready, with no internals touched).
+  * **Halt after serve (P1, from the ux-parity review; widened in `8046cc3`).** A first boot (or an adopted reload) can
+    end in a `halted` card, either while QED64's own status says its boot is done and not failed (at O, once QED64's
+    30 s check fallback has fired) or before that (three deaths within 120 s, often within 30 s of the first serve; the
+    fallback still makes the page editable later). That is not the end of the page: the relay re-arms on the visitor's
+    next edit (a `didChange`). So on every halt `boot()` and `adoptReload()` arm the same late adoption as a true stall
+    (`gallery.js` `isHalt`: `S.boot.late = {kind: 'reload', …}`), and once QED64 reaches `ready` on that same page
+    document with its relay serving, `lateBootCheck` hides the card and adopts the page through `adoptShown` (the text
+    may hold the visitor's edit, so it is followed, not replaced). A page that never recovers keeps the card. Before P1
+    the gallery stayed in phase `error` with `booted` false even after QED64 was ready; C6 armed the adoption only for
+    the halt after the check fallback (`haltedAfterServe`), which the cross-commit review found too narrow.
+    `sim-gallery.mjs` run 19 (h) covers the halt after serve and (h2) the early halt (card, `latePending`, the card stays
+    while the page is halted, then the adoption once QED64 is ready, with no internals touched); (h2) fails with the old
+    rule.
   * The same progress-aware wait is used for a page reload the gallery adopts; the late-ready recovery covers the
     normal first boot and adopted reloads. `?bootTimeout`, `?bootStall`,
     `?bootNotice` (seconds) override the timings for tests; `status().boot` reports what the wait saw.
@@ -581,7 +588,7 @@ thumbnail wiring and cursor-label checks (8b), the `livenessObserved` (until P1)
   * Retry after a preflight or boot failure first retires the old page through `about:blank`;
   * on a narrow screen the stack style is applied and the select bar switches examples;
   * a page without `editorRpc` gets the hard "could not start" card;
-  * the progress-aware boot, the late ready and the halt after serve (run 19 (h)).
+  * the progress-aware boot, the late ready and the halt after serve (run 19 (h), and the early halt, (h2)).
 
   It is a *model* of QED64, so the open questions below are what the browser must confirm.
 * With `--live`, the real preflight against the served overlays, plus MIME and COOP/COEP checks on the

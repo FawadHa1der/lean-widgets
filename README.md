@@ -166,7 +166,8 @@ is one overlay.)
   `?embed=1`, `#code=`), which both registered pins, O `521cf3f` (QED64 main on the kernel fork's release
   `lean-v4.35.0-b081e7c`, Lean 4.35.0; live since 2026-11-05) and N `58ebbad` (QED64 main on `lean-v4.34.0-53cb11e`,
   Lean 4.34.0), provide ([gallery/README.md](qed64-showcase/gallery/README.md) "Embedding API v1"). The pins A–L are
-  retired and kept at the git tag `pins-history-2026-11-07`; until then the gallery also had a legacy mode for the
+  retired and kept at the git tag `pins-history-2026-11-07`, which is the commit `b24587d` (`git show
+  b24587d:qed64-showcase/pins/<id>/pin.json` reads one without the tag); until then the gallery also had a legacy mode for the
   pre-v1 pages A–E, which used the page's internal hooks and a small bridge for three InfoView defects of those pages (D1,
   D2, D3 in the [upstream report](qed64-showcase/docs/UPSTREAM-REPORT-QED64.md)). H `bf9d947`, live from 2026-10-08 to
   2026-11-05, is the rollback target.
@@ -205,7 +206,12 @@ target, reads its own copy of the runtime and packs under that prefix.) A releas
 Both paths are rehearsed locally against fakes (`scripts/deploy-rehearsal/rehearse.sh all`, `ci/rehearse-deploy.sh`):
 an rclone local backend and a local S3 endpoint for R2, `wrangler versions upload --dry-run` and `wrangler dev --local`, inside
 a macOS sandbox that blocks outbound traffic. Release routing passed both rehearsals (2026-11-02 to 11-04: `rehearse.sh all browser stop`
-on `dbfd000`, all nine `ci/rehearse-deploy.sh` scenarios on `eca8f22`; qed64-showcase/docs/DEPLOY-CLOUDFLARE.md). The owner's steps for the first real deploy (token scope, the two secrets, Preview URLs, the `SHOWCASE_ORIGIN`
+on `dbfd000`, all nine `ci/rehearse-deploy.sh` scenarios on `eca8f22`; qed64-showcase/docs/DEPLOY-CLOUDFLARE.md).
+P1 and P2 (pins A–L and the gallery's legacy mode retired, one overlay; the local branch `p1-p2`, not pushed yet) were
+re-gated on 2026-11-07, with the UX verdict `p12r-full2` committed in `fb3174a`, and rehearsed (all OK on `8362a6f`;
+rehearsed again on `fb3174a`, result in qed64-showcase/docs/REPIN-LOG.md); they deploy with one push of that branch to
+`main` and no upload
+([NEXT-STEPS.md](qed64-showcase/docs/NEXT-STEPS.md)). The owner's steps for the first real deploy (token scope, the two secrets, Preview URLs, the `SHOWCASE_ORIGIN`
 variable) are the
 [first deploy checklist](qed64-showcase/docs/DEPLOY-CLOUDFLARE.md#first-deploy-checklist).
 

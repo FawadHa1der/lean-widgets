@@ -1,4 +1,4 @@
-# Next steps (updated 2026-11-07, P1 and P2 committed locally)
+# Next steps (updated 2026-11-07, P1 and P2 re-gated, waiting for the owner's push)
 
 This page lists only what remains. What is done is in README.md (status page), docs/UX-RESULTS.md, docs/REPIN-LOG.md
 and docs/HISTORY.md.
@@ -17,7 +17,8 @@ browser lock counts browsers by executable, and `12aca96`, `eca8f22`: the CI reh
 objects, 2.367 GB to 12 objects, 1.107 GB at O, and `deploy-app.sh` checks each new version on its preview URL before it
 takes traffic (docs/DEPLOY-CLOUDFLARE.md 3.2, 3.3). Both rehearsals passed: `scripts/deploy-rehearsal/rehearse.sh all browser
 stop` on `dbfd000` (2026-11-02), and the CI mirror plus all 9 `ci/rehearse-deploy.sh` scenarios on `eca8f22` (2026-11-04;
-docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal). Pushed with O as `b24587d`.
+docs/DEPLOY-CLOUDFLARE.md, Rehearsal and CI rehearsal). Pushed with O as `b24587d`. P1 and P2 are re-gated on the
+local branch `p1-p2` (verdict `p12r-full2` in `fb3174a`, below) and wait for the owner's one push, with no upload.
 
 **The owner's decisions (2026-11-01, in the QED64 session: QED64's report R14a and its hand-off
 `work/arch-impl-2026-11-01/handoffs/sent/showcase-2026-11-02.md`).** Approved: P3, the deploy of O, then P1 and P2 in one
@@ -50,24 +51,48 @@ are the owner's acts.
 
 A rollback to H after the promotion is docs/DEPLOY-CLOUDFLARE.md section 5.
 
-**P1 and P2: implemented, waiting for their re-gate (2026-11-07).** Both change the inputs of G2, so they share one
-re-gate of about 12 h. The plan is `$W/reports/p1-p2-plan-2026-11-02.md` (with the fd95a2a audit's amendments). The
-commits C1–C10 are on the local branch `p1-p2` (from `c7b7e49`: `b24587d` plus 470dda3 and c7b7e49, unpushed), not pushed; the record is docs/REPIN-LOG.md "P1 and P2".
+**P1 and P2: re-gated (2026-11-07), waiting for the owner's push.** The plan is `$W/reports/p1-p2-plan-2026-11-02.md`
+(with the fd95a2a audit's amendments). The commits are on the local branch `p1-p2` (from `c7b7e49`: `b24587d` plus
+470dda3 and c7b7e49, unpushed): C1–C10 and P2 (with the verify sentinel fix `26af108` between C5 and C6), the hint
+chip `94496e5`, the first verdict `8362a6f`, the halt-adoption fix `8046cc3`, the verdict commit `fb3174a` and the
+docs-only commits after it; not pushed. The record, with every row's result, is docs/REPIN-LOG.md
+"P1 and P2".
 
 * **P1, done in code.** Only O and N are registered; the other 12 descriptors and locks are at the tag
-  `pins-history-2026-11-07` (`b24587d`); the gallery's legacy mode, `gallery/qed64-bridge.js`, `gallery/x3.html` and the
+  `pins-history-2026-11-07`, which is the commit `b24587d` (`git show b24587d:qed64-showcase/pins/<id>/pin.json` works
+  without the tag); the gallery's legacy mode, `gallery/qed64-bridge.js`, `gallery/x3.html` and the
   tools that read the bridge are deleted; X4 is raw only. A rollback to H does not need H's registration: it stays
   docs/DEPLOY-CLOUDFLARE.md section 5, `scripts/rollback-artifacts.sh out/deploy/published/20261005T152953Z`, then
   `wrangler rollback 29176b6f-cc41-4a16-bed4-c8753c7bd5f2`.
-* **P2, done in code.** One overlay, `widgets8`; both kept locks lost their widgets7 block, so O's and N's recorded
-  verdicts no longer match (`pin list` shows 0 until the re-gate).
+* **P2, done in code.** One overlay, `widgets8`; both kept locks lost their widgets7 block, so N's recorded verdicts no
+  longer match (`pin list` shows 0 for N; any use of N needs a new gate), and O's verdicts on its new lock are the
+  re-gate's.
 * **C7's substring match** (`tests/ux/specs/30-robustness.spec.mjs:97`, "are not loaded in this session") went in with
   the safe-now edits (C9) and is proved by the same gate.
-* **Next, in order:** the re-gate (the plan's section 6: static, G1, controls, stage4 w8, the click-all CLI on w8, X4 raw
-  and `widgets.mjs` without `--thumbs`, the smoke, two full `ux` VERDICTs, C20 ×3, the headed sign-off, the 10 Mbit/s
-  first visit, the manifest and the verdict commit, the CI mirror and the deploy rehearsal); then the owner's one push of
-  the branch to `main` (no upload: the 9 objects are already in the bucket from O's upload). Rollback from that deploy is
-  to O's Worker version `476d6c11-a119-4b17-8545-65e0b9f34987` (docs/DEPLOY-CLOUDFLARE.md section 5, "Rollback to O").
+* **The re-gate (the plan's section 6).** Pass 1 on `94496e5` (gallery `9791de27…`): rows 1-13 all green, verdict
+  `p12-full2` (`8362a6f`), then the CI mirror, the rehearsal state and the 8 deploy scenarios on `8362a6f`, all OK. A
+  cross-commit review then found that the gallery adopted the page only after a halt that came after QED64's 30 s check
+  fallback; `8046cc3` arms the adoption for every halt during a boot (sim run 19 (h2)). Pass 2 on `8046cc3` (gallery
+  `65e7e14b…`) re-ran rows 1-2 and 8-13, all green (rows 3-7 stand from pass 1: rows 3-6 and X4 raw do not load the
+  gallery, and row 7's `widgets.mjs` and `hints.mjs`, which do, never halted, the only case `8046cc3` changes): two
+  VERDICTs (`p12r-full1`, `p12r-full2`, 34 passed and 1 skipped each), C20 ×3, the headed sign-off `p12r-headed1`, the 10 Mbit/s
+  first visit (ready at 513.9 s). The verdict commit `fb3174a` names `p12r-full2`. Rows 14-16 (CI mirror, rehearsal
+  state, deploy rehearsal) are rehearsed on `fb3174a`.
+* **Next: the owner's push.**
+  ```
+  git push origin p1-p2:main
+  ```
+  One push. Its tip is `fb3174a` plus docs-only commits (`*.md`), so the tip's `infra/ux-verdict.json` still names
+  `p12r-full2` on the same gallery `65e7e14b…`, lock `df7cf00e…` and overlay `widgets8`, and `deploy-manifest --check`
+  G2 passes at the tip. No upload: the 9 objects, 0.745 GB, are O's and already in the bucket. Read the `qed64-deploy`
+  run: `PRE-PROMOTION OK`, `DEPLOYED-URL`, `SMOKE OK`. The tag `pins-history-2026-11-07` need not be pushed: nothing reads it, and pushing it starts a `lean-ci`
+  run on `b24587d` (`lean-ci` runs on every push, tags included), which goes red in qed64-static because the lockfifo fix
+  `470dda3` comes after it. A deploy from this machine instead (`scripts/deploy-app.sh`) needs `scripts/upload-artifacts.sh`
+  first (it transfers 0 B and writes a new 9-key record); after that a rollback to O first runs
+  `scripts/rollback-artifacts.sh out/deploy/published/20261105T200927Z`. Rollback from this deploy is to O's Worker
+  version `476d6c11-a119-4b17-8545-65e0b9f34987` (record `20261105T200927Z`), and H (`29176b6f-cc41-4a16-bed4-c8753c7bd5f2`,
+  record `20261005T152953Z`) stays a target (docs/DEPLOY-CLOUDFLARE.md section 5). After the smoke: the plan's section 9
+  (trash the w7 stores and the retired pins' stores, docs/HOUSEKEEPING.md section 0).
 
 While H and O are rollback targets, what must stay is listed in docs/DEPLOY-CLOUDFLARE.md section 6.
 

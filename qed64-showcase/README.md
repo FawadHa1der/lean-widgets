@@ -13,7 +13,8 @@ figures below are history. **Status 2026-11-07: the live site serves pin O `521c
 routing: deployed 2026-11-05 20:18Z from `b24587d`, Worker version `476d6c11-a119-4b17-8545-65e0b9f34987`, upload record
 `20261105T200927Z`); the previous version, pin H `bf9d947`, is the rollback target (docs/DEPLOY-CLOUDFLARE.md section 5).
 **P1 and P2** (retire pins A–L and the gallery's legacy page mode; one overlay, `widgets8`) are committed on the local
-branch `p1-p2` and wait for their re-gate; not pushed (a push to main deploys). What stays open is in docs/NEXT-STEPS.md
+branch `p1-p2` and re-gated on 2026-11-07 (verdict `p12r-full2` on gallery `65e7e14b…`, committed in `fb3174a`;
+docs/REPIN-LOG.md "P1 and P2"); not pushed: the owner's `git push origin p1-p2:main` deploys it, with no upload. What stays open is in docs/NEXT-STEPS.md
 (the bullets after the third are dated history from 2026-10-03 to 2026-10-04):
 
 * **Open it:** `scripts/showcase.sh verify && scripts/showcase.sh serve`, then <http://localhost:5190/showcase/>.
@@ -26,12 +27,14 @@ branch `p1-p2` and wait for their re-gate; not pushed (a push to main deploys). 
   mirror `JOB SUCCESS` and the deploy rehearsals (docs/REPIN-LOG.md, pin O). On O's page the stock InfoView applies
   Try-this and MakeEditLink edits itself (X4: D1/D2 no longer reproduce). N `58ebbad` (Lean 4.34.0, runtime
   `wasm64-5650321f3f58aeb0`) is the local fallback. P2 edited both locks (each lost its widgets7 block), so O's and N's
-  recorded verdicts name the old lock sha and `pin list` shows 0 for each until a new gate; any use of N needs one. Since O the staged trees carry
+  recorded verdicts name the old lock sha. O's verdicts on its new lock are the P1+P2 re-gate's; `pin list` shows 0 for N
+  until a new gate, and any use of N needs one. Since O the staged trees carry
   provenance records, so on this branch N's lanes refuse O's trees: `SHOWCASE_PIN=58ebbad scripts/showcase.sh stage all
   --force` restages them for N (and O's lanes then refuse until O restages).
 * **Retired pins A–L (P1, 2026-11-07).** The twelve descriptors and locks (A `1859b83` to L `37ff491`) left `pins/` and
   are kept at the tag `pins-history-2026-11-07` (`b24587d`, the commit O was deployed from): `git show
-  pins-history-2026-11-07:qed64-showcase/pins/<id>/pin.json`. They were schema v2 (A–H, bare overlay directories) or
+  pins-history-2026-11-07:qed64-showcase/pins/<id>/pin.json`, or without the tag `git show
+  b24587d:qed64-showcase/pins/<id>/pin.json`. They were schema v2 (A–H, bare overlay directories) or
   v3 (I–L); HEAD refuses a v2 descriptor, so working on one of them means a worktree at the tag (or at `d60b15e` for H's
   own harness). H `bf9d947` (Lean 4.34.0, live from 2026-10-08 to 2026-11-05) stays the rollback target, which reads its
   upload record and the deploy env, never a descriptor. The status bullets for pins J, H and E that stood here until P1,
@@ -149,7 +152,7 @@ pages before F; it is at the tag `pins-history-2026-11-07`.) Nothing under the Q
 |---|---|---|
 | Browser UX (Playwright, gallery and stock page, 35 tests since C25, 2026-10-05) | **Current verdicts are printed, not listed here:** `scripts/showcase.sh gallery` (`UX CURRENT …` / `UX STALE` for the current gallery), `scripts/showcase.sh pin list` (VERDICT and HEADED SIGN-OFF counts and the last of each per pin). *History (dated):* on gallery `921b0b6a…` the v2mit and last-mile lanes (2026-10-02/03) recorded four verdict runs (33 passed, 1 skipped each; C10 no crash; C20 135/135) and no headed sign-off (headed: `v2mit-headed1` 31/34, display scale, since fixed in the harness; `lastmile-cft-headed-c10c13` 4/4 subset; branded Chrome 154 `lastmile-chrome-headed2` 32/34); on `2081098d…` `final-C-full1/2` and the headed sign-off `final-C-headed1` (34/34); on D while served (`eab4f147…`) `final-D-full1/2` and sign-off `final-D-headed2`. The boot-fix lane's gallery change (2026-10-03) made those runs stop applying; its own three full runs on the new gallery were one red (one W4 renderer crash, cause unknown, not reproduced in 20 W4 repeats) then two verdicts (docs/UX-RESULTS.md "Boot-fix lane") | [docs/UX-RESULTS.md](docs/UX-RESULTS.md), `out/ux/showcase-ux-runs.jsonl`, `node scripts/ux-tally.mjs`, `$W/logs/finaldocs-verdicts.log` |
 | Run tallies per pin (C10 crashes, C20 runs, storms) | one tool: `node scripts/ux-tally.mjs` prints the current counts. *History, final docs lane 2026-10-03 ~03:50Z* (`$W/logs/finaldocs-ux-tally.txt`; the figures below are from that snapshot): B: C10 crashed in 6 of the 8 runs that ran it (5 of 7 full runs); C20 17 runs, all 135/135. C: C10 ran in 19 runs (17 full), 0 crashes (the 3 branded-Chrome runs failed its 10.5 GB settled-memory line, no crash); C20 23 runs, all 135/135. D: C10 0 crashes in 4 full runs; C20 4 runs, all 135/135. A: C10 0 crashes in 11 runs; 1 L7 hang in its C20 history | docs/UX-RESULTS.md "Tallies" |
-| Pins and switching | Since P1 (2026-11-07) O and N are registered and A–L are at the tag `pins-history-2026-11-07`. *History:* A, B, C, D, E registered (E 33b0967 added 2026-10-04 and served since then), hash-verified and with complete stores (`pin list`, `verify`: all checks OK with 1 known Docker `DRIFT`, `$W/logs/finaldocs-{pin-list,verify}.log`); switching rehearsed C→A→C→A→C→B→C, then C→D→C in the final gate, then C→E on 2026-10-04 (pin-E lane) | [docs/REPIN-LOG.md](docs/REPIN-LOG.md) "2026-10-02" sections |
+| Pins and switching | Since P1 (2026-11-07) O and N are registered and A–L are at the tag `pins-history-2026-11-07` (commit `b24587d`: `git show b24587d:qed64-showcase/pins/<id>/pin.json` works without the tag). *History:* A, B, C, D, E registered (E 33b0967 added 2026-10-04 and served since then), hash-verified and with complete stores (`pin list`, `verify`: all checks OK with 1 known Docker `DRIFT`, `$W/logs/finaldocs-{pin-list,verify}.log`); switching rehearsed C→A→C→A→C→B→C, then C→D→C in the final gate, then C→E on 2026-10-04 (pin-E lane) | [docs/REPIN-LOG.md](docs/REPIN-LOG.md) "2026-10-02" sections |
 | L9 in desktop Chrome (before the final gate) | l9-desktop (05:34–08:33Z): B V1 in headless-shell and headed; V2 headed on A 1/5, B 2/8, C 4/19, all in 05:51–06:40Z. Quiet slot (11:03–11:21Z, headed): V2 A 1/8, C 2/10, D 0/5 | `out/ux/l9-desktop/RESULTS.md`, `out/ux/l9-quiet/RESULTS.md`, docs/UPSTREAM-REPORT-QED64.md L9 |
 | L9 final gate (interleaved A/C/D/B, both browsers, stock page and `/showcase/`, plus a quiet-host round) | V1 only on B (3/20); V2 on A 3/26, C 2/26, D 3/26 (headless-shell too); C stays served | `out/ux/final-storm/RESULTS.md` (generated), `node scripts/ux-tally.mjs` |
 | L9 V2 gallery-side mitigation (v2mit A/B on C, `/showcase/`, quiet host) | teardown on the gallery's `pagehide` rejected: headed V2 10/24 with it vs 8/24 without (Fisher p = 0.77), headless-shell 0/12 each; old workers already close 7–40 ms after a reload in both arms | `out/ux/v2mit-storm/RESULTS.md` |
@@ -162,7 +165,7 @@ pages before F; it is at the tag `pins-history-2026-11-07`.) Nothing under the Q
 | Static gallery gate | `scripts/showcase.sh gallery` prints the current result. *History:* final docs lane on `921b0b6a…` `CHECK-GALLERY OK 128 ok`, `SIM-GALLERY OK 101 ok` (`$W/logs/finaldocs-gallery.log`); boot-fix lane on its gallery `31f6d8d9…` `CHECK-GALLERY OK 128 ok`, `SIM-GALLERY OK 109 ok`, gate GREEN (`$W/logs/bootfix-gallery.log`, before its `ux` runs; `bootfix-gallery-end.log` after them) | [gallery/README.md](gallery/README.md) |
 | Hosting on its own origin (Worker + R2) | rehearsed green against local fakes on pin C and gallery `2081098d…` (final-gate lane), then on gallery `31f6d8d9…` (closure lane, 2026-10-03: `rehearse.sh all` rc 0 and `BOOT-CHECK OK`; its first attempt stopped on a sim-gallery timing race, since fixed, `out/ux/closure/RESULTS.md` (5)), then on gallery `b7aa521a…` (post-audit fix lane, 2026-10-03: `all`, `browser`, `stop` rc 0, `BOOT-CHECK OK`); `node scripts/deploy-manifest.mjs --check` prints whether the current gallery has the verdict G2 needs (history: OK on `921b0b6a…` at the final docs lane, and on `31f6d8d9…` at the closure lane, `$W/logs/closure-deploy-manifest-check-end.log`); deployed 2026-10-05, pin H live since 2026-10-08 (docs/DEPLOY-CLOUDFLARE.md record); release routing (P3) rehearsed green against local fakes: `scripts/deploy-rehearsal/rehearse.sh all browser stop` on
 `dbfd000` (2026-11-02), and the CI mirror plus all 9 `ci/rehearse-deploy.sh` scenarios (`old-shell` against the live H) on
-`eca8f22` (2026-11-04); not pushed | [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md), [docs/DEPLOY.md](docs/DEPLOY.md) |
+`eca8f22` (2026-11-04), pushed with O as `b24587d` and deployed 2026-11-05; P1+P2's CI mirror, rehearsal state and 8 deploy scenarios all OK on `8362a6f` (2026-11-07), rehearsed again on its verdict commit `fb3174a` (docs/REPIN-LOG.md "P1 and P2") | [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md), [docs/DEPLOY.md](docs/DEPLOY.md) |
 | Defects in the pinned QED64 page and runtime | D1, D2, L1, N1, N2, N3, P1, L7, L9 (V1, V2), X1, each with evidence and a suggested fix | [docs/UPSTREAM-REPORT-QED64.md](docs/UPSTREAM-REPORT-QED64.md) |
 | Build history and evidence | pin, native build, bakes, examples, goldens, gallery code; the lane-by-lane record | [docs/HISTORY.md](docs/HISTORY.md), [docs/STAGE-A-RESULTS.md](docs/STAGE-A-RESULTS.md), [docs/STAGE-B-RESULTS.md](docs/STAGE-B-RESULTS.md) |
 
@@ -351,8 +354,8 @@ scripts/showcase.sh gallery                   # then `ux` for a verdict on the n
 
 This is the **local** fallback. The live site's rollback is not a `pin use`: it is to H `bf9d947` by its upload record and
 Worker version (docs/DEPLOY-CLOUDFLARE.md section 5), which needs no descriptor, and to O by O's Worker version while a
-later deploy is live. A retired pin (A–L) cannot be switched to from HEAD: read it at the tag `pins-history-2026-11-07`,
-and work on it in a worktree there.
+later deploy is live. A retired pin (A–L) cannot be switched to from HEAD: read it at the tag `pins-history-2026-11-07` or, without the tag,
+at its commit (`git show b24587d:qed64-showcase/pins/<id>/pin.json`), and work on it in a worktree there.
 
 Two rebuild-only inputs are per pin. `$W/widgets-src` is ONE export (`scripts/export-widgets.mjs`), of one widget
 commit: after a switch to (or a rollback to) a pin built from other widget sources, `pin use` prints a NOTE with the
@@ -456,7 +459,9 @@ after it passes the gates (procedure as executed for `5ac5d00` on 2026-10-02; th
 5. **Gate it while it is staged** (nothing switched yet): storm it interleaved with a registered pin in both browsers and
    on both entries, as the final-gate lane did (with C, A and B then). Since P1 the only registered pins are O and N; a
    cross-pin storm against a retired pin needs that pin's checkout from the tag (a worktree at
-   `pins-history-2026-11-07` with its own `serve.mjs`; a script that takes `OLD_REF` takes the tag the same way), so in
+   `pins-history-2026-11-07`, or at its commit `b24587d`, with its own `serve.mjs`; a script that takes `OLD_REF` takes
+   the tag or the commit the same way; a retired pin's descriptor reads without the tag as
+   `git show b24587d:qed64-showcase/pins/<id>/pin.json`), so in
    practice the comparison is with N or the active pin: per-pin servers `SHOWCASE_PIN=<id> GALLERY_DIR=<copy from
    $W/final-gate/pin-gallery.mjs> PORT=<p> scripts/serve-start.sh`, then `ROUNDS=5 $W/final-gate/master.sh` (tool
    `tests/ux/tools/reload-storm-desktop.mjs`: chrome-headless-shell and headed Chrome for Testing, stock page and
