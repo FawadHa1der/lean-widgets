@@ -287,15 +287,17 @@ for c in $TKO; do
     # an owner whose wrapper gets a signal while its command runs must keep the lock until the command ends: bash ran
     # the EXIT trap (release) at once for an untrapped HUP, USR1, ABRT, XCPU, ... and died, or died without it (QUIT,
     # PROF), so a queued waiter ran beside the command (2026-10-27). One owner per signal, each on its own lock and all
-    # at once; each is started with INT and QUIT at their defaults (a background job of a script starts with them
-    # ignored, so the wrapper could not receive them). Its exit code must be 128 + the signal's number (INT, TERM: 130).
+    # at once; each is started with every signal tested here at its default: a background job of a script starts with INT
+    # and QUIT ignored, and GitHub's Linux runner starts a step with PIPE ignored (2026-11-05), and a signal ignored on
+    # entry cannot be trapped, so the wrapper could not receive it. Its exit code must be 128 + the signal's number (INT,
+    # TERM: 130).
     SIGS=""; for sg in HUP INT TERM QUIT ALRM USR1 USR2 PIPE TRAP ABRT EMT SYS XCPU XFSZ VTALRM PROF; do
       kill -l "$sg" >/dev/null 2>&1 && SIGS="$SIGS $sg"; done   # EMT exists on macOS only
     [ "$(uname -s)" != Linux ] || SIGS="$SIGS IO PWR STKFLT"   # trapped on Linux only (on macOS IO is ignored)
     QWS=(); RWS=(); HP=""
     for sg in $SIGS; do sd="$d/$sg"; mkdir -p "$sd"
-      BROWSER_LOCK_FILE="$sd/browser.lock" LOCK_WAIT_S=60 perl -e '$SIG{INT} = $SIG{QUIT} = "DEFAULT"; exec { $ARGV[0] } @ARGV' \
-        bash "$WRAP" "q$sg" bash -c "echo start-q >> '$sd/j'; sleep 8; echo end-q >> '$sd/j'" > "$sd/q.log" 2>&1 &
+      BROWSER_LOCK_FILE="$sd/browser.lock" LOCK_WAIT_S=60 perl -e '$SIG{$_} = "DEFAULT" for split " ", shift; exec { $ARGV[0] } @ARGV' \
+        "$SIGS" bash "$WRAP" "q$sg" bash -c "echo start-q >> '$sd/j'; sleep 8; echo end-q >> '$sd/j'" > "$sd/q.log" 2>&1 &
       QWS+=($!); HP="$HP $!"; done
     for sg in $SIGS; do for _ in $(seq 1 200); do grep -q start-q "$d/$sg/j" 2>/dev/null && break; sleep 0.05; done; done
     for sg in $SIGS; do sd="$d/$sg"
@@ -318,7 +320,8 @@ for c in $TKO; do
     # an owner signalled in its cooldown (it waits for memory it will never get): it exits 129 once the cooldown's
     # current step ends (at most about 5 s), without running its command, and releases the lock
     sd="$d/cool"; mkdir -p "$sd"
-    BROWSER_LOCK_FILE="$sd/browser.lock" SKIP_COOLDOWN_FOR_TEST=0 MIN_FREE_GB=100000 COOLDOWN_WAIT_S=120 bash "$WRAP" qcool \
+    BROWSER_LOCK_FILE="$sd/browser.lock" SKIP_COOLDOWN_FOR_TEST=0 MIN_FREE_GB=100000 COOLDOWN_WAIT_S=120 \
+      perl -e '$SIG{HUP} = "DEFAULT"; exec { $ARGV[0] } @ARGV' bash "$WRAP" qcool \
       bash -c ": > '$sd/ran'" > "$sd/q.log" 2>&1 & cw=$!; HP="$cw"
     # the HUP must reach it in the cooldown (a wrapper still waiting for the lock also dies by HUP: 129, no command)
     seen=no; for _ in $(seq 1 600); do grep -q 'cooldown waiting' "$sd/q.log" 2>/dev/null && { seen=yes; break; }; sleep 0.05; done
