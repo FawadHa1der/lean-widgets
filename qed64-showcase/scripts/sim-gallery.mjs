@@ -13,8 +13,9 @@
 // The browser bring-up must still confirm the model's assumptions (gallery/README.md open questions).
 //
 // TWO PAGE MODELS, toggled per run by the fake fetch of /showcase/pin.json (SIM.v1 sets apiRevision '1.0.0' or null):
-//   * legacy (runs 1–15): the page above; the gallery seeds qed64.buffer, taps the relay, probes for liveness.
-//   * V1 (runs 16–19; QED64 embedding contract v1, deps/qed64/docs/EMBEDDING.md): at module start the page defines a FROZEN
+//   * legacy (runs 1, 4, 5's boot failure, 6–13, 20(e), 21(a)): the page above; the gallery seeds qed64.buffer, taps the
+//     relay, probes for liveness. What only these runs tested and V1 ships has a V1 twin in runs 22–26.
+//   * V1 (runs 2, 3, 5's narrow half, 14's boots, 15–26; QED64 embedding contract v1, deps/qed64/docs/EMBEDDING.md): at module start the page defines a FROZEN
 //     globalThis.qed64.api and dispatches 'qed64:frame-api' {api, frame} on the parent, BEFORE it reads its boot document
 //     (#code= from the frame URL, read once and dropped; in embed mode a setDocument within 5 s, else ''; qed64.buffer is
 //     neither read nor written); setDocument/getDocument/status/settled/restart/setCursor/getCursor/focus/acceptOffer and
@@ -536,6 +537,15 @@ async function loadGallery() { await import(`${pathToFileURL(path.join(G, 'galle
 const ALL7 = ['QED64.Essential', 'ChartKit', 'ExprXRay', 'GraphScope', 'HasseView', 'IntervalInspector', 'SimpLens', 'TreeScope'];
 const st = () => globalThis.__showcase.status();
 const settled = (p) => p.then((v) => ({ ok: true, v }), (e) => ({ ok: false, e }));
+// V1 runs (the page API, QED64 embedding contract v1): the persisted document's key, and the §9 check every V1 run ends with
+const DOC_KEY = 'qed64-showcase:document';
+const noInternals = (what) => {
+  const touches = SIM.pages.flatMap((p) => p._internalTouches); const dom = SIM.pages.flatMap((p) => p.document._touches);
+  const buf = SIM.storageAccess.filter((a) => a.by === 'gallery' && a.key === 'qed64.buffer').length;
+  return ok(touches.length === 0 && buf === 0 && dom.length === 0 && !SIM.pages.some((p) => Object.keys(p).some((k) => /^__qed64/.test(k))) && SIM.listenerThrows.length === 0,
+    `${what}: the gallery touched no internal on ${SIM.pages.length} page document(s) (qed64.relay/ui/editor/status/test: ${touches.length}${touches.length ? ` — ${touches.slice(0, 3).map((t) => `${t.member} @ ${t.stack}`).join('; ')}` : ''}), never read or wrote qed64.buffer (${buf}), touched no page DOM id (${dom.join(',') || 'none'}), set no __qed64* name; no api listener threw (${SIM.listenerThrows.length})`);
+};
+const frameUrlOf = (nav) => nav.src;
 
 // ================================================================ run 1: default boot (widgets8 absent → widgets7), deep link, user buffer saved
 console.log('\n== run 1: boot via fallback overlay, deep link #hasse-view, user buffer preserved');
@@ -642,9 +652,9 @@ await sleep(300); // the status line renders every 250 ms
   `status line: plain "${vis}"; tooltip "${tip}"`);
 }
 
-// ================================================================ run 2: explicit overlay missing → no navigation; Retry after it appears
-console.log('\n== run 2: ?overlay=widgets9 missing → preflight card, no navigation; Retry once it exists');
-setupEnv({ search: '?overlay=widgets9', overlays: {} });
+// ================================================================ run 2 (V1): explicit overlay missing → no navigation; Retry after it appears
+console.log('\n== run 2 (V1): ?overlay=widgets9 missing → preflight card, no navigation; Retry once it exists');
+setupEnv({ v1: true, search: '?overlay=widgets9', overlays: {} });
 api = await loadGallery();
 await until(() => st().phase === 'error', 5000, 'run2 error');
 s = st();
@@ -654,11 +664,12 @@ ok(!SIM.byIdEl('error-card').hidden && SIM.byIdEl('error-checks').children.lengt
 SIM.overlays.widgets9 = { imports: ALL7 };
 SIM.byIdEl('error-retry').click();
 await until(() => st().phase === 'ready', 8000, 'run2 retry ready');
-ok(st().overlay === 'widgets9' && SIM.navigations.length === 1 && SIM.byIdEl('error-card').hidden, 'Try again → preflight passes, boots, card hidden');
+ok(st().overlay === 'widgets9' && st().mode === 'v1' && SIM.navigations.length === 1 && SIM.byIdEl('error-card').hidden, 'Try again → preflight passes, boots, card hidden');
+noInternals('preflight card, Try again');
 
-// ================================================================ run 3: unpaired runtime → refused before navigation
-console.log('\n== run 3: unpaired widgets8 → refused before navigation');
-setupEnv({ overlays: { widgets8: { imports: ALL7, runtime: 'wasm64-0000000000000000' } } });
+// ================================================================ run 3 (V1): unpaired runtime → refused before navigation
+console.log('\n== run 3 (V1): unpaired widgets8 → refused before navigation');
+setupEnv({ v1: true, overlays: { widgets8: { imports: ALL7, runtime: 'wasm64-0000000000000000' } } });
 api = await loadGallery();
 await until(() => st().phase === 'error', 5000, 'run3 error');
 s = st();
@@ -681,9 +692,9 @@ await until(() => st().phase === 'ready', 5000, 'run4 rearm');
 s = st();
 ok(s.mem.applied !== false && globalThis.__showcase && SIM.rearms === 1 && SIM.frame._win.qed64.relay.session.initialBytes === 3 * GiB, 'a re-armed session after a halt also gets the 3 GiB commit (wrapper stays on the relay)');
 
-// ================================================================ run 5: the page's own boot failure card; narrow layout stacking
-console.log('\n== run 5: page boot failure (#bootcard.failed); narrow screen');
-setupEnv({ overlays: { widgets8: { imports: ALL7 } }, pageBootFail: true, narrow: true });
+// ================================================================ run 5: the page's own boot failure card (legacy); narrow layout stacking (V1)
+console.log('\n== run 5: page boot failure (#bootcard.failed); narrow screen (V1)');
+setupEnv({ overlays: { widgets8: { imports: ALL7 } }, pageBootFail: true });
 api = await loadGallery();
 await until(() => st().phase === 'error', 5000, 'run5 error');
 s = st();
@@ -691,13 +702,19 @@ ok(s.error.kind === 'boot' && /could not start/.test(s.error.title) && /runtime 
 SIM.pageBootFail = false;
 SIM.byIdEl('error-retry').click();
 await until(() => st().phase === 'ready', 8000, 'run5 retry');
-await sleep(300);
-ok(SIM.navigations.filter((n) => n.src === 'about:blank').length === 1 && SIM.page && SIM.page.document._styles.some((x) => x.id === 'qed64-showcase-stack') && SIM.layouts > 0,
-  'retry retired the old page via about:blank first; at narrow width the stack style is injected and Monaco re-laid out');
-const sel = SIM.byIdEl('example-select');
-sel.value = 'hasse-view'; sel.dispatch('change');
-await until(() => st().phase === 'ready' && st().shown === 'hasse-view', 5000, 'select');
-ok(api.currentText() === byId['hasse-view'].text && sel.children.length === 8, 'narrow select (8 options) switches the example');
+ok(SIM.navigations.filter((n) => n.src === 'about:blank').length === 1, 'retry retired the old page via about:blank first');
+{ // narrow (V1): the stack style goes into the page document; Monaco follows the resize by itself (no relayout call)
+  setupEnv({ v1: true, overlays: { widgets8: { imports: ALL7 } }, narrow: true });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run5 narrow ready');
+  await sleep(300);
+  ok(SIM.page && SIM.page.document._styles.some((x) => x.id === 'qed64-showcase-stack'), 'at narrow width the stack style is injected into the page');
+  const sel = SIM.byIdEl('example-select');
+  sel.value = 'hasse-view'; sel.dispatch('change');
+  await until(() => st().phase === 'ready' && st().shown === 'hasse-view', 5000, 'select');
+  ok(api.currentText() === byId['hasse-view'].text && sel.children.length === 8, 'narrow select (8 options) switches the example');
+  noInternals('narrow');
+}
 
 // ================================================================ run 6: stage-B audit minors
 console.log('\n== run 6: saved buffer never overwritten, malformed deep link, edited detection, restore, adopt lock');
@@ -1098,7 +1115,7 @@ await until(() => st().phase === 'ready', 8000, 'run13 ready');
 }
 
 // ================================================================ run 14: browser capabilities, checked before anything boots (hardening lane)
-console.log('\n== run 14: a browser without cross-origin isolation / SharedArrayBuffer / Memory64 / WebAssembly gets the capability card and boots nothing; low memory warns with "Try anyway"');
+console.log('\n== run 14 (V1 boots): a browser without cross-origin isolation / SharedArrayBuffer / Memory64 / WebAssembly gets the capability card and boots nothing; low memory warns with "Try anyway"');
 {
   const NEED = 'This showcase needs a Chromium-based desktop browser (Chrome, Edge, Brave, Arc) on a computer with 16 GB of RAM or more, one showcase tab at a time (a tab uses about 8–9 GB, about 12 GB on a reload); your browser lacks';
   const cases = [
@@ -1126,7 +1143,7 @@ console.log('\n== run 14: a browser without cross-origin isolation / SharedArray
       `${JSON.stringify(c.caps)}: card "${SIM.byIdEl('error-title').textContent}" — "…lacks ${c.words}."; missing [${s.caps.missing}]; 0 fetches, 0 navigations; no Try again / Dismiss / stock link; select() rejects ${rej.e && rej.e.code}; a hash change boots nothing`);
   }
   // low memory alone (Chromium reports navigator.deviceMemory): a warning card with "Try anyway"; nothing boots until it is clicked
-  setupEnv({ hash: '#hasse-view', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } }, caps: { deviceMemory: 4 } });
+  setupEnv({ v1: true, hash: '#hasse-view', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } }, caps: { deviceMemory: 4 } });
   api = await loadGallery();
   await until(() => ['unsupported', 'ready', 'error'].includes(st().phase), 3000, 'run14 memory');
   await sleep(300);
@@ -1139,27 +1156,29 @@ console.log('\n== run 14: a browser without cross-origin isolation / SharedArray
   SIM.byIdEl('error-retry').click();
   await until(() => st().phase === 'ready', 8000, 'run14 try anyway').catch(() => null);
   s = st();
-  ok(s.shown === 'hasse-view' && s.caps.override === true && SIM.navigations.length === 1 && SIM.byIdEl('error-card').hidden, `"Try anyway" boots as usual: ${s.shown} ready, override recorded`);
+  ok(s.shown === 'hasse-view' && s.mode === 'v1' && s.caps.override === true && SIM.navigations.length === 1 && SIM.byIdEl('error-card').hidden, `"Try anyway" boots as usual: ${s.shown} ready, override recorded`);
+  noInternals('Try anyway');
   // a capable browser that reports 8 GB (the threshold) passes every check
-  setupEnv({ hash: '#chart-kit', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } }, caps: { deviceMemory: 8 } });
+  setupEnv({ v1: true, hash: '#chart-kit', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } }, caps: { deviceMemory: 8 } });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run14 capable');
-  ok(st().caps.ok && st().caps.deviceMemory === 8 && st().caps.checks.every((c) => c.ok), 'deviceMemory 8, isolated, SharedArrayBuffer, Memory64: every check passes and the gallery boots');
+  ok(st().caps.ok && st().caps.deviceMemory === 8 && st().caps.checks.every((c) => c.ok) && st().mode === 'v1', 'deviceMemory 8, isolated, SharedArrayBuffer, Memory64: every check passes and the gallery boots');
 }
 
-// ================================================================ run 15: a slow first visit (last-mile lane defect: 360 s boot timeout at 10 Mbit/s)
-console.log('\n== run 15: slow first boot: progress re-arms the boot timeout (notice, no card); a true stall shows the card; a later ready closes it and finishes the boot');
+// ================================================================ run 15 (V1): a slow first visit (last-mile lane defect: 360 s boot timeout at 10 Mbit/s)
+console.log('\n== run 15 (V1): slow first boot: progress re-arms the boot timeout (notice, no card); a true stall shows the card; a later ready closes it and finishes the boot');
 {
   const W8 = { widgets8: { imports: [...ALL7, 'DistLens'] } };
   const KNOBS = '?bootTimeout=0.6&bootStall=0.5&bootNotice=0.3'; // 600 ms budget, 500 ms without progress = stall, early notice from 300 ms
   const LABEL = 'preparing the mathlib environment (0.4 GiB — one-time)';
   const TOTAL = 400e6;
   const card = () => SIM.byIdEl('error-card');
-  const prog = (loaded) => SIM.page.qed64.ui.progress(LABEL, { phase: 'snapshot', loaded, total: TOTAL, unit: 'bytes' });
+  // the page's 'boot' events (EMBEDDING.md §2.4): QED64's own step label and figures, unit bytes
+  const prog = (loaded) => SIM.frame._win._page.bootStep(LABEL, { stage: 'snapshot', subject: 'mathlib', phase: 'snapshot', loaded, total: TOTAL, unit: 'bytes' });
   // (a) slow but steady: 2 s of new bytes (> budget + stall window): never the card, a "still downloading" notice instead
-  setupEnv({ search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true });
+  setupEnv({ v1: true, search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true });
   api = await loadGallery();
-  await until(() => st().phase === 'booting' && SIM.page && SIM.page.qed64 && st().boot.waiting, 3000, 'run15a booting');
+  await until(() => st().phase === 'booting' && SIM.internals && st().boot.waiting, 3000, 'run15a booting');
   let sawCard = false; const notices = new Set(); const lines = new Set(); const t0 = Date.now();
   for (let i = 1; i <= 20; i++) {
     prog(i * 10e6);
@@ -1172,29 +1191,28 @@ console.log('\n== run 15: slow first boot: progress re-arms the boot timeout (no
   const firstNotice = s.boot.events.find((e) => e.source === 'notice');
   ok(!sawCard && s.phase === 'booting' && s.error === null && s.boot.stalls === 0 && Date.now() - t0 >= 2000 && s.boot.timeoutMs === 600 && s.boot.stallMs === 500 && s.boot.noticeMs === 300,
     `slow progress for ${Date.now() - t0} ms (budget ${s.boot.timeoutMs} ms, stall window ${s.boot.stallMs} ms): no error card, still booting, 0 stalls`);
-  ok(s.notice === `Still downloading: ${LABEL} — 200 MB of 400 MB so far. A first visit downloads several hundred MB, which takes minutes on a slow connection; later visits start from this browser's storage.` && s.boot.noticeShown === 1 && !SIM.byIdEl('notice').hidden && firstNotice && firstNotice.elapsedMs < 600,
-    `non-blocking notice "${(s.notice || '').slice(0, 72)}…" (shown once, first at ${firstNotice && firstNotice.elapsedMs} ms: QED64's own boot overlay is gone, so before the budget)`);
-  ok(SIM.byIdEl('notice').classList.contains('is-slow') && SIM.byIdEl('notice').style.top === '43px',
-    `the slow-download notice sits below the page's top bar (#bar bottom 35 px → top ${SIM.byIdEl('notice').style.top}), so it never covers QED64's status pill`);
+  ok(s.notice === `Still downloading: ${LABEL} — 200 MB of 400 MB so far. A first visit downloads several hundred MB, which takes minutes on a slow connection; later visits start from this browser's storage.` && s.boot.noticeShown === 1 && !SIM.byIdEl('notice').hidden && SIM.byIdEl('notice').classList.contains('is-slow')
+    && firstNotice && firstNotice.elapsedMs >= 600 && s.boot.pageBootOverlay === true,
+    `non-blocking notice "${(s.notice || '').slice(0, 72)}…" (shown once, first at ${firstNotice && firstNotice.elapsedMs} ms: QED64's own boot overlay is up (status().boot.overlay), so from the budget on)`);
   // The status line is rendered on the gallery's 250 ms monitor tick, not on each progress call, so the loop's last sample
   // (100 ms after the 20th call) saw "200 MB" only when a tick fell into those 100 ms: about 100 ms of timer drift over the
   // 2 s loop was tolerated, and one 200 ms event-loop stall on a loaded host lost it (closure lane, 2026-10-03: a deploy
   // rehearsal's G1 failed once with "108 ok, 1 failed"; 4 of 4 runs with an injected 200 ms stall per second failed here).
   // Keep sampling until a tick has rendered the 20th call: at most 350 ms (> one tick, < the 500 ms stall window).
   for (const tw = Date.now(); Date.now() - tw < 350 && ![...lines].some((l) => / · 200 MB of 400 MB$/.test(l)); await sleep(10)) lines.add(SIM.byIdEl('status-text').textContent);
-  ok(s.boot.uiWrapped.join() === 'busy,progress,idle' && s.boot.bytes === 200e6 && s.boot.sources.bytes === 20 && SIM.uiSeen.filter((x) => x[0] === 'progress').length === 20 && [...lines].some((l) => /^Starting Lean in your browser… .* · 200 MB of 400 MB$/.test(l)),
-    `the page's status sink is wrapped (${s.boot.uiWrapped}), the page's own sink still got all 20 calls; ${s.boot.bytes / 1e6} MB of progress counted; status line "${[...lines].pop()}"`);
+  ok(s.boot.source === 'api-events' && s.boot.uiTapped === false && s.boot.apiBootEvents >= 21 && s.boot.bytes === 200e6 && s.boot.sources.bytes === 20 && [...lines].some((l) => /^Starting Lean in your browser… .* · 200 MB of 400 MB$/.test(l)),
+    `progress from ${s.boot.apiBootEvents} 'boot' events (no ui wrap); ${s.boot.bytes / 1e6} MB of progress counted; status line "${[...lines].pop()}"`);
   SIM.holdBoot = false; SIM.releaseBoot();
   await until(() => st().phase === 'ready', 5000, 'run15a ready');
   s = st();
   ok(s.shown === 'chart-kit' && s.error === null && s.notice === null && SIM.byIdEl('notice').hidden && card().hidden && s.cursor && s.cursor.lineNumber === byId['chart-kit'].firstCursor.lineNumber && s.bootMs >= 2000 && s.boot.waiting === null,
     `download done → ready: chart-kit at L${s.cursor && s.cursor.lineNumber}, the notice is gone, boot ${Math.round(s.bootMs)} ms`);
-  ok(!SIM.byIdEl('notice').classList.contains('is-slow') && SIM.byIdEl('notice').style.top === '', 'the notice\'s slow-download placement is cleared with it (other notices keep the CSS position)');
+  ok(!SIM.byIdEl('notice').classList.contains('is-slow'), 'the notice\'s slow-download placement is cleared with it');
 
   // (b) a true stall: some bytes, then only re-sent bytes of the same download (a retry is no progress) → the card
-  setupEnv({ search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true, storage: {} });
+  setupEnv({ v1: true, search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true, storage: {} });
   api = await loadGallery();
-  await until(() => st().phase === 'booting' && SIM.page && SIM.page.qed64 && st().boot.waiting, 3000, 'run15b booting');
+  await until(() => st().phase === 'booting' && SIM.internals && st().boot.waiting, 3000, 'run15b booting');
   const tb = Date.now();
   let tLast = 0;
   for (let i = 1; i <= 3; i++) { prog(i * 10e6); tLast = Date.now(); await sleep(100); } // tLast: the last NEW bytes
@@ -1217,11 +1235,12 @@ console.log('\n== run 15: slow first boot: progress re-arms the boot timeout (no
     `late ready → card closed, recovered ${s.boot.recovered}, cursor L${s.cursor && s.cursor.lineNumber}, editor focused, status "${SIM.byIdEl('status-text').textContent}"`);
   r = await api.select('hasse-view');
   ok(r.phase === 'ready' && r.shown === 'hasse-view' && r.error === null, 'after the late recovery the gallery switches normally (hasse-view ready)');
+  noInternals('slow boot, stall, late ready');
 
   // (e) page resources: a NEW URL is progress, a page re-fetching one URL (retry loop, cache-busting query) is not → the card
-  setupEnv({ search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true, storage: {} });
+  setupEnv({ v1: true, search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true, storage: {} });
   api = await loadGallery();
-  await until(() => st().phase === 'booting' && SIM.page && SIM.page.qed64 && st().boot.waiting, 3000, 'run15e booting');
+  await until(() => st().phase === 'booting' && SIM.internals && st().boot.waiting, 3000, 'run15e booting');
   const te = Date.now(); let sawCardE = false;
   for (let i = 1; i <= 15; i++) { SIM.resources.push({ name: `${ORIGIN}/raw/part-${i}.bin` }); await sleep(100); if (!card().hidden || st().error) sawCardE = true; }
   s = st();
@@ -1237,25 +1256,19 @@ console.log('\n== run 15: slow first boot: progress re-arms the boot timeout (no
   SIM.holdBoot = false; SIM.releaseBoot();
   await until(() => st().phase === 'ready', 5000, 'run15e late ready');
   ok(st().error === null && card().hidden && st().boot.recovered === 1, 'and a later ready still closes that card (recovered 1)');
+  noInternals('page resources');
 
   // (d) defaults, and a normal boot is untouched by the progress logic
-  setupEnv({ hash: '#chart-kit', overlays: W8 });
+  setupEnv({ v1: true, hash: '#chart-kit', overlays: W8 });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run15d ready');
   s = st();
-  ok(s.boot.timeoutMs === 360000 && s.boot.stallMs === 240000 && s.boot.noticeMs === 120000 && s.boot.noticeShown === 0 && s.boot.stalls === 0 && s.boot.recovered === 0 && s.notice === null && s.boot.uiTapped,
+  ok(s.boot.timeoutMs === 360000 && s.boot.stallMs === 240000 && s.boot.noticeMs === 120000 && s.boot.noticeShown === 0 && s.boot.stalls === 0 && s.boot.recovered === 0 && s.notice === null && s.boot.source === 'api-events',
     `defaults: budget ${s.boot.timeoutMs / 1000} s, stall window ${s.boot.stallMs / 1000} s, early notice ${s.boot.noticeMs / 1000} s; a normal boot shows no notice and no card`);
+  noInternals('boot defaults');
 }
 
 // ================================================================ V1 runs: the page API (QED64 embedding contract v1)
-const DOC_KEY = 'qed64-showcase:document';
-const noInternals = (what) => {
-  const touches = SIM.pages.flatMap((p) => p._internalTouches); const dom = SIM.pages.flatMap((p) => p.document._touches);
-  const buf = SIM.storageAccess.filter((a) => a.by === 'gallery' && a.key === 'qed64.buffer').length;
-  return ok(touches.length === 0 && buf === 0 && dom.length === 0 && !SIM.pages.some((p) => Object.keys(p).some((k) => /^__qed64/.test(k))) && SIM.listenerThrows.length === 0,
-    `${what}: the gallery touched no internal on ${SIM.pages.length} page document(s) (qed64.relay/ui/editor/status/test: ${touches.length}${touches.length ? ` — ${touches.slice(0, 3).map((t) => `${t.member} @ ${t.stack}`).join('; ')}` : ''}), never read or wrote qed64.buffer (${buf}), touched no page DOM id (${dom.join(',') || 'none'}), set no __qed64* name; no api listener threw (${SIM.listenerThrows.length})`);
-};
-const frameUrlOf = (nav) => nav.src;
 
 // ================================================================ run 16: V1 boot (embed + #code=), switch, persistence, adopted reload
 console.log('\n== run 16 (V1): frame-api at module start, embed mode + #code=, setDocument switches, document persistence, adopted reload re-seeded synchronously');
@@ -1939,23 +1952,26 @@ console.log('\n== run 21: served overlay directories — legacy pin.json, per-ru
     && bareHits() === 0 && SIM.fetchLog.some((f) => f.path === `/snapshots/${D.widgets8}/index.json`) && s.shown === 'dist-lens' && s.preflight.availability['dist-lens'] === true && (s.statusLine.detail || '').includes(`overlay widgets8 @ ${D.widgets8}`),
     `badge "${badge().textContent}" (logical), title /snapshots/${D.widgets8}/; preflight at the directory only (bare requests ${bareHits()}); DistLens available`);
   noInternals('per-runtime overlay alias');
-  // (c) ?overlay=<the directory itself>, legacy page: reads as widgets8; and the default choice falls back between DIRECTORIES
-  setupEnv({ pinOverlays: D, search: `?overlay=${D.widgets8}`, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  // (c) ?overlay=<the directory itself> (V1 page): reads as widgets8; and the default choice falls back between DIRECTORIES
+  const HV = byId['hasse-view'];
+  setupEnv({ v1: true, pinOverlays: D, search: `?overlay=${D.widgets8}`, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run21c ready');
   s = st();
-  ok(s.requestedOverlay === D.widgets8 && s.overlay === 'widgets8' && s.overlayDir === D.widgets8 && navOf() && navOf().src === `/?snapshots=snapshots/${D.widgets8}` && badge().textContent === 'snapshot widgets8' && bareHits() === 0,
-    `?overlay=${D.widgets8} (explicit directory) → overlay ${s.overlay}, frame ${navOf() && navOf().src}`);
-  setupEnv({ pinOverlays: D, hash: '#hasse-view', overlays: { widgets7: { imports: ALL7 } } });
+  ok(s.requestedOverlay === D.widgets8 && s.overlay === 'widgets8' && s.overlayDir === D.widgets8 && navOf() && navOf().src === `/?embed=1&snapshots=snapshots/${D.widgets8}#code=${encodeURIComponent(HV.text)}` && badge().textContent === 'snapshot widgets8' && bareHits() === 0,
+    `?overlay=${D.widgets8} (explicit directory) → overlay ${s.overlay}, frame ${navOf() && navOf().src.slice(0, 70)}…`);
+  noInternals('explicit overlay directory');
+  setupEnv({ v1: true, pinOverlays: D, hash: '#hasse-view', overlays: { widgets7: { imports: ALL7 } } });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run21c2 ready');
   s = st();
-  ok(s.overlay === 'widgets7' && s.overlayDir === D.widgets7 && s.fellBack === true && s.preflight.attempts.map((a) => a.dir).join() === `${D.widgets8},${D.widgets7}` && navOf().src === `/?snapshots=snapshots/${D.widgets7}`
+  ok(s.overlay === 'widgets7' && s.overlayDir === D.widgets7 && s.fellBack === true && s.preflight.attempts.map((a) => a.dir).join() === `${D.widgets8},${D.widgets7}` && navOf().src === `/?embed=1&snapshots=snapshots/${D.widgets7}#code=${encodeURIComponent(HV.text)}`
     && /widgets8 is not built yet; using widgets7/.test(s.notice || '') && bareHits() === 0,
     `default choice on a per-runtime pin: ${D.widgets8} 404 → ${D.widgets7} (notice "${s.notice}")`);
+  noInternals('default overlay fallback');
   // (d) a per-runtime pin whose site serves ONLY the bare widgets8/ widgets7/ (a stale deploy, a server without the directories):
   //     the preflight card, no navigation — never a silent fallback to the bare (another runtime's) overlay
-  setupEnv({ pinOverlays: D, servedDirs: { widgets7: 'widgets7', widgets8: 'widgets8' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 }, widgets7: { imports: ALL7 } } });
+  setupEnv({ v1: true, pinOverlays: D, servedDirs: { widgets7: 'widgets7', widgets8: 'widgets8' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 }, widgets7: { imports: ALL7 } } });
   api = await loadGallery();
   await until(() => st().phase === 'error', 5000, 'run21d error');
   s = st();
@@ -1964,12 +1980,158 @@ console.log('\n== run 21: served overlay directories — legacy pin.json, per-ru
     && !SIM.byIdEl('error-card').hidden && SIM.byIdEl('error-stock').href === `/?snapshots=snapshots/${D.widgets8}`,
     `per-runtime pin, only bare directories served → card "${s.error.title}": ${s.error.detail.slice(0, 110)}…; stock link ${SIM.byIdEl('error-stock').href}; no navigation`);
   // (e) a malformed overlays map in pin.json: the data card, nothing fetched under /snapshots/
-  setupEnv({ pinOverlays: { widgets8: '../x', widgets7: 'widgets7' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  setupEnv({ v1: true, pinOverlays: { widgets8: '../x', widgets7: 'widgets7' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
   api = await loadGallery();
   await until(() => st().phase === 'error', 5000, 'run21e error');
   s = st();
   ok(SIM.navigations.length === 0 && s.error.kind === 'data' && /pin\.json overlays\.widgets8/.test(s.error.detail) && !SIM.fetchLog.some((f) => f.path.startsWith('/snapshots/')),
     `pin.json overlays {widgets8: "../x"} → data card: ${s.error.detail.slice(0, 120)}`);
+}
+
+// ================================================================ runs 22–26 (V1): what only the legacy runs 1, 6, 7, 10 and 11 tested
+// The gallery ships these on V1 too; each check below is the V1 twin of the legacy one named in its run's heading.
+console.log('\n== run 22 (V1, from run 1): veil and capabilities, chips, title and hash, hint button, roving keys, Copy, hashchange, status line');
+{
+  setupEnv({ v1: true, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run22 ready');
+  s = st();
+  { // the veil is out of the accessibility tree and the focus order once it is hidden (hardening lane)
+    const v = SIM.byIdEl('stage-veil');
+    ok(v.classList.contains('is-hidden') && v.getAttribute('aria-hidden') === 'true' && v.getAttribute('inert') === '' && v.inert === true && s.caps && s.caps.ok === true && s.caps.missing.length === 0,
+      `ready: the veil is hidden with aria-hidden="true" and inert; capabilities ok (${s.caps && s.caps.checks.map((c) => `${c.id} ${c.ok ? 'ok' : 'x'}`).join(', ')})`);
+  }
+  const chips = Object.fromEntries(EX.map((e) => [e.id, SIM.byIdEl('card-list').querySelectorAll('.card').find((c) => c.dataset.id === e.id).querySelector('.chip').textContent]));
+  ok(chips['hasse-view'] === 'live' && chips['dist-lens'] === 'not in widgets8' && chips['chart-kit'] === 'available', `chips: hasse-view=${chips['hasse-view']}, dist-lens=${chips['dist-lens']}, chart-kit=${chips['chart-kit']}`);
+  ok(location.hash === '#hasse-view' && document.title.startsWith('HasseView'), 'hash and title follow the selection');
+  // hint on another card: loads that example and puts the cursor on the hint line
+  const ivHint = byId['interval-inspector'].tryThis.find((h) => h.kind === 'select');
+  const ivCard = SIM.byIdEl('card-list').querySelectorAll('.card').find((c) => c.dataset.id === 'interval-inspector');
+  ivCard.querySelector('.card-main').click();
+  await until(() => st().phase === 'ready' && st().shown === 'interval-inspector', 5000, 'run22 iv');
+  ok(location.hash === '#interval-inspector' && document.title.startsWith(byId['interval-inspector'].title), `a card click moves the hash and title too (${location.hash}, "${document.title.slice(0, 30)}")`);
+  const hintBtn = ivCard.querySelectorAll('.hint').find((b) => b.textContent.includes(ivHint.label));
+  ok(!!hintBtn, `current card renders its hints (found “${ivHint.label}”)`);
+  const sc0 = SIM.setCursorCalls.length;
+  hintBtn.click();
+  await sleep(20);
+  ok(st().cursor.lineNumber === ivHint.lineNumber && SIM.setCursorCalls.length > sc0, `hint button moves the cursor to L${ivHint.lineNumber} (api.setCursor)`);
+  // keyboard roving on the rail
+  const cards = SIM.byIdEl('card-list').querySelectorAll('.card-main');
+  const cur = cards.find((b) => b.dataset.id === 'interval-inspector');
+  SIM.byIdEl('card-list').dispatch('keydown', { key: 'ArrowDown', target: cur });
+  const next = cards[cards.indexOf(cur) + 1];
+  ok(document.activeElement === next && next.tabIndex === 0 && cur.tabIndex === -1, `ArrowDown moves focus to ${next.dataset.id} (roving tabindex)`);
+  SIM.byIdEl('card-list').dispatch('keydown', { key: 'End', target: next });
+  ok(document.activeElement === cards[cards.length - 1], 'End focuses the last card');
+  // copy
+  SIM.byIdEl('copy-btn').click();
+  await sleep(20);
+  ok(SIM.clipboard === byId['interval-inspector'].text && /Copied/.test(SIM.byIdEl('copy-label').textContent), 'Copy for VS Code copies the example text');
+  // hashchange deep link
+  location.hash = '#chart-kit'; SIM.fireWin('hashchange');
+  await until(() => st().phase === 'ready' && st().shown === 'chart-kit', 5000, 'run22 hash');
+  ok(api.currentText() === byId['chart-kit'].text && document.title.startsWith('ChartKit'), 'hashchange #chart-kit switches the example (and the title)');
+  await sleep(300); // the status line renders every 250 ms
+  // visible text: plain words (the example, "is ready"), no internals; the tooltip and the test API keep the detail
+  {
+    const vis = SIM.byIdEl('status-text').textContent; const tip = SIM.byIdEl('status-line').title || ''; const api2 = st().statusLine || {};
+    ok(/ChartKit/.test(vis) && / is ready\b/.test(vis) && !/header|session|qed64|covered/.test(vis) && /header covered/.test(tip) && /session s\d/.test(tip)
+      && api2.text === vis && api2.detail === tip && SIM.byIdEl('status-line').dataset.phase === 'ready',
+    `status line: plain "${vis}"; tooltip "${tip}"`);
+  }
+  noInternals('rail, hints, Copy, hashchange, status line');
+}
+
+console.log('\n== run 23 (V1, from run 6): two kept buffers: the chooser lists them newest first; Open opens the newest, restoreSaved(1) the first one ever saved');
+{
+  const ORIG = 'theorem original : True := trivial\n', EDITED = 'theorem edited : True := trivial\n';
+  setupEnv({ v1: true, hash: '#chart-kit', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } }, storage: { 'qed64-showcase:saved': ORIG, 'qed64-showcase:saved-history': JSON.stringify([EDITED]) } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run23 ready');
+  ok(SIM.byIdEl('restore-btn').hidden === false && SIM.byIdEl('restore-pick').hidden === false && SIM.byIdEl('restore-pick').children.length === 2 && /^newest: theorem edited/.test(SIM.byIdEl('restore-pick').children[0].textContent),
+    `two kept buffers: the chooser lists them newest first (${SIM.byIdEl('restore-pick').children.map((o) => o.textContent).join(' | ')})`);
+  SIM.byIdEl('restore-btn').click();
+  await sleep(80);
+  ok(api.currentText() === EDITED && st().custom === true && st().current === null, 'Open opens the NEWEST kept buffer (the history head), not the first one ever saved; no card is current');
+  ok(await api.restoreSaved(1) === true && await until(() => api.currentText() === ORIG, 2000, 'run23 restoreSaved(1)'), 'restoreSaved(1) / the chooser reaches the first one ever saved');
+  noInternals('saved-buffer chooser');
+}
+
+console.log('\n== run 24 (V1, from run 7): Keep waiting hides the stall card and re-arms the watchdog; a halted relay is never the stall card');
+{
+  setupEnv({ v1: true, search: '?stall=5', hash: '#graph-scope', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run24 ready');
+  const card = () => SIM.byIdEl('error-card');
+  const EDIT = `${byId['graph-scope'].text}-- typed\n`;
+  SIM.stuck = true;
+  SIM.internals._model.setValue(EDIT);
+  await until(() => st().stall.active, 9000, 'run24 stall card');
+  ok(!card().hidden && st().error.kind === 'stalled' && SIM.byIdEl('error-dismiss').textContent === 'Keep waiting', `the stall card is up with [${SIM.byIdEl('error-dismiss').textContent}]`);
+  SIM.byIdEl('error-dismiss').click();
+  const tKeep = Date.now();
+  ok(card().hidden && st().stall.active === false && st().error === null, 'Keep waiting hides the card and re-arms the watchdog');
+  await until(() => st().stall.active, 9000, 'run24 stall card again');
+  ok(Date.now() - tKeep >= 4800 && st().stall.shown === 2, `the card comes back after another threshold (${Date.now() - tKeep} ms; shown ${st().stall.shown}×)`);
+  // a fresh session (Restart Lean), then stuck again and the relay halts before the threshold: the halted card, never the stall card
+  const sess = SIM.internals.relay.session.id;
+  SIM.stuck = false;
+  SIM.byIdEl('error-retry').click();
+  await until(() => st().qed64.phase === 'ready' && st().qed64.session !== sess && !st().stall.active, 8000, 'run24 restart ready');
+  SIM.stuck = true;
+  SIM.internals._model.setValue(`${EDIT}-- third\n`);
+  await sleep(200);
+  SIM.halt();
+  await sleep(6000);
+  ok(st().stall.active === false && st().error && st().error.kind === 'halted' && st().stall.shown === 2, 'a halted relay shows the halted card, never the stall card');
+  SIM.stuck = false;
+  noInternals('Keep waiting, halted');
+}
+
+console.log('\n== run 25 (V1, from run 10): the stall card re-words itself from "still working" to "stopped" when QED64\'s answers stop');
+{
+  setupEnv({ v1: true, search: '?stall=5&probeTimeout=0.5', hash: '#graph-scope', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run25 ready');
+  SIM.busy = true;
+  const ticker = setInterval(() => { SIM.qlive = { ...SIM.qlive, probes: SIM.qlive.probes + 1, answered: SIM.qlive.answered + 1 }; }, 600);
+  SIM.internals._model.setValue(`${byId['graph-scope'].text}-- 24 parallel sleeps\n`);
+  await until(() => st().stall.active, 9000, 'run25 card');
+  ok(st().stall.variant === 'alive' && /Lean is still working/.test(SIM.byIdEl('error-title').textContent), `QED64 answering: the card says "${SIM.byIdEl('error-title').textContent}" (variant alive)`);
+  clearInterval(ticker);
+  await until(() => st().stall.events.some((e) => e.source === 'reworded' && e.variant === 'stopped'), 6000, 'run25 reworded');
+  ok(st().stall.variant === 'stopped' && /stopped making progress/.test(SIM.byIdEl('error-title').textContent) && st().error.kind === 'stalled' && SIM.apiRestarts.length === 0,
+    `no sign of life for ${4 * 0.5} s: the card was re-worded to "${SIM.byIdEl('error-title').textContent}" (event reworded); the gallery restarted nothing`);
+  SIM.busy = false;
+  noInternals('reworded card');
+}
+
+console.log('\n== run 26 (V1, from run 11): diagnostics the page makes itself (origin qed64) are neither progress nor proof of life');
+{
+  setupEnv({ v1: true, search: '?stall=5&probeTimeout=0.5', hash: '#graph-scope', overlays: { widgets8: { imports: [...ALL7, 'DistLens'] } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'ready', 8000, 'run26 ready');
+  SIM.stuck = true;
+  const t0 = Date.now();
+  SIM.internals._model.setValue(`${byId['graph-scope'].text}-- frozen, the page chatty\n`);
+  await sleep(100); // the frozen version's own fileProgress is a real frame
+  const f0 = st().liveness.frames; const pm0 = st().stall.progressMsgs; const sy0 = st().liveness.syntheticFrames; const d0 = st().api.events.diagnostics || 0;
+  // what the page's JS layer keeps sending while the Lean side is frozen: its own notes as diagnostics (source QED64)
+  const synth = setInterval(() => {
+    const r = SIM.internals.relay;
+    r.toClient({ jsonrpc: '2.0', method: 'textDocument/publishDiagnostics', params: { uri: r.doc.uri, version: r.doc.version, diagnostics: [{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } }, severity: 1, source: 'QED64', message: 'halted' }] } });
+  }, 150);
+  await until(() => st().stall.active, 9000, 'run26 card');
+  clearInterval(synth);
+  s = st();
+  ok(Date.now() - t0 >= 4800 && s.stall.variant === 'stopped' && s.liveness.syntheticFrames - sy0 >= 10 && s.api.events.diagnostics - d0 === s.liveness.syntheticFrames - sy0 && s.liveness.frames === f0 && s.stall.progressMsgs === pm0,
+    `${s.liveness.syntheticFrames - sy0} QED64-made diagnostics (origin qed64) counted as synthetic, not as frames (${s.liveness.frames - f0} new) or progress (${s.stall.progressMsgs - pm0}): the card after ${Date.now() - t0} ms says "stopped"`);
+  // a diagnostics frame from Lean still counts
+  { const r = SIM.internals.relay; r.toClient({ jsonrpc: '2.0', method: 'textDocument/publishDiagnostics', params: { uri: r.doc.uri, version: r.doc.version, diagnostics: [] } }); }
+  ok(st().liveness.frames === f0 + 1 && st().stall.progressMsgs === pm0 + 1, 'a Lean publishDiagnostics (origin lean) still counts as a frame and as progress');
+  SIM.stuck = false;
+  noInternals('synthetic diagnostics');
 }
 
 console.log(`\nSIM-GALLERY ${fails ? 'FAIL' : 'OK'} ${oks} ok, ${fails} failed`);
