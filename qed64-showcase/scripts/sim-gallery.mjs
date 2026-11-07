@@ -1064,7 +1064,8 @@ console.log('\n== run 19 (V1): status().boot.failed → the boot card; a session
   r = await api.select('hasse-view');
   ok(r.phase === 'ready' && r.shown === 'hasse-view' && api.currentText() === byId['hasse-view'].text, 'after the adoption the gallery switches normally (hasse-view ready)');
   noInternals('halt after serve');
-  // (h2) the same halt while QED64's boot is NOT done: no late adoption (the halt is the hard card's alone; Try again reloads)
+  // (h2) the same halt BEFORE QED64's boot is done (before its 30 s check fallback): the late adoption is armed too, and once
+  //     the fallback marks the boot done and the visitor's edit re-arms the relay, QED64 is ready and the gallery adopts it
   setupEnv({ hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } } });
   SIM.stuck = true;
   api = await loadGallery();
@@ -1072,8 +1073,18 @@ console.log('\n== run 19 (V1): status().boot.failed → the boot card; a session
   SIM.halt();
   await until(() => st().phase === 'error', 5000, 'run19h2 halted card');
   s = st();
-  ok(s.error.kind === 'halted' && s.qed64.boot.done === false && s.boot.latePending === false, `a halt before QED64's boot is done → the halted card without a late adoption (boot done ${s.qed64.boot.done}, latePending ${s.boot.latePending})`);
+  ok(s.error.kind === 'halted' && s.qed64.boot.done === false && s.boot.latePending === true && s.booted === false,
+    `a halt before QED64's boot is done → the halted card, late adoption armed (boot done ${s.qed64.boot.done}, latePending ${s.boot.latePending})`);
+  await sleep(1500);
+  ok(st().phase === 'error' && !SIM.byIdEl('error-card').hidden && st().booted === false && st().boot.recovered === 0,
+    'while the page stays halted the card stays and nothing is adopted');
+  SIM.frame._win._page.bootDone();
   SIM.stuck = false;
+  SIM.internals._model.setValue(`${byId['chart-kit'].text}-- typed after the early halt\n`);
+  await until(() => st().phase === 'ready' && st().booted, 5000, 'run19h2 adopted');
+  s = st();
+  ok(s.error === null && SIM.byIdEl('error-card').hidden && s.boot.recovered === 1 && s.boot.latePending === false && s.op.label === 'reload',
+    `the early halt recovered too: the card hid and the page was adopted (recovered ${s.boot.recovered}, op ${s.op.label})`);
   noInternals('halt before boot done');
 }
 

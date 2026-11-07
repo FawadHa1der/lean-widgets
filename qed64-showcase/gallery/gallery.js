@@ -1258,7 +1258,7 @@ async function boot(w) {
     // a true stall: the card shows, and a later 'ready' on this page still finishes the boot (lateBootCheck)
     if (e && e.code === 'TIMEOUT') S.boot.late = { kind: 'boot', id: ex.id, text: ex.text, doc: S.bootDoc, t0: S.op.t0 };
     // a halt after QED64 served: the visitor's edit re-arms it, and the page is adopted once it is ready
-    else if (haltedAfterServe(e)) S.boot.late = { kind: 'reload', id: ex.id, text: null, doc: S.bootDoc, t0: S.op.t0 };
+    else if (isHalt(e)) S.boot.late = { kind: 'reload', id: ex.id, text: null, doc: S.bootDoc, t0: S.op.t0 };
     throw e;
   }
   S.bootMs = finishOp();
@@ -1268,16 +1268,13 @@ async function boot(w) {
 }
 
 /**
- * A halt (GalleryError 'halted') while QED64's status says its boot is done and not failed (status().boot.done; at O its 30 s
- * check fallback marks it so even before a first verdict): not the end of this page. The relay re-arms on the visitor's next
- * edit (a didChange), so the card arms the late adoption like a true stall: lateBootCheck hides it and adopts the page
- * (adoptShown) once QED64 is ready.
+ * A halt (GalleryError 'halted') during a boot is not the end of this page, whether QED64's boot already reads done (at O its
+ * 30 s check fallback marks it so after the first serve) or not yet (a halt before that fallback; the fallback still turns the
+ * page editable later). The relay re-arms on the visitor's next edit (a didChange), so the card arms the late adoption like a
+ * true stall: lateBootCheck hides it and adopts the page (adoptShown) only once this same document reports ready with its
+ * relay serving, so a page that never recovers keeps the card.
  */
-function haltedAfterServe(e) {
-  if (!(e instanceof GalleryError) || e.kind !== 'halted') return false;
-  const st = apiStatus() || e.status || null; const b = st && st.boot;
-  return !!(b && b.done && !b.failed);
-}
+function isHalt(e) { return e instanceof GalleryError && e.kind === 'halted'; }
 
 /** After a reload we did not start (e.g. the page's own Reload button): re-attach without navigating. */
 async function adoptReload() {
@@ -1295,7 +1292,7 @@ async function adoptReload() {
     requireCapabilities(hook); warnWidgetSourceCache(hook);
     let r;
     try { r = await waitReady({ text: null, w: null, timeoutMs: BOOT_TIMEOUT_MS, label: 'the reloaded page', progress: true }); }
-    catch (e) { if ((e && e.code === 'TIMEOUT') || haltedAfterServe(e)) S.boot.late = { kind: 'reload', id, text: null, doc: S.bootDoc, t0: S.op.t0 }; throw e; }
+    catch (e) { if ((e && e.code === 'TIMEOUT') || isHalt(e)) S.boot.late = { kind: 'reload', id, text: null, doc: S.bootDoc, t0: S.op.t0 }; throw e; }
     S.bootMs = finishOp(); S.booted = true; S.everReady = true;
     adoptShown(r, id);
   } catch (e) { failWith(e); }
