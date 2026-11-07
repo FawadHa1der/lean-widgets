@@ -444,7 +444,7 @@ function hintButton(ex, h) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'hint';
   b.setAttribute('aria-label', `${h.label}. ${h.detail} Moves the editor cursor to line ${h.lineNumber}.`);
-  const k = document.createElement('span'); k.className = 'hint-kind'; k.textContent = h.kind === 'cursor' ? 'cursor' : h.kind === 'select' ? 'select' : h.kind === 'hover' ? 'hover' : 'click';
+  const k = document.createElement('span'); k.className = 'hint-kind'; k.textContent = h.kind === 'cursor' ? 'cursor' : h.kind === 'select' ? 'select' : 'click';   // a 'hover' hint (a type popup) opens on a click too
   const t = document.createElement('span'); t.textContent = h.label;
   const d = document.createElement('span'); d.className = 'hint-detail'; d.textContent = h.detail;
   b.append(k, t, d);
