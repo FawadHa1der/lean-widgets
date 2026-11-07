@@ -2467,8 +2467,15 @@ during a boot, and none of the three halted: each loaded the gallery once and bo
 pin `521cf3f`) on gallery `65e7e14b…`, lock `df7cf00e…`, overlay `widgets8` `a57cde34…`.
 
 **Rows 14-16 on `fb3174a`** (the CI mirror, the rehearsal state in `$W/deploy-rehearsal-P12-fb3174a`, the deploy
-rehearsal with the same 8 scenarios): rehearsed on `fb3174a`.
-RESULT-PENDING: rows 14-16 on fb3174a.
+rehearsal with the same 8 scenarios), 2026-11-07 21:38Z-22:14Z: all OK. The CI mirror's `qed64-static` succeeded;
+`rehearse.sh upload-dry upload rollback load` gave `UPLOAD OK`, `ROLLBACK OK` and `LOAD-R2 OK: 90 objects`; and
+`ci/rehearse-deploy.sh` gave `REHEARSE-DEPLOY OK: skip dry-run unpublished no-preview deploy no-origin no-verdict tamper`
+(logs `$W/logs/p12-ci-local.log`, `p12-rh-state.log`, `p12-rehearse-deploy.log`; these names were reused, so pass 1's
+copies on `8362a6f` are gone, its results above).
+
+**Row 7 again, on the final gallery `65e7e14b…`** (2026-11-07 22:03Z, so that every check that loads the gallery ran on
+it): `WIDGETS OK 8/8`, `HINTS OK 13/13` on simp-lens, and its `--fault no-click` control `HINTS FAIL 12/13`, failing only
+on the click hint, as it must (logs `$W/logs/p12r-widgets.log`, `p12r-hints.log`, `p12r-hints-noclick.log`).
 
 ### Not done (P1 and P2, 2026-11-07)
 
