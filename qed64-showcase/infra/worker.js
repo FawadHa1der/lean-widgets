@@ -4,7 +4,7 @@
  *
  *   static assets (Workers assets, binding ASSETS; each file ≤ 25 MiB)
  *     /                  the pinned QED64 dist (release/<buildId>/dist), unmodified
- *     /showcase/         gallery/ (index.html, gallery.js, lib.js, qed64-bridge.js, examples.json, pin.json …)
+ *     /showcase/         gallery/ (index.html, gallery.js, lib.js, examples.json, pin.json …)
  *   R2 (binding ARTIFACTS)
  *     /runtime/*, /profiles/*   lean4-wasm64/<release id>/{runtime,profiles}/…: the kernel's published release, read in
  *                               place and never copied (hosting.mount in the record); errors there are never cached

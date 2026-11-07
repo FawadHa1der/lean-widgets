@@ -116,7 +116,7 @@ big=$(find "$ASSETS" -type f -size +25M | head -3)
 for d in runtime profiles snapshots; do [ ! -e "$ASSETS/$d" ] || die "assets/$d exists: the worker routes /$d/ to R2, it must not be an asset"; done
 # The shell hangs at "starting Lean" without its workers, and the gallery cannot boot without its own files.
 for f in index.html workers/lean.worker.js workers/lsp-front-door.js workers/lsp-frames.js workers/snapshot-prefetch.worker.js \
-         showcase/index.html showcase/gallery.js showcase/lib.js showcase/qed64-bridge.js showcase/examples.json showcase/pin.json; do
+         showcase/index.html showcase/gallery.js showcase/lib.js showcase/examples.json showcase/pin.json; do
   [ -f "$ASSETS/$f" ] || die "deploy tree incomplete: $f missing"
 done
 # QED64 385a1ac on (every registered pin): lean.worker.js loads the Memory64 probe with importScripts("memory64-probe.js"),

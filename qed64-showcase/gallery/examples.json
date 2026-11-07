@@ -1372,8 +1372,8 @@
         },
         {
           "kind": "hover",
-          "label": "Hover `n` in the panel (line 16)",
-          "detail": "Hover `n` in the panel's `n + 0`: a popup shows its type, `n : ℕ`.",
+          "label": "Click `n` in the panel (line 16)",
+          "detail": "Click `n` in the panel's `n + 0`: a popup shows its type, `n : ℕ`.",
           "claimTexts": [
             "n : ℕ"
           ],

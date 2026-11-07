@@ -3,13 +3,12 @@
 // browser and by scripts/check-gallery.mjs in Node (with a real or mocked fetch), so the preflight
 // that guards navigation is the same code the static gate exercises.
 //
-// Facts this mirrors (QED64 @9fdf9b8, read from the submodule deps/qed64; qed64-boot.ts and resident-session.ts are unchanged since 1859b83):
+// Facts this mirrors (QED64 at the registered pins, read from the submodule deps/qed64):
 //   * ?snapshots=<dir> fetches /<dir>/index.json and re-roots every entry url that starts with
-//     /snapshots/ to /<dir>/ (frontend/src/qed64-boot.ts:96-106). The gallery names overlays LOGICALLY (widgets8, widgets7;
+//     /snapshots/ to /<dir>/ (lib/qed64-boot.ts:157-178). The gallery names overlays LOGICALLY (widgets8, widgets7;
 //     ?overlay=, badges, chips, notices) and SERVES them from /snapshots/<served dir>/: gallery/pin.json's `overlays` map
-//     (build-gallery.mjs, from scripts/lib/pins.mjs overlayDirs) — the identity for pins A–H (pin.json schema v2), and
-//     '<name>.<bid16>' for a per-runtime pin (schema v3, e.g. widgets8.f69cca24d0878a58); a pin.json without the map
-//     (an older build) means the bare names. overlayDirOf / overlayNameOf translate. A failed or malformed override index
+//     (build-gallery.mjs, from scripts/lib/pins.mjs overlayDirs): '<name>.<bid16>' for every registered pin (schema v3,
+//     e.g. widgets8.f69cca24d0878a58). overlayDirOf / overlayNameOf translate. A failed or malformed override index
 //     fails SILENTLY in the page and only surfaces later as "snapshot 'init' failed to load"
 //     (map-frontend-boot.md (1c)) — hence this preflight before navigation.
 //   * A Mathlib header boots the snapshot names ['init','mathlib'] (resident-session.ts:85).
@@ -29,18 +28,16 @@ export const GiB = 1073741824;
 export const MEM_MIN_BYTES = 1 * GiB;
 export const MEM_MAX_BYTES = 6 * GiB; // DEFAULT_MAXIMUM_BYTES; initialBytes above the cap cannot be committed
 export const MEM_STEP_BYTES = 256 * MiB;
-export const BUFFER_KEY = 'qed64.buffer'; // main.ts:335-342 (the page's boot input), bundle: localStorage.getItem("qed64.buffer")
 export const SAVED_KEY = 'qed64-showcase:saved';            // the FIRST user buffer the gallery displaced; never overwritten
 export const SAVED_HISTORY_KEY = 'qed64-showcase:saved-history'; // later displaced user buffers, newest first, bounded
 export const SAVED_HISTORY_MAX = 5;
 export const EXAMPLE_EDIT_KEY = 'qed64-showcase:edited-example'; // the latest gallery-edited example (one slot; never a user buffer)
 export const DOCUMENT_KEY = 'qed64-showcase:document'; // V1 (embed mode): the text the relay last forwarded ('document' events); re-seeds an adopted reload
-export const MEM_PLACEHOLDER_PREFIX = '-- QED64 showcase:';
 
 /**
  * The served directory of overlay `name` under pin.json's `overlays` map: an OWN-property lookup (so `?overlay=widgets8` is
  * an alias of the pin's widgets8 directory), else `name` itself (a literal directory: `nope`, `ux-unpaired-<pid>`, an
- * explicit `widgets8.<bid16>`). No map (null/undefined: an older pin.json) → the bare name.
+ * explicit `widgets8.<bid16>`). No map (null/undefined: the lib's own bare-name tests) → the bare name.
  */
 export function overlayDirOf(name, dirs) {
   if (dirs && typeof dirs === 'object' && Object.prototype.hasOwnProperty.call(dirs, name) && typeof dirs[name] === 'string') return dirs[name];
@@ -52,13 +49,13 @@ export function overlayNameOf(dir, dirs) {
   return dir;
 }
 /**
- * Validate pin.json's `overlays` (logical name → served directory). Absent (undefined/null) → {ok, dirs: null} (bare names).
- * Otherwise a plain non-empty object whose keys and values all match OVERLAY_RE, with distinct values, no value naming
+ * Validate pin.json's `overlays` (logical name → served directory). Absent (undefined/null) is an error: every registered
+ * pin's pin.json carries it (build-gallery.mjs). Otherwise a plain non-empty object whose keys and values all match OVERLAY_RE, with distinct values, no value naming
  * ANOTHER logical name, and every DEFAULT_OVERLAYS name present. Never throws: {ok, dirs, error}.
  */
 export function parseOverlayDirs(v) {
-  if (v === undefined || v === null) return { ok: true, dirs: null, error: null };
   const bad = (error) => ({ ok: false, dirs: null, error });
+  if (v === undefined || v === null) return bad('has no overlays map (logical name → served directory)');
   if (typeof v !== 'object' || Array.isArray(v)) return bad(`overlays must be an object (logical name → served directory), got ${Array.isArray(v) ? 'an array' : typeof v}`);
   const keys = Object.keys(v);
   if (keys.length === 0) return bad('overlays is empty');
@@ -77,7 +74,7 @@ export function parseOverlayDirs(v) {
 
 /**
  * The stock page URL for an overlay's SERVED directory `dir` (relative to the gallery's origin; overlayDirOf maps a logical
- * name). Legacy pins: `/?snapshots=snapshots/<dir>`.
+ * name). Without options: `/?snapshots=snapshots/<dir>` (the plain stock page: the error card's link).
  * Embedding contract v1 (deps/qed64/docs/EMBEDDING.md §3, §4): {embed: true} adds `embed=1` (the page neither reads nor
  * writes qed64.buffer and hides its examples menu), {memoryGiB} adds `memory=<GiB>` (the page validates and clamps it: the
  * initial commit of EVERY session), {code} appends `#code=<encodeURIComponent(text)>` (the boot document, honoured only
@@ -111,10 +108,6 @@ export function parseMem(raw) {
   if (bytes > MEM_MAX_BYTES) { bytes = MEM_MAX_BYTES; note = `?mem=${raw} lowered to the 6 GiB cap (the session's maximumBytes)`; }
   return { ok: true, bytes, gib: +(bytes / GiB).toFixed(3), note };
 }
-
-/** The text the light first session boots with under ?mem= (no import lines → ['init'], 256 MiB). */
-export const memPlaceholder = (gib) =>
-  `${MEM_PLACEHOLDER_PREFIX} starting a light session first, then the widgets environment with a ${gib} GiB initial memory commit (?mem=${gib}).\n`;
 
 const isHtml = (ct) => /text\/html/i.test(ct || '');
 const isJsonish = (ct) => /json/i.test(ct || '');
@@ -203,7 +196,7 @@ export async function preflightOverlay(o) {
 
 /**
  * Choose the overlay: an explicit ?overlay= is preflighted alone (never falls back); otherwise widgets8,
- * then widgets7. `dirs`: pin.json's overlays map (null: bare names). Each candidate is served from overlayDirOf(name, dirs)
+ * then widgets7. `dirs`: pin.json's overlays map (null: bare names, the lib's own tests). Each candidate is served from overlayDirOf(name, dirs)
  * (`?overlay=widgets8` is the alias of the pin's widgets8 directory; any other value a literal directory) and reported by
  * its logical name overlayNameOf(dir, dirs) (an explicit `widgets8.<bid16>` of this pin reads as widgets8).
  * Returns {ok, overlay, dir, result, attempts:[{overlay, dir, ok, result}], fellBack, requested}.
@@ -268,10 +261,10 @@ export function derivedFromExample(text, exampleTexts) {
 }
 
 /**
- * Decide what to store when the gallery is about to replace qed64.buffer (the page's boot document).
+ * Decide what to store when a boot is about to replace a text the gallery holds (qed64-showcase:document).
  * Pure: takes the current storage values, returns the new ones. Never overwrites an existing SAVED value: the first
  * displaced user buffer stays in SAVED forever (until the user clears it); later distinct ones go to a bounded,
- * newest-first history. Not user buffers, so never stored there: pristine example texts, the ?mem placeholder, the
+ * newest-first history. Not user buffers, so never stored there: pristine example texts, the
  * text about to be seeded, and an example the user edited in the gallery (same first EXAMPLE_PREFIX_LINES lines as an
  * example: QED64 persists the editor, so every gallery edit comes back as qed64.buffer on the next visit). The latest
  * such edited example goes to its own one-slot key (EXAMPLE_EDIT_KEY, action 'example') and can never push a real
@@ -281,7 +274,7 @@ export function derivedFromExample(text, exampleTexts) {
 export function planSave({ prev, seedText, saved, history, exampleTexts }) {
   const hist = Array.isArray(history) ? history.filter((h) => typeof h === 'string') : [];
   const keep = { saved: saved ?? null, history: hist, exampleEdit: null };
-  const isText = typeof prev === 'string' && prev.trim() !== '' && prev !== seedText && !(exampleTexts && exampleTexts.has(prev)) && !prev.startsWith(MEM_PLACEHOLDER_PREFIX);
+  const isText = typeof prev === 'string' && prev.trim() !== '' && prev !== seedText && !(exampleTexts && exampleTexts.has(prev));
   if (!isText) return { ...keep, action: 'none' };
   if (derivedFromExample(prev, exampleTexts)) return { ...keep, exampleEdit: prev, action: 'example' };
   if (saved === null || saved === undefined) return { ...keep, saved: prev, action: 'saved' };
@@ -323,12 +316,11 @@ export function parseHash(hash, ids) {
 //     SharedArrayBuffer and no threads;
 //   * SharedArrayBuffer (Lean's pthreads share one wasm memory);
 //   * WebAssembly Memory64: the same 13-byte module QED64's worker validates (MEMORY64_PROBE: a memory section with flags
-//     0x04; public/workers/lean.worker.js up to pin H, public/workers/memory64-probe.js Qed64Memory64 from 385a1ac on —
-//     check-gallery.mjs compares both) and, where the first two hold, a SHARED 64-bit memory built the
+//     0x04; public/workers/memory64-probe.js Qed64Memory64 on every registered pin — check-gallery.mjs compares it) and, where the first two hold, a SHARED 64-bit memory built the
 //     way the worker builds it (lean.worker.js capabilities(): {initial 1, maximum 2, shared, address 'i64'});
 //   * memory: navigator.deviceMemory where the browser exposes it (Chromium only; an approximate figure: Chrome 151 on this 36 GB host reports 32, UX C24). A Chromium tab
 //     running the gallery uses about 8–9 GB at ready (renderer 8.2–9.0 GiB, UX C3) and peaks at about 12 GB on a
-//     reload (C10); two tabs, or QED64's "Load exact imports", take about 17 GB (C18, C16; README "Browsers and
+//     reload (C10); two tabs, or a session with exact imports, take about 17 GB (C18, C16; README "Browsers and
 //     memory"), so the text asks for 16 GB of RAM or more and one showcase tab at a time. A device that reports less
 //     than 8 GB gets a WARNING card with "Try anyway" (the figure is approximate), never a hard block; a browser that
 //     does not expose it is not judged.

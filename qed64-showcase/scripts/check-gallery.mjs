@@ -11,9 +11,7 @@
 //      iframe title, html lang, button types
 //   6. CSS: every var(--x) is defined on :root; the dark block redefines only known tokens
 //   7. lib.js unit tests (parseMem, rerootUrl, classifyStatus, preflight + chooseOverlay on a mock server, the served overlay
-//      directories: alias / explicit / literal / legacy, and a per-runtime pin whose site serves only the bare names)
-//   8. qed64-bridge.js in a vm sandbox: idempotent install (one listener), D1 abortSignal strip + re-dispatch,
-//      D2 applyEdit applied to the open model + reply
+//      directories: alias / explicit / literal, and a per-runtime pin whose site serves only the bare names)
 //   9. scripts/sim-gallery.mjs: the real gallery.js against a fake DOM and a modelled QED64 page
 //  10. --live: start scripts/serve.mjs on a spare port (QUIET, Node only — no browser) and run the real preflight
 //      against the served overlays (each logical store at its pin.json directory), plus MIME/COOP/COEP checks on the
@@ -111,14 +109,13 @@ const lock = JSON.parse(lockBuf.toString('utf8'));
 ok(pin.buildId === lock.qed64.buildId && pin.qed64.commit === lock.qed64.commit && pin.lockSha256 === crypto.createHash('sha256').update(lockBuf).digest('hex'),
   `pin.json buildId ${pin.buildId} == lock; commit ${pin.qed64.commit.slice(0, 12)}; lockSha256 matches`);
 ok(JSON.stringify(pin.bundleBuildIds) === JSON.stringify([pin.buildId]), `release bundle names exactly [${pin.bundleBuildIds}]`);
-{ // embedding contract v1 (EMBEDDING.md §4): apiRevision / shell mirror release/<pin>/dist/qed64-build.json, null when the pin has none
+{ // embedding contract v1 (EMBEDDING.md §4): apiRevision / shell mirror release/<pin>/dist/qed64-build.json; the gallery requires apiRevision
   const bf = path.join(SC, 'release', pin.pin, 'dist', 'qed64-build.json');
   const b = fs.existsSync(bf) ? JSON.parse(read(bf)) : null;
   const wantApi = b && typeof b.apiRevision === 'string' && b.apiRevision ? b.apiRevision : null;
   const wantShell = b && typeof b.shell === 'string' && b.shell ? b.shell : null;
-  ok('apiRevision' in pin && 'shell' in pin && pin.apiRevision === wantApi && pin.shell === wantShell && (!b || (b.schema === 'qed64.build/v1' && b.buildId === pin.buildId)),
-    `pin.json apiRevision ${JSON.stringify(pin.apiRevision)} / shell ${JSON.stringify(pin.shell)} == ${b ? `release/${pin.pin}/dist/qed64-build.json (${b.schema}, buildId ${b.buildId})` : 'null (no qed64-build.json: legacy page)'}`);
-  console.log(`info  gallery mode on this pin: ${pin.apiRevision != null ? `V1 (page API ${pin.apiRevision})` : 'legacy (qed64.buffer seed, relay waits)'}`);
+  ok(b && wantApi !== null && 'shell' in pin && pin.apiRevision === wantApi && pin.shell === wantShell && b.schema === 'qed64.build/v1' && b.buildId === pin.buildId,
+    `pin.json apiRevision ${JSON.stringify(pin.apiRevision)} / shell ${JSON.stringify(pin.shell)} == ${b ? `release/${pin.pin}/dist/qed64-build.json (${b.schema}, buildId ${b.buildId})` : '(no qed64-build.json: the gallery needs the embedding contract v1)'}`);
 }
 { // the served overlay directories: pin.json overlays == pins.mjs overlayDirs(pin) (the naming contract) == the lock's URLs
   let want = null; let why = null;
@@ -231,9 +228,8 @@ section('7. lib.js unit tests');
   ok(ps({ prev: 'mine' }).action === 'saved' && ps({ prev: 'mine' }).saved === 'mine'
     && ps({ prev: 'other', saved: 'mine' }).saved === 'mine' && ps({ prev: 'other', saved: 'mine' }).history[0] === 'other'
     && ps({ prev: 'mine', saved: 'mine' }).action === 'known' && ps({ prev: 'EX', saved: 'mine' }).action === 'none' && ps({ prev: null }).action === 'none'
-    && ps({ prev: `${L.MEM_PLACEHOLDER_PREFIX} x` }).action === 'none'
     && ps({ prev: 'n', saved: 'mine', history: ['a', 'b', 'c', 'd', 'e'] }).history.length === L.SAVED_HISTORY_MAX,
-    'planSave: first user buffer saved, an existing saved value is never overwritten (bounded newest-first history), examples/placeholder ignored');
+    'planSave: first user buffer saved, an existing saved value is never overwritten (bounded newest-first history), examples ignored');
   { // edited examples never enter saved/history; the chooser lists kept buffers newest first
     const EXT = 'import Mathlib\nimport A\n\n/-! # A: title\nbody\n';
     const ex2 = new Set([EXT]);
@@ -254,7 +250,6 @@ section('7. lib.js unit tests');
   okTry(() => L.parseHash('#%E0%A4%A', ids).id === null, 'parseHash: truncated UTF-8 escape #%E0%A4%A -> id null (never throws)');
   okTry(() => L.parseHash('#nope', ids).bad === 'nope', 'parseHash: unknown id #nope -> bad "nope"');
   okTry(() => L.parseHash('', ids).bad === null && L.parseHash('', ids).id === null, 'parseHash: empty hash -> no id, no notice');
-  ok(L.memPlaceholder(3).split('\n').every((l) => !/^\s*import\s/.test(l)) && L.memPlaceholder(3).startsWith(L.MEM_PLACEHOLDER_PREFIX), 'mem placeholder has no import lines (boots [init] at 256 MiB)');
   { // checkCapabilities (the card before anything boots); the probe module is QED64's own
     const pr = memory64ProbeOf(PINS.storePath('qed64', { id: PINS.activePinId() })); // the source dependency at the active pin
     ok(pr.bytes && pr.bytes.join() === L.MEMORY64_PROBE.join() && WebAssembly.validate(new Uint8Array(L.MEMORY64_PROBE)),
@@ -337,9 +332,9 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   ok(!c4.ok && c4.overlay === 'widgets8', 'chooseOverlay: reports the unpaired widgets8 over the absent widgets7');
 }
 { // the SERVED overlay directories (gallery/pin.json overlays = scripts/lib/pins.mjs overlayDirs): a per-runtime pin (pin/v3)
-  // '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's directory, any other value a literal directory. The
-  // gallery's lib still reads a pin.json without the map (or with the identity map) as the bare names; c1-c4 and the bare
-  // fixtures below keep that path covered
+  // '<name>.<bid16>'; ?overlay=<logical name> is the alias of the pin's directory, any other value a literal directory. A
+  // pin.json without the map is refused (parseOverlayDirs); the lib's overlayDirOf / chooseOverlay still read a null map (or
+  // the identity map) as the bare names, which c1-c4 and the bare fixtures below keep covered
   const D = { widgets7: 'widgets7.0123456789abcdef', widgets8: 'widgets8.0123456789abcdef' };
   const ID = { widgets7: 'widgets7', widgets8: 'widgets8' };
   okTry(() => L.overlayDirOf('widgets8', null) === 'widgets8' && L.overlayDirOf('widgets8', undefined) === 'widgets8' && L.overlayDirOf('widgets8', ID) === 'widgets8'
@@ -349,10 +344,10 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
     && L.overlayNameOf('nope', D) === 'nope' && L.overlayNameOf('widgets8.0123456789abcdef', null) === 'widgets8.0123456789abcdef' && L.overlayNameOf('widgets8', ID) === 'widgets8',
   'overlayDirOf / overlayNameOf: own-property alias under the map (no prototype names), literal otherwise, the bare name without a map; reverse lookup');
   const pod = (v) => L.parseOverlayDirs(v);
-  okTry(() => pod(undefined).ok && pod(undefined).dirs === null && pod(null).ok && pod(ID).ok && JSON.stringify(pod(D).dirs) === JSON.stringify(D)
+  okTry(() => !pod(undefined).ok && pod(undefined).dirs === null && /no overlays map/.test(pod(undefined).error) && !pod(null).ok && pod(ID).ok && JSON.stringify(pod(D).dirs) === JSON.stringify(D)
     && !pod([]).ok && !pod('widgets8').ok && !pod({}).ok && !pod({ ...D, widgets8: '../x' }).ok && !pod({ ...D, widgets8: 7 }).ok && !pod({ widgets8: D.widgets8 }).ok
     && !pod({ widgets7: 'same', widgets8: 'same' }).ok && !pod({ widgets7: 'widgets8', widgets8: 'widgets7' }).ok && !pod({ ...D, 'bad/key': 'x' }).ok,
-  `parseOverlayDirs: absent = bare names; accepts the identity and a per-runtime map; rejects non-objects, empty, unsafe or non-string dirs, a missing default name, duplicate dirs, a dir naming another logical overlay, an unsafe key ("${pod({ ...D, widgets8: '../x' }).error}")`);
+  `parseOverlayDirs: absent is refused ("${pod(undefined).error}"); accepts the identity and a per-runtime map; rejects non-objects, empty, unsafe or non-string dirs, a missing default name, duplicate dirs, a dir naming another logical overlay, an unsafe key ("${pod({ ...D, widgets8: '../x' }).error}")`);
   okTry(() => L.frameUrl(D.widgets8, { embed: true }) === '/?embed=1&snapshots=snapshots/widgets8.0123456789abcdef' && L.frameUrl(D.widgets8) === '/?snapshots=snapshots/widgets8.0123456789abcdef'
     && L.rerootUrl('/snapshots/init.35c8c5f5419e0c33.snapz', D.widgets8) === '/snapshots/widgets8.0123456789abcdef/init.35c8c5f5419e0c33.snapz',
   'frameUrl / rerootUrl take the served directory: /?embed=1&snapshots=snapshots/widgets8.0123456789abcdef');
@@ -388,69 +383,6 @@ const modules = Object.fromEntries(data.examples.map((e) => [e.id, e.module]));
   ok(!a6.ok && a6.overlay === 'nope' && a6.dir === 'nope' && a6.result.notFound && a6.attempts.length === 1, '?overlay=nope stays a literal directory (404, no fallback)');
   const a7 = await ch({ requested: 'widgets8', dirs: D }, bare);
   ok(!a7.ok && a7.dir === D.widgets8 && a7.result.notFound, '?overlay=widgets8 on a per-runtime pin never reaches the bare widgets8/ (404 at the directory)');
-}
-
-// ---------------------------------------------------------------- 8. bridge in a sandbox
-section('8. qed64-bridge.js (vm sandbox)');
-{
-  const src = read(path.join(G, 'qed64-bridge.js'));
-  const sandbox = { window: {}, JSON, setTimeout, clearTimeout };
-  vm.createContext(sandbox);
-  vm.runInContext(src, sandbox);
-  const install = sandbox.window.installQed64Bridge;
-  ok(typeof install === 'function', 'bridge defines window.installQed64Bridge');
-  // a fake QED64 page window
-  const listeners = [];
-  const dispatched = [];
-  const posted = [];
-  const edits = [];
-  const model = { uri: { toString: () => 'file:///project/Probe.lean' }, getLineContent: () => '', getLineCount: () => 3 };
-  const page = {
-    qed64: { editor: { getModel: () => model, pushUndoStop() {}, executeEdits: (src2, e) => edits.push(e), setSelection() {}, revealRangeInCenterIfOutsideViewport() {}, focus() {}, getPosition: () => ({ lineNumber: 1, column: 1 }) } },
-    addEventListener: (type, fn, capture) => listeners.push({ type, fn, capture }),
-    dispatchEvent: (ev) => dispatched.push(ev),
-    MessageEvent: class { constructor(type, init) { this.type = type; Object.assign(this, init); } },
-  };
-  const a = install(page); const b = install(page); const c = install(page);
-  ok(a === b && b === c && listeners.length === 1 && listeners[0].type === 'message' && listeners[0].capture === true, `idempotent: 3 installs → ${listeners.length} capture-phase message listener, same stats object`);
-  const fire = (msg) => { let stopped = false; listeners[0].fn({ data: JSON.stringify(msg), origin: 'http://localhost:5190', source: { postMessage: (m) => posted.push(JSON.parse(m)) }, stopImmediatePropagation: () => { stopped = true; } }); return stopped; };
-  const stopped1 = fire({ seqNum: 7, name: 'sendClientRequest', args: ['file:///project/Probe.lean', '$/lean/rpc/call', {}, { abortSignal: {} }] });
-  const re = dispatched[0] && JSON.parse(dispatched[0].data);
-  ok(stopped1 && a.stripped === 1 && re && !('abortSignal' in re.args[3]) && re.seqNum === 7, 'D1: abortSignal stripped, original stopped, clean message re-dispatched');
-  const stopped2 = fire({ seqNum: 8, name: 'applyEdit', args: [{ changes: { 'file:///project/Probe.lean': [{ range: { start: { line: 2, character: 0 }, end: { line: 2, character: 0 } }, newText: '\nexample : True := trivial' }] } }] });
-  ok(stopped2 && a.applied === 1 && edits.length === 1 && edits[0][0].range.startLineNumber === 3 && edits[0][0].text === '\nexample : True := trivial' && posted.some((p) => p.seqNum === 8),
-    'D2: applyEdit for the open model applied via executeEdits (LSP 0-based → Monaco 1-based) and answered');
-  const stopped3 = fire({ seqNum: 9, name: 'applyEdit', args: [{ changes: { 'file:///other.lean': [] } }] });
-  ok(!stopped3 && a.passed === 1, 'applyEdit for another document passes through untouched');
-  const stopped4 = fire({ seqNum: 10, name: 'sendClientRequest', args: ['u', 'm', {}, {}] });
-  ok(!stopped4 && a.stripped === 1, 'sendClientRequest without abortSignal passes through');
-
-  // D3: concurrent getWidgetSource for one hash -> one request to the page, duplicates answered from its reply
-  const lsp = []; const toClientSeen = [];
-  page.qed64.relay = { fromClient(m) { lsp.push(m); }, toClient(m) { toClientSeen.push(m); } };
-  const ws = (seq, hash) => ({ seqNum: seq, name: 'sendClientRequest', args: ['file:///project/Probe.lean', '$/lean/rpc/call', { sessionId: '1', method: 'Lean.Widget.getWidgetSource', params: { pos: { line: 0, character: 0 }, hash } }, { abortSignal: {} }] });
-  const d0 = dispatched.length;
-  // re-dispatches go back through the listener, as they do on a real window
-  page.dispatchEvent = (ev) => { dispatched.push(ev); listeners[0].fn({ data: ev.data, origin: ev.origin, source: ev.source, stopImmediatePropagation() {} }); };
-  const s1 = fire(ws(20, '123')), s2 = fire(ws(21, '123')), s3 = fire(ws(22, '123')), s4 = fire(ws(23, '456'));
-  const first = dispatched.slice(d0).map((e) => JSON.parse(e.data));
-  ok(s1 && s2 && s3 && s4 && first.length === 2 && first[0].seqNum === 20 && first[1].seqNum === 23 && first.every((m) => !('abortSignal' in m.args[3])) && a.ws.fetched === 2 && a.ws.tapped === true,
-    `D3: 3 concurrent getWidgetSource for one hash -> 1 forwarded (clean), 2 held; another hash forwarded (fetched ${a.ws.fetched})`);
-  // the page's LSP traffic for the two first requests, then the server replies
-  page.qed64.relay.fromClient({ jsonrpc: '2.0', id: 101, method: '$/lean/rpc/call', params: JSON.parse(JSON.stringify(ws(0, '123').args[2])) });
-  page.qed64.relay.fromClient({ jsonrpc: '2.0', id: 102, method: '$/lean/rpc/call', params: JSON.parse(JSON.stringify(ws(0, '456').args[2])) });
-  const p0 = posted.length;
-  page.qed64.relay.toClient({ jsonrpc: '2.0', id: 101, result: { sourcetext: 'export default 1' } });
-  const answered = posted.slice(p0);
-  ok(answered.length === 2 && answered.map((p) => p.seqNum).sort().join() === '21,22' && answered.every((p) => p.result && p.result.sourcetext === 'export default 1') && a.ws.coalesced === 2 && toClientSeen.length === 1,
-    'D3: the first reply answers both held duplicates with the same {sourcetext} and still reaches the language client');
-  const s5 = fire(ws(24, '123'));
-  ok(s5 && posted.at(-1).seqNum === 24 && a.ws.cached === 1, 'D3: a later request for a cached hash is answered without the server');
-  const s6 = fire(ws(25, '456'));
-  const d1 = dispatched.length;
-  page.qed64.relay.toClient({ jsonrpc: '2.0', id: 102, error: { code: -32603, message: 'boom' } });
-  const rel = dispatched.slice(d1).map((e) => JSON.parse(e.data));
-  ok(s6 && rel.length === 1 && rel[0].seqNum === 25 && a.ws.released === 1, 'D3: an error reply releases the held duplicates to the page unchanged (no cache)');
 }
 
 // ---------------------------------------------------------------- 8b. selector contract + thumbnails
@@ -717,7 +649,7 @@ if (LIVE) {
   try {
     const origin = `http://127.0.0.1:${PORT}`;
     await L.waitFor(async () => { try { return (await fetch(`${origin}/showcase/pin.json`)).ok; } catch { return false; } }, { timeoutMs: 10000, intervalMs: 100, label: 'serve.mjs' });
-    for (const [f, mime] of [['index.html', 'text/html'], ['gallery.js', 'text/javascript'], ['lib.js', 'text/javascript'], ['qed64-bridge.js', 'text/javascript'], ['gallery.css', 'text/css'], ['examples.json', 'application/json'], ['pin.json', 'application/json']]) {
+    for (const [f, mime] of [['index.html', 'text/html'], ['gallery.js', 'text/javascript'], ['lib.js', 'text/javascript'], ['gallery.css', 'text/css'], ['examples.json', 'application/json'], ['pin.json', 'application/json']]) {
       const r = await fetch(`${origin}/showcase/${f}`);
       const h = (k) => r.headers.get(k) || '';
       ok(r.status === 200 && h('content-type').startsWith(mime) && h('cross-origin-opener-policy') === 'same-origin' && h('cross-origin-embedder-policy') === 'require-corp',

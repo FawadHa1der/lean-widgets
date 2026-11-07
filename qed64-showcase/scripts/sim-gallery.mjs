@@ -4,34 +4,30 @@
 //   * navigation commits ~5 ms after iframe.src is set; the page document is 'loading' until its module script
 //     runs (~15 ms), which constructs the relay — the FIRST session is created (initialBytes fixed) before
 //     globalThis.qed64 is assigned — then 'complete' + iframe 'load';
-//   * relay: lastText (full-text didChange), state rebooting/serving/halted, makeSession (own property, called on
-//     restart/rearm), restart(opts) only when serving, a halted relay re-arms on didChange;
+//   * relay: lastText (full-text didChange), state rebooting/serving/halted, makeSession (called on restart/rearm),
+//     restart(opts) only when serving, a halted relay re-arms on didChange;
 //   * worker status: version bumps per received text; header covered when the session has 'mathlib' and every
 //     non-Mathlib import is in the overlay region's imports, else headerRefused;
-//   * Monaco: setValue always emits a change (also for identical text), setPosition/getPosition/focus/layout.
+//   * Monaco: setValue always emits a change (also for identical text), setPosition/getPosition/focus.
 // It is a model, not QED64: it checks the gallery's own logic (ordering, waits, supersession, error paths).
 // The browser bring-up must still confirm the model's assumptions (gallery/README.md open questions).
 //
-// TWO PAGE MODELS, toggled per run by the fake fetch of /showcase/pin.json (SIM.v1 sets apiRevision '1.0.0' or null):
-//   * legacy: the page above; the gallery seeds qed64.buffer, taps the relay, probes for liveness. No run boots it any more
-//     (P1 C5 deleted the legacy runs; what only they tested and V1 ships has a V1 twin in runs 22–26). Run 14's
-//     capability cases load it but boot nothing.
-//   * V1 (runs 2, 3, 5, 14's boots, 15–26; QED64 embedding contract v1, deps/qed64/docs/EMBEDDING.md): at module start the page defines a FROZEN
-//     globalThis.qed64.api and dispatches 'qed64:frame-api' {api, frame} on the parent, BEFORE it reads its boot document
-//     (#code= from the frame URL, read once and dropped; in embed mode a setDocument within 5 s, else ''; qed64.buffer is
-//     neither read nor written); setDocument/getDocument/status/settled/restart/setCursor/getCursor/focus/acceptOffer and
-//     the boot/status/ready/document/fileProgress/diagnostics/liveness/reboot/death/offer events with the contract's
-//     semantics. Every access to the INTERNAL members (qed64.relay / ui / editor / status()), to localStorage['qed64.buffer']
-//     and to the page's #boot/#bootcard/#bootlabel/#bar DOM is recorded (SIM.internalTouches, SIM.storageAccess,
-//     SIM.pageDomTouches): a V1 run asserts the gallery made none (§9). The tests reach the model through SIM.internals.
+// THE PAGE MODEL (QED64 embedding contract v1, deps/qed64/docs/EMBEDDING.md; the legacy page model left with P1 C6): at
+// module start the page defines a FROZEN globalThis.qed64.api and dispatches 'qed64:frame-api' {api, frame} on the parent,
+// BEFORE it reads its boot document (#code= from the frame URL, read once and dropped; in embed mode a setDocument within
+// 5 s, else ''; qed64.buffer is neither read nor written); setDocument/getDocument/status/settled/restart/setCursor/
+// getCursor/focus/acceptOffer and the boot/status/ready/document/fileProgress/diagnostics/liveness/reboot/death/offer events
+// with the contract's semantics. Every access to the INTERNAL members (qed64.relay / ui / editor / status()), to
+// localStorage['qed64.buffer'] and to the page's own DOM ids is recorded (SIM.pages[*]._internalTouches, SIM.storageAccess,
+// document._touches): every run asserts the gallery made none (§9). The tests reach the model through SIM.internals.
+// gallery/pin.json is served with apiRevision unless setupEnv({v1: false}) serves one without it (the data card).
 //
 // OVERLAYS: setupEnv({overlays}) is keyed by LOGICAL name (widgets8, widgets7) or a literal directory (widgets9, nope). The fake
 // server serves a logical overlay ONLY at its served directory (setupEnv servedDirs; default: the pin.json overlays map the
 // gallery sees, else the bare names), never at a bare logical name that is not its directory (serve.mjs's F7 rule); the
-// gallery's pin.json carries PIN.overlays unless setupEnv({pinOverlays}) replaces (an object) or removes (null) it.
+// gallery's pin.json carries PIN.overlays unless setupEnv({pinOverlays}) replaces (an object) or removes (null: the data card) it.
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,6 +42,8 @@ const byId = Object.fromEntries(EX.map((e) => [e.id, e]));
 let fails = 0, oks = 0;
 const ok = (c, m) => { if (c) { oks++; console.log(`ok    ${m}`); } else { fails++; console.log(`FAIL  ${m}`); } return !!c; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// the gallery's console warnings, recorded per run (SIM.warns) and still printed
+{ const warn = console.warn.bind(console); console.warn = (...a) => { if (Array.isArray(SIM.warns)) SIM.warns.push(a.map(String).join(' ')); warn(...a); }; }
 // the browser capabilities gallery.js checks before it boots (lib.js checkCapabilities): Node's own, restored per run
 const REAL = { SharedArrayBuffer: globalThis.SharedArrayBuffer, WebAssembly: globalThis.WebAssembly, BigInt: globalThis.BigInt };
 async function until(fn, ms = 8000, label = 'condition') { const t0 = Date.now(); for (;;) { const v = fn(); if (v) return v; if (Date.now() - t0 > ms) throw new Error(`sim timeout: ${label}`); await sleep(10); } }
@@ -129,17 +127,17 @@ function makeQed(pw, bootText, overlay, hooks = {}) {
   let n = 0;
   const mk = (opts) => {
     const snaps = (opts && opts.snapshots) || (needsMathlib(relay.lastText || bootText) ? ['init', 'mathlib'] : ['init']);
-    // V1: ?memory=<GiB> is the initial commit of EVERY session (EMBEDDING.md §4); an explicit restart({initialBytes}) would win
-    const commit = SIM.v1 && hooks.memoryBytes ? hooks.memoryBytes : snaps.includes('mathlib') ? 2048 * MiB : 256 * MiB;
+    // ?memory=<GiB> is the initial commit of EVERY session (EMBEDDING.md §4); an explicit restart({initialBytes}) would win
+    const commit = hooks.memoryBytes ? hooks.memoryBytes : snaps.includes('mathlib') ? 2048 * MiB : 256 * MiB;
     const s = { id: `s${++n}`, snapshots: snaps, initialBytes: commit, lean: { request: async () => ({ memory: { initialBytes: relay.session.initialBytes, currentBytes: relay.session.initialBytes } }) } };
     return s;
   };
   relay.makeSession = mk;
-  // V1: Monaco's version id, which the LSP client sends as the document version (page-api.ts whenForwarded)
+  // Monaco's version id, which the LSP client sends as the document version (page-api.ts whenForwarded)
   let modelVersion = 1;
-  const model = { text: bootText, getValue() { return this.text; }, setValue(t) { this.text = t; SIM.setValueCalls++; const v = ++modelVersion; setTimeout(() => didChange(t, v), 10); if (!hooks.embed) setTimeout(() => SIM.storage.set('qed64.buffer', this.text), 50); }, getLineCount() { return this.text.split('\n').length; }, getVersionId: () => modelVersion };
+  const model = { text: bootText, getValue() { return this.text; }, setValue(t) { this.text = t; SIM.setValueCalls++; const v = ++modelVersion; setTimeout(() => didChange(t, v), 10); }, getLineCount() { return this.text.split('\n').length; }, getVersionId: () => modelVersion };
   let pos = { lineNumber: 1, column: 1 };
-  const editor = { getModel: () => model, setPosition(p) { pos = { ...p }; SIM.positions.push({ ...p }); }, getPosition: () => pos, revealLineInCenter() {}, focus() { SIM.editorFocus++; }, layout() { SIM.layouts++; }, pushUndoStop() {}, executeEdits() {} };
+  const editor = { getModel: () => model, setPosition(p) { pos = { ...p }; SIM.positions.push({ ...p }); }, getPosition: () => pos, revealLineInCenter() {}, focus() { SIM.editorFocus++; }, pushUndoStop() {}, executeEdits() {} };
   function verdict(text, sess) {
     const mods = text.split('\n').filter((l) => /^\s*import\s/.test(l)).map((l) => l.trim().split(/\s+/)[1]);
     const covered = sess.snapshots.includes('mathlib') ? ['Mathlib', ...region] : [];
@@ -148,15 +146,15 @@ function makeQed(pw, bootText, overlay, hooks = {}) {
   }
   function elaborate(text) {
     if (relay.state.kind !== 'serving') return;
-    W.phase = 'elaborating'; W.version = SIM.v1 ? relay.doc.version : (W.version || 0) + 1;
+    W.phase = 'elaborating'; W.version = relay.doc.version;
     const sess = relay.session;
-    // V1: the checker reports progress on the version it received (a $/lean/fileProgress frame the api turns into an event)
-    if (SIM.v1) relay.toClient({ jsonrpc: '2.0', method: '$/lean/fileProgress', params: { textDocument: { uri: relay.doc.uri, version: W.version }, processing: [{ range: { start: { line: 0, character: 0 }, end: { line: 1, character: 0 } }, kind: 1 }] } });
+    // the checker reports progress on the version it received (a $/lean/fileProgress frame the api turns into an event)
+    relay.toClient({ jsonrpc: '2.0', method: '$/lean/fileProgress', params: { textDocument: { uri: relay.doc.uri, version: W.version }, processing: [{ range: { start: { line: 0, character: 0 }, end: { line: 1, character: 0 } }, kind: 1 }] } });
     if (SIM.stuck || SIM.busy) { SIM.stuckVersions.push(W.version); return; } // L7 model (stuck) / a slow command (busy): never finishes this version
     setTimeout(() => {
       if (!(relay.session === sess && relay.state.kind === 'serving')) return;
       Object.assign(W, verdict(text, sess));
-      if (SIM.v1) relay.toClient({ jsonrpc: '2.0', method: 'textDocument/publishDiagnostics', params: { uri: relay.doc.uri, version: W.version, diagnostics: [] } });
+      relay.toClient({ jsonrpc: '2.0', method: 'textDocument/publishDiagnostics', params: { uri: relay.doc.uri, version: W.version, diagnostics: [] } });
     }, SIM.elabMs);
   }
   function bootSession(sess, delay, reason = 'boot') {
@@ -167,36 +165,19 @@ function makeQed(pw, bootText, overlay, hooks = {}) {
   }
   function didChange(t, v) {
     relay.lastText = t;
-    if (SIM.v1) { relay.doc.version = v ?? modelVersion; SIM.didChanges++; if (hooks.onIn) hooks.onIn(relay.doc.uri, relay.doc.version, t); }
+    relay.doc.version = v ?? modelVersion; SIM.didChanges++; if (hooks.onIn) hooks.onIn(relay.doc.uri, relay.doc.version, t);
     if (relay.state.kind === 'halted') { relay.lastDeath = null; relay.session = relay.makeSession(); SIM.rearms++; bootSession(relay.session, 30); return; }
     elaborate(t);
   }
   relay.rearm = () => { if (relay.state.kind !== 'halted') return false; relay.lastDeath = null; relay.session = relay.makeSession(); SIM.rearms++; bootSession(relay.session, 30); return true; };
   relay.restart = (opts) => { if (relay.state.kind !== 'serving') return; SIM.restarts.push({ opts, from: relay.session.id }); relay.session = relay.makeSession(opts); bootSession(relay.session, 60); };
-  relay.toClient = (m) => { SIM.toClient.push(m && (m.method || `reply:${m.id}`)); if (hooks.onOut) hooks.onOut(m); }; // the gallery's progress tap wraps this (legacy); the api's taps (V1)
-  // the liveness probe's path (lsp-relay.ts fromClient): the open document, and hover replies through toClient (the
-  // gallery's tap must swallow them). SIM.stuck: no reply (L7 model); SIM.busy: elaborating forever, yet replies (alive)
+  relay.toClient = (m) => { SIM.toClient.push(m && (m.method || `reply:${m.id}`)); if (hooks.onOut) hooks.onOut(m); }; // the api's taps
+  // what reaches the relay from the client (lsp-relay.ts fromClient): the gallery sends nothing (its probe left in P1), so
+  // every run that checks it finds SIM.fromClient empty. SIM.stuck: no verdict (L7 model); SIM.busy: elaborating forever
   relay.doc = { uri: 'file:///Probe.lean', languageId: 'lean4', version: 1 };
-  relay.fromClient = (m) => {
-    SIM.fromClient.push(m);
-    // the gallery's main-loop probe (an unknown method WITH params): Lean's FileWorker main loop answers MethodNotFound at
-    // once, without a pool thread (so also when SIM.noHover models a saturated pool). SIM.stuck (L7) and SIM.noMain: no reply.
-    if (m.method === '$/showcase/liveness' && m.id !== undefined) {
-      if (!m.params || typeof m.params !== 'object') { SIM.badRequests++; return; } // a FileWorker would die here
-      if (SIM.stuck || SIM.noMain) return;
-      setTimeout(() => relay.toClient({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: `No request handler found for '${m.method}'` } }), SIM.mainMs);
-      return;
-    }
-    if (m.method !== 'textDocument/hover' || m.id === undefined) return;
-    const p = m.params;
-    if (!p || !p.textDocument || typeof p.textDocument.uri !== 'string' || !p.position) { SIM.badRequests++; return; } // a FileWorker would die here
-    if (SIM.stuck || SIM.noHover) return; // noHover: a saturated task pool (the hover waits for a free thread; Lean is alive)
-    setTimeout(() => relay.toClient({ jsonrpc: '2.0', id: m.id, result: null }), SIM.hoverMs);
-  };
+  relay.fromClient = (m) => { SIM.fromClient.push(m); };
   relay.status = () => ({ phase: relay.state.kind === 'halted' ? 'halted' : W.phase, version: W.version, header: W.header && { ...W.header, version: 1, key: [] }, session: relay.session.id, relay: relay.state.kind, lastDeath: relay.lastDeath, collision: null,
-    // QED64 9fdf9b8+ (SIM.builtIn): the worker's own liveness counters and the relay's reboot reason (lsp-relay.ts)
-    ...(SIM.builtIn ? { liveness: { ...SIM.qlive }, rebootReason: relay.state.kind === 'rebooting' ? relay.state.reason : null } : {}),
-    ...(SIM.v1 ? { rebootReason: relay.state.kind === 'rebooting' ? relay.state.reason : null } : {}) });
+    rebootReason: relay.state.kind === 'rebooting' ? relay.state.reason : null });
   // QED64's own liveness declaring the session wedged: died "wedged", the relay reboots a fresh session and replays the text
   SIM.qedWedge = () => { const from = relay.session.id; relay.lastDeath = { reason: 'wedged', message: 'simulated: the Lean runtime stopped answering', seq: ++SIM.deathSeq, session: from }; relay.session = relay.makeSession(); SIM.qedReboots.push({ from, to: relay.session.id }); SIM.qlive = { probes: 0, answered: 0, stalls: 0, resumed: 0, rescues: 0 }; bootSession(relay.session, 700, 'wedged'); };
   // the relay constructor: first session (commit decided NOW, before globalThis.qed64 exists) + boot
@@ -205,10 +186,7 @@ function makeQed(pw, bootText, overlay, hooks = {}) {
   SIM.firstSessions.push({ id: relay.session.id, initialBytes: relay.session.initialBytes, snapshots: relay.session.snapshots, qed64Assigned: !!pw.qed64 });
   bootSession(relay.session, SIM.bootMs);
   SIM.halt = () => { relay.state = { kind: 'halted' }; relay.lastDeath = { reason: 'crash', message: 'simulated', seq: ++SIM.deathSeq, session: relay.session.id }; };
-  // the page's status sink (bundle: globalThis.qed64.ui = the pill + boot card; resident-session.ts / the snapshot prefetch
-  // call ui.progress(label, {phase, loaded, total, unit}) through the object, so a same-origin wrapper sees every call)
-  const ui = { busy(l) { SIM.uiSeen.push(['busy', l]); }, progress(l, i) { SIM.uiSeen.push(['progress', l, i && i.loaded]); }, idle(l) { SIM.uiSeen.push(['idle', l]); } };
-  return { relay, ui, artifacts: {}, status: () => relay.status(), get editor() { return editor; }, _W: W, _model: model, _editor: editor, _modelVersion: () => modelVersion };
+  return { relay, _W: W, _model: model, _editor: editor, _modelVersion: () => modelVersion };
 }
 
 // ---------------------------------------------------------------- the V1 page API model (EMBEDDING.md §2–§3; mirrors page-api.ts)
@@ -329,6 +307,8 @@ function makeApi(pw, { overlay, embed, hashCode, memoryBytes }) {
     api,
     /** the page's boot steps (ui.busy/progress with info.stage), for the slow-boot runs */
     bootStep(label, info) { emitBoot(label, info, false, false, null); },
+    /** QED64's 30 s check fallback (at O): status().boot.done before a first verdict (the halt-after-serve case) */
+    bootDone() { if (!boot.done && !boot.failed) { emitBoot(boot.label, { stage: 'done' }, true, false, null); boot = { ...boot, overlay: false }; } },
     bootFailed(message) { if (!isBound()) failedBeforeUp = message; emitBoot(message, { stage: 'failed' }, false, true, message); if (!isBound()) for (const w of readyWaiters.splice(0)) w.fail(Object.assign(new Error(message), { code: 'BOOT_FAILED' })); },
     /** the boot document (EMBEDDING.md §3.1): setDocument before it is read > #code= (same-origin frame only, read once) > embed: setDocument within 5 s, else '' */
     async bootDocument() {
@@ -371,13 +351,14 @@ function makePage(src) {
   const styles = [];
   const doc = {
     readyState: 'loading', head: { append: (el) => styles.push(el) },
-    // #bar: the page's top bar (the gallery puts its slow-download notice below it); the frame fills the stage from its top
+    // the gallery's own <style> elements (qed64-showcase-*); any other id is the page's own DOM, internal (EMBEDDING.md §9):
+    // recorded, and every run asserts none (noInternals)
     getElementById: (id) => {
-      if (!/^qed64-showcase-/.test(id)) doc._touches.push(id); // the page's own DOM is internal (EMBEDDING.md §9): a V1 run asserts none on its pages
-      return id === 'bar' ? { getBoundingClientRect: () => ({ top: 0, bottom: 35 }) } : id === 'bootcard' ? { classList: { contains: (c) => c === 'failed' && doc._failed } } : id === 'bootlabel' ? { textContent: 'runtime manifest: HTTP 404' } : /^qed64-showcase-/.test(id) ? styles.find((s) => s.id === id) || null : null;
+      if (!/^qed64-showcase-/.test(id)) { doc._touches.push(id); return null; }
+      return styles.find((s) => s.id === id) || null;
     },
     createElement: () => { const el = { id: '', textContent: '', remove: () => styles.splice(styles.indexOf(el), 1) }; return el; },
-    _styles: styles, _failed: false, _touches: [],
+    _styles: styles, _touches: [],
   };
   const pw = {
     location: { href: url.href, pathname: url.pathname, search: url.search, hash: url.hash, reload() { SIM.pageReloads++; } }, document: doc, _internalTouches: [],
@@ -386,66 +367,52 @@ function makePage(src) {
     // resource timing: the entries the test pushes into SIM.resources (a retry loop re-fetching one URL adds entries too)
     performance: { getEntriesByType: (t) => (t === 'resource' ? SIM.resources.slice() : []) },
   };
-  if (SIM.v1) {
-    // V1 page (EMBEDDING.md §2.1, §3.1): api frozen and announced at MODULE START (before the boot document is read); embed
-    // mode never reads qed64.buffer; #code= is honoured (same-origin frame) and dropped from the URL (read once)
-    const embed = url.searchParams.get('embed') === '1';
-    const memParam = url.searchParams.get('memory');
-    const memoryBytes = memParam !== null ? Math.min(6 * GiB, Math.max(GiB, Math.round((Number(memParam) * GiB) / (256 * MiB)) * 256 * MiB)) : null;
-    const hashCode = codeFromHash(url.hash);
-    const page = makeApi(pw, { overlay, embed, hashCode, memoryBytes });
-    const internals = { get: null };
-    // the public member, and the INTERNAL ones as recording getters (the tests reach them through SIM.internals)
-    // globalThis.qed64 (api + the internal members) exists from MODULE START on (main.ts), not while the document is parsed
-    const publish = () => {
-      pw.qed64 = { api: page.api };
-      for (const k of ['relay', 'ui', 'artifacts', 'editor', 'status', 'test']) Object.defineProperty(pw.qed64, k, { enumerable: true, configurable: true, get() { pw._internalTouches.push({ member: k, stack: String(new Error().stack).split('\n').slice(2, 4).join(' | ') }); return internals.get ? internals.get[k] : undefined; } });
-    };
-    pw._page = page; pw._internals = internals; SIM.pages.push(pw);
-    const moduleMs = SIM.moduleDelayMs; // the module script's start (a slow bundle: SIM.moduleDelayMs, read at navigation)
-    setTimeout(async () => {
-      if (pw._unloaded) return; // retired (about:blank) before its module ran: nothing of this document runs
-      doc.readyState = 'interactive';
-      publish();
-      SIM.frameApiDispatches++;
-      globalThis.dispatchEvent({ type: 'qed64:frame-api', detail: { api: page.api, frame: pw } });
-      if (hashCode !== null) { pw.location.hash = ''; pw.location.href = url.origin + url.pathname + url.search; SIM.hashDrops++; }
-      if (SIM.pageBootFail) { doc._failed = true; page.bootFailed('refused ?snapshots=…: index.json not found'); return; }
-      page.bootStep('fetching manifests…', { stage: 'manifests', phase: 'manifests' });
-      const bd = await page.bootDocument();
-      SIM.bootDocs.push({ ...bd, embed });
-      const q = makeQed(pw, bd.text, overlay, page.hooks);
-      internals.get = { relay: q.relay, ui: q.ui, artifacts: {}, status: () => q.relay.status(), editor: q._editor, test: {} };
-      SIM.internals = q; // what a TEST may touch (never the gallery)
-      page.bind(q);
-      // pageBootFailLateDeath: session 1 died bootFailed first (lastDeath set, the relay rebooting on a new session), THEN main() threw
-      if (SIM.pageBootFailLate && SIM.pageBootFailLateDeath) { const r = q.relay; r.lastDeath = { reason: 'bootFailed', message: SIM.pageBootFailLateDeath, seq: ++SIM.deathSeq, session: r.session.id }; r.session = r.makeSession(); r.state = { kind: 'rebooting', reason: 'bootFailed' }; }
-      if (SIM.pageBootFailLate) { page.bootFailed(SIM.pageBootFailLate); return; } // main.ts main().catch after bind: boot.failed with a session, no death, nothing retries
-      page.hooks.onIn(q.relay.doc.uri, q.relay.doc.version, bd.text); // the editor's didOpen: the first 'document' event
-      setTimeout(() => page.editorReady(), 5);
-    }, moduleMs);
-    setTimeout(() => { if (pw._unloaded) return; doc.readyState = 'complete'; SIM.frame.dispatch('load'); }, moduleMs + 10);
-    return pw;
-  }
-  const bootText = SIM.storage.get('qed64.buffer') ?? '-- stock EXAMPLES.mathlib\nimport Mathlib.Basic.Real.Basic\n';
-  setTimeout(() => {
+  // the page (EMBEDDING.md §2.1, §3.1): api frozen and announced at MODULE START (before the boot document is read); embed
+  // mode never reads qed64.buffer; #code= is honoured (same-origin frame) and dropped from the URL (read once)
+  const embed = url.searchParams.get('embed') === '1';
+  const memParam = url.searchParams.get('memory');
+  const memoryBytes = memParam !== null ? Math.min(6 * GiB, Math.max(GiB, Math.round((Number(memParam) * GiB) / (256 * MiB)) * 256 * MiB)) : null;
+  const hashCode = codeFromHash(url.hash);
+  const page = makeApi(pw, { overlay, embed, hashCode, memoryBytes });
+  const internals = { get: null };
+  // the public member, and the INTERNAL ones as recording getters (the tests reach them through SIM.internals)
+  // globalThis.qed64 (api + the internal members) exists from MODULE START on (main.ts), not while the document is parsed
+  const publish = () => {
+    pw.qed64 = { api: page.api };
+    for (const k of ['relay', 'ui', 'artifacts', 'editor', 'status', 'test']) Object.defineProperty(pw.qed64, k, { enumerable: true, configurable: true, get() { pw._internalTouches.push({ member: k, stack: String(new Error().stack).split('\n').slice(2, 4).join(' | ') }); return internals.get ? internals.get[k] : undefined; } });
+  };
+  pw._page = page; pw._internals = internals; SIM.pages.push(pw);
+  const moduleMs = SIM.moduleDelayMs; // the module script's start (a slow bundle: SIM.moduleDelayMs, read at navigation)
+  setTimeout(async () => {
+    if (pw._unloaded) return; // retired (about:blank) before its module ran: nothing of this document runs
     doc.readyState = 'interactive';
-    if (SIM.pageBootFail) { doc._failed = true; return; }
-    pw.qed64 = makeQed(pw, bootText, overlay); // assigned right after the relay (and its first session) exist
-  }, 15);
-  setTimeout(() => { doc.readyState = 'complete'; SIM.frame.dispatch('load'); }, 25);
+    publish();
+    SIM.frameApiDispatches++;
+    globalThis.dispatchEvent({ type: 'qed64:frame-api', detail: { api: page.api, frame: pw } });
+    if (hashCode !== null) { pw.location.hash = ''; pw.location.href = url.origin + url.pathname + url.search; SIM.hashDrops++; }
+    if (SIM.pageBootFail) { page.bootFailed('refused ?snapshots=…: index.json not found'); return; }
+    page.bootStep('fetching manifests…', { stage: 'manifests', phase: 'manifests' });
+    const bd = await page.bootDocument();
+    SIM.bootDocs.push({ ...bd, embed });
+    const q = makeQed(pw, bd.text, overlay, page.hooks);
+    internals.get = { relay: q.relay, artifacts: {}, status: () => q.relay.status(), editor: q._editor, test: {} };
+    SIM.internals = q; // what a TEST may touch (never the gallery)
+    page.bind(q);
+    // pageBootFailLateDeath: session 1 died bootFailed first (lastDeath set, the relay rebooting on a new session), THEN main() threw
+    if (SIM.pageBootFailLate && SIM.pageBootFailLateDeath) { const r = q.relay; r.lastDeath = { reason: 'bootFailed', message: SIM.pageBootFailLateDeath, seq: ++SIM.deathSeq, session: r.session.id }; r.session = r.makeSession(); r.state = { kind: 'rebooting', reason: 'bootFailed' }; }
+    if (SIM.pageBootFailLate) { page.bootFailed(SIM.pageBootFailLate); return; } // main.ts main().catch after bind: boot.failed with a session, no death, nothing retries
+    page.hooks.onIn(q.relay.doc.uri, q.relay.doc.version, bd.text); // the editor's didOpen: the first 'document' event
+    setTimeout(() => page.editorReady(), 5);
+  }, moduleMs);
+  setTimeout(() => { if (pw._unloaded) return; doc.readyState = 'complete'; SIM.frame.dispatch('load'); }, moduleMs + 10);
   return pw;
 }
 
 // ---------------------------------------------------------------- environment per run
-// v1: the PAGE model (and, by default, what /qed64-build.json and pin.json say); pinV1: what gallery/pin.json says when it differs;
-// servedPin: the pin id serve.mjs names in X-Showcase-Pin (default: pin.json's own; another id = a staged pin served with the
-// active pin's gallery, which makes the gallery read the served release's revision); apiHeader: serve.mjs sends
-// X-Showcase-Api (<apiRevision>|none, default true: then the gallery never fetches /qed64-build.json; false = an older
-// server, the gallery's fallback probe; a string = that literal value, e.g. 'invalid'); servedBuild 'error': that file cannot be read
-// pinOverlays: gallery/pin.json's overlays map (undefined: PIN.overlays; null: an older pin.json without it; an object: that map);
+// v1: gallery/pin.json carries an apiRevision (default true; false = a pin.json without one: the gallery's data card)
+// pinOverlays: gallery/pin.json's overlays map (undefined: PIN.overlays; null: a pin.json without it, refused; an object: that map);
 // servedDirs: where the fake server serves each logical overlay (default: that map, else the bare names)
-function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = '', hash = '', overlays = {}, storage = {}, narrow = false, bootMs = 60, elabMs = 40, pageBootFail = false, pageBootFailLate = null, pageBootFailLateDeath = null, builtIn = false, caps = {}, holdBoot = false, v1 = false, caps2 = null, embedWaitMs = 5000, pinV1 = null, servedBuild = null, servedPin = null, apiHeader = true }) {
+function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = '', hash = '', overlays = {}, storage = {}, narrow = false, bootMs = 60, elabMs = 40, pageBootFail = false, pageBootFailLate = null, pageBootFailLateDeath = null, caps = {}, holdBoot = false, v1 = true, caps2 = null, embedWaitMs = 5000 }) {
   for (const t of SIM.timers || []) clearInterval(t); // the previous run's page tickers
   const html = fs.readFileSync(path.join(G, 'index.html'), 'utf8');
   const root = parseHtml(html);
@@ -453,9 +420,9 @@ function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = ''
   const blank = { location: { href: 'about:blank' }, document: { readyState: 'complete' }, focus() {} };
   const pinOv = pinOverlays === undefined ? (PIN.overlays ?? null) : pinOverlays;
   Object.assign(SIM, { pinOverlays: pinOv, servedDirs: servedDirs ?? pinOv ?? { widgets7: 'widgets7', widgets8: 'widgets8' } });
-  Object.assign(SIM, { overlays, storage: new Map(Object.entries(storage)), fetchLog: [], navigations: [], positions: [], setValueCalls: 0, rearms: 0, editorFocus: 0, pageFocus: 0, layouts: 0, firstSessions: [], clipboard: null, bootMs, elabMs, pageBootFail, page: null, stuck: false, busy: false, noHover: false, stuckVersions: [], restarts: [], toClient: [], fromClient: [], badRequests: 0, hoverMs: 20, noMain: false, mainMs: 5, builtIn, qlive: { probes: 0, answered: 0, stalls: 0, resumed: 0, rescues: 0 }, qedReboots: [], holdBoot, releaseBoot: null, uiSeen: [], resources: [],
-    // V1 model state and the §9 trackers
-    v1, caps2, embedWaitMs, pageBootFailLate, pageBootFailLateDeath, timers: [], refuseRestart: false, deathSeq: 0, pages: [], internalTouches: [], storageAccess: [], pageDomTouches: [], setDocCalls: [], setCursorCalls: [], apiRestarts: [], didChanges: 0, bootDocs: [], hashDrops: 0, frameApiDispatches: 0, lastSetDocResult: null, internals: null, offer: null, offerRuns: 0, bootFinished: 0, listenerThrows: [], pageReloads: 0, moduleDelayMs: 15, pinV1, servedBuild, servedPin, apiHeader, storageThrow: new Set(), onlyCurrentRun: false });
+  Object.assign(SIM, { overlays, storage: new Map(Object.entries(storage)), fetchLog: [], navigations: [], positions: [], setValueCalls: 0, rearms: 0, editorFocus: 0, pageFocus: 0, firstSessions: [], clipboard: null, bootMs, elabMs, pageBootFail, page: null, stuck: false, busy: false, stuckVersions: [], restarts: [], toClient: [], fromClient: [], qlive: { probes: 0, answered: 0, stalls: 0, resumed: 0, rescues: 0 }, qedReboots: [], holdBoot, releaseBoot: null, resources: [],
+    // the page model's state and the §9 trackers
+    v1, caps2, embedWaitMs, pageBootFailLate, pageBootFailLateDeath, timers: [], refuseRestart: false, deathSeq: 0, pages: [], internalTouches: [], storageAccess: [], pageDomTouches: [], setDocCalls: [], setCursorCalls: [], apiRestarts: [], didChanges: 0, bootDocs: [], hashDrops: 0, frameApiDispatches: 0, lastSetDocResult: null, internals: null, offer: null, offerRuns: 0, bootFinished: 0, listenerThrows: [], pageReloads: 0, moduleDelayMs: 15, storageThrow: new Set(), onlyCurrentRun: false, warns: [] });
   const frame = byIdEl('qed64-frame');
   SIM.frame = frame; frame._win = blank;
   Object.defineProperty(frame, 'src', {
@@ -505,18 +472,10 @@ function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = ''
     const u = new URL(url, `${ORIGIN}/showcase/`);
     SIM.fetchLog.push({ path: u.pathname, method: init.method || 'GET', navigations: SIM.navigations.length });
     const res = (status, ct, body = '', extra = {}) => { const h = new Map(Object.entries({ 'content-type': ct, ...extra })); return { ok: status >= 200 && status < 300, status, headers: { get: (k) => h.get(k.toLowerCase()) ?? null }, text: async () => body, json: async () => JSON.parse(body) }; };
-    if (u.pathname === '/showcase/pin.json') { // the ACTIVE pin's view (build-gallery.mjs reads release/<pin>/dist/qed64-build.json); SIM.pinV1 overrides it
-      const pv = SIM.pinV1 ?? SIM.v1;
-      const pj = { ...PIN, apiRevision: pv ? (PIN.apiRevision ?? '1.0.0') : null, shell: pv ? (PIN.shell ?? 'shell-0000000000000000') : null };
+    if (u.pathname === '/showcase/pin.json') { // the ACTIVE pin's view (build-gallery.mjs reads release/<pin>/dist/qed64-build.json); SIM.v1 false: without apiRevision
+      const pj = { ...PIN, apiRevision: SIM.v1 ? (PIN.apiRevision ?? '1.0.0') : null, shell: SIM.v1 ? (PIN.shell ?? 'shell-0000000000000000') : null };
       if (SIM.pinOverlays === null) delete pj.overlays; else pj.overlays = SIM.pinOverlays;
-      // serve.mjs: X-Showcase-Api = the SERVED release's dist/qed64-build.json apiRevision, 'none' without one (SIM.v1 = the served page)
-      const apiH = SIM.apiHeader ? { 'x-showcase-api': typeof SIM.apiHeader === 'string' ? SIM.apiHeader : SIM.v1 ? (PIN.apiRevision ?? '1.0.0') : 'none' } : {};
-      return res(200, 'application/json', JSON.stringify(pj), { 'x-showcase-pin': `${SIM.servedPin ?? PIN.pin} ${PIN.buildId}`, ...apiH });
-    }
-    if (u.pathname === '/qed64-build.json') { // the SERVED release (the mode toggle): a v1 page's build facts; pins A–E have no such file
-      if (SIM.servedBuild === 'error') throw new TypeError('Failed to fetch (simulated)');
-      if (!SIM.v1) return res(404, 'text/plain');
-      return res(200, 'application/json', JSON.stringify({ schema: 'qed64.build/v1', buildId: PIN.buildId, leanVersion: '4.34.0', commit: '0'.repeat(40), dirty: false, shell: PIN.shell ?? 'shell-0000000000000000', apiRevision: PIN.apiRevision ?? '1.0.0' }));
+      return res(200, 'application/json', JSON.stringify(pj), { 'x-showcase-pin': `${PIN.pin} ${PIN.buildId}` });
     }
     if (u.pathname.startsWith('/showcase/')) { const f = path.join(G, u.pathname.slice(10)); return fs.existsSync(f) ? res(200, 'application/json', fs.readFileSync(f, 'utf8')) : res(404, 'text/plain'); }
     if (u.pathname === `/runtime/runtime-manifest.${PIN.buildId}.json`) return res(200, 'application/json', JSON.stringify({ buildId: PIN.buildId, leanVersion: '4.34.0' }));
@@ -531,7 +490,6 @@ function setupEnv({ pinOverlays = undefined, servedDirs = undefined, search = ''
     const e = index.snapshots.find((x) => x.url.split('/').pop() === m[2]);
     return e ? res(200, 'application/octet-stream', '', { 'content-length': String(e.transfer) }) : res(404, 'text/plain');
   };
-  vm.runInThisContext(fs.readFileSync(path.join(G, 'qed64-bridge.js'), 'utf8'), { filename: 'qed64-bridge.js' });
 }
 let runN = 0;
 async function loadGallery() { await import(`${pathToFileURL(path.join(G, 'gallery.js')).href}?run=${++runN}`); return globalThis.__showcase; }
@@ -636,6 +594,7 @@ console.log('\n== run 14 (V1 boots): a browser without cross-origin isolation / 
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run14 capable');
   ok(st().caps.ok && st().caps.deviceMemory === 8 && st().caps.checks.every((c) => c.ok) && st().mode === 'v1', 'deviceMemory 8, isolated, SharedArrayBuffer, Memory64: every check passes and the gallery boots');
+  noInternals('capable boot');
 }
 
 // ================================================================ run 15 (V1): a slow first visit (last-mile lane defect: 360 s boot timeout at 10 Mbit/s)
@@ -681,6 +640,7 @@ console.log('\n== run 15 (V1): slow first boot: progress re-arms the boot timeou
   ok(s.shown === 'chart-kit' && s.error === null && s.notice === null && SIM.byIdEl('notice').hidden && card().hidden && s.cursor && s.cursor.lineNumber === byId['chart-kit'].firstCursor.lineNumber && s.bootMs >= 2000 && s.boot.waiting === null,
     `download done → ready: chart-kit at L${s.cursor && s.cursor.lineNumber}, the notice is gone, boot ${Math.round(s.bootMs)} ms`);
   ok(!SIM.byIdEl('notice').classList.contains('is-slow'), 'the notice\'s slow-download placement is cleared with it');
+  noInternals('slow but steady boot');
 
   // (b) a true stall: some bytes, then only re-sent bytes of the same download (a retry is no progress) → the card
   setupEnv({ v1: true, search: KNOBS, hash: '#chart-kit', overlays: W8, holdBoot: true, storage: {} });
@@ -763,8 +723,8 @@ console.log('\n== run 16 (V1): frame-api at module start, embed mode + #code=, s
     `qed64.buffer untouched by page and gallery (sentinel kept; seed.action ${s.seed && s.seed.action})`);
   ok(s.mode === 'v1' && s.api.present === true && s.api.via === 'frame-api' && s.api.embed === true && s.api.revision === '1.0.0' && s.api.capabilities && s.api.capabilities.editorRpc === true && s.api.capabilities.widgetSourceCache === true && s.api.pinRevision === '1.0.0',
     `status().api = {present, via ${s.api.via}, embed ${s.api.embed}, revision ${s.api.revision}, capabilities …}`);
-  ok(s.bridge.stoodDown === true && s.bridge.installed === false && s.bridge.installs.length === 0 && s.bridge.late === 0 && s.bridge.capabilityMismatch === null && api.bridgeStats() === null,
-    'the RPC bridge stood down (capabilities.editorRpc + widgetSourceCache): not installed, no installs, no mismatch');
+  ok(!('bridge' in s) && api.bridgeStats === undefined && api.version === 10 && !SIM.warns.some((w) => /widgetSourceCache/.test(w)),
+    'no RPC bridge (status().bridge and bridgeStats() are gone, __showcase.version 10); editorRpc and widgetSourceCache are the page\'s own, no warning');
   ok(s.liveness.probe === 'stood-down' && s.liveness.sent === 0 && s.liveness.answered === 0 && s.liveness.missed === 0 && s.liveness.mode === 'auto' && s.liveness.qed64.builtIn === true && s.liveness.qed64.api === true && s.liveness.qed64.probeAfterMs === 6000 && s.liveness.qed64.wedgeAfterMs === 12000 && s.liveness.qed64.graceMs === 4000 && s.liveness.qed64.stalled === false && s.liveness.qed64.totals.probes === null && SIM.fromClient.length === 0,
     `the liveness probe stood down (probe ${s.liveness.probe}, sent ${s.liveness.sent}); status().liveness.qed64 mirrors the api projection (stalled ${s.liveness.qed64.stalled}, probeAfterMs ${s.liveness.qed64.probeAfterMs})`);
   ok(s.stall.tapped === true && s.stall.source === 'api-events' && s.stall.progressMsgs >= 2 && s.boot.source === 'api-events' && s.boot.uiTapped === false && s.boot.apiBootEvents >= 2 && s.boot.sources.status > 0,
@@ -842,8 +802,8 @@ console.log('\n== run 16 (V1): frame-api at module start, embed mode + #code=, s
     `adopted reload: setDocument(saved document) arrived BEFORE the page read its boot document (preBoot ${SIM.setDocCalls[sd4] && SIM.setDocCalls[sd4].preBoot}); the page booted it (source ${bd.source}), not the empty document`);
   await until(() => st().phase === 'ready' && st().booted, 5000, 'run16 adopt');
   s = st();
-  ok(SIM.navigations.length === navs && s.api.adopted === 1 && s.api.adoptSet && s.api.adoptSet.from === 'saved' && s.api.docs === 2 && s.custom === true && s.current === null && api.currentText() === ORIG && s.op.label === 'reload' && s.bridge.installs.length === 0,
-    `adopted: no new navigation, api.adopted ${s.api.adopted} (from ${s.api.adoptSet && s.api.adoptSet.from}), docs ${s.api.docs}, the user buffer followed (custom), reload ${Math.round(s.bootMs)} ms, still no bridge`);
+  ok(SIM.navigations.length === navs && s.api.adopted === 1 && s.api.adoptSet && s.api.adoptSet.from === 'saved' && s.api.docs === 2 && s.custom === true && s.current === null && api.currentText() === ORIG && s.op.label === 'reload',
+    `adopted: no new navigation, api.adopted ${s.api.adopted} (from ${s.api.adoptSet && s.api.adoptSet.from}), docs ${s.api.docs}, the user buffer followed (custom), reload ${Math.round(s.bootMs)} ms`);
   // then an example again, and a reload while an example is shown re-seeds that example (its text was persisted)
   r = await api.select('chart-kit');
   ok(r.phase === 'ready' && api.currentText() === byId['chart-kit'].text && r.qed64.snapshots.join() === 'init,mathlib', `select('chart-kit') after the adopted reload: ready on [${r.qed64 && r.qed64.snapshots}]`);
@@ -987,7 +947,7 @@ console.log('\n== run 18 (V1): stall card from api events, Restart Lean = api.re
 }
 
 // ================================================================ run 19: V1 boot failure, refused header without mathlib (widen restart), capability mismatch, offers, slow boot through boot events
-console.log('\n== run 19 (V1): status().boot.failed → the boot card; a session without mathlib widens with api.restart({snapshots}); a capability mismatch installs the bridge late; offers; boot events drive the slow-boot notice');
+console.log('\n== run 19 (V1): status().boot.failed → the boot card; a session without mathlib widens with api.restart({snapshots}); offers; boot events drive the slow-boot notice; a halt after QED64 served is adopted once it is ready');
 {
   // (a) a boot that fails before the relay is bound (a refused parameter / a missing index): the hard card with the page's message
   setupEnv({ v1: true, overlays: { widgets8: { imports: ALL7 } }, pageBootFail: true });
@@ -1079,17 +1039,51 @@ console.log('\n== run 19 (V1): status().boot.failed → the boot card; a session
     && SIM.fromClient.length === 0 && s.liveness.events.some((e) => e.source === 'qed64-detected' && e.liveness === false) && s.stall.tapped === true,
     `capabilities.liveness false → liveness.probe '${s.liveness.probe}', qed64 {builtIn ${s.liveness.qed64.builtIn}, api ${s.liveness.qed64.api}}, status().qed64.liveness ${s.qed64.liveness}; nothing sent; the stall card stays armed`);
   noInternals('no liveness capability');
+  // (h) a halt AFTER QED64 served, during the first boot: QED64's 30 s check fallback marked status().boot done (not failed)
+  //     before a first verdict, then the relay halted. The halted card shows, and the late adoption is armed as for a true
+  //     stall: the visitor's edit re-arms the relay, QED64 reaches ready, the card hides and the gallery adopts the page
+  setupEnv({ hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } } });
+  SIM.stuck = true; // the first verdict never comes
+  api = await loadGallery();
+  await until(() => SIM.internals && SIM.internals.relay.state.kind === 'serving' && st().boot.waiting, 5000, 'run19h serving');
+  SIM.frame._win._page.bootDone(); SIM.halt();
+  await until(() => st().phase === 'error', 5000, 'run19h halted card');
+  s = st();
+  ok(s.error.kind === 'halted' && !SIM.byIdEl('error-card').hidden && s.boot.latePending === true && s.booted === false && s.qed64.boot.done === true && s.qed64.boot.failed === false && s.qed64.phase === 'halted' && s.selections.slice(-1)[0].outcome === 'error',
+    `halt after serve (boot done ${s.qed64.boot.done}, failed ${s.qed64.boot.failed}) → the card "${s.error.title}", late adoption armed (latePending ${s.boot.latePending})`);
+  const EDIT = `${byId['chart-kit'].text}-- typed after the halt\n`;
+  SIM.stuck = false;
+  SIM.internals._model.setValue(EDIT); // the visitor's edit: a didChange re-arms the halted relay
+  await until(() => st().phase === 'ready' && st().booted, 5000, 'run19h adopted');
+  s = st();
+  ok(SIM.rearms === 1 && s.error === null && SIM.byIdEl('error-card').hidden && s.boot.recovered === 1 && s.boot.latePending === false && s.boot.events.some((e) => e.source === 'recovered' && e.kind === 'reload')
+    && s.op.label === 'reload' && s.current === 'chart-kit' && s.shown === null && api.currentText() === EDIT && SIM.navigations.filter((n) => n.src !== 'about:blank').length === 1,
+    `the edit re-armed the relay (rearms ${SIM.rearms}) → ready: the card hid, the page was adopted (recovered ${s.boot.recovered}, op ${s.op.label}, the visitor's text kept, no navigation)`);
+  r = await api.select('hasse-view');
+  ok(r.phase === 'ready' && r.shown === 'hasse-view' && api.currentText() === byId['hasse-view'].text, 'after the adoption the gallery switches normally (hasse-view ready)');
+  noInternals('halt after serve');
+  // (h2) the same halt while QED64's boot is NOT done: no late adoption (the halt is the hard card's alone; Try again reloads)
+  setupEnv({ hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } } });
+  SIM.stuck = true;
+  api = await loadGallery();
+  await until(() => SIM.internals && SIM.internals.relay.state.kind === 'serving' && st().boot.waiting, 5000, 'run19h2 serving');
+  SIM.halt();
+  await until(() => st().phase === 'error', 5000, 'run19h2 halted card');
+  s = st();
+  ok(s.error.kind === 'halted' && s.qed64.boot.done === false && s.boot.latePending === false, `a halt before QED64's boot is done → the halted card without a late adoption (boot done ${s.qed64.boot.done}, latePending ${s.boot.latePending})`);
+  SIM.stuck = false;
+  noInternals('halt before boot done');
 }
 
 // ================================================================ run 20: V1 audit round 2 (document-bound api, in-memory re-seed, capabilities, served mode)
-console.log('\n== run 20 (V1): the api is bound to its document; adopted reloads re-seed the newest text from memory; capabilities; the mode follows the served page');
+console.log('\n== run 20 (V1): the api is bound to its document; adopted reloads re-seed the newest text from memory; required capabilities; a page without widgetSourceCache boots and warns once');
 {
   const CK = byId['chart-kit']; const TS = byId['tree-scope'];
   setupEnv({ v1: true, hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } } });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run20 ready');
   await sleep(300);
-  ok(st().modeSource === 'pin.json' && st().api.servedRevision === null && st().mode === 'v1' && !SIM.fetchLog.some((f) => f.path === '/qed64-build.json'), `the server serves pin.json's own pin (X-Showcase-Pin): mode from pin.json, no /qed64-build.json probe (modeSource ${st().modeSource})`);
+  ok(st().mode === 'v1' && st().api.pinRevision === st().api.revision && !('modeSource' in st()) && !('servedRevision' in st().api) && !SIM.fetchLog.some((f) => f.path === '/qed64-build.json'), `pin.json's apiRevision ${st().api.pinRevision} decides: no /qed64-build.json probe, no modeSource / servedRevision`);
   // (a) a reload whose new document has not run its module yet (a slow or failing bundle): the unloaded page's api must not
   //     answer — no stale 'ready', no setDocument on it — and a selection made in that window boots cleanly
   const oldIdx = SIM.pages.indexOf(SIM.frame._win); const sdA = SIM.setDocCalls.length; const navA = SIM.navigations.length;
@@ -1338,18 +1332,32 @@ console.log('\n== run 20 (V1): the api is bound to its document; adopted reloads
   s = st();
   ok(s.error.kind === 'boot' && /lacks the embedding features/.test(s.error.title) && /events/.test(s.error.detail) && JSON.stringify(s.api.missing) === '["events"]',
     `capabilities.events false → "${s.error.title}" (${s.error.detail}); status().api.missing ${JSON.stringify(s.api.missing)}`);
-  // (d) editorRpc without widgetSourceCache: the bridge's D3 path matches only pre-#56 names, so nothing is installed or claimed
+  noInternals('no events capability');
+  // (c2) a page without editorRpc (the InfoView's RPC across the iframe, HARDENING #56): every mk_rpc_widget panel would fail,
+  //      and since P1 there is no bridge to repair it, so the hard "could not start" card, nothing silently degraded
+  setupEnv({ hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } }, caps2: { editorRpc: false } });
+  api = await loadGallery();
+  await until(() => st().phase === 'error', 5000, 'run20c2 error');
+  await sleep(300); // the page reaches ready meanwhile: nothing may adopt it
+  s = st();
+  ok(s.phase === 'error' && s.error.kind === 'boot' && s.error.soft === false && /lacks the embedding features/.test(s.error.title) && /editorRpc/.test(s.error.detail) && JSON.stringify(s.api.missing) === '["editorRpc"]'
+    && !SIM.byIdEl('error-card').hidden && !SIM.byIdEl('error-card').classList.contains('is-soft') && s.booted === false && s.shown === null && s.selections.slice(-1)[0].outcome === 'error',
+    `capabilities.editorRpc false → the hard card "${s.error.title}" (${s.error.detail}); status().api.missing ${JSON.stringify(s.api.missing)}; not booted`);
+  noInternals('no editorRpc capability');
+  // (d) editorRpc without widgetSourceCache: no repair exists for that page, so it boots, warns once, and claims nothing
   setupEnv({ v1: true, hash: '#chart-kit', overlays: { widgets8: { imports: ALL7 } }, caps2: { widgetSourceCache: false } });
   api = await loadGallery();
   await until(() => st().phase === 'ready', 8000, 'run20d ready');
+  r = await api.select('hasse-view'); // a switch does not warn again
   s = st();
-  ok(s.bridge.installed === false && s.bridge.installs.length === 0 && s.bridge.stoodDown === false && s.bridge.capabilityMismatch && s.bridge.capabilityMismatch.repair === 'unavailable' && s.bridge.capabilityMismatch.editorRpc === true && s.bridge.capabilityMismatch.widgetSourceCache === false && api.bridgeStats() === null,
-    `capabilities {editorRpc true, widgetSourceCache false} → no bridge (installs ${s.bridge.installs.length}), capabilityMismatch.repair '${s.bridge.capabilityMismatch && s.bridge.capabilityMismatch.repair}'`);
+  const wsc = SIM.warns.filter((w) => /widgetSourceCache/.test(w));
+  ok(r.phase === 'ready' && s.shown === 'hasse-view' && s.api.capabilities.widgetSourceCache === false && JSON.stringify(s.api.missing) === '[]' && wsc.length === 1 && !('bridge' in s) && s.error === null,
+    `capabilities {editorRpc true, widgetSourceCache false} → boots and switches (${s.shown} ready), warned once (${wsc.length}: "${(wsc[0] || '').slice(0, 70)}…"), no status().bridge`);
   noInternals('no widgetSourceCache');
 }
 
 // ================================================================ run 21: served overlay directories (pin.json overlays)
-console.log('\n== run 21: served overlay directories — legacy pin.json, per-runtime alias ?overlay=widgets8, explicit ?overlay=<dir>, bare-only site');
+console.log('\n== run 21: served overlay directories — per-runtime alias ?overlay=widgets8, explicit ?overlay=<dir>, bare-only site; a pin.json without its overlays map or apiRevision is the data card');
 {
   const B16 = PIN.buildId.slice(7);
   const D = { widgets7: `widgets7.${B16}`, widgets8: `widgets8.${B16}` };
@@ -1404,6 +1412,20 @@ console.log('\n== run 21: served overlay directories — legacy pin.json, per-ru
   s = st();
   ok(SIM.navigations.length === 0 && s.error.kind === 'data' && /pin\.json overlays\.widgets8/.test(s.error.detail) && !SIM.fetchLog.some((f) => f.path.startsWith('/snapshots/')),
     `pin.json overlays {widgets8: "../x"} → data card: ${s.error.detail.slice(0, 120)}`);
+  // (e2) a pin.json without the overlays map (no registered pin's pin.json lacks it since P1): the data card, nothing fetched
+  setupEnv({ pinOverlays: null, servedDirs: { widgets7: 'widgets7', widgets8: 'widgets8' }, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'error', 5000, 'run21e2 error');
+  s = st();
+  ok(SIM.navigations.length === 0 && s.error.kind === 'data' && /pin\.json has no overlays map/.test(s.error.detail) && !SIM.fetchLog.some((f) => f.path.startsWith('/snapshots/')),
+    `pin.json without overlays → data card: ${s.error.detail.slice(0, 100)}`);
+  // (e3) a pin.json without apiRevision (a QED64 page before the embedding contract v1): the data card, nothing navigates
+  setupEnv({ v1: false, hash: '#hasse-view', overlays: { widgets8: { imports: ALL7 } } });
+  api = await loadGallery();
+  await until(() => st().phase === 'error', 5000, 'run21e3 error');
+  s = st();
+  ok(SIM.navigations.length === 0 && s.error.kind === 'data' && /pin\.json has no apiRevision/.test(s.error.detail) && !SIM.fetchLog.some((f) => f.path.startsWith('/snapshots/') || f.path === '/qed64-build.json') && !SIM.byIdEl('error-card').hidden,
+    `pin.json apiRevision null → data card: ${s.error.detail.slice(0, 100)}`);
 }
 
 // ================================================================ runs 22–26 (V1): what only the legacy runs 1, 6, 7, 10 and 11 tested (deleted in P1 C5)

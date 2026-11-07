@@ -379,8 +379,8 @@ function hintsFor(spec, lines, golden) {
     if (!typeText || gh.typeText !== typeText) { fail(`${spec.package} hover ${JSON.stringify(h.tagText)}: spec typeText ${JSON.stringify(typeText)} != golden ${JSON.stringify(gh.typeText)}`); continue; }
     const popup = `${gh.exprExplicitText} : ${gh.typeText}`;
     hints.push({
-      kind: 'hover', label: `Hover \`${h.tagText}\` in the panel (line ${h.cursorLine + 1})`,
-      detail: oneLine(`Hover \`${h.tagText}\` in the panel's \`${gh.codeText}\`: a popup shows its type, \`${popup}\`.`, 160),
+      kind: 'hover', label: `Click \`${h.tagText}\` in the panel (line ${h.cursorLine + 1})`,
+      detail: oneLine(`Click \`${h.tagText}\` in the panel's \`${gh.codeText}\`: a popup shows its type, \`${popup}\`.`, 160),
       claimTexts: [popup],
       expectHover: { tagText: h.tagText, codeText: gh.codeText, codeIndex: h.code, exprText: gh.exprExplicitText, typeText: gh.typeText, popupText: popup, golden: golden.file },
       ...pos(c.line, c.character),

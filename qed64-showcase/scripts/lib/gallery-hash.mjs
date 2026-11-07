@@ -6,11 +6,11 @@
 //
 // Definition: sha256 over the lines "<sha256 of file>  <path relative to gallery/>\n" for every SHIPPED gallery file,
 // sorted bytewise by path. Shipped = what /showcase/ serves in a deployment (scripts/deploy-manifest.mjs uses the same
-// isShippedGalleryFile): every regular file under gallery/ except dotfiles (.DS_Store …), *.md (gallery/README.md)
-// and x3.html (the X3 experiment page). So every edit that can change what the gallery does — gallery.js/.css,
-// index.html, lib.js, the bridge, examples.json, pin.json, thumbs/ — changes it, and a docs-only edit does not.
+// isShippedGalleryFile): every regular file under gallery/ except dotfiles (.DS_Store …) and *.md (gallery/README.md).
+// So every edit that can change what the gallery does — gallery.js/.css, index.html, lib.js, examples.json, pin.json,
+// thumbs/ — changes it, and a docs-only edit does not.
 // Equivalent shell (paths have no newlines):
-//   cd gallery && find . -type f ! -name '.*' ! -name '*.md' ! -path ./x3.html | sed 's|^\./||' | LC_ALL=C sort |
+//   cd gallery && find . -type f ! -name '.*' ! -name '*.md' | sed 's|^\./||' | LC_ALL=C sort |
 //     while read -r f; do printf '%s  %s\n' "$(shasum -a 256 "$f" | cut -d' ' -f1)" "$f"; done | shasum -a 256
 // Used by scripts/showcase.sh (gallery, ux), scripts/deploy-manifest.mjs (manifest.gallery, G1/G2) and
 // scripts/lib/ux-record.mjs (the SERVED hash: the same definition over the bytes an origin returns for each file).
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 const SC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-export const isShippedGalleryFile = (r) => !r.endsWith('.md') && r !== 'x3.html' && !r.split('/').some((x) => x.startsWith('.'));
+export const isShippedGalleryFile = (r) => !r.endsWith('.md') && !r.split('/').some((x) => x.startsWith('.'));
 
 export function galleryFiles(dir, base = dir) { return files(dir, base); }
 function files(dir, base = dir) {

@@ -236,7 +236,7 @@ function build(opts) {
       size, sha256, contentType: contentType(src), immutable: isImmutable(urlPath),
       phase: isImmutable(urlPath) ? 'immutable' : 'mutable', multipart: size > MULTIPART_OVER });
   };
-  // assets: pinned dist at "/", gallery at "/showcase/" (docs and the X3 experiment page are not shipped)
+  // assets: pinned dist at "/", gallery at "/showcase/" (its docs are not shipped)
   if (!fs.existsSync(path.join(R, 'dist'))) throw new Error(`${rel(path.join(R, 'dist'))} missing: build it from source with 'node scripts/build-shell.mjs'`);
   for (const f of walk(path.join(R, 'dist'))) addAsset(f, path.relative(path.join(R, 'dist'), f));
   for (const f of walk(path.join(SC, 'gallery'))) {
