@@ -9,11 +9,7 @@
     "serve": "node scripts/serve.mjs",
     "serve:start": "scripts/serve-start.sh",
     "serve:stop": "scripts/serve-stop.sh",
-    "x1": "node tests/experiments/x1-preflight.mjs",
-    "x2": "node tests/experiments/x2-rehearsal.mjs",
-    "x3": "node tests/experiments/x3-gallery-skeleton.mjs",
     "x4": "node tests/experiments/x4-click-paths.mjs",
-    "x5": "node tests/experiments/x5-memory-knob.mjs",
     "test:ux": "scripts/with-browser-lock.sh ux-suite npx playwright test -c tests/ux/playwright.config.mjs"
   },
   "devDependencies": {

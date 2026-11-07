@@ -2,19 +2,15 @@
 // InfoView -> editor applyEdit path (core Try-this and ProofWidgets MakeEditLink) works in QED64.
 //   (a) init-only `example (n : Nat) : n + 0 = n := by simp?` -> click core Try-this link
 //   (b) `import Mathlib.Tactic.Widget.Conv` + `conv?` -> shift-click a goal subterm -> "Generate conv"
-// Each case runs in two modes:
-//   raw    — the stock page exactly as shipped (decides whether applyEdit works in QED64 at all)
-//   bridge — the same page plus gallery/qed64-bridge.js installed from the same origin (an init
-//            script here; iframe.contentWindow in the M2 gallery). Zero QED64 changes either way.
-//   strip  — bridge with {edits:false}: repairs only the abortSignal defect, so case (b) isolates
-//            whether MakeEditLink's applyEdit works on the stock wiring once the panel renders.
-// Usage: node tests/experiments/x4-click-paths.mjs [a:raw b:raw a:bridge b:bridge]
+// Each case runs raw: the stock page exactly as shipped, with nothing injected.
+// pass = both raw rows changed the text and b:raw's panel rendered (no panelError); exit 0 only on pass.
+// Usage: node tests/experiments/x4-click-paths.mjs [a:raw b:raw]
 import fs from 'node:fs';
 import path from 'node:path';
 import { SC, ORIGIN, launch, waitPhase, installTap, consoleWatch, writeResult, sleep } from './lib.mjs';
 
-const runs = process.argv.slice(2).length ? process.argv.slice(2) : ['a:raw', 'b:raw', 'a:bridge', 'b:bridge'];
-const BRIDGE_SRC = fs.readFileSync(path.join(SC, 'gallery/qed64-bridge.js'), 'utf8');
+const runs = process.argv.slice(2).length ? process.argv.slice(2) : ['a:raw', 'b:raw'];
+for (const run of runs) if (!/^[ab]:raw$/.test(run)) { console.error(`x4: unknown run ${run} (only a:raw, b:raw)`); process.exit(2); }
 const SEL = (await import(path.join(SC, 'scripts/lib/pins.mjs'))).loadSelectors(); // "@qed64-main-bundle" -> the active pin's bundle
 const shots = path.join(SC, 'out', 'experiments', 'x4');
 fs.mkdirSync(shots, { recursive: true });
@@ -27,12 +23,8 @@ example (a b c : Nat) : a + (b + c) = (c + b) + a := by
   omega
 `;
 
-async function boot(browser, doc, url, mode) {
+async function boot(browser, doc, url) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  if (mode === 'bridge' || mode === 'strip') {
-    const opts = mode === 'strip' ? '{ edits: false }' : 'undefined';
-    await ctx.addInitScript({ content: `${BRIDGE_SRC}\nif (window.top === window) window.installQed64Bridge(window, ${opts});` });
-  }
   // seed the boot input once (guarded so a reload would not re-seed)
   await ctx.addInitScript((t) => { try { if (!sessionStorage.getItem('x4-seeded')) { localStorage.setItem('qed64.buffer', t); sessionStorage.setItem('x4-seeded', '1'); } } catch {} }, doc);
   const page = await ctx.newPage();
@@ -80,7 +72,7 @@ async function ivSettled(iv) {
 
 async function caseA(browser, mode) {
   const r = { case: 'a', mode, doc: DOC_A };
-  const { ctx, page, watch, boot: b } = await boot(browser, DOC_A, `${ORIGIN}/`, mode);
+  const { ctx, page, watch, boot: b } = await boot(browser, DOC_A, `${ORIGIN}/`);
   r.boot = b;
   try {
     const st0 = await stats(page);
@@ -113,7 +105,6 @@ async function caseA(browser, mode) {
     await page.screenshot({ path: path.join(shots, `a-${mode}-after.png`) });
     r.pass = !!(r.textChanged && /simp only/.test(after) && !/simp\?/.test(after) && r.afterPhase === 'ready' && r.errorsAfter === 0 && st1.workerDeaths === st0.workerDeaths && st1.reboots === st0.reboots);
   } catch (e) { r.error = String(e.stack || e).slice(0, 1500); r.pass = false; r.ivTextAtError = await ivText(page.frameLocator(SEL.infoview.frame)); await page.screenshot({ path: path.join(shots, `a-${mode}-error.png`) }).catch(() => {}); }
-  r.bridge = await page.evaluate(() => globalThis.__showcaseBridge ?? null).catch(() => null);
   r.console = { pageErrors: watch.pageErrors, errors: watch.errors.slice(0, 10), crashed: watch.crashed, tail: watch.tail.slice(-15) };
   await ctx.close();
   return r;
@@ -121,7 +112,7 @@ async function caseA(browser, mode) {
 
 async function caseB(browser, mode) {
   const r = { case: 'b', mode, doc: DOC_B };
-  const { ctx, page, watch, boot: b } = await boot(browser, DOC_B, `${ORIGIN}/`, mode);
+  const { ctx, page, watch, boot: b } = await boot(browser, DOC_B, `${ORIGIN}/`);
   r.boot = b;
   try {
     const st0 = await stats(page);
@@ -171,7 +162,6 @@ async function caseB(browser, mode) {
     await page.screenshot({ path: path.join(shots, `b-${mode}-after.png`) });
     r.pass = !!(r.textChanged && /conv =>/.test(after) && /enter/.test(after) && !/conv\?/.test(after) && r.afterPhase === 'ready' && r.errorsAfter === 0 && st1.workerDeaths === st0.workerDeaths && st1.reboots === st0.reboots);
   } catch (e) { r.error = String(e.stack || e).slice(0, 1500); r.pass = false; r.ivTextAtError = await ivText(page.frameLocator(SEL.infoview.frame)); r.ivHtmlAtError = (await page.frameLocator(SEL.infoview.frame).locator('body').innerHTML().catch(() => '')).slice(0, 20000); await page.screenshot({ path: path.join(shots, `b-${mode}-error.png`) }).catch(() => {}); }
-  r.bridge = await page.evaluate(() => globalThis.__showcaseBridge ?? null).catch(() => null);
   r.console = { pageErrors: watch.pageErrors, errors: watch.errors.slice(0, 10), crashed: watch.crashed, tail: watch.tail.slice(-15) };
   await ctx.close();
   return r;
@@ -189,19 +179,14 @@ for (const run of runs) {
   delete r.ivHtmlAtError;
   await sleep(3000);
 }
-let prev = {};
-try { prev = JSON.parse(fs.readFileSync(path.join(SC, 'out/experiments/x4.json'), 'utf8')).runs ?? {}; } catch {}
-const all = { ...prev, ...out };
+// No merging of older rows from out/experiments/x4.json: they carry bridge and strip rows from old pins.
+const all = out;
 const verdict = {
   applyEditStockPage: all['a:raw'] ? (all['a:raw'].textChanged ? 'works' : 'BROKEN') : 'not run',
   rpcPanelStockPage: all['b:raw'] ? (all['b:raw'].panelError ? 'BROKEN' : 'renders') : 'not run',
-  applyEditWithBridge: all['a:bridge'] ? (all['a:bridge'].pass ? 'works' : 'fails') : 'not run',
-  // the stock wiring's MakeEditLink applyEdit: b:raw itself once its panel renders (QED64 521cf3f on), else b:strip, which
-  // repairs only the abortSignal so the panel can render (on a page that repairs D1/D2 itself, strip mode does not apply)
-  makeEditLinkStockApplyEdit: all['b:raw'] && !all['b:raw'].panelError ? (all['b:raw'].textChanged ? 'works' : 'BROKEN')
-    : all['b:strip'] ? (all['b:strip'].textChanged ? 'works' : 'BROKEN') : 'not run',
-  makeEditLinkWithBridge: all['b:bridge'] ? (all['b:bridge'].pass ? 'works' : 'fails') : 'not run',
+  // the stock wiring's MakeEditLink applyEdit, once b:raw's panel renders (QED64 521cf3f on)
+  makeEditLinkStockApplyEdit: all['b:raw'] && !all['b:raw'].panelError ? (all['b:raw'].textChanged ? 'works' : 'BROKEN') : 'not run',
 };
-const pass = !!(all['a:bridge']?.pass && all['b:bridge']?.pass);
+const pass = !!(all['a:raw']?.textChanged && all['b:raw']?.textChanged && !all['b:raw'].panelError);
 writeResult('x4', { pass, answered: !!(all['a:raw'] && all['b:raw']), verdict, selectors: SEL, runs: all });
-process.exit(Object.values(out).every((r) => r.pass || r.mode === 'raw' || r.mode === 'strip') ? 0 : 1);
+process.exit(pass ? 0 : 1);

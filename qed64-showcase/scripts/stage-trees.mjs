@@ -13,7 +13,7 @@
 //   node scripts/stage-trees.mjs --check-provenance <tree> [<tree>…]
 //        is each staged tree the TARGET pin's? <tree>.STAGED.json (below) == its runtime, served base and widget export
 //        (scripts/lib/staged-tree.mjs checkProvenance); one OK/REFUSED line per tree; exit 0 all OK, 3 refused, 2 usage.
-//        bake.sh, judge-bake.mjs, headless stage4/e2 and hang-repro.mjs refuse a tree it refuses; `showcase.sh all`
+//        bake.sh, judge-bake.mjs and headless stage4/e2 refuse a tree it refuses; `showcase.sh all`
 //        restages it for its target pin
 //   node scripts/stage-trees.mjs --check-native
 //        N0's native build record check alone (below; scripts/lib/staged-tree.mjs checkNativeBuild, with --clone's

@@ -615,7 +615,7 @@ cmd_stage() {
   # pin, not per-runtime stores: staging them for the target pin replaces trees another pin may use (pin 521cf3f's are
   # Lean 4.35, every earlier pin's 4.34; K's w8/fat hold the b81f1b75 widget export, I/J's c2efe78f). stage-trees.mjs
   # records the target's runtime, served base and widget export in <tree>.STAGED.json once every gate passed, and every
-  # reader (bake.sh, judge-bake.mjs, headless stage4/e2, hang-repro.mjs) refuses a tree whose record does not match ITS
+  # reader (bake.sh, judge-bake.mjs, headless stage4/e2) refuses a tree whose record does not match ITS
   # target pin: that other pin's lanes refuse until it restages (`all` restages them for its target). A headless
   # verifier reading them must not see them replaced.
   [ "$DRY" = 1 ] || [ ! -e "$W/headless/.lock" ] || refuse "a headless verifier holds $W/headless/.lock ($(cat "$W/headless/.lock/owner" 2>/dev/null)); it reads these trees"

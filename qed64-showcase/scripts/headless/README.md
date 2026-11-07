@@ -188,7 +188,7 @@ panel, selection, hover, Try-this and click logic is copied from there.
 it unset), unlike the browser. From the Lean 4.35 re-pin (QED64 `521cf3f`) on, the runs that boot this transport use
 QED64's argv, i.e. `Elab.async=false`, as QED64's EMBEDDING §12 (`c512c21`) advises for embedders that lint their own
 tactic blocks (the widgets do: SimpLens, DistLens). Those are E3 (`rpc-probe.mjs`: stage 4's E3 steps and the wasm E3
-controls), E3b (it renders the panels E3 produced) and `hang-repro.mjs`; their 4.35 results are **not directly
+controls) and E3b (it renders the panels E3 produced), and `hang-repro.mjs` until P1 removed it; their 4.35 results are **not directly
 comparable** with N's or earlier: a difference between them may come from the flag as well as from Lean 4.35. E1
 (`exact-header.mjs`, QED64's `snapshot-probe.mjs` batch compile) and E2 (`run-e2.sh`, QED64's `supervised-run.mjs` →
 `node-runner.mjs` CLI, no `-D` option) do not use `wasm-lsp.mjs`: they keep their own command lines and this change
